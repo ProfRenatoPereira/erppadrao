@@ -1,0 +1,62 @@
+<!-- login/login.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP Acadêmico - Autenticação</title>
+    <script src="https://tailwindcss.com"></script>
+    <style>
+        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
+        body.dark-mode .card-login { background-color: #1e293b !important; border-color: #334155 !important; }
+        body.dark-mode input { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        
+        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
+        body.alto-contraste .card-login { background-color: #000000 !important; border: 3px solid #ffffff !important; }
+        body.alto-contraste input { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; font-weight: bold !important; }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen font-sans antialiased transition-all duration-200">
+
+    <!-- BARRA TOP DE ACESSIBILIDADE DO LOGIN -->
+    <div id="barra-acessibilidade" class="bg-[#0f172a] px-4 py-2 flex justify-between items-center text-xs border-b border-[#334155] text-white">
+        <span class="font-extrabold text-blue-400">®ψΣ TERADMAS</span>
+        <div class="flex gap-2">
+            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">⚫ Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">🌙 Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] px-2 py-0.5 rounded font-bold">🔊 Ativar Leitor</button>
+        </div>
+    </div>
+
+    <!-- CONTAINER CENTRALIZADO DO FORMULÁRIO -->
+    <div class="flex-grow flex items-center justify-center p-4">
+        <div class="card-login bg-white p-8 rounded-2xl shadow-xl border border-gray-200 max-w-md w-full text-center transition-all">
+            <h1 class="text-xl font-black text-blue-900 tracking-wide uppercase leading-tight" id="txt_titulo">TERCEIRO ADM ASSOCIADOS</h1>
+            <h2 class="text-md font-bold text-gray-750 mt-2 mb-1" id="txt_sub">Acesso ao ERP Acadêmico</h2>
+            <p class="text-xs text-gray-500 mb-6" id="txt_desc">Insira o identificador exclusivo da sua equipe para restaurar a capabilidade da sua empresa.</p>
+            
+            <!-- Mensagem dinâmica de erro capturada do Flask -->
+            {% if erro %}
+            <p class="text-xs bg-red-100 text-red-700 p-2.5 rounded-lg mb-4 font-bold border border-red-200" id="msg_erro">{{ erro }}</p>
+            {% endif %}
+
+            <form action="/login" method="POST" class="space-y-4 text-left text-sm">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Identificador da Equipe (Usuário):</label>
+                    <input type="text" name="usuario" id="campo_usuario" required placeholder="Ex: equipe_alfa" class="w-full border p-2.5 rounded-lg bg-slate-50 outline-none focus:border-blue-600 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Chave de Acesso (Senha):</label>
+                    <input type="password" name="senha" id="campo_senha" required placeholder="••••••••" class="w-full border p-2.5 rounded-lg bg-slate-50 outline-none focus:border-blue-600 transition">
+                </div>
+                <button type="submit" id="btn_validar" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow-md transition duration-200 uppercase tracking-wider text-xs">Validar Credenciais de Acesso</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="/login/login.js"></script>
+</body>
+</html>
