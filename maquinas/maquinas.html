@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Máquinas - Engenharia de Ativos</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <script src="https://tailwindcss.com"></script>
+    <style>
+        .bi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
+        .chart-box { background: #fff; padding: 1.5rem; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .chart-box h4 { color: #1e3a8a; margin-bottom: 1rem; font-size: 1.1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; }
+        
+        /* Sistema de Acessibilidade Visual Avançado */
+        html { font-size: 16px; transition: font-size 0.15s ease; }
+        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
+        body.dark-mode .card, body.dark-mode .chart-box, body.dark-mode .metric-card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        
+        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
+        body.alto-contraste .card, body.alto-contraste .chart-box, body.alto-contraste .metric-card, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label { color: #ffff00 !important; }
+        
+        @media print { #barra-acessibilidade, form, header, button, .actions-legal { display: none !important; } body { background-color: #fff; color: #000; } }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800 transition-all duration-200">
+
+    <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
+    <div id="barra-acessibilidade" class="bg-[#0f172a] px-4 py-2 flex flex-col sm:flex-row justify-between items-center text-xs border-b border-[#334155] text-white sticky top-0 z-50 gap-2 select-none">
+        <span class="font-extrabold text-blue-400">®ψΣ TERADMAS</span>
+        <div class="flex flex-wrap gap-2 items-center justify-center">
+            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">⚫ Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">🌙 Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] px-2 py-0.5 rounded font-bold">🔊 Ativar Leitor</button>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 max-w-7xl">
+        
+        <!-- INDICADORES FINANCEIROS PEDAGÓGICOS REQUERIDOS (REAL + PORCENTAGEM) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-2 font-bold text-sm text-center">
+            <div class="metric-card bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-blue-900 tracking-wider mb-0.5">💰 Capital Total Simulador</p>
+                <h3 class="text-lg text-blue-900 font-black" id="top_capital_total">R$ 0,00</h3>
+            </div>
+            <div class="metric-card bg-purple-50 border border-purple-200 p-4 rounded-xl shadow-sm flex flex-col justify-center items-center">
+                <p class="text-[11px] uppercase text-purple-950 tracking-wider mb-0.5">🏢 Orçamento da Engenharia</p>
+                <h3 class="text-lg text-purple-800 font-black" id="top_verba_reais">R$ 0,00</h3>
+                <span class="text-[10px] bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full mt-1 font-mono" id="top_verba_porcentagem">0.00% do Capital</span>
+            </div>
+            <div class="metric-card bg-slate-50 border border-slate-300 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-slate-700 tracking-wider mb-0.5">🔒 Custo Fixo (Contratos Ativos)</p>
+                <h4 class="text-base text-slate-800 font-black" id="top_custo_fixo">R$ 0,00</h4>
+            </div>
+            <div class="metric-card bg-amber-50 border border-amber-300 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-amber-900 tracking-wider mb-0.5">📈 Custos Variáveis Totais</p>
+                <h4 class="text-base text-amber-700 font-black" id="top_custo_variavel">R$ 0,00</h4>
+            </div>
+        </div>
+        <!-- CABEÇALHO CORPORATIVO RESPONSIVO -->
+        <header class="bg-white border-b border-gray-200 shadow-sm rounded-xl overflow-visible relative z-40 mb-6">
+            <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                    <div class="flex items-center gap-3">
+                        <img src="/static/logo.png" alt="Logo TERADMAS" class="h-16 w-auto object-contain border rounded p-1 shadow-sm">
+                        <div>
+                            <h1 class="text-xl lg:text-2xl font-black text-blue-900 tracking-tight uppercase">TERCEIRO ADM ASSOCIADOS</h1>
+                            <p class="text-xs text-gray-500 font-semibold mt-1">Módulo 2: Engenharia de Ativos e Composição Metrológica do Minuto Máquina</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="alternarMenuMobile()" class="md:hidden text-2xl bg-gray-100 text-slate-800 p-2 rounded-lg font-bold">☰</button>
+                </div>
+            </div>
+
+            <!-- MENU HAMBÚRGUER FLUIDO -->
+            <nav class="hidden md:block bg-blue-950 px-6 py-1 rounded-b-xl border-t border-blue-900 text-white select-none transition-all duration-300" id="menuNavegacao">
+                <ul class="flex flex-col md:flex-row gap-1 lg:gap-4 font-sans text-xs font-bold uppercase tracking-wider">
+                    <li class="relative group py-2 md:py-3 px-2 cursor-pointer hover:bg-blue-900 rounded">
+                        <span class="text-gray-100">🏢 Módulos Iniciais ▼</span>
+                        <ul class="hidden group-hover:block absolute left-0 top-full bg-white text-gray-800 rounded-lg shadow-xl border py-2 w-64 normal-case font-medium z-50">
+                            <li><a href="/estrutura" class="block px-4 py-2 hover:bg-slate-100 text-gray-700">1. Investimentos Imobiliários</a></li>
+                            <li><a href="/maquinas" class="block px-4 py-2 hover:bg-slate-100 text-blue-900 font-bold bg-blue-50 border-l-4 border-blue-600">2. Engenharia de Ativos (Máquinas)</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="border-b pb-2 mb-4">
+            <h2 class="text-xl font-black text-blue-900 uppercase tracking-tight" id="txt_titulo_pagina">Página 3: Engenharia de Ativos - Máquinas e Equipamentos</h2>
+        </div>
+
+        <!-- 🚀 ARQUITETURA LADO A LADO EM DUAS COLUNAS MASTER -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- QUADRO ESQUERDO: FORMULÁRIO COMPACTO DE CADASTRO -->
+            <div class="card bg-white p-5 rounded-xl border border-gray-200 shadow-sm lg:col-span-5">
+                <h3 class="text-sm font-black text-blue-900 uppercase tracking-wider mb-4 pb-1 border-b">Configuração da Máquina</h3>
+                <form id="formMaquina" onsubmit="salvarMaquina(event)" class="space-y-3 text-xs">
+                    <input type="hidden" id="registro_id" name="id">
+                    <input type="hidden" id="custo_estrutural_oculto" value="0.05">
+                    
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-600 uppercase">Selecionar Modelo Base:</label>
+                        <select id="seletor_modelo" onchange="carregarPreDefinido()" class="border p-2 rounded-lg bg-white outline-none">
+                            <option value="">-- Equipamento Personalizado --</option>
+                            <option value="cnc_mazak">Torno CNC Mazak Quick Turn</option>
+                            <option value="fresadora">Fresadora Universal</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-600 uppercase">Nome do Equipamento:</label>
+                        <input type="text" id="nome_equipamento" required placeholder="Ex: CNC Linha A" class="border p-2 rounded-lg outline-none">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Potência (kW):</label>
+                            <input type="number" step="0.1" id="potencia" required oninput="calcularMinutoMaquina()" class="border p-2 rounded-lg outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Consumo Elétrico (kWh):</label>
+                            <input type="number" step="0.1" id="consumo_eletrico" required oninput="calcularMinutoMaquina()" class="border p-2 rounded-lg outline-none">
+                        </div>
+                    </div>
+                    
+                    <!-- 💧 CAMPOS EXIGIDOS: FLUIDOS E GASES M³/H -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Consumo de Água (m³/h):</label>
+                            <input type="number" step="0.001" id="consumo_agua" value="0.000" oninput="calcularMinutoMaquina()" class="border p-2 rounded-lg outline-none text-blue-700 font-bold bg-blue-50">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Consumo de Gases (m³/h):</label>
+                            <input type="number" step="0.001" id="consumo_gases" value="0.000" oninput="calcularMinutoMaquina()" class="border p-2 rounded-lg outline-none text-blue-700 font-bold bg-blue-50">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Velocidade Máx (RPM):</label>
+                            <input type="text" id="velocidade" placeholder="Ex: 5000" class="border p-2 rounded-lg outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Avanço Trabalho (mm/min):</label>
+                            <input type="text" id="avanco" placeholder="Ex: 30000" class="border p-2 rounded-lg outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Ciclo Preventiva (Horas):</label>
+                            <input type="number" id="frequencia_manutencao" required class="border p-2 rounded-lg outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Preço Aquisição (R$):</label>
+                            <input type="number" step="0.01" id="preco_compra" required class="border p-2 rounded-lg outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Depreciação Contábil (R$/Mês):</label>
+                            <input type="number" step="0.01" id="depreciacao_mensal" required oninput="calcularMinutoMaquina()" class="border p-2 rounded-lg outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Valor Residual Venda (R$):</label>
+                            <input type="number" step="0.01" id="valor_venda_final" required class="border p-2 rounded-lg outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Operador Alocado:</label>
+                            <input type="text" id="operador_nome" required placeholder="Ex: João Silva" class="border p-2 rounded-lg outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Custo MOD (R$/min):</label>
+                            <input type="number" step="0.0001" id="custo_minuto_operador" required oninput="calcularMinutoMaquina()" class="border p-2 rounded-lg outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Jornada Semanal:</label>
+                            <select id="jornada_semanal" onchange="calcularMinutoMaquina()" class="border p-2 rounded-lg bg-white outline-none">
+                                <option value="44">44 Horas (Padrão)</option>
+                                <option value="36">36 Horas</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Turnos Ativos:</label>
+                            <select id="turnos_trabalho" onchange="calcularMinutoMaquina()" class="border p-2 rounded-lg bg-white outline-none">
+                                <option value="1">1 Turno (Comercial)</option>
+                                <option value="2">2 Turnos (Dobrado)</option>
+                                <option value="3">3 Turnos (24h)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1 bg-blue-50 p-2.5 rounded-lg border border-dashed border-blue-300">
+                        <label class="text-[11px] font-black text-blue-900 uppercase">CUSTO MINUTO MÁQUINA CALCULADO (R$/min):</label>
+                        <input type="number" step="0.0001" id="custo_minuto_maquina" readonly class="w-full bg-slate-200 text-blue-950 font-black p-2 rounded-lg border text-sm outline-none">
+                    </div>
+
+                    <div class="pt-2 flex gap-2">
+                        <button type="submit" id="btn_salvar" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold p-2.5 rounded-lg uppercase tracking-wider text-[11px] transition">💾 Salvar Ativo</button>
+                        <button type="button" id="btn_cancelar" onclick="limparFormularioMaquinas()" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hidden text-[11px]">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+            <!-- QUADRO DIREITO: TABELA DE COMPARAÇÃO CORPORATIVA -->
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm lg:col-span-7">
+                <div class="p-3 bg-gray-800 font-bold text-xs text-white uppercase tracking-wider">Ativos Industriais Cadastrados no Supabase</div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-gray-100 uppercase font-bold text-gray-600 border-b">
+                            <tr>
+                                <th class="p-3">Equipamento / Operador</th>
+                                <th class="p-3">Capacidades e Fluxos</th>
+                                <th class="p-3">Ciclo Mnt.</th>
+                                <th class="p-3">Custo Minuto</th>
+                                <th class="p-3 text-center actions-legal">Ações Legais</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela_maquinas" class="divide-y text-gray-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SEÇÃO INDIVIDUAL: RODAPÉ INSTITUCIONAL, HOMENAGEM E EVOLUÇÃO TECNOLÓGICA -->
+        <footer class="mt-12 pt-6 border-t-2 border-blue-900 text-xs text-gray-500 pb-4 text-justify leading-relaxed font-sans">
+            <p class="mb-4"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p class="text-center font-bold mb-1">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p class="text-center font-black text-blue-900 mb-1">© Copyright Física Renato Pereira ®ψΣ.</p>
+            <p class="text-center text-slate-400">Ed. 00-10/2024. Rev. 01-05/2026.</p>
+        </footer>
+    </div>
+
+    <script src="/static/global_metrics.js"></script>
+    <script src="/maquinas/maquinas.js"></script>
+</body>
+</html>
