@@ -1,1 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Materiais - Cockpit de Almoxarifado</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <script src="https://tailwindcss.com"></script>
+    <style>
+        /* Acessibilidade Visual e Adaptação para Telas e TVs */
+        html { font-size: 16px; transition: font-size 0.15s ease; }
+        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
+        body.dark-mode .card, body.dark-mode .metric-card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        
+        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
+        body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste label { color: #ffff00 !important; }
+        
+        @media print { #barra-acessibilidade, form, header, button, .actions-legal { display: none !important; } body { background-color: #fff; color: #000; } }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800 transition-all duration-200">
 
+    <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
+    <div id="barra-acessibilidade" class="bg-[#0f172a] px-4 py-2 flex flex-col sm:flex-row justify-between items-center text-xs border-b border-[#334155] text-white sticky top-0 z-50 gap-2 select-none">
+        <span class="font-extrabold text-blue-400">®ψΣ TERADMAS</span>
+        <div class="flex flex-wrap gap-2 items-center justify-center">
+            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">⚫ Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">🌙 Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] px-2 py-0.5 rounded font-bold">🔊 Ativar Leitor</button>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 max-w-7xl">
+        
+        <!-- INDICADORES FINANCEIROS PEDAGÓGICOS (FATIADOS PARA O ALMOXARIFADO - 30% DO BUDGET) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-2 font-bold text-sm text-center">
+            <div class="metric-card bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-blue-900 tracking-wider mb-0.5">💰 Capital Total Simulador</p>
+                <h3 class="text-lg text-blue-900 font-black" id="top_capital_total">R$ 0,00</h3>
+            </div>
+            <div class="metric-card bg-purple-50 border border-purple-200 p-4 rounded-xl shadow-sm flex flex-col justify-center items-center">
+                <p class="text-[11px] uppercase text-purple-950 tracking-wider mb-0.5">🏢 Orçamento do Almoxarifado</p>
+                <h3 class="text-lg text-purple-800 font-black" id="top_verba_reais">R$ 0,00</h3>
+                <span class="text-[10px] bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full mt-1 font-mono" id="top_verba_porcentagem">0.00% do Capital</span>
+            </div>
+            <div class="metric-card bg-slate-50 border border-slate-300 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-slate-700 tracking-wider mb-0.5">🔒 Custo Fixo Total</p>
+                <h4 class="text-base text-slate-800 font-black" id="top_custo_fixo">R$ 0,00</h4>
+            </div>
+            <div class="metric-card bg-amber-50 border border-amber-300 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-amber-900 tracking-wider mb-0.5">📈 Valor Imobilizado em Insumos</p>
+                <h4 class="text-base text-amber-700 font-black" id="top_custo_variavel">R$ 0,00</h4>
+            </div>
+        </div>
+        <!-- CABEÇALHO CORPORATIVO RESPONSIVO -->
+        <header class="bg-white border-b border-gray-200 shadow-sm rounded-xl overflow-visible relative z-40 mb-6">
+            <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                    <div class="flex items-center gap-3">
+                        <img src="/static/logo.png" alt="Logo TERADMAS" class="h-16 w-auto object-contain border rounded p-1 shadow-sm">
+                        <div>
+                            <h1 class="text-xl lg:text-2xl font-black text-blue-900 tracking-tight uppercase">TERCEIRO ADM ASSOCIADOS</h1>
+                            <p class="text-xs text-gray-500 font-semibold mt-1">Módulo 10: Cockpit de Almoxarifado, Entrada de Insumos e Lote Econômico</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="alternarMenuMobile()" class="md:hidden text-2xl bg-gray-100 text-slate-800 p-2 rounded-lg font-bold">☰</button>
+                </div>
+            </div>
+
+            <!-- MENU HAMBÚRGUER FLUIDO -->
+            <nav class="hidden md:block bg-blue-950 px-6 py-1 rounded-b-xl border-t border-blue-900 text-white select-none transition-all duration-300" id="menuNavegacao">
+                <ul class="flex flex-col md:flex-row gap-1 lg:gap-4 font-sans text-xs font-bold uppercase tracking-wider">
+                    <li class="relative group py-2 md:py-3 px-2 cursor-pointer hover:bg-blue-900 rounded">
+                        <span class="text-gray-100">🏢 Módulos Iniciais ▼</span>
+                        <ul class="hidden group-hover:block absolute left-0 top-full bg-white text-gray-800 rounded-lg shadow-xl border py-2 w-64 normal-case font-medium z-50">
+                            <li><a href="/estrutura" class="block px-4 py-2 hover:bg-slate-100 text-gray-700">1. Investimentos Imobiliários</a></li>
+                            <li><a href="/maquinas" class="block px-4 py-2 hover:bg-slate-100 text-gray-700">2. Engenharia de Ativos (Máquinas)</a></li>
+                            <li><a href="/materiais" class="block px-4 py-2 hover:bg-slate-100 text-blue-900 font-bold bg-blue-50 border-l-4 border-blue-600">7. Almoxarifado (Materiais)</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="border-b pb-2 mb-4">
+            <h2 class="text-xl font-black text-blue-900 uppercase tracking-tight" id="txt_titulo_pagina">Página 7: Cockpit de Almoxarifado - Gestão de Insumos e Materiais</h2>
+        </div>
+
+        <!-- 🚀 ARQUITETURA LADO A LADO DO ALMOXARIFADO -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- QUADRO ESQUERDO: FORMULÁRIO DE CADASTRO -->
+            <div class="card bg-white p-5 rounded-xl border border-gray-200 shadow-sm lg:col-span-5">
+                <h3 class="text-sm font-black text-blue-900 uppercase tracking-wider mb-4 pb-1 border-b">Entrada de Insumos</h3>
+                <form id="formMaterial" onsubmit="salvarMaterial(event)" class="space-y-3 text-xs">
+                    <input type="hidden" id="registro_id" name="id">
+                    
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-600 uppercase">Insumo Coringa / Matéria-Prima:</label>
+                        <input type="text" id="nome_material" required placeholder="Ex: Chapa de Aço, Farinha de Trigo, Polímero" class="border p-2 rounded-lg outline-none focus:border-blue-600">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Unidade de Medida:</label>
+                            <select id="unidade_medida" class="border p-2 rounded-lg bg-white outline-none">
+                                <option value="KG">Quilos (KG)</option>
+                                <option value="M2">Metros Quadrados (M²)</option>
+                                <option value="UN">Unidades (UN)</option>
+                                <option value="L">Litros (L)</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Classificação ABC:</label>
+                            <select id="classe_abc" class="border p-2 rounded-lg bg-white outline-none">
+                                <option value="A">Classe A (Alto Valor / Crítico)</option>
+                                <option value="B">Classe B (Médio Impacto)</option>
+                                <option value="C">Classe C (Baixo Custo / Alto Giro)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Quantidade Comprada:</label>
+                            <input type="number" id="quantidade_estoque" value="100" min="1" oninput="calcularTotalInsumo()" class="border p-2 rounded-lg outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Preço Unitário (R$):</label>
+                            <input type="number" step="0.01" id="preco_unitario" value="15.50" oninput="calcularTotalInsumo()" class="border p-2 rounded-lg outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Estoque de Segurança (Mín):</label>
+                            <input type="number" id="estoque_seguranca" value="20" class="border p-2 rounded-lg outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Nome do Fornecedor Homologado:</label>
+                            <input type="text" id="fornecedor_nome" required placeholder="Ex: Distribuidora Central" class="border p-2 rounded-lg outline-none">
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1 bg-amber-50 p-2.5 rounded-lg border border-dashed border-amber-300">
+                        <label class="text-[11px] font-black text-amber-900 uppercase">VALOR TOTAL DO LOTE DE AQUISIÇÃO (R$):</label>
+                        <input type="text" id="valor_total_lote" readonly class="w-full bg-amber-100 text-amber-950 font-black p-2 rounded-lg border text-sm outline-none">
+                    </div>
+
+                    <div class="pt-2 flex gap-2">
+                        <button type="submit" id="btn_salvar" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold p-2.5 rounded-lg uppercase tracking-wider text-[11px] transition">🛒 Comprar e Estocar</button>
+                        <button type="button" id="btn_cancelar" onclick="limparFormularioMateriais()" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hidden text-[11px]">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+            <!-- QUADRO DIREITO: TABELA DE INVENTÁRIO CORRENTE -->
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm lg:col-span-7">
+                <div class="p-3 bg-gray-800 font-bold text-xs text-white uppercase tracking-wider">Inventário de Matérias-Primas (Supabase)</div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-gray-100 uppercase font-bold text-gray-600 border-b">
+                            <tr>
+                                <th class="p-3">Descrição / Unidade</th>
+                                <th class="p-3">Giro Curva ABC</th>
+                                <th class="p-3">Qtd em Estoque</th>
+                                <th class="p-3">Custo Total</th>
+                                <th class="p-3 text-center actions-legal">Ações Comerciais</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela_materiais" class="divide-y text-gray-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SEÇÃO: RODAPÉ INSTITUCIONAL, HOMENAGEM E EVOLUÇÃO TECNOLÓGICA -->
+        <footer class="mt-12 pt-6 border-t-2 border-blue-900 text-xs text-gray-500 pb-4 text-justify leading-relaxed font-sans">
+            <p class="mb-4"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p class="text-center font-bold mb-1">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p class="text-center font-black text-blue-900 mb-1">© Copyright Física Renato Pereira ®ψΣ.</p>
+            <p class="text-center text-slate-400">Ed. 00-10/2024. Rev. 01-05/2026.</p>
+        </footer>
+    </div>
+
+    <script src="/static/global_metrics.js"></script>
+    <script src="/materiais/materiais.js"></script>
+</body>
+</html>
