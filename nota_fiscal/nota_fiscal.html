@@ -1,1 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nota Fiscal - Apuração e Emissão Fiscal</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <script src="https://tailwindcss.com"></script>
+    <style>
+        /* Diretrizes Estritas de Acessibilidade Visual WCAG */
+        html { font-size: 16px; transition: font-size 0.15s ease; }
+        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
+        body.dark-mode .card, body.dark-mode .metric-card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        
+        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
+        body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste label { color: #ffff00 !important; }
+        
+        @media print { #barra-acessibilidade, form, header, button, .actions-legal { display: none !important; } body { background-color: #fff; color: #000; } }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800 transition-all duration-200">
 
+    <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
+    <div id="barra-acessibilidade" class="bg-[#0f172a] px-4 py-2 flex flex-col sm:flex-row justify-between items-center text-xs border-b border-[#334155] text-white sticky top-0 z-50 gap-2 select-none">
+        <span class="font-extrabold text-blue-400">®ψΣ TERADMAS</span>
+        <div class="flex flex-wrap gap-2 items-center justify-center">
+            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">⚫ Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">🌙 Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] px-2 py-0.5 rounded font-bold">🔊 Ativar Leitor</button>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 max-w-7xl">
+        
+        <!-- TOPBOARD DE MÉTRICAS GOVERNAMENTAIS E ARRECADAÇÃO TRIBUTÁRIA DO ERPPADRAO -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-2 font-bold text-sm text-center">
+            <div class="metric-card bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-blue-900 tracking-wider mb-0.5">💰 Faturamento Bruto Total</p>
+                <h3 class="text-lg text-blue-900 font-black" id="top_faturamento_bruto">R$ 0,00</h3>
+            </div>
+            <div class="metric-card bg-red-50 border border-red-200 p-4 rounded-xl shadow-sm flex flex-col justify-center items-center">
+                <p class="text-[11px] uppercase text-red-900 tracking-wider mb-0.5">🏢 Total de Impostos Retidos</p>
+                <h3 class="text-lg text-red-700 font-black" id="top_total_impostos">R$ 0,00</h3>
+                <span class="text-[10px] bg-red-200 text-red-900 px-2 py-0.5 rounded-full mt-1 font-mono" id="top_carga_tributaria_media">Carga Média: 0.00%</span>
+            </div>
+            <div class="metric-card bg-slate-50 border border-slate-300 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-slate-700 tracking-wider mb-0.5">🔒 Notas Fiscais Emitidas</p>
+                <h4 class="text-base text-slate-800 font-black" id="top_nfe_qtd">0 Notas (NF-e)</h4>
+            </div>
+            <div class="metric-card bg-emerald-50 border border-emerald-300 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-emerald-900 tracking-wider mb-0.5">🟩 Receita Líquida (Pós-Tributos)</p>
+                <h4 class="text-base text-emerald-700 font-black" id="top_receita_liquida">R$ 0,00</h4>
+            </div>
+        </div>
+        <!-- CABEÇALHO CORPORATIVO RESPONSIVO -->
+        <header class="bg-white border-b border-gray-200 shadow-sm rounded-xl overflow-visible relative z-40 mb-6">
+            <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                    <div class="flex items-center gap-3">
+                        <img src="/static/logo.png" alt="Logo TERADMAS" class="h-16 w-auto object-contain border rounded p-1 shadow-sm">
+                        <div>
+                            <h1 class="text-xl lg:text-2xl font-black text-blue-900 tracking-tight uppercase">TERCEIRO ADM ASSOCIADOS</h1>
+                            <p class="text-xs text-gray-500 font-semibold mt-1">Módulo 11: Emissão de Documentos Fiscais Eletrônicos (NF-e) e Apuração de Carga Tributária</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="alternarMenuMobile()" class="md:hidden text-2xl bg-gray-100 text-slate-800 p-2 rounded-lg font-bold">☰</button>
+                </div>
+            </div>
+
+            <!-- MENU HAMBÚRGUER FLUIDO -->
+            <nav class="hidden md:block bg-blue-950 px-6 py-1 rounded-b-xl border-t border-blue-900 text-white select-none transition-all duration-300" id="menuNavegacao">
+                <ul class="flex flex-col md:flex-row gap-1 lg:gap-4 font-sans text-xs font-bold uppercase tracking-wider">
+                    <li class="relative group py-2 md:py-3 px-2 cursor-pointer hover:bg-blue-900 rounded">
+                        <span class="text-gray-100">🏢 Módulos Iniciais ▼</span>
+                        <ul class="hidden group-hover:block absolute left-0 top-full bg-white text-gray-800 rounded-lg shadow-xl border py-2 w-64 normal-case font-medium z-50">
+                            <li><a href="/vendas" class="block px-4 py-2 hover:bg-slate-100 text-gray-700">10. Painel de Vendas Comerciais</a></li>
+                            <li><a href="/nota_fiscal" class="block px-4 py-2 hover:bg-slate-100 text-blue-900 font-bold bg-blue-50 border-l-4 border-blue-600">11. Emissão de Notas Fiscais</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="border-b pb-2 mb-4">
+            <h2 class="text-xl font-black text-blue-900 uppercase tracking-tight" id="txt_titulo_pagina">Página 11: Escrituração Fiscal - Emissão de NF-e Detalhada por Origem e Destino</h2>
+        </div>
+
+        <!-- 🚀 ARQUITETURA LADO A LADO DO COMPLEXO TRIBUTÁRIO -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- QUADRO ESQUERDO: CONFIGURADOR DE ALÍQUOTAS E SELEÇÃO DE PEDIDO -->
+            <div class="card bg-white p-5 rounded-xl border border-gray-200 shadow-sm lg:col-span-5">
+                <h3 class="text-sm font-black text-blue-900 uppercase tracking-wider mb-4 pb-1 border-b">📝 Apuração e Emissão de Cláusula Fiscal</h3>
+                <form id="formNotaFiscal" onsubmit="transmitirNotaFiscal(event)" class="space-y-3 text-xs">
+                    
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-600 uppercase">Vincular Transação Comercial / Pedido Disponível:</label>
+                        <select id="nfe_venda_id" onchange="buscarDetalhesFaturamentoVenda()" class="border p-2 rounded-lg bg-white outline-none" required>
+                            <option value="">-- Carregando Pedidos Faturados do Supabase --</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded-lg border border-dashed">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-blue-900 uppercase">Cliente Destinatário:</label>
+                            <input type="text" id="nfe_cliente_nome" readonly class="bg-gray-200 p-2 rounded-lg font-bold text-gray-700 border outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-blue-900 uppercase">Região Logística (ICMS):</label>
+                            <input type="text" id="nfe_cliente_regiao" readonly class="bg-gray-200 p-2 rounded-lg font-bold text-gray-700 border outline-none">
+                        </div>
+                    </div>
+
+                    <!-- SUB-BLOCO MUNICIPAL E ESTADUAL -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Alíquota Municipal ISSQN (%):</label>
+                            <input type="number" step="0.1" id="aliq_issqn" value="5.0" min="0" max="5" oninput="calcularParametrosFiscaisInLoco()" class="border p-2 rounded-lg outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Alíquota Estadual ICMS (%):</label>
+                            <input type="number" step="0.1" id="aliq_icms" value="18.0" min="0" max="25" oninput="calcularParametrosFiscaisInLoco()" class="border p-2 rounded-lg outline-none font-bold text-orange-700 bg-orange-50">
+                        </div>
+                    </div>
+
+                    <!-- SUB-BLOCO FEDERAL (PIS / COFINS) -->
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Alíquota Federal PIS (%):</label>
+                            <input type="number" step="0.01" id="aliq_pis" value="1.65" oninput="calcularParametrosFiscaisInLoco()" class="border p-2 rounded-lg outline-none">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Alíquota Federal COFINS (%):</label>
+                            <input type="number" step="0.01" id="aliq_cofins" value="7.60" oninput="calcularParametrosFiscaisInLoco()" class="border p-2 rounded-lg outline-none">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-1 bg-red-50 p-2.5 rounded-lg border border-dashed border-red-300">
+                        <label class="text-[11px] font-black text-red-900 uppercase">IMPOSTOS TRIBUTÁRIOS TOTAIS EM REAIS (R$):</label>
+                        <input type="text" id="nfe_imposto_reais_display" readonly class="w-full bg-red-100 text-red-950 font-black p-2 rounded-lg border text-sm outline-none font-mono">
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-black p-3 rounded-lg uppercase tracking-wider text-[11px] transition shadow-md">
+                        ⚡ Transmitir NF-e ao Fisco Governamental SEFAZ
+                    </button>
+                </form>
+            </div>
+            <!-- QUADRO DIREITO: LIVRO DE ESCRITURAÇÃO FISCAL -->
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm lg:col-span-7">
+                <div class="p-3 bg-gray-800 font-bold text-xs text-white uppercase tracking-wider">📊 Livro do Registro Geral de Saídas e Apuração de Impostos</div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-gray-100 uppercase font-bold text-gray-600 border-b">
+                            <tr>
+                                <th class="p-3">Chave / Destinatário</th>
+                                <th class="p-3">Base de Cálculo</th>
+                                <th class="p-3">Discriminação Fed./Est./Mun. (R$)</th>
+                                <th class="p-3">Carga Retida</th>
+                                <th class="p-3 text-center actions-legal">Certidões</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela_nota_fiscal" class="divide-y text-gray-700">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- SEÇÃO: RODAPÉ INSTITUCIONAL COM ASSINATURA PEDAGÓGICA ®ψΣ -->
+        <footer class="mt-12 pt-6 border-t-2 border-blue-900 text-xs text-gray-500 pb-4 text-justify leading-relaxed font-sans">
+            <p class="mb-4"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p class="text-center font-bold mb-1">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p class="text-center font-black text-blue-900 mb-1">© Copyright Física Renato Pereira ®ψΣ.</p>
+            <p class="text-center text-slate-400">Ed. 00-10/2024. Rev. 01-05/2026.</p>
+        </footer>
+    </div>
+
+    <script src="/static/global_metrics.js"></script>
+    <script src="/nota_fiscal/nota_fiscal.js"></script>
+</body>
+</html>
