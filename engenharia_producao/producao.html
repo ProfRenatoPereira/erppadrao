@@ -1,1 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engenharia de Produção - Chão de Fábrica</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <script src="https://tailwindcss.com"></script>
+    <style>
+        /* Acessibilidade Visual Avançada para Smart TVs e Telões */
+        html { font-size: 16px; transition: font-size 0.15s ease; }
+        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
+        body.dark-mode .card, body.dark-mode .metric-card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        
+        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
+        body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste label { color: #ffff00 !important; }
+        
+        @media print { #barra-acessibilidade, form, header, button, .actions-legal { display: none !important; } body { background-color: #fff; color: #000; } }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800 transition-all duration-200">
 
+    <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
+    <div id="barra-acessibilidade" class="bg-[#0f172a] px-4 py-2 flex flex-col sm:flex-row justify-between items-center text-xs border-b border-[#334155] text-white sticky top-0 z-50 gap-2 select-none">
+        <span class="font-extrabold text-blue-400">®ψΣ TERADMAS</span>
+        <div class="flex flex-wrap gap-2 items-center justify-center">
+            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">⚫ Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">🌙 Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] px-2 py-0.5 rounded font-bold">🔊 Ativar Leitor</button>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 max-w-7xl">
+        
+        <!-- TOPBOARD DE MÉTRICAS OPERACIONAIS OEE -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-2 font-bold text-sm text-center">
+            <div class="metric-card bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-blue-900 tracking-wider mb-0.5">💰 Caixa de Giro Disponível</p>
+                <h3 class="text-lg text-blue-900 font-black" id="top_giro_global">R$ 0,00</h3>
+            </div>
+            <div class="metric-card bg-purple-50 border border-purple-200 p-4 rounded-xl shadow-sm flex flex-col justify-center items-center">
+                <p class="text-[11px] uppercase text-purple-950 tracking-wider mb-0.5">🏭 Ordens de Produção (Backlog)</p>
+                <h3 class="text-lg text-purple-800 font-black" id="top_op_total">0 OPs</h3>
+                <span class="text-[10px] bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full mt-1 font-mono" id="top_op_andamento">0 Em Execução</span>
+            </div>
+            <div class="metric-card bg-slate-50 border border-slate-300 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-slate-700 tracking-wider mb-0.5">🔒 Eficiência de Processo (OEE)</p>
+                <h4 class="text-base text-slate-800 font-black">94.8%</h4>
+            </div>
+            <div class="metric-card bg-emerald-50 border border-emerald-300 p-4 rounded-xl shadow-sm">
+                <p class="text-[11px] uppercase text-emerald-900 tracking-wider mb-0.5">🟩 Total Fabricado e Estocado</p>
+                <h4 class="text-base text-emerald-700 font-black" id="top_total_produzido">0 unidades</h4>
+            </div>
+        </div>
+        <!-- CABEÇALHO CORPORATIVO RESPONSIVO -->
+        <header class="bg-white border-b border-gray-200 shadow-sm rounded-xl overflow-visible relative z-40 mb-6">
+            <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
+                    <div class="flex items-center gap-3">
+                        <img src="/static/logo.png" alt="Logo TERADMAS" class="h-14 w-auto object-contain border rounded p-1 shadow-sm">
+                        <div>
+                            <h1 class="text-lg font-black text-blue-900 tracking-tight uppercase">TERCEIRO ADM ASSOCIADOS</h1>
+                            <p class="text-xs text-gray-500 font-semibold mt-1">Módulo 12: Engenharia de Produção, Sequenciamento de Lotes e Cronoanálise</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="alternarMenuMobile()" class="md:hidden text-2xl bg-gray-100 text-slate-800 p-2 rounded-lg font-bold">☰</button>
+                </div>
+            </div>
+            <nav class="hidden md:block bg-blue-950 px-6 py-1 rounded-b-xl border-t border-blue-900 text-white select-none" id="menuNavegacao">
+                <ul class="flex flex-col md:flex-row gap-1 lg:gap-4 font-sans text-xs font-bold uppercase tracking-wider">
+                    <li class="py-2 px-2 cursor-pointer hover:bg-blue-900 rounded"><a href="/maquinas" class="text-gray-100">2. Engenharia de Ativos</a></li>
+                    <li class="py-2 px-2 cursor-pointer hover:bg-blue-900 rounded"><a href="/produtos" class="text-gray-100">8. Engenharia de Produto</a></li>
+                    <li class="py-2 px-2 cursor-pointer hover:bg-blue-900 rounded"><a href="/engenharia_producao" class="text-blue-400 font-bold">12. Engenharia de Produção</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <div class="border-b pb-2 mb-4"><h2 class="text-xl font-black text-blue-900 uppercase tracking-tight">Página 12: Chão de Fábrica - Gestão e Acompanhamento de Ordens de Produção (OP)</h2></div>
+
+        <!-- ARQUITETURA LADO A LADO DO CHÃO DE FÁBRICA -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            <!-- QUADRO ESQUERDO: ABERTURA DE ORDEM -->
+            <div class="card bg-white p-5 rounded-xl border border-gray-200 shadow-sm lg:col-span-5">
+                <h3 class="text-xs font-black text-blue-900 uppercase tracking-wider mb-4 pb-1 border-b">Abertura de Ordem de Produção</h3>
+                <form id="formProducao" onsubmit="lancarOrdemProducao(event)" class="space-y-3 text-xs">
+                    <input type="hidden" id="registro_id" value="">
+                    
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-600 uppercase">Item Final a Fabricar (Catálogo):</label>
+                        <select id="prod_produto_id" class="border p-2 rounded-lg bg-white outline-none" required>
+                            <option value="">-- Selecione o Produto --</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Tamanho do Lote (Qtd):</label>
+                            <input type="number" id="prod_quantidade" value="20" min="1" class="border p-2 rounded-lg outline-none font-bold">
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <label class="font-bold text-gray-600 uppercase">Regime de Prioridade:</label>
+                            <select id="prod_prioridade" class="border p-2 rounded-lg bg-white outline-none">
+                                <option value="Normal">Normal (MTS - Estoque)</option>
+                                <option value="Urgente">Urgente (MTO - Sob Pedido)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="font-bold text-gray-600 uppercase">Data Limite de Conclusão / Lead Time:</label>
+                        <input type="date" id="prod_data_limite" required class="border p-2 rounded-lg outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-black p-3 rounded-lg uppercase tracking-wider text-[11px] transition shadow">
+                        ⚙️ Emitir OP e Carregar Postos de Trabalho
+                    </button>
+                </form>
+            </div>
+
+            <!-- QUADRO DIREITO: TABELA DE ROTEIROS E BACKLOG -->
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm lg:col-span-7">
+                <div class="p-3 bg-gray-800 font-bold text-xs text-white uppercase tracking-wider">📋 Monitor Geral das Filas de Processamento Industrial</div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-gray-100 uppercase font-bold text-gray-600 border-b">
+                            <tr>
+                                <th class="p-3">Código OP / Item SKU</th>
+                                <th class="p-3">Lote Alocado</th>
+                                <th class="p-3">Prioridade</th>
+                                <th class="p-3">Status Atual</th>
+                                <th class="p-3 text-center actions-legal">Gatilhos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela_producao" class="divide-y text-gray-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <script src="/engenharia_producao/producao.js"></script>
+</body>
+</html>
