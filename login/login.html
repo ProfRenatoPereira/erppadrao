@@ -16,6 +16,30 @@
         body.alto-contraste .card-login { background-color: #000000 !important; border: 3px solid #ffffff !important; }
         body.alto-contraste input { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
         body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; font-weight: bold !important; }
+
+
+ 
+        /* Importação Direta e Segura do Tailwind */
+        @import url('https://cloudflare.com');
+
+        /* Estrutura de Layout e Transições */
+        html { font-size: 16px; transition: font-size 0.15s ease; }
+        body { background-color: #f3f4f6; font-family: ui-sans-serif, system-ui, sans-serif; }
+
+        /* Classes Customizadas para o Módulo de Login */
+        .login-card { background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.25rem; }
+        
+        /* 🌙 Configurações para o Modo Escuro */
+        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
+        body.dark-mode .login-card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode input { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+
+        /* ⚫ Configurações para o Modo Alto Contraste */
+        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
+        body.alto-contraste .login-card { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste input { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; font-weight: bold !important; border: 2px solid #000000 !important; }
+  
     </style>
 </head>
 <body class="bg-gray-100 flex flex-col min-h-screen font-sans antialiased transition-all duration-200">
