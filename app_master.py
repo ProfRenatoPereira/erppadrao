@@ -21,7 +21,7 @@ from login.app_login import login_blueprint
 from configuracao.app_configuracao import configuracao_blueprint
 from estrutura.app_estrutura import estrutura_blueprint
 from maquinas.app_maquinas import maquinas_blueprint
-from materiais.app_materials import materiais_blueprint
+from materiais.app_materiais import materiais_blueprint
 from processos.app_processos import processos_blueprint
 from produtos.app_produtos import produtos_blueprint
 from precificacao.app_precificacao import precificacao_blueprint
