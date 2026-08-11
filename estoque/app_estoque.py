@@ -60,7 +60,8 @@ def api_salvar_estoque():
     cursor.close()
     conexao.close()
     return jsonify({'status': 'sucesso'})
-  @estoque_blueprint.route('/api/estoque/listar', methods=['GET'])
+
+@estoque_blueprint.route('/api/estoque/listar', methods=['GET'])
 def api_listar_estoque():
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
@@ -74,7 +75,7 @@ def api_listar_estoque():
     
     cursor.close()
     conexao.close()
-    return jsonify([dict(linha) for linha in linhas])
+    return jsonify([dict(linha) for line in linhas])
 
 @estoque_blueprint.route('/api/estoque/buscar/<int:id_reg>', methods=['GET'])
 def api_buscar_estoque_id(id_reg):
