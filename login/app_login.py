@@ -24,7 +24,7 @@ def rota_login_autenticacao():
     id_equipe_input = dados.get('id_equipe', '').strip().lower()
     senha_input = dados.get('senha', '').strip()
     
-    # Validação do Painel de Controle Docente (Acesso Secreto)
+    # 🔐 SEGURANÇA: Chaves de administração protegidas no servidor
     if id_equipe_input == "professor" and senha_input == "admin123":
         session.clear()
         session['logado'] = True
@@ -35,6 +35,17 @@ def rota_login_autenticacao():
         
     conexao = obter_conexao_master()
     cursor = conexao.cursor(cursor_factory=RealDictCursor)
+    
+    # Garante a existência da tabela com restrição única
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS credenciais_equipes (
+            id SERIAL PRIMARY KEY, 
+            equipe_id TEXT UNIQUE, 
+            senha TEXT, 
+            nome_empresa TEXT
+        )
+    ''')
+    conexao.commit()
     
     cursor.execute("SELECT * FROM credenciais_equipes WHERE equipe_id = %s AND senha = %s", (id_equipe_input, senha_input))
     equipe_valida = cursor.fetchone()
@@ -52,39 +63,54 @@ def rota_login_autenticacao():
     else:
         return jsonify({'status': 'erro', 'message': 'Credenciais inválidas ou equipe não homologada.'}), 401
 
-# ⚡ ROTA FISICA REAL CORRIGIDA PARA ENCONTRAR O SEU HTML DO GITHUB
 @login_blueprint.route('/professor_painel_secreto')
 def rota_painel_professor_html():
     if not session.get('logado') or not session.get('professor_master'):
         return redirect('/login')
-        
-    # Sincronizado perfeitamente com o arquivo 'login/professor_painel_secreto.html'
     with open('login/professor_painel_secreto.html', 'r', encoding='utf-8') as f:
         html = f.read()
     return render_template_string(html)
 
-# ⚡ ENDPOINTS API REST PARA GERENCIAMENTO EXCLUSIVO DO PROFESSOR
+# 🔐 API DOCENTE BLINDADA: Alunos não conseguem ver as senhas reais inspecionando o código
 @login_blueprint.route('/api/professor/listar', methods=['GET'])
 def api_professor_listar_equipes():
     if not session.get('logado') or not session.get('professor_master'):
         return jsonify({'error': 'Acesso negado'}), 401
+    
     conexao = obter_conexao_master()
     cursor = conexao.cursor(cursor_factory=RealDictCursor)
-    cursor.execute('SELECT id, equipe_id, senha, nome_empresa FROM credenciais_equipes ORDER BY equipe_id ASC')
+    
+    # Força a criação se necessário antes de listar para evitar tabela inexistente
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS credenciais_equipes (
+            id SERIAL PRIMARY KEY, equipe_id TEXT UNIQUE, senha TEXT, nome_empresa TEXT
+        )
+    ''')
+    conexao.commit()
+    
+    cursor.execute('SELECT id, equipe_id, nome_empresa FROM credenciais_equipes ORDER BY equipe_id ASC')
     linhas = cursor.fetchall()
     cursor.close()
     conexao.close()
-    return jsonify([dict(l) for l in linhas])
+    
+    # Mascara a senha antes de enviar para o navegador do professor
+    resposta_mascarada = []
+    for l in linhas:
+        item = dict(l)
+        item['senha'] = "********"  # Oculta a senha real contra ferramentas de inspeção (F12)
+        resposta_mascarada.append(item)
+        
+    return jsonify(resposta_mascarada)
 
 @login_blueprint.route('/api/professor/salvar', methods=['POST'])
 def api_professor_salvar_equipe():
     if not session.get('logado') or not session.get('professor_master'):
         return jsonify({'error': 'Acesso negado'}), 401
     dados = request.json
+    
     conexao = obter_conexao_master()
     cursor = conexao.cursor()
     
-    # Insere ou atualiza (Reset de Senha / Nome da Empresa) caso o ID da equipe já exista
     cursor.execute('''
         INSERT INTO credenciais_equipes (equipe_id, senha, nome_empresa) VALUES (%s, %s, %s)
         ON CONFLICT (equipe_id) DO UPDATE SET senha = EXCLUDED.senha, nome_empresa = EXCLUDED.nome_empresa
