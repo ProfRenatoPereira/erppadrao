@@ -1,64 +1,77 @@
-# login/app_login.py
-from flask import Blueprint, request, render_template_string, session, redirect
+# erppadrao - login/app_login.py
+from flask import Blueprint, request, render_template_string, session, jsonify, redirect
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 login_blueprint = Blueprint('login_blueprint', __name__)
 
-# Banco de dados pedagógico de credenciais por equipes de trabalho
-EQUIPES_PERMITIDAS = {
-    "equipe_alfa": "teradmas2026",
-    "equipe_beta": "teradmas2026",
-    "equipe_gama": "teradmas2026",
-    "admin": "admin123"
-}
+def obter_conexao_master():
+    # Puxa dinamicamente a string do Supabase unificada no app_master
+    from app_master import URL_SUPABASE
+    return psycopg2.connect(URL_SUPABASE)
 
-@login_blueprint.route('/login', methods=['POST'])
-def processar_login_equipe():
-    usuario = request.form.get('usuario', '').strip().lower()
-    senha = request.form.get('senha', '')
-    
-    if usuario in EQUIPES_PERMITIDAS and EQUIPES_PERMITIDAS[usuario] == str(senha):
-        # Consolida a segurança e o isolamento de chaves
-        session['logado'] = True
-        session['id_equipe'] = usuario
-        session['nome_empresa'] = usuario.replace('_', ' ').upper()
-        return redirect('/')
-    else:
-        # Devolve o erro didático diretamente para a tela de login
+@login_blueprint.route('/login', methods=['GET', 'POST'])
+def rota_login_autenticacao():
+    # 1. TRATAMENTO DO TRÁFEGO GET: Renderiza a página física de login na tela
+    if request.method == 'GET':
+        if session.get('logado'):
+            return redirect('/grid')
         with open('login/login.html', 'r', encoding='utf-8') as f:
             html = f.read()
-        return render_template_string(html, erro="Credenciais Inválidas! Chave de acesso recusada pelo sistema.")
-# ... (mantenha o código anterior de processar_login_equipe) ...
-
-@login_blueprint.route('/professor_painel_secreto')
-def painel_secreto_professor():
-    # Rota secreta de contingência
-    with open('login/professor_painel_secreto.html', 'r', encoding='utf-8') as f:
-        html = f.read()
-    return render_template_string(html)
-
-@login_blueprint.route('/api/professor/senhas', methods=['GET'])
-def api_listar_senhas_professor():
-    # Expõe o dicionário de senhas atual para auditoria em tempo real do docente
-    return jsonify(EQUIPES_PERMITIDAS)
-
-@login_blueprint.route('/api/professor/resetar-senha', methods=['POST'])
-def api_resetar_senha_equipe():
+        return render_template_string(html)
+        
+    # 2. TRATAMENTO DO TRÁFEGO POST: Processa a validação AJAX enviada pela turma
     dados = request.json
-    usuario = dados.get('usuario')
-    nova_senha = dados.get('nova_senha')
+    id_equipe_input = dados.get('id_equipe', '').strip().lower()
+    senha_input = dados.get('senha', '').strip()
     
-    if usuario in EQUIPES_PERMITIDAS:
-        # Altera a senha em tempo de execução
-        EQUIPES_PERMITIDAS[usuario] = str(nova_senha)
-        return jsonify({'status': 'sucesso'})
-    return jsonify({'status': 'erro'}), 400
-
-@login_blueprint.route('/login/forçar-acesso')
-def forcar_acesso_contingencia():
-    usuario = request.args.get('usuario')
-    if usuario in EQUIPES_PERMITIDAS:
+    # Validação do Painel de Controle Docente (Acesso Secreto do Professor)
+    if id_equipe_input == "professor" and senha_input == "admin123":
+        session.clear()
         session['logado'] = True
-        session['id_equipe'] = usuario
-        session['nome_empresa'] = usuario.replace('_', ' ').upper()
-        return redirect('/')
-    return "Equipe não localizada.", 404
+        session['id_equipe'] = 'professor'
+        session['nome_empresa'] = 'PAINEL DE CONTROLE DOCENTE'
+        session['professor_master'] = True
+        return jsonify({'status': 'sucesso', 'redirecionar': '/professor_painel_secreto'})
+        
+    conexao = obter_conexao_master()
+    cursor = conexao.cursor(cursor_factory=RealDictCursor)
+    
+    # Inicia a tabela de credenciais estudantis se não existir no Supabase
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS credenciais_equipes (
+            id SERIAL PRIMARY KEY, equipe_id TEXT UNIQUE, senha TEXT, nome_empresa TEXT
+        )
+    ''')
+    
+    # Injeta dados de teste coringa se a tabela estiver completamente vazia na primeira aula
+    cursor.execute("SELECT COUNT(*) as total FROM credenciais_equipes")
+    if cursor.fetchone()['total'] == 0:
+        cursor.execute('''
+            INSERT INTO credenciais_equipes (equipe_id, senha, nome_empresa) VALUES 
+            ('equipe_alfa', 'alfa123', 'METALÚRGICA ALFA S.A.'),
+            ('equipe_beta', 'beta123', 'CONFEITARIA BETA LTDA')
+        ''')
+        conexao.commit()
+
+    # Executa a busca de segurança cruzando ID e Senha informados
+    cursor.execute("SELECT * FROM credenciais_equipes WHERE equipe_id = %s AND senha = %s", (id_equipe_input, senha_input))
+    equipe_valida = cursor.fetchone()
+    
+    cursor.close()
+    conexao.close()
+    
+    if equipe_valida:
+        session.clear()
+        session.permanent = True  # Ativa a capabilidade de 7 dias configurada no app_master
+        session['logado'] = True
+        session['id_equipe'] = equipe_valida['equipe_id']
+        session['nome_empresa'] = equipe_valida['nome_empresa'].upper()
+        return jsonify({'status': 'sucesso', 'redirecionar': '/grid'})
+    else:
+        return jsonify({'status': 'erro', 'message': 'Credenciais inválidas ou equipe não homologada.'}), 401
+
+@login_blueprint.route('/logout')
+def rota_logout_estudantil():
+    session.clear()
+    return redirect('/login')
