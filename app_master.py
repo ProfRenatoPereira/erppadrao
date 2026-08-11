@@ -4,13 +4,16 @@ from flask import Flask, session, jsonify, request, redirect, render_template_st
 from datetime import timedelta
 from whitenoise import WhiteNoise
 
-# ⚡ CREDENCIAIS UNIFICADAS DE CONEXÃO COM O SUPABASE (POSTGRESQL)
-URL_SUPABASE = "postgresql://postgres:sua_senha_secreta@db.supabase.co:5432/postgres"
+# ⚡ BLINDAGEM CONTRA ALUNOS: O Python lê a chave de forma invisível no Render.
+# Se algum estudante vasculhar o repositório GitHub, verá apenas este código genérico.
+URL_SUPABASE = os.environ.get(
+    "DATABASE_URL", 
+    "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
+)
 
-# Inicializa o Flask definindo explicitamente a pasta static
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# ⚡ ATIVAÇÃO DIRETA E SIMPLIFICADA DO WHITENOISE PARA PRODUÇÃO
+# Ativação do WhiteNoise para servir os arquivos estáticos locais de forma direta
 app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
 
 # Configurações de Segurança e Persistência de Sessão de Aula para Aula
