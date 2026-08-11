@@ -1,87 +1,119 @@
-<!-- login/login.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERP Acadêmico - Autenticação</title>
-    <link rel="icon" type="image/png" href="static/logo.png">
-    <script src="https://tailwindcss.com"></script>
+    <title>ERP Acadêmico - Login</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
     <style>
+        /* Regras globais de Acessibilidade Visual */
+        html, body { margin: 0; padding: 0; box-sizing: border-box; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; }
+        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; }
+        .input-form { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; margin-top: 4px; font-size: 13px; }
+        .btn-submit { width: 100%; background-color: #1e3a8a; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-submit:hover { background-color: #172554; }
+        
+        /* Modos Visuais */
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .card-login { background-color: #1e293b !important; border-color: #334155 !important; }
-        body.dark-mode input { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        body.dark-mode .container-box { background-color: #1e293b !important; border-color: #334155 !important; }
+        body.dark-mode .input-form { background-color: #0f172a !important; color: white !important; border-color: #334155 !important; }
         
         body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-        body.alto-contraste .card-login { background-color: #000000 !important; border: 3px solid #ffffff !important; }
-        body.alto-contraste input { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; font-weight: bold !important; }
-
-
- 
-        /* Importação Direta e Segura do Tailwind */
-        @import url('https://cloudflare.com');
-
-        /* Estrutura de Layout e Transições */
-        html { font-size: 16px; transition: font-size 0.15s ease; }
-        body { background-color: #f3f4f6; font-family: ui-sans-serif, system-ui, sans-serif; }
-
-        /* Classes Customizadas para o Módulo de Login */
-        .login-card { background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 1.25rem; }
-        
-        /* 🌙 Configurações para o Modo Escuro */
-        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .login-card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
-        body.dark-mode input { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
-
-        /* ⚫ Configurações para o Modo Alto Contraste */
-        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-        body.alto-contraste .login-card { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
-        body.alto-contraste input { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; font-weight: bold !important; border: 2px solid #000000 !important; }
-  
+        body.alto-contraste .container-box { background-color: #000000 !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste .input-form { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste .btn-submit { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste label { color: #ffff00 !important; }
     </style>
 </head>
-<body class="bg-gray-100 flex flex-col min-h-screen font-sans antialiased transition-all duration-200">
+<body style="min-height: 100vh; display: flex; flex-direction: column; transition: all 0.2s ease;">
 
-    <!-- BARRA TOP DE ACESSIBILIDADE DO LOGIN -->
-    <div id="barra-acessibilidade" class="bg-[#0f172a] px-4 py-2 flex justify-between items-center text-xs border-b border-[#334155] text-white">
-        <span class="font-extrabold text-blue-400">®ψΣ TERADMAS</span>
-        <div class="flex gap-2">
-            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">⚫ Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">🌙 Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] px-2 py-0.5 rounded font-bold">🔊 Ativar Leitor</button>
+    <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
+    <div style="background-color: #0f172a; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-b: 1px solid #334155; color: white; font-size: 12px;">
+        <span style="font-weight: bold; color: #38bdf8;">®ψΣ TERADMAS</span>
+        <div style="display: flex; align-items: center;">
+            <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
     </div>
 
-    <!-- CONTAINER CENTRALIZADO DO FORMULÁRIO -->
-    <div class="flex-grow flex items-center justify-center p-4">
-        <div class="card-login bg-white p-8 rounded-2xl shadow-xl border border-gray-200 max-w-md w-full text-center transition-all">
-            <h1 class="text-xl font-black text-blue-900 tracking-wide uppercase leading-tight" id="txt_titulo">TERCEIRO ADM ASSOCIADOS</h1>
-            <h2 class="text-md font-bold text-gray-750 mt-2 mb-1" id="txt_sub">Acesso ao ERP Acadêmico</h2>
-            <p class="text-xs text-gray-500 mb-6" id="txt_desc">Insira o identificador exclusivo da sua equipe para restaurar a capabilidade da sua empresa.</p>
+    <!-- ÁREA CENTRAL LOGADO -->
+    <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 16px;">
+        <div class="container-box" style="background-color: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-width: 450px; padding: 24px;">
             
-            <!-- Mensagem dinâmica de erro capturada do Flask -->
-            {% if erro %}
-            <p class="text-xs bg-red-100 text-red-700 p-2.5 rounded-lg mb-4 font-bold border border-red-200" id="msg_erro">{{ erro }}</p>
-            {% endif %}
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="color: #1e3a8a; font-size: 22px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -0.5px;">TERCEIRO ADM ASSOCIADOS</h1>
+                <h2 style="font-size: 14px; font-weight: bold; color: #4b5563; margin-top: 4px; margin-bottom: 0;">Acesso ao ERP Acadêmico</h2>
+            </div>
 
-            <form action="/login" method="POST" class="space-y-4 text-left text-sm">
+            <p style="font-size: 11px; color: #6b7280; line-height: 1.5; margin-bottom: 16px; text-align: justify;">
+                Insira o identificador exclusivo da sua equipe para restaurar a capabilidade operacional e gerencial da sua empresa simulada.
+            </p>
+
+            <form id="formLogin" onsubmit="executarAutenticacaoEstudantil(event)" style="display: flex; flex-direction: column; gap: 12px;">
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Identificador da Equipe (Usuário):</label>
-                    <input type="text" name="usuario" id="campo_usuario" required placeholder="Ex: equipe_alfa" class="w-full border p-2.5 rounded-lg bg-slate-50 outline-none focus:border-blue-600 transition">
+                    <label style="font-size: 10px; font-weight: bold; color: #4b5563; text-transform: uppercase;">Identificador da Equipe (Usuário):</label>
+                    <input type="text" id="id_equipe" required placeholder="Ex: equipe_alfa" class="input-form">
                 </div>
+                
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Chave de Acesso (Senha):</label>
-                    <input type="password" name="senha" id="campo_senha" required placeholder="••••••••" class="w-full border p-2.5 rounded-lg bg-slate-50 outline-none focus:border-blue-600 transition">
+                    <label style="font-size: 10px; font-weight: bold; color: #4b5563; text-transform: uppercase;">Chave de Acesso (Senha):</label>
+                    <input type="password" id="senha" required placeholder="••••••••" class="input-form">
                 </div>
-                <button type="submit" id="btn_validar" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow-md transition duration-200 uppercase tracking-wider text-xs">Validar Credenciais de Acesso</button>
+
+                <button type="submit" class="btn-submit">Validar Credenciais de Acesso</button>
             </form>
         </div>
     </div>
 
-    <script src="/login/login.js"></script>
+    <script>
+        let tamanhoFonteAtual = 16;
+        let leitorAtivo = false;
+
+        function mudarFonte(dir) {
+            tamanhoFonteAtual += dir;
+            document.documentElement.style.fontSize = Math.max(12, Math.min(24, tamanhoFonteAtual)) + 'px';
+        }
+        function alternarModoEscuro() { 
+            document.body.classList.toggle('dark-mode'); 
+            const btn = document.getElementById('btn_tema');
+            btn.innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
+        }
+        function alternarAltoContraste() { document.body.classList.toggle('alto-contraste'); }
+
+        function alternarLeitorAudio() {
+            leitorAtivo = !leitorAtivo;
+            document.getElementById('btn-leitor-audio').innerText = leitorAtivo ? "🔇 Desativar Leitor" : "🔊 Ativar Leitor";
+            if (leitorAtivo) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance("Acesso ao ERP Acadêmico aberto. Insira o usuário e a senha da sua equipe para entrar.");
+                utterance.lang = 'pt-BR';
+                window.speechSynthesis.speak(utterance);
+            } else { window.speechSynthesis.cancel(); }
+        }
+
+        async function executarAutenticacaoEstudantil(e) {
+            e.preventDefault();
+            const dados = {
+                id_equipe: document.getElementById('id_equipe').value,
+                senha: document.getElementById('senha').value
+            };
+
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+
+            const r = await res.json();
+            if (r.status === 'sucesso') {
+                window.location.href = r.redirecionar;
+            } else {
+                alert("❌ Falha na Autenticação: " + r.message);
+            }
+        }
+    </script>
 </body>
 </html>
