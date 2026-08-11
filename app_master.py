@@ -9,22 +9,48 @@ URL_SUPABASE = "postgresql://postgres:sua_senha_secreta@db.supabase.co:5432/post
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# ⚡ ATIVAÇÃO COMPACTA DO WHITENOISE PARA CARREGAR TAILWIND E SCRIPTS NO RENDER
+# Ativação do WhiteNoise para servir os arquivos estáticos locais (incluindo o style.css)
 app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/', prefix='static/')
 
 # Configurações de Segurança e Persistência de Sessão de Aula para Aula
 app.secret_key = "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
-app.permanent_session_lifetime = timedelta(days=7)  # Mantém o estudante conectado por 7 dias
+app.permanent_session_lifetime = timedelta(days=7)
+
+# Motor Avançado de Interceptação: Injeta o style.css local automaticamente em todas as telas
+@app.after_request
+def injetar_folha_estilos_local_em_tempo_real(response):
+    """
+    Substitui de forma automatizada o script antigo do Tailwind pelo link do
+    style.css local que criamos na pasta static. Evita estouros e erros de CDN no Render.
+    """
+    if response.content_type and "text/html" in response.content_type:
+        try:
+            html_original = response.get_data(as_text=True)
+            
+            # Padrões antigos de CDN procurados nas páginas
+            tag_antiga_script = '<script src="https://tailwindcss.com"></script>'
+            tag_antiga_link = '<link href="https://jsdelivr.net" rel="stylesheet">'
+            
+            # Nova chamada local e estática servida pelo WhiteNoise
+            tag_nova_local = '<link href="/static/style.css" rel="stylesheet">'
+            
+            html_corrigido = html_original.replace(tag_antiga_script, tag_nova_local)
+            html_corrigido = html_corrigido.replace(tag_antiga_link, tag_nova_local)
+            
+            response.set_data(html_corrigido)
+        except Exception:
+            pass
+    return response
 
 # Importação dos Componentes do Core de Regras de Negócio e Caixa Geral
 import GerenciadorCaixa
 
-# IMPORTAÇÃO CORRIGIDA DOS BLUEPRINTS DE CADA DEPARTAMENTO DO SIMULADOR
+# IMPORTAÇÃO DOS BLUEPRINTS DE CADA DEPARTAMENTO DO SIMULADOR
 from login.app_login import login_blueprint
 from configuracao.app_configuracao import configuracao_blueprint
 from estrutura.app_estrutura import estrutura_blueprint
 from maquinas.app_maquinas import maquinas_blueprint
-from materiais.app_materiais import materiais_blueprint  # Ajustado para o nome físico correto
+from materiais.app_materiais import materiais_blueprint
 from processos.app_processos import processos_blueprint
 from produtos.app_produtos import produtos_blueprint
 from precificacao.app_precificacao import precificacao_blueprint
@@ -78,7 +104,7 @@ def rota_principal_grid():
         html = f.read()
     return render_template_string(html)
 
-# ⚡ ENDPOINT GLOBAL AJAX REST: COLETOR DE MÉTRICAS CROSS-CHECKING DO TOPBOARD
+# ENDPOINT GLOBAL AJAX REST: COLETOR DE MÉTRICAS CROSS-CHECKING DO TOPBOARD
 @app.route('/api/financeiro/metricas', methods=['GET'])
 def api_global_metricas_calculadas():
     if not session.get('logado'):
@@ -87,7 +113,6 @@ def api_global_metricas_calculadas():
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     departamento = request.args.get('dept', '')
     
-    # Executa a consolidação matemática através do arquivo GerenciadorCaixa
     metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, departamento)
     return jsonify(metricas)
 
