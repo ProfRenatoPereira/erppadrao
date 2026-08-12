@@ -5,6 +5,7 @@ from datetime import timedelta
 from whitenoise import WhiteNoise
 
 # ⚡ BLINDAGEM CONTRA ALUNOS: O Python lê a chave de forma invisível no Render.
+# Se algum estudante vasculhar o repositório GitHub, verá apenas este código genérico.
 URL_SUPABASE = os.environ.get(
     "DATABASE_URL", 
     "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
@@ -70,26 +71,26 @@ app.register_blueprint(manutencao_blueprint)
 app.register_blueprint(requisicoes_blueprint)
 app.register_blueprint(roi_blueprint)
 
-# 🛡️ MIDDLEWARE DE BARREIRA: Segurança de fluxo e proteção de estado da Render
+# 🛡️ MIDDLEWARE DE BARREIRA: Segurança de fluxo e proteção de estado sem loops de redirecionamento
 @app.before_request
 def verificar_fluxo_de_aula():
-    # Ignora validação para arquivos estáticos e para a rota de login
-    if request.path.startswith('/static') or request.endpoint == 'login_blueprint.rota_login_autenticacao':
+    # 1. Liberação irrestrita para caminhos de arquivos estáticos, rotas de login e rota de logout
+    if request.path.startswith('/static') or request.path.startswith('/login') or request.path == '/logout':
         return
 
-    # Se não estiver logado, obriga a ir para a tela de autenticação
+    # 2. Bloqueio de Autenticação Geral: Se não houver token de sessão ativo, manda para o login
     if not session.get('logado'):
         if request.is_json:
             return jsonify({'status': 'erro', 'message': 'Sessão encerrada por inatividade.'}), 401
         return redirect('/login')
 
-    # Professor master tem passe livre para inspecionar qualquer endpoint
+    # Professor master tem passe livre para inspecionar qualquer rota do sistema
     if session.get('professor_master'):
         return
 
-    # Bloqueio de Inicialização: Se o aluno não configurou a empresa, barra acesso ao Grid/Módulos
+    # 3. Bloqueio de Inicialização: Se a equipe não preencheu o capital, barra o Grid e módulos comerciais
     if not session.get('empresa_inicializada') and request.endpoint != 'configuracao_blueprint.api_inicializar_empresa':
-        if request.path != '/configuracao/inicializacao':
+        if not request.path.startswith('/configuracao'):
             if request.is_json:
                 return jsonify({'status': 'erro', 'message': 'A empresa precisa ser inicializada primeiro.'}), 400
             return redirect('/configuracao/inicializacao')
