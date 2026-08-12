@@ -10,7 +10,10 @@ function mudarFonte(direcao) {
 function alternarModoEscuro() {
     document.body.classList.remove('alto-contraste');
     document.body.classList.toggle('dark-mode');
-    document.getElementById('btn_tema').innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
+    const btn = document.getElementById('btn_tema');
+    if (btn) {
+        btn.innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
+    }
 }
 
 function alternarAltoContraste() {
@@ -22,7 +25,9 @@ function alternarAltoContraste() {
 function alternarLeitorAudio() {
     leitorAtivo = !leitorAtivo;
     const btn = document.getElementById('btn-leitor-audio');
-    btn.innerText = leitorAtivo ? "🔇 Desativar Leitor" : "🔊 Ativar Leitor";
+    if (btn) {
+        btn.innerText = leitorAtivo ? "🔇 Desativar Leitor" : "🔊 Ativar Leitor";
+    }
     
     if (leitorAtivo) {
         window.speechSynthesis.cancel(); // Reseta barulhos na fila
@@ -37,7 +42,7 @@ function alternarLeitorAudio() {
         if(titulo) blocosTexto.push(titulo);
         if(sub) blocosTexto.push(sub);
         if(desc) blocosTexto.push(desc);
-        if(erro) blocosTexto.push("Mensagem do sistema: " + erro);
+        if(erro && erro.trim() !== '') blocosTexto.push("Mensagem do sistema: " + erro);
         
         blocosTexto.push("Por favor, informe seu usuário no primeiro campo e sua senha no segundo campo.");
 
@@ -50,5 +55,65 @@ function alternarLeitorAudio() {
         window.speechSynthesis.speak(utterance);
     } else {
         window.speechSynthesis.cancel();
+    }
+}
+
+// FUNÇÃO DE AUTENTICAÇÃO ASSÍNCRONA INTEGRADA (RESOLVE O PROBLEMA DA '?')
+async function executarAutenticacaoEstudantil() {
+    const idEquipeInput = document.getElementById('id_equipe')?.value.trim();
+    const senhaInput = document.getElementById('senha')?.value.trim();
+    const msgErroDiv = document.getElementById('msg_erro');
+
+    if (!idEquipeInput || !senhaInput) {
+        alert("⚠️ Por favor, preencha todos os campos antes de continuar.");
+        return;
+    }
+
+    // Reseta a caixa de erro antes de uma nova tentativa
+    if (msgErroDiv) {
+        msgErroDiv.style.display = 'none';
+        msgErroDiv.innerText = '';
+    }
+
+    const dados = {
+        id_equipe: idEquipeInput,
+        senha: senhaInput
+    };
+
+    try {
+        const res = await fetch('/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            throw new Error("O servidor retornou uma resposta inválida (HTML/Erro Interno).");
+        }
+
+        const r = await res.json();
+        if (res.ok && r.status === 'sucesso') {
+            window.location.href = r.redirecionar;
+        } else {
+            const erroTxt = r.message || "Credenciais incorretas.";
+            if (msgErroDiv) {
+                msgErroDiv.innerText = erroTxt;
+                msgErroDiv.style.display = 'block';
+                
+                // Se o leitor de áudio estiver ativo, narra o erro imediatamente
+                if (leitorAtivo) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance("Falha na Autenticação. " + erroTxt);
+                    utterance.lang = 'pt-BR';
+                    window.speechSynthesis.speak(utterance);
+                }
+            } else {
+                alert("❌ Falha na Autenticação: " + erroTxt);
+            }
+        }
+    } catch (erro) {
+        console.error(erro);
+        alert("❌ Erro de Comunicação: O servidor retornou uma resposta inesperada ou está inacessível.");
     }
 }
