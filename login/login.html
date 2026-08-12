@@ -12,6 +12,7 @@
         .input-form { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; margin-top: 4px; font-size: 13px; }
         .btn-submit { width: 100%; background-color: #1e3a8a; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .btn-submit:hover { background-color: #172554; }
+        .alert-danger { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; padding: 10px; border-radius: 6px; font-size: 12px; font-weight: bold; text-align: center; margin-bottom: 12px; display: none; }
         
         /* Modos Visuais */
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
@@ -44,15 +45,18 @@
         <div class="container-box" style="background-color: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-width: 450px; padding: 24px;">
             
             <div style="text-align: center; margin-bottom: 20px;">
-                <h1 style="color: #1e3a8a; font-size: 22px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -0.5px;">TERCEIRO ADM ASSOCIADOS</h1>
-                <h2 style="font-size: 14px; font-weight: bold; color: #4b5563; margin-top: 4px; margin-bottom: 0;">Acesso ao ERP Acadêmico</h2>
+                <!-- IDs adicionados para correspondência estrita com o leitor de áudio scriptado -->
+                <h1 id="txt_titulo" style="color: #1e3a8a; font-size: 22px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -0.5px;">TERCEIRO ADM ASSOCIADOS</h1>
+                <h2 id="txt_sub" style="font-size: 14px; font-weight: bold; color: #4b5563; margin-top: 4px; margin-bottom: 0;">Acesso ao ERP Acadêmico</h2>
             </div>
 
-            <p style="font-size: 11px; color: #6b7280; line-height: 1.5; margin-bottom: 16px; text-align: justify;">
+            <p id="txt_desc" style="font-size: 11px; color: #6b7280; line-height: 1.5; margin-bottom: 16px; text-align: justify;">
                 Insira o identificador exclusivo da sua equipe para restaurar a capabilidade operacional e gerencial da sua empresa simulada.
             </p>
 
-            <!-- Alterado: Removido o onsubmit para evitar o comportamento tradicional de postback do navegador -->
+            <!-- Container visual/auditivo para exibição amigável de erros do Supabase -->
+            <div id="msg_erro" class="alert-danger"></div>
+
             <form id="formLogin" onsubmit="return false;" style="display: flex; flex-direction: column; gap: 12px;">
                 <div>
                     <label style="font-size: 10px; font-weight: bold; color: #4b5563; text-transform: uppercase;">Identificador da Equipe (Usuário):</label>
@@ -64,83 +68,12 @@
                     <input type="password" id="senha" required placeholder="••••••••" class="input-form">
                 </div>
 
-                <!-- Alterado: O botão agora é explicitamente type="button" chamando a função de forma isolada no onclick -->
                 <button type="button" onclick="executarAutenticacaoEstudantil()" class="btn-submit">Validar Credenciais de Acesso</button>
             </form>
         </div>
     </div>
 
-    <script>
-        let tamanhoFonteAtual = 16;
-        let leitorAtivo = false;
-
-        function mudarFonte(dir) {
-            tamanhoFonteAtual += dir;
-            document.documentElement.style.fontSize = Math.max(12, Math.min(24, tamanhoFonteAtual)) + 'px';
-        }
-        
-        function alternarModoEscuro() { 
-            document.body.classList.toggle('dark-mode'); 
-            const btn = document.getElementById('btn_tema');
-            btn.innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
-        }
-        
-        function alternarAltoContraste() { 
-            document.body.classList.toggle('alto-contraste'); 
-        }
-
-        function alternarLeitorAudio() {
-            leitorAtivo = !leitorAtivo;
-            document.getElementById('btn-leitor-audio').innerText = leitorAtivo ? "🔇 Desativar Leitor" : "🔊 Ativar Leitor";
-            if (leitorAtivo) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance("Acesso ao ERP Acadêmico aberto. Insira o usuário e a senha da sua equipe para entrar.");
-                utterance.lang = 'pt-BR';
-                window.speechSynthesis.speak(utterance);
-            } else { 
-                window.speechSynthesis.cancel(); 
-            }
-        }
-
-        // Alterado: Removido o parâmetro de evento, operando agora puramente via Ajax assíncrono isolado
-        async function executarAutenticacaoEstudantil() {
-            const idEquipeInput = document.getElementById('id_equipe').value.trim();
-            const senhaInput = document.getElementById('senha').value.trim();
-
-            if (!idEquipeInput || !senhaInput) {
-                alert("⚠️ Por favor, preencha todos os campos antes de continuar.");
-                return;
-            }
-
-            const dados = {
-                id_equipe: idEquipeInput,
-                senha: senhaInput
-            };
-
-            try {
-                const res = await fetch('/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(dados)
-                });
-
-                // Evita quebra na decodificação caso o servidor responda com erro HTML (Ex: Página de erro da Render)
-                const contentType = res.headers.get("content-type");
-                if (!contentType || !contentType.includes("application/json")) {
-                    throw new Error("O servidor retornou uma resposta inválida (HTML/Erro Interno).");
-                }
-
-                const r = await res.json();
-                if (res.ok && r.status === 'sucesso') {
-                    window.location.href = r.redirecionar;
-                } else {
-                    alert("❌ Falha na Autenticação: " + (r.message || "Credenciais incorretas."));
-                }
-            } catch (erro) {
-                console.error(erro);
-                alert("❌ Erro de Comunicação: O servidor retornou uma resposta inesperada ou está inacessível.");
-            }
-        }
-    </script>
+    <!-- CERTIFIQUE-SE DE QUE O FLASK ENCONTRE O SCRIPT EXTENDIDO NESTA DIRETRIZ -->
+    <script src="/static/login/login.js"></script>
 </body>
 </html>
