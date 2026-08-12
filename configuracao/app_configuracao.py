@@ -9,6 +9,25 @@ def obter_conexao_master():
     from app_master import URL_SUPABASE
     return psycopg2.connect(URL_SUPABASE)
 
+# 📄 ROTA PARA ENTREGAR O HTML DE INICIALIZAÇÃO / CONFIGURAÇÃO
+@configuracao_blueprint.route('/configuracao/inicializacao', methods=['GET'])
+def rota_inicializacao_html():
+    if not session.get('logado'):
+        return redirect('/login')
+    # Entrega o arquivo localizado na própria pasta do módulo
+    with open('configuracao/inicializacao.html', 'r', encoding='utf-8') as f:
+        html = f.read()
+    return render_template_string(html)
+
+# ⚡ ROTA PARA ENTREGAR O JAVASCRIPT DE INICIALIZAÇÃO
+@configuracao_blueprint.route('/configuracao/inicializacao.js', methods=['GET'])
+def rota_inicializacao_js():
+    with open('configuracao/inicializacao.js', 'r', encoding='utf-8') as f:
+        js_conteudo = f.read()
+    # Retorna com o Content-Type correto para execução estrita no navegador
+    return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+
+# 🔐 API REST: EXECUTOR DA INICIALIZAÇÃO DAS EQUIPES
 @configuracao_blueprint.route('/api/configuracao/inicializar', methods=['POST'])
 def api_inicializar_empresa():
     # 1. Validação estrita de autenticação de sessão
