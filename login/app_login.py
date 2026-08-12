@@ -26,6 +26,9 @@ def rota_login_autenticacao():
         return render_template_string(html)
         
     dados = request.json
+    if not dados:
+        return jsonify({'status': 'erro', 'message': 'Dados não fornecidos.'}), 400
+
     id_equipe_input = dados.get('id_equipe', '').strip().lower()
     senha_input = dados.get('senha', '').strip()
     
@@ -43,7 +46,8 @@ def rota_login_autenticacao():
     conexao = obter_conexao_master()
     cursor = conexao.cursor(cursor_factory=RealDictCursor)
     
-    cursor.execute("SELECT * FROM credenciais_equipes WHERE equipe_id = %s AND senha = %s", (id_equipe_input, senate_criptografada))
+    # Correção do erro de digitação de 'senate_criptografada' para 'senha_criptografada'
+    cursor.execute("SELECT * FROM credenciais_equipes WHERE equipe_id = %s AND senha = %s", (id_equipe_input, senha_criptografada))
     equipe_valida = cursor.fetchone()
     
     cursor.close()
@@ -91,9 +95,20 @@ def api_professor_listar_equipes():
 def api_professor_salvar_equipe():
     if not session.get('logado') or not session.get('professor_master'):
         return jsonify({'error': 'Acesso negado'}), 401
+        
     dados = request.json
+    if not dados:
+        return jsonify({'error': 'Dados ausentes'}), 400
+        
+    # Uso do .get() e tratamento de strings para evitar falhas ou variações de caixa alta/baixa
+    equipe_id = dados.get('equipe_id', '').strip().lower()
+    senha_pura = dados.get('senha', '').strip()
+    nome_empresa = dados.get('nome_empresa', '').strip()
     
-    senha_segura = criptografar_senha(dados['senha'])
+    if not equipe_id or not senha_pura or not nome_empresa:
+        return jsonify({'error': 'Todos os campos são obrigatórios'}), 400
+        
+    senha_segura = criptografar_senha(senha_pura)
     
     conexao = obter_conexao_master()
     cursor = conexao.cursor()
@@ -101,7 +116,7 @@ def api_professor_salvar_equipe():
     cursor.execute('''
         INSERT INTO credenciais_equipes (equipe_id, senha, nome_empresa) VALUES (%s, %s, %s)
         ON CONFLICT (equipe_id) DO UPDATE SET senha = EXCLUDED.senha, nome_empresa = EXCLUDED.nome_empresa
-    ''', (dados['equipe_id'], senha_segura, dados['nome_empresa']))
+    ''', (equipe_id, senha_segura, nome_empresa))
     
     conexao.commit()
     cursor.close()
