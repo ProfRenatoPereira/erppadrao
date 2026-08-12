@@ -28,7 +28,7 @@
 <body style="min-height: 100vh; display: flex; flex-direction: column; transition: all 0.2s ease;">
 
     <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
-    <div style="background-color: #0f172a; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-b: 1px solid #334155; color: white; font-size: 12px;">
+    <div style="background-color: #0f172a; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 12px;">
         <span style="font-weight: bold; color: #38bdf8;">®ψΣ TERADMAS</span>
         <div style="display: flex; align-items: center;">
             <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
@@ -76,12 +76,16 @@
             tamanhoFonteAtual += dir;
             document.documentElement.style.fontSize = Math.max(12, Math.min(24, tamanhoFonteAtual)) + 'px';
         }
+        
         function alternarModoEscuro() { 
             document.body.classList.toggle('dark-mode'); 
             const btn = document.getElementById('btn_tema');
             btn.innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
         }
-        function alternarAltoContraste() { document.body.classList.toggle('alto-contraste'); }
+        
+        function alternarAltoContraste() { 
+            document.body.classList.toggle('alto-contraste'); 
+        }
 
         function alternarLeitorAudio() {
             leitorAtivo = !leitorAtivo;
@@ -91,27 +95,40 @@
                 const utterance = new SpeechSynthesisUtterance("Acesso ao ERP Acadêmico aberto. Insira o usuário e a senha da sua equipe para entrar.");
                 utterance.lang = 'pt-BR';
                 window.speechSynthesis.speak(utterance);
-            } else { window.speechSynthesis.cancel(); }
+            } else { 
+                window.speechSynthesis.cancel(); 
+            }
         }
 
-        async function executarAutenticacaoEstudantil(e) {
+        async function ejecutarAutenticacaoEstudantil(e) {
             e.preventDefault();
             const dados = {
                 id_equipe: document.getElementById('id_equipe').value,
                 senha: document.getElementById('senha').value
             };
 
-            const res = await fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
-            });
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
 
-            const r = await res.json();
-            if (r.status === 'sucesso') {
-                window.location.href = r.redirecionar;
-            } else {
-                alert("❌ Falha na Autenticação: " + r.message);
+                // Evita quebra na decodificação caso o servidor responda com erro HTML (Ex: Página de erro da Render)
+                const contentType = res.headers.get("content-type");
+                if (!contentType || !contentType.includes("application/json")) {
+                    throw new Error("O servidor retornou uma resposta inválida (HTML/Erro Interno).");
+                }
+
+                const r = await res.json();
+                if (res.ok && r.status === 'sucesso') {
+                    window.location.href = r.redirecionar;
+                } else {
+                    alert("❌ Falha na Autenticação: " + (r.message || "Credenciais incorretas."));
+                }
+            } catch (erro) {
+                console.error(erro);
+                alert("❌ Erro de Comunicação: O servidor retornou uma resposta inesperada ou está inacessível.");
             }
         }
     </script>
