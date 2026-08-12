@@ -52,7 +52,8 @@
                 Insira o identificador exclusivo da sua equipe para restaurar a capabilidade operacional e gerencial da sua empresa simulada.
             </p>
 
-            <form id="formLogin" onsubmit="executarAutenticacaoEstudantil(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <!-- Alterado: Removido o onsubmit para evitar o comportamento tradicional de postback do navegador -->
+            <form id="formLogin" onsubmit="return false;" style="display: flex; flex-direction: column; gap: 12px;">
                 <div>
                     <label style="font-size: 10px; font-weight: bold; color: #4b5563; text-transform: uppercase;">Identificador da Equipe (Usuário):</label>
                     <input type="text" id="id_equipe" required placeholder="Ex: equipe_alfa" class="input-form">
@@ -63,7 +64,8 @@
                     <input type="password" id="senha" required placeholder="••••••••" class="input-form">
                 </div>
 
-                <button type="submit" class="btn-submit">Validar Credenciais de Acesso</button>
+                <!-- Alterado: O botão agora é explicitamente type="button" chamando a função de forma isolada no onclick -->
+                <button type="button" onclick="executarAutenticacaoEstudantil()" class="btn-submit">Validar Credenciais de Acesso</button>
             </form>
         </div>
     </div>
@@ -100,11 +102,19 @@
             }
         }
 
-        async function ejecutarAutenticacaoEstudantil(e) {
-            e.preventDefault();
+        // Alterado: Removido o parâmetro de evento, operando agora puramente via Ajax assíncrono isolado
+        async function executarAutenticacaoEstudantil() {
+            const idEquipeInput = document.getElementById('id_equipe').value.trim();
+            const senhaInput = document.getElementById('senha').value.trim();
+
+            if (!idEquipeInput || !senhaInput) {
+                alert("⚠️ Por favor, preencha todos os campos antes de continuar.");
+                return;
+            }
+
             const dados = {
-                id_equipe: document.getElementById('id_equipe').value,
-                senha: document.getElementById('senha').value
+                id_equipe: idEquipeInput,
+                senha: senhaInput
             };
 
             try {
