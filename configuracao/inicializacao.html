@@ -6,58 +6,77 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TERADMAS - Inicialização da Empresa</title>
     <script src="https://tailwindcss.com"></script>
+    <script>
+        // Configuração customizada do Tailwind para suportar as classes de acessibilidade legadas
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        contrast: '#ffff00',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .card-init { background-color: #1e293b !important; border-color: #334155 !important; }
-        body.dark-mode input { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
-        
+        /* Classes utilitárias estritas para o modo Alto Contraste */
         body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-        body.alto-contraste .card-init { background-color: #000000 !important; border: 3px solid #ffffff !important; }
+        body.alto-contraste .card-init { background-color: #000000 !important; border: 2px solid #ffffff !important; }
         body.alto-contraste input { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; font-weight: bold !important; }
+        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste p, body.alto-contraste label, body.alto-contraste span, body.alto-contraste a { color: #ffff00 !important; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased text-gray-800 transition-all duration-200 min-h-screen flex flex-col">
+<body class="bg-gray-100 dark:bg-slate-900 font-sans antialiased text-gray-800 dark:text-slate-100 transition-all duration-200 min-h-screen flex flex-col">
 
     <!-- BARRA TOP DE ACESSIBILIDADE -->
     <div id="barra-acessibilidade" class="bg-[#0f172a] px-4 py-2 flex justify-between items-center text-xs border-b border-[#334155] text-white select-none">
         <span class="font-bold text-blue-400">®ψΣ TERADMAS</span>
         <div class="flex gap-2">
-            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">⚫ Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">🌙 Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] px-2 py-0.5 rounded font-bold">🔊 Ativar Leitor</button>
+            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] hover:bg-slate-600 px-2 py-0.5 rounded font-bold transition">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] hover:bg-slate-600 px-2 py-0.5 rounded font-bold transition">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] hover:bg-slate-600 px-2 py-0.5 rounded font-bold transition">⚫ Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] hover:bg-slate-600 px-2 py-0.5 rounded font-bold transition">🌙 Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] hover:bg-sky-600 px-2 py-0.5 rounded font-bold transition">🔊 Ativar Leitor</button>
         </div>
     </div>
+
     <!-- CONTAINER DO FORMULÁRIO DE FUNDAÇÃO -->
     <div class="flex-grow flex items-center justify-center p-4">
-        <div class="card-init bg-white p-8 rounded-2xl shadow-xl border border-gray-200 max-w-md w-full text-center transition-all">
-            <h1 class="text-xl font-black text-blue-900 tracking-wide uppercase leading-tight" id="txt_titulo">CONSTITUIÇÃO DO NEGÓCIO</h1>
-            <h2 class="text-md font-bold text-gray-700 mt-2 mb-1" id="txt_sub">Aporte de Capital Inicial</h2>
-            <p class="text-xs text-gray-500 mb-2">Grupo Autenticado: <span class="font-black text-slate-800" id="txt_equipe">{{ equipe }}</span></p>
-            <p class="text-xs text-gray-500 mb-6" id="txt_desc">Defina o nome da sua organização e injete os fundos em caixa para liberar o orçamento dos departamentos.</p>
+        <div class="card-init bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-700 max-w-md w-full text-center transition-all">
+            <h1 class="text-xl font-black text-blue-900 dark:text-blue-400 tracking-wide uppercase leading-tight" id="txt_titulo">CONSTITUIÇÃO DO NEGÓCIO</h1>
+            <h2 class="text-md font-bold text-gray-700 dark:text-slate-300 mt-2 mb-1" id="txt_sub">Aporte de Capital Inicial</h2>
+            
+            <p class="text-xs text-gray-500 dark:text-slate-400 mb-2">
+                Grupo Autenticado: <span class="font-black text-slate-800 dark:text-slate-200" id="txt_equipe">{{ session.id_equipe }}</span>
+            </p>
+            <p class="text-xs text-gray-500 dark:text-slate-400 mb-6" id="txt_desc">
+                Defina o nome da sua organização e injete os fundos em caixa para liberar o orçamento dos departamentos.
+            </p>
 
             <form id="formInicializacao" onsubmit="salvarInicializacao(event)" class="space-y-4 text-left text-sm">
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nome Fantasia da Empresa:</label>
-                    <input type="text" id="nome_empresa" required placeholder="Ex: Metalúrgica Alfa S.A." class="w-full border p-2.5 rounded-lg bg-slate-50 outline-none focus:border-blue-600 transition">
+                    <label class="block text-xs font-bold text-gray-600 dark:text-slate-400 uppercase mb-1">Nome Fantasia da Empresa:</label>
+                    <input type="text" id="nome_empresa" required placeholder="Ex: Metalúrgica Alfa S.A." class="w-full border dark:border-slate-600 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition text-gray-900 dark:text-white">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Capital Social Integralizado (R$):</label>
-                    <input type="number" id="capital_total" step="0.01" min="10000" required placeholder="Ex: 500000.00" class="w-full border p-2.5 rounded-lg bg-slate-50 outline-none focus:border-blue-600 transition">
+                    <label class="block text-xs font-bold text-gray-600 dark:text-slate-400 uppercase mb-1">Capital Social Integralizado (R$):</label>
+                    <input type="number" id="capital_total" step="0.01" min="10000" required placeholder="Ex: 500000.00" class="w-full border dark:border-slate-600 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 outline-none focus:border-blue-600 dark:focus:border-blue-500 transition text-gray-900 dark:text-white">
                 </div>
+                
                 <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg shadow-md transition duration-200 flex items-center justify-center gap-1 uppercase tracking-wider text-xs">
                     Abrir Conta e Iniciar Operações 🚀
                 </button>
             </form>
             
-            <div class="mt-4 pt-3 border-t border-gray-100 flex justify-center">
-                <a href="/logout" class="text-xs text-amber-600 font-bold hover:underline">🔒 Abandonar e Sair</a>
+            <div class="mt-4 pt-3 border-t border-gray-100 dark:border-slate-700 flex justify-center">
+                <a href="/logout" class="text-xs text-amber-600 dark:text-amber-500 font-bold hover:underline">🔒 Abandonar e Sair</a>
             </div>
         </div>
     </div>
 
+    <!-- SCRIPT DO CORE DO DEPARTAMENTO -->
     <script src="/configuracao/inicializacao.js"></script>
 </body>
 </html>
