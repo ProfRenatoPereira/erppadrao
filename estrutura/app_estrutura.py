@@ -1,5 +1,5 @@
-# estrutura/app_estrutura.py
-from flask import Blueprint, request, render_template_string, session, jsonify
+# estrutura/app_estrutura.py - PARTE 1
+from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -10,63 +10,106 @@ def obter_conexao_master():
     from app_master import URL_SUPABASE
     return psycopg2.connect(URL_SUPABASE)
 
-@estrutura_blueprint.route('/estrutura')
+@estrutura_blueprint.route('/estrutura', methods=['GET'])
 def pagina_estrutura():
-    # Renderiza a estrutura da Página 1
+    if not session.get('logado'):
+        return redirect('/login')
+    # Renderiza a estrutura da Página 1 de dentro da própria pasta
     with open('estrutura/estrutura.html', 'r', encoding='utf-8') as f:
         html = f.read()
     return render_template_string(html)
 
-@estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET', 'POST'])
-def api_imoveis_persist():
+@estrutura_blueprint.route('/estrutura/estrutura.js', methods=['GET'])
+def rota_estrutura_js():
+    # Entrega o arquivo JavaScript local encapsulado para o navegador
+    with open('estrutura/estrutura.js', 'r', encoding='utf-8') as f:
+        js_conteudo = f.read()
+    return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+
+@app_rest = estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
+def api_imoveis_listar():
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     conexao = obter_conexao_master()
     cursor = conexao.cursor(cursor_factory=RealDictCursor)
     id_equipe = session.get('id_equipe', 'equipe_alfa')
-    nome_empresa = session.get('nome_empresa', 'GRUPO DIDÁTICO')
     
-    # Inicia a tabela se não existir
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS imoveis_simulacao (
-            id SERIAL PRIMARY KEY, equipe_id TEXT, tipo_imovel TEXT, regiao TEXT, 
-            area_util REAL, valor_aluguel REAL, valor_condominio REAL, obs_contrato TEXT, nome_grupo TEXT
-        )
-    ''')
+    try:
+        # Garante a existência da tabela parametrizada com a coluna estável nome_empresa
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS imoveis_simulacao (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, tipo_imovel TEXT, regiao TEXT, 
+                area_util REAL, valor_aluguel REAL, valor_condominio REAL, obs_contrato TEXT, nome_empresa TEXT
+            )
+        ''')
+        conexao.commit()
+        
+        cursor.execute('SELECT * FROM imoveis_simulacao WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
+        linhas = cursor.fetchall()
+        cursor.close()
+        conexao.close()
+        return jsonify([dict(linha) for linha in linhas])
+        
+    except psycopg2.DatabaseError as e:
+        if conexao: conexao.rollback()
+        print(f"Erro ao listar imóveis: {e}")
+        return jsonify({'status': 'erro', 'message': 'Erro de banco de dados.'}), 500
+# estrutura/app_estrutura.py - PARTE 2
 
-    if request.method == 'POST':
-        dados = request.json
-        id_reg = dados.get('id')
-        valor_aluguel = float(dados.get('valor_aluguel', 0))
+@estrutura_blueprint.route('/api/estrutura/imoveis', methods=['POST'])
+def api_imoveis_salvar():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    dados = request.json
+    if not dados:
+        return jsonify({'status': 'erro', 'message': 'Dados ausentes'}), 400
+        
+    conexao = obter_conexao_master()
+    cursor = conexao.cursor(cursor_factory=RealDictCursor)
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    nome_empresa = session.get('nome_empresa', 'GRUPO DIDÁTICO').upper()
+    
+    id_reg = dados.get('id')
+    
+    try:
+        # Tratamento e tipagem segura das variáveis de custo fixo
+        valor_aluguel = float(str(dados.get('valor_aluguel', 0)).replace(',', '.').strip())
+        valor_condominio = float(str(dados.get('valor_condominio', 0)).replace(',', '.').strip())
+        area_util = float(str(dados.get('area_util', 0)).replace(',', '.').strip())
         
         if id_reg:
             cursor.execute('''
                 UPDATE imoveis_simulacao SET tipo_imovel=%s, regiao=%s, area_util=%s, 
                 valor_aluguel=%s, valor_condominio=%s, obs_contrato=%s WHERE id=%s AND equipe_id=%s
-            ''', (dados['tipo_imovel'], dados['regiao'], dados['area_util'], valor_aluguel, 
-                  dados['valor_condominio'], dados['obs_contrato'], id_reg, id_equipe))
+            ''', (dados.get('tipo_imovel'), dados.get('regiao'), area_util, valor_aluguel, 
+                  valor_condominio, dados.get('obs_contrato'), id_reg, id_equipe))
         else:
             cursor.execute('''
-                INSERT INTO imoveis_simulacao (equipe_id, tipo_imovel, regiao, area_util, valor_aluguel, valor_condominio, obs_contrato, nome_grupo)
+                INSERT INTO imoveis_simulacao (equipe_id, tipo_imovel, regiao, area_util, valor_aluguel, valor_condominio, obs_contrato, nome_empresa)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (id_equipe, dados['tipo_imovel'], dados['regiao'], dados['area_util'], valor_aluguel, 
-                  dados['valor_condominio'], dados['obs_contrato'], nome_empresa))
+            ''', (id_equipe, dados.get('tipo_imovel'), dados.get('regiao'), area_util, valor_aluguel, 
+                  valor_condominio, dados.get('obs_contrato'), nome_empresa))
                   
-        # Atualiza a tabela master de configuração para o cálculo do Custo Fixo em tempo real
-        cursor.execute("UPDATE config_simulacao SET valor_aluguel=%s WHERE equipe_id=%s", (valor_aluguel, id_equipe))
+        # 🔥 CORREÇÃO LOGICA: Soma todos os aluguéis ativos da equipe para não sobrescrever dados
+        cursor.execute('''
+            UPDATE config_simulacao 
+            SET valor_aluguel = (SELECT COALESCE(SUM(valor_aluguel + valor_condominio), 0) FROM imoveis_simulacao WHERE equipe_id = %s)
+            WHERE equipe_id = %s
+        ''', (id_equipe, id_equipe))
             
         conexao.commit()
         cursor.close()
         conexao.close()
         return jsonify({'status': 'sucesso'})
         
-    else:
-        cursor.execute('SELECT * FROM imoveis_simulacao WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
-        linhas = cursor.fetchall()
-        cursor.close()
-        conexao.close()
-        return jsonify([dict(linha) for linha in linhas])
+    except (ValueError, TypeError, psycopg2.DatabaseError) as err:
+        if conexao: conexao.rollback()
+        print(f"Erro transacional imobiliário: {err}")
+        return jsonify({'status': 'erro', 'message': 'Falha interna ao processar persistência.'}), 500
+
+
 @estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_imovel(id_reg):
     if not session.get('logado'):
@@ -76,19 +119,33 @@ def api_individual_imovel(id_reg):
     cursor = conexao.cursor(cursor_factory=RealDictCursor)
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     
-    if request.method == 'DELETE':
-        # Remove do imobiliário e zera o custo fixo de aluguel associado
-        cursor.execute('DELETE FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-        cursor.execute("UPDATE config_simulacao SET valor_aluguel=0 WHERE equipe_id=%s", (id_equipe,))
-        conexao.commit()
-        cursor.close()
-        conexao.close()
-        return jsonify({'status': 'removido'})
-    else:
-        cursor.execute('SELECT * FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-        imovel = cursor.fetchone()
-        cursor.close()
-        conexao.close()
-        if not imovel: 
-            return jsonify({'status': 'erro'}), 404
-        return jsonify(dict(imovel))
+    try:
+        if request.method == 'DELETE':
+            # Remove o registro imobiliário com isolamento estrito de equipe
+            cursor.execute('DELETE FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            
+            # 🔥 Recalcula e atualiza o Custo Fixo restante (ou zera se não houver mais contratos)
+            cursor.execute('''
+                UPDATE config_simulacao 
+                SET valor_aluguel = (SELECT COALESCE(SUM(valor_aluguel + valor_condominio), 0) FROM imoveis_simulacao WHERE equipe_id = %s)
+                WHERE equipe_id = %s
+            ''', (id_equipe, id_equipe))
+            
+            conexao.commit()
+            cursor.close()
+            conexao.close()
+            return jsonify({'status': 'removido'})
+            
+        else:
+            cursor.execute('SELECT * FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            imovel = cursor.fetchone()
+            cursor.close()
+            conexao.close()
+            if not imovel: 
+                return jsonify({'status': 'erro', 'message': 'Registro não localizado.'}), 404
+            return jsonify(dict(imovel))
+            
+    except psycopg2.DatabaseError as e:
+        if conexao: conexao.rollback()
+        print(f"Erro na rota individual: {e}")
+        return jsonify({'status': 'erro', 'message': 'Falha na operação.'}), 500
