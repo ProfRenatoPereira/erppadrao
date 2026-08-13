@@ -14,15 +14,14 @@
         
         /* Layout e Grid de Infraestrutura */
         .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
-        .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; }
+        .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 16px; }
         .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
         .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         
         /* Cartões de Métricas Financeiras */
         .metric-card { padding: 16px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-        .metric-card p { font-size: 11px; text-transform: uppercase; tracking: 0.05em; margin: 0 0 2px 0; }
-        .metric-card h3 { font-size: 18px; font-weight: 900; margin: 0; }
-        .metric-card h4 { font-size: 16px; font-weight: 900; margin: 0; }
+        .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; }
+        .metric-card h3, .metric-card h4 { font-size: 17px; font-weight: 900; margin: 0; }
         
         .bg-blue-metric { background-color: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
         .bg-emerald-metric { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
@@ -30,66 +29,93 @@
         .bg-slate-metric { background-color: #f8fafc; border-color: #cbd5e1; color: #334155; }
         .bg-amber-metric { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
         .text-amber-value { color: #d97706; }
+<!-- estrutura/estrutura.html - PARTE 1 - BLOCO B -->
+        /* 🏆 ARQUITETURA DO MENU CORPORATIVO INTEGRADO RESPONSIVO */
+        .corporate-header { background-color: #0f172a; color: white; padding: 0 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; }
+        .logo-area { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 14px; color: #38bdf8; text-transform: uppercase; padding: 12px 0; user-select: none; z-index: 10001; }
+        .logo-img { height: 26px; width: auto; border-radius: 4px; background-color: white; padding: 2px; }
         
-        /* Cabeçalhos e Títulos */
-        .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; }
-        .page-title { font-size: 20px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.025em; margin: 0; }
-        .card-title { font-size: 14px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; tracking: 0.05em; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
+        /* 🍔 BOTÃO HAMBÚRGUER NATIVO (OCULTO NO PC) */
+        .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
+        .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
+        #menu-toggle { display: none; }
+
+        .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; }
+        .nav-item { position: relative; }
+        .nav-link { display: block; padding: 16px 12px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; tracking: 0.05em; transition: all 0.15s; cursor: pointer; }
+        .nav-link:hover, .nav-item:hover .nav-link { background-color: #1e3a8a; color: white; }
         
+        /* Sub-Menus Dropdown (PC) */
+        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #ffffff; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; border: 1px solid #cbd5e1; padding: 6px 0; list-style: none; z-index: 9999; }
+        .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; transition: background 0.15s; border-bottom: 1px solid #f1f5f9; }
+        .dropdown-menu a:last-child { border-bottom: none; }
+        .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
+        .nav-item:hover .dropdown-menu { display: block; }
+
         /* Componentes de Formulário e Tabelas */
+        .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; text-align: left; }
+        .page-title { font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
+        .card-title { font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
         .card { background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
         .flex-col-gap { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; text-align: left; }
-        .label-form { font-size: 12px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
-        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 13px; background-color: #ffffff; color: #1f2937; }
-        .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #334155; }
-        .input-form-blue { font-weight: bold; color: #1e3a8a; font-size: 14px; }
+        .label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
+        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; }
+        .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #475569; }
+        .input-form-blue { font-weight: bold; color: #1e3a8a; font-size: 13px; }
         
-        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); background-color: #ffffff; }
-        .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 12px; color: #ffffff; text-transform: uppercase; tracking: 0.05em; text-align: left; }
+        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; }
+        .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; text-align: left; }
         .table-responsive { width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
         thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
-        th { padding: 12px; }
-        tbody { color: #374151; }
+        th, td { padding: 12px; }
         tr { border-bottom: 1px solid #e5e7eb; }
-        td { padding: 12px; }
         
-        /* Botões Operacionais */
         .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; }
-        .btn-submit { width: 100%; background-color: #16a34a; color: #ffffff; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; tracking: 0.05em; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: background-color 0.15s ease; }
+        .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; }
         .btn-submit:hover { background-color: #15803d; }
         .btn-cancel { background-color: #e5e7eb; color: #374151; padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; }
-        .btn-delete-action { background-color: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; text-transform: uppercase; }
         .flex-btn-group { padding-top: 8px; display: flex; gap: 8px; }
         
-        /* Media Queries Adaptativas */
-        @media (min-width: 640px) { .grid-top { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (min-width: 1024px) { .grid-top { grid-template-columns: repeat(4, minmax(0, 1fr)); } .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
+        /* 📱 COMPORTAMENTO MOBILE DA BARRA DE ABAS */
+        @media (max-width: 868px) {
+            .menu-toggle-label { display: flex; }
+            .nav-corporate-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: #0f172a; border-top: 1px solid #334155; padding: 8px 0; box-shadow: 0 10px 15px rgba(0,0,0,0.3); z-index: 9998; }
+            .nav-item { width: 100%; }
+            .nav-link { padding: 12px 20px; border-bottom: 1px solid #1e293b; color: #f8fafc; }
+            .dropdown-menu { display: block; position: static; box-shadow: none; border: none; background-color: #172554 !important; padding: 0; min-width: 100%; }
+            .dropdown-menu a { padding: 10px 32px; color: #cbd5e1 !important; border-bottom-color: #1e3a8a !important; }
+            #menu-toggle:checked ~ nav .nav-corporate-menu { display: flex; }
+            #menu-toggle:checked ~ .menu-toggle-label span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+            #menu-toggle:checked ~ .menu-toggle-label span:nth-child(2) { opacity: 0; }
+            #menu-toggle:checked ~ .menu-toggle-label span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        }
         
         /* Modos Visuais Customizados */
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
         body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
-        body.dark-mode thead { background-color: #334155 !important; color: #ffffff !important; }
-        body.dark-mode tr { border-bottom-color: #334155 !important; }
-        body.dark-mode .bg-blue-metric, body.dark-mode .bg-emerald-metric, body.dark-mode .bg-slate-metric, body.dark-mode .bg-amber-metric { color: #f8fafc !important; }
-        body.dark-mode .text-emerald-value, body.dark-mode .text-amber-value { color: #38bdf8 !important; }
+        body.dark-mode thead { background-color: #334155 !important; }
+        body.dark-mode .dropdown-menu { background-color: #1e293b; border-color: #334155; }
+        body.dark-mode .dropdown-menu a { color: #e2e8f0; }
+        body.dark-mode .dropdown-menu a:hover { background-color: #334155; }
         
         body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
         body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste .table-container, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
         body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button, body.alto-contraste .btn-submit, body.alto-contraste .btn-delete-action { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
-        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste strong, body.alto-contraste div { color: #ffff00 !important; }
+        body.alto-contraste button, body.alto-contraste .btn-submit { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste strong, body.alto-contraste div, body.alto-contraste a { color: #ffff00 !important; }
         
-        @media print { #barra-acessibilidade, form, header, button, .actions-legal { display: none !important; } body { background-color: #fff; color: #000; } }
+        @media (min-width: 640px) { .grid-top { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (min-width: 1024px) { .grid-top { grid-template-columns: repeat(4, minmax(0, 1fr)); } .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
+        @media print { #barra-acessibilidade, .corporate-header, form, button, .actions-legal { display: none !important; } }
     </style>
 </head>
-<!-- estrutura/estrutura.html - PARTE 1 - BLOCO B -->
-<body class="transition-all duration-200">
+<body style="transition: all 0.2s ease;">
 
     <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
-    <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 12px; position: sticky; top: 0; z-index: 50; user-select: none;">
-        <span style="font-weight: 800; color: #38bdf8;">®ψΣ TERADMAS</span>
+    <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
+        <span style="font-weight: bold; color: #94a3b8;">Acessibilidade Web WCAG</span>
         <div style="display: flex; align-items: center; gap: 4px;">
             <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
             <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
@@ -98,7 +124,77 @@
             <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
     </div>
-
+<!-- estrutura/estrutura.html - PARTE 1 - BLOCO C -->
+    <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
+    <header class="corporate-header">
+        <div class="logo-area">
+            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" onerror="this.style.display='none'">
+            <span>TERADMAS ERP v2.6</span>
+        </div>
+        
+        <input type="checkbox" id="menu-toggle">
+        <label for="menu-toggle" class="menu-toggle-label">
+            <span></span>
+            <span></span>
+            <span></span>
+        </label>
+        
+        <nav>
+            <ul class="nav-corporate-menu">
+                <!-- CATEGORIA 1: ADMINISTRATIVO & ESTRUTURA -->
+                <li class="nav-item">
+                    <span class="nav-link">📁 Administrativo ▾</span>
+                    <ul class="dropdown-menu">
+                        <a href="/configuracao/inicializacao">01. Fundação de Capital</a>
+                        <a href="/estrutura">02. Imobiliário e Custos</a>
+                        <a href="/orcamentos">03. Limites Orçamentários</a>
+                        <a href="/rh">04. Organograma e RH</a>
+                        <a href="/folha_pagamento">05. Folha de Pagamento</a>
+                        <a href="/requisicoes">06. Requisições Internas</a>
+                    </ul>
+                </li>
+                
+                <!-- CATEGORIA 2: ENGENHARIA DE PROCESSO -->
+                <li class="nav-item">
+                    <span class="nav-link">🛠️ Engenharia ▾</span>
+                    <ul class="dropdown-menu">
+                        <a href="/maquinas">07. Gerenciador de Máquinas</a>
+                        <a href="/materiais">08. Catálogo de Materiais</a>
+                        <a href="/processos">09. Fluxos de Processos</a>
+                        <a href="/produtos">10. Fichas Técnicas (BOM)</a>
+                        <a href="/manutencao">11. Plano de Manutenção</a>
+                        <a href="/precificacao">12. Formação de Preço</a>
+                    </ul>
+                </li>
+                
+                <!-- CATEGORIA 3: OPERAÇÃO INDUSTRIAL & FÁBRICA -->
+                <li class="nav-item">
+                    <span class="nav-link">🏭 Produção ▾</span>
+                    <ul class="dropdown-menu">
+                        <a href="/compras_insumos">13. Compras de Insumos</a>
+                        <a href="/pcp">14. Planejamento (PCP)</a>
+                        <a href="/engenharia_producao">15. Execução de Fábrica</a>
+                        <a href="/estoque">16. Almoxarifado Central</a>
+                        <a href="/nota_fiscal">17. Emissão de Notas NF-e</a>
+                    </ul>
+                </li>
+                
+                <!-- CATEGORIA 4: INTELIGÊNCIA COMERCIAL & FINANÇAS -->
+                <li class="nav-item">
+                    <span class="nav-link">📈 Vendas & BI ▾</span>
+                    <ul class="dropdown-menu">
+                        <a href="/clientes">18. Carteira de Clientes</a>
+                        <a href="/vendas">19. Módulo de Vendas</a>
+                        <a href="/financeiro">20. Fluxo de Caixa Geral</a>
+                        <a href="/roi">21. Retorno sobre Investimento</a>
+                        <a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a>
+                        <a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </header>
+<!-- estrutura/estrutura.html - PARTE 2 -->
     <div class="container">
         
         <!-- BARRA DE SUB-INDICADORES FINANCEIROS REQUERIDOS -->
@@ -109,22 +205,22 @@
             </div>
             <div class="metric-card bg-emerald-metric">
                 <p>🟩 Caixa de Giro Disponível</p>
-                <h3 class="text-emerald-value" id="top_giro_global">R$ 0,00</h3>
+                <h3 id="top_giro_global">R$ 0,00</h3>
             </div>
             <div class="metric-card bg-slate-metric">
-                <p>🔒 Custo Fixo (Contratos Ativos)</p>
+                <p>🔒 Custo Fixo Geral</p>
                 <h4 id="top_custo_fixo">R$ 0,00</h4>
             </div>
             <div class="metric-card bg-amber-metric">
                 <p>📈 Custos Variáveis Totais</p>
-                <h4 class="text-amber-value" id="top_custo_variavel">R$ 0,00</h4>
+                <h4 id="top_custo_variavel">R$ 0,00</h4>
             </div>
         </div>
 
         <div class="page-header">
-            <h2 class="page-title" id="txt_titulo_pagina">Página 1: Investimentos Imobiliários e Estrutura de Custos Fixos</h2>
+            <h2 class="page-title" id="txt_titulo_pagina">Módulo Imobiliário e Estrutura de Custos Fixos Industriais</h2>
         </div>
-<!-- estrutura/estrutura.html - PARTE 2 -->
+
         <!-- 🚀 ARQUITETURA DE DUAS COLUNAS LADO A LADO -->
         <div class="grid-main">
             <!-- QUADRO ESQUERDO: FORMULÁRIO DE CADASTRO (Ficha Técnica) -->
@@ -137,59 +233,80 @@
                         <label class="label-form">Identificação da Empresa / Grupo:</label>
                         <input type="text" id="nome_grupo_display" readonly class="input-form input-form-readonly">
                     </div>
+                    
                     <div class="flex-col-gap">
-                        <label class="label-form">Tipo do Imóvel / Galpão:</label>
+                        <label class="label-form">Tipo de Estrutura:</label>
                         <select id="tipo_imovel" required class="select-form">
-                            <option value="Galpão Industrial">Galpão Industrial de Médio Porte</option>
-                            <option value="Sala Comercial">Sala Comercial / Escritório Integrado</option>
-                            <option value="Estrutura de Vendas">Loja de Vendas e Showroom</option>
+                            <option value="Barracão Industrial">Barracão Industrial / Galpão Fabril</option>
+                            <option value="Escritório Comercial">Escritório Administrativo Central</option>
+                            <option value="Centro de Distribuição">Centro de Distribuição Logística</option>
                         </select>
                     </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Região / Localização Industrial:</label>
-                        <select id="regiao" required class="select-form">
-                            <option value="Distrito Industrial">Distrito Industrial (Zonamento Comercial)</option>
-                            <option value="Zerar Logística - Centro">Centro Urbano (Zonamento Misto)</option>
-                        </select>
-                    </div>
-                    <div class="grid-form-row">
+
+                    <!-- LOCALIZAÇÃO DINÂMICA DE CURITIBA E RMC -->
+                    <div class="grid-main-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                         <div class="flex-col-gap">
-                            <label class="label-form">Área Útil (m²):</label>
-                            <input type="number" id="area_util" value="150" required min="1" class="input-form">
+                            <label class="label-form">Cidade / Município:</label>
+                            <select id="cidade" required class="select-form">
+                                <option value="Curitiba">Curitiba</option>
+                                <option value="São José dos Pinhais">São José dos Pinhais (RMC)</option>
+                                <option value="Araucária">Araucária (RMC)</option>
+                                <option value="Pinhais">Pinhais (RMC)</option>
+                            </select>
                         </div>
                         <div class="flex-col-gap">
-                            <label class="label-form">Taxa de Condomínio (R$):</label>
+                            <label class="label-form">Bairro / Polo:</label>
+                            <select id="bairro" required class="select-form">
+                                <option value="CIC">CIC (Cidade Industrial)</option>
+                                <option value="Boqueirão">Boqueirão (Polo Comercial)</option>
+                                <option value="Centro">Centro Urbano</option>
+                                <option value="Distrito Logístico">Polo Industrial Metropolitano</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Área Útil do Barracão (m²):</label>
+                            <input type="number" id="area_util" value="150" required min="10" class="input-form" style="font-weight: bold;">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Taxa Condomínio / Manut. (R$):</label>
                             <input type="number" id="valor_condominio" step="0.01" value="350.00" class="input-form">
                         </div>
                     </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Valor do Aluguel Mensal (R$):</label>
-                        <input type="number" id="valor_aluguel" step="0.01" value="2500.00" required class="input-form input-form-blue">
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Cláusulas / Observações Contratuais:</label>
-                        <input type="text" id="obs_contrato" placeholder="Ex: Locação anual renovável" class="input-form">
+
+                    <!-- INTELIGÊNCIA COMERCIAL: CALCULADOS EM TEMPO REAL PELO JS -->
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form" style="color: #1e3a8a;">Aluguel Mensal Calculado (R$):</label>
+                            <input type="number" id="valor_aluguel" readonly class="input-form input-form-readonly" style="color: #1e3a8a; font-size: 13px;">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form" style="color: #b45309;">Taxa Operacional Anual (R$):</label>
+                            <input type="number" id="taxa_anual" readonly class="input-form input-form-readonly" style="color: #b45309; font-size: 13px;">
+                        </div>
                     </div>
 
                     <div class="flex-btn-group">
-                        <button type="submit" id="btn_salvar" class="btn-submit">💾 Firmar Contrato</button>
-                        <button type="button" id="btn_cancelar" onclick="limparFormularioImobiliario()" class="btn-cancel" style="display: none;">Cancelar</button>
+                        <button type="submit" id="btn_salvar" class="btn-submit">💾 Firmar Contrato de Locação</button>
+                        <button type="button" id="btn_cancelar" onclick="limparFormularioImobiliario()" class="btn-cancel" style="display: none; margin-top: 8px;">Cancelar</button>
                     </div>
                 </form>
             </div>
             
             <!-- QUADRO DIREITO: TABELA DE COMPARAÇÃO CORPORATIVA -->
             <div class="table-container col-table">
-                <div class="table-header-dark">Simulações Imobiliárias Ativas no Supabase</div>
+                <div class="table-header-dark">Contratos Imobiliários Firmados no Supabase</div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>Turma/Grupo</th>
-                                <th>Estrutura / Região</th>
+                                <th>Estrutura / Região de Alocação</th>
                                 <th>Área Útil</th>
-                                <th>Aluguel Base</th>
-                                <th style="text-align: center;" class="actions-legal">Ações Legais</th>
+                                <th>Aluguel Mensal</th>
+                                <th style="text-align: center;" class="actions-legal">Ações Disponíveis</th>
                             </tr>
                         </thead>
                         <tbody id="tabela_imoveis">
@@ -201,7 +318,6 @@
 
         </div>
 
-        <!-- SEÇÃO MANTIDA: RODAPÉ INSTITUCIONAL, HOMENAGEM E EVOLUÇÃO TECNOLÓGICA -->
         <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
             <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
             <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
@@ -210,6 +326,7 @@
         </footer>
     </div>
 
-    <script src="/estrutura/estrutura.js"></script>
+    <!-- Script de controle dinâmico local -->
+    <script src="/grid-layout-handler-anti-cache" onerror="this.src='/estrutura/estrutura.js'"></script>
 </body>
 </html>
