@@ -1,5 +1,5 @@
-# erppadrao - maquinas/app_maquinas.py
-from flask import Blueprint, request, render_template_string, session, jsonify
+# maquinas/app_maquinas.py - PARTE 1
+from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -10,11 +10,60 @@ def obter_conexao_master():
     from app_master import URL_SUPABASE
     return psycopg2.connect(URL_SUPABASE)
 
-@maquinas_blueprint.route('/maquinas')
+@maquinas_blueprint.route('/maquinas', methods=['GET'])
 def pagina_maquinas():
+    if not session.get('logado'):
+        return redirect('/login')
+    # Barreira de segurança: impede o acesso se a empresa não tiver o setup inicializado
+    if not session.get('empresa_inicializada'):
+        return redirect('/configuracao/inicializacao')
+        
     with open('maquinas/maquinas.html', 'r', encoding='utf-8') as f:
         html = f.read()
     return render_template_string(html)
+
+@maquinas_blueprint.route('/maquinas/maquinas.js', methods=['GET'])
+def rota_maquinas_js():
+    # Rota local que serve o script do departamento sem misturar com pastas estáticas globais
+    with open('maquinas/maquinas.js', 'r', encoding='utf-8') as f:
+        js_conteudo = f.read()
+    return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+
+@maquinas_blueprint.route('/api/maquinas/listar', methods=['GET'])
+def api_listar_maquinas():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    conexao = None
+    try:
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        
+        # Garante a criação da tabela metrológica antes do loop de leitura das equipes
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ativos_maquinas (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, potencia REAL,
+                consumo_eletrico REAL, consumo_agua REAL, consumo_gases REAL, velocidade TEXT,
+                avanco TEXT, comprimento_max REAL DEFAULT 0, diametro_max REAL DEFAULT 0, frequencia_manutencao INTEGER,
+                horas_trabalhadas INTEGER DEFAULT 0, preco_compra REAL, depreciacao_mensal REAL, valor_venda_final REAL,
+                operador_nome TEXT, custo_minuto_operador REAL, custo_minuto_maquina REAL
+            )
+        ''')
+        conexao.commit()
+        
+        cursor.execute('SELECT * FROM ativos_maquinas WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
+        linhas = cursor.fetchall()
+        cursor.close()
+        return jsonify([dict(linha) for linha in linhas])
+        
+    except psycopg2.DatabaseError as e:
+        print(f"Erro ao listar máquinas da equipe: {e}")
+        return jsonify({'status': 'erro', 'message': 'Falha interna ao recuperar registros do Supabase.'}), 500
+    finally:
+        if conexao:
+            conexao.close()
+# maquinas/app_maquinas.py - PARTE 2
 
 @maquinas_blueprint.route('/api/maquinas/salvar', methods=['POST'])
 def api_salvar_maquina():
@@ -22,100 +71,126 @@ def api_salvar_maquina():
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     dados = request.json
+    if not dados:
+        return jsonify({'status': 'erro', 'message': 'Dados ausentes'}), 400
+        
     id_reg = dados.get('id')
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     
-    conexao = obter_conexao_master()
-    cursor = conexao.cursor()
-    
-    # Inicia a tabela de engenharia de ativos expandida se não existir no Supabase
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS ativos_maquinas (
-            id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, potencia REAL,
-            consumo_eletrico REAL, consumo_agua REAL, consumo_gases REAL, velocidade TEXT,
-            avanco TEXT, comprimento_max REAL, diametro_max REAL, frequencia_manutencao INTEGER,
-            horas_trabalhadas INTEGER, preco_compra REAL, depreciacao_mensal REAL, valor_venda_final REAL,
-            operador_nome TEXT, custo_minuto_operador REAL, custo_minuto_maquina REAL
-        )
-    ''')
+    conexao = None
+    try:
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor()
+        
+        # 🔐 PROTEÇÃO CONTRA KEYERROR: Uso estrito de .get() com valores padrão seguros
+        nome_equipamento = dados.get('nome_equipamento', '').strip()
+        velocidade = dados.get('velocidade', '').strip()
+        avanco = dados.get('avanco', '').strip()
+        operador_nome = dados.get('operador_nome', '').strip()
+        
+        potencia = float(str(dados.get('potencia', 0)).replace(',', '.').strip())
+        consumo_eletrico = float(str(dados.get('consumo_eletrico', 0)).replace(',', '.').strip())
+        consumo_agua = float(str(dados.get('consumo_agua', 0)).replace(',', '.').strip())
+        consumo_gases = float(str(dados.get('consumo_gases', 0)).replace(',', '.').strip())
+        preco_compra = float(str(dados.get('preco_compra', 0)).replace(',', '.').strip())
+        depreciacao_mensal = float(str(dados.get('depreciacao_mensal', 0)).replace(',', '.').strip())
+        valor_venda_final = float(str(dados.get('valor_venda_final', 0)).replace(',', '.').strip())
+        custo_minuto_operador = float(str(dados.get('custo_minuto_operador', 0)).replace(',', '.').strip())
+        custo_minuto_maquina = float(str(dados.get('custo_minuto_maquina', 0)).replace(',', '.').strip())
+        
+        frequencia_manutencao = int(dados.get('frequencia_manutencao', 0))
+        
+        # Parâmetros ocultos ou legados preenchidos com segurança
+        comprimento_max = float(str(dados.get('comprimento_max', 0)).replace(',', '.').strip())
+        diametro_max = float(str(dados.get('diametro_max', 0)).replace(',', '.').strip())
+        horas_trabalhadas = int(dados.get('horas_trabalhadas', 0))
 
-    if id_reg:
-        cursor.execute('''
-            UPDATE ativos_maquinas SET nome_equipamento=%s, potencia=%s, consumo_eletrico=%s, 
-            consumo_agua=%s, consumo_gases=%s, velocidade=%s, avanco=%s, comprimento_max=%s, 
-            diametro_max=%s, frequencia_manutencao=%s, horas_trabalhadas=%s, preco_compra=%s, 
-            depreciacao_mensal=%s, valor_venda_final=%s, operador_nome=%s, custo_minuto_operador=%s, 
-            custo_minuto_maquina=%s WHERE id=%s AND equipe_id=%s
-        ''', (dados['nome_equipamento'], dados['potencia'], dados['consumo_eletrico'], 
-              dados['consumo_agua'], dados['consumo_gases'], dados['velocidade'], dados['avanco'], 
-              dados['comprimento_max'], dados['diametro_max'], dados['frequencia_manutencao'], 
-              dados['horas_trabalhadas'], dados['preco_compra'], dados['depreciacao_mensal'], 
-              dados['valor_venda_final'], dados['operador_nome'], dados['custo_minuto_operador'], 
-              dados['custo_minuto_maquina'], id_reg, id_equipe))
-    else:
-        cursor.execute('''
-            INSERT INTO ativos_maquinas (equipe_id, nome_equipamento, potencia, consumo_eletrico, 
-            consumo_agua, consumo_gases, velocidade, avanco, comprimento_max, diametro_max, 
-            frequencia_manutencao, horas_trabalhadas, preco_compra, depreciacao_mensal, 
-            valor_venda_final, operador_nome, custo_minuto_operador, custo_minuto_maquina)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (id_equipe, dados['nome_equipamento'], dados['potencia'], dados['consumo_eletrico'], 
-              dados['consumo_agua'], dados['consumo_gases'], dados['velocidade'], dados['avanco'], 
-              dados['comprimento_max'], dados['diametro_max'], dados['frequencia_manutencao'], 
-              dados['horas_trabalhadas'], dados['preco_compra'], dados['depreciacao_mensal'], 
-              dados['valor_venda_final'], dados['operador_nome'], dados['custo_minuto_operador'], 
-              dados['custo_minuto_maquina']))
+        if id_reg:
+            cursor.execute('''
+                UPDATE ativos_maquinas SET nome_equipamento=%s, potencia=%s, consumo_eletrico=%s, 
+                consumo_agua=%s, consumo_gases=%s, velocidade=%s, avanco=%s, comprimento_max=%s, 
+                diametro_max=%s, frequencia_manutencao=%s, horas_trabalhadas=%s, preco_compra=%s, 
+                depreciacao_mensal=%s, valor_venda_final=%s, operador_nome=%s, custo_minuto_operador=%s, 
+                custo_minuto_maquina=%s WHERE id=%s AND equipe_id=%s
+            ''', (nome_equipamento, potencia, consumo_eletrico, consumo_agua, consumo_gases, 
+                  velocidade, avanco, comprimento_max, diametro_max, frequencia_manutencao, 
+                  horas_trabalhadas, preco_compra, depreciacao_mensal, valor_venda_final, 
+                  operador_nome, custo_minuto_operador, custo_minuto_maquina, id_reg, id_equipe))
+        else:
+            cursor.execute('''
+                INSERT INTO ativos_maquinas (equipe_id, nome_equipamento, potencia, consumo_eletrico, 
+                consumo_agua, consumo_gases, velocidade, avanco, comprimento_max, diametro_max, 
+                frequencia_manutencao, horas_trabalhadas, preco_compra, depreciacao_mensal, 
+                valor_venda_final, operador_nome, custo_minuto_operador, custo_minuto_maquina)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (id_equipe, nome_equipamento, potencia, consumo_eletrico, consumo_agua, 
+                  consumo_gases, velocidade, avanco, comprimento_max, diametro_max, 
+                  frequencia_manutencao, horas_trabalhadas, preco_compra, depreciacao_mensal, 
+                  valor_venda_final, operador_nome, custo_minuto_operador, custo_minuto_maquina))
+            
+        conexao.commit()
+        cursor.close()
+        return jsonify({'status': 'sucesso', 'message': 'Ativo industrial atualizado com sucesso.'})
         
-    conexao.commit()
-    cursor.close()
-    conexao.close()
-    return jsonify({'status': 'sucesso'})
-@maquinas_blueprint.route('/api/maquinas/listar', methods=['GET'])
-def api_listar_maquinas():
-    if not session.get('logado'):
-        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
-        
-    conexao = obter_conexao_master()
-    cursor = conexao.cursor(cursor_factory=RealDictCursor)
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    
-    cursor.execute('SELECT * FROM ativos_maquinas WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
-    linhas = cursor.fetchall()
-    
-    cursor.close()
-    conexao.close()
-    return jsonify([dict(linha) for linha in linhas])
+    except (ValueError, TypeError, psycopg2.DatabaseError) as err:
+        if conexao:
+            conexao.rollback()
+        print(f"Erro transacional ao salvar maquina no Supabase: {err}")
+        return jsonify({'status': 'erro', 'message': 'Falha interna ao processar gravação.'}), 500
+    finally:
+        if conexao:
+            conexao.close()
+
 
 @maquinas_blueprint.route('/api/maquinas/buscar/<int:id_reg>', methods=['GET'])
 def api_buscar_maquina_id(id_reg):
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
-    conexao = obter_conexao_master()
-    cursor = conexao.cursor(cursor_factory=RealDictCursor)
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    
-    cursor.execute('SELECT * FROM ativos_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-    maquina = cursor.fetchone()
-    
-    cursor.close()
-    conexao.close()
-    if not maquina: 
-        return jsonify({'status': 'erro', 'message': 'Ativo não localizado'}), 404
-    return jsonify(dict(maquina))
+    conexao = None
+    try:
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        
+        cursor.execute('SELECT * FROM ativos_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+        maquina = cursor.fetchone()
+        cursor.close()
+        
+        if not maquina: 
+            return jsonify({'status': 'erro', 'message': 'Ativo não localizado.'}), 404
+        return jsonify(dict(maquina))
+        
+    except psycopg2.DatabaseError as e:
+        print(f"Erro ao buscar maquina por ID: {e}")
+        return jsonify({'status': 'erro', 'message': 'Falha na requisição.'}), 500
+    finally:
+        if conexao:
+            conexao.close()
+
 
 @maquinas_blueprint.route('/api/maquinas/deletar/<int:id_reg>', methods=['DELETE'])
 def api_deletar_maquina(id_reg):
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
-    conexao = obter_conexao_master()
-    cursor = conexao.cursor()
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    
-    cursor.execute('DELETE FROM ativos_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-    
-    conexao.commit()
-    cursor.close()
-    conexao.close()
-    return jsonify({'status': 'removido'})
+    conexao = None
+    try:
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor()
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        
+        # Garante o isolamento de segurança estrito entre grupos de alunos
+        cursor.execute('DELETE FROM ativos_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+        conexao.commit()
+        cursor.close()
+        return jsonify({'status': 'removido', 'message': 'Ativo desmobilizado do parque fabril.'})
+        
+    except psycopg2.DatabaseError as e:
+        if conexao:
+            conexao.rollback()
+        print(f"Erro ao deletar maquina: {e}")
+        return jsonify({'status': 'erro', 'message': 'Erro de integridade ao descartar ativo.'}), 500
+    finally:
+        if conexao:
+            conexao.close()
