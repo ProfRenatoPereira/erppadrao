@@ -26,7 +26,8 @@ def rota_estrutura_js():
         js_conteudo = f.read()
     return js_conteudo, 200, {'Content-Type': 'application/javascript'}
 
-@app_rest = estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
+# 🔥 CORREÇÃO DE SINTAXE APLICADA AQUI: Remoção do fragmento '@app_rest ='
+@estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
 def api_imoveis_listar():
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
@@ -92,7 +93,7 @@ def api_imoveis_salvar():
             ''', (id_equipe, dados.get('tipo_imovel'), dados.get('regiao'), area_util, valor_aluguel, 
                   valor_condominio, dados.get('obs_contrato'), nome_empresa))
                   
-        # 🔥 CORREÇÃO LOGICA: Soma todos os aluguéis ativos da equipe para não sobrescrever dados
+        # Soma todos os aluguéis ativos da equipe para não sobrescrever dados
         cursor.execute('''
             UPDATE config_simulacao 
             SET valor_aluguel = (SELECT COALESCE(SUM(valor_aluguel + valor_condominio), 0) FROM imoveis_simulacao WHERE equipe_id = %s)
@@ -124,7 +125,7 @@ def api_individual_imovel(id_reg):
             # Remove o registro imobiliário com isolamento estrito de equipe
             cursor.execute('DELETE FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
             
-            # 🔥 Recalcula e atualiza o Custo Fixo restante (ou zera se não houver mais contratos)
+            # Recalcula e atualiza o Custo Fixo restante (ou zera se não houver mais contratos)
             cursor.execute('''
                 UPDATE config_simulacao 
                 SET valor_aluguel = (SELECT COALESCE(SUM(valor_aluguel + valor_condominio), 0) FROM imoveis_simulacao WHERE equipe_id = %s)
