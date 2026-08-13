@@ -1,133 +1,199 @@
+<!-- estrutura/estrutura.html - PARTE 1 - BLOCO A -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Investimentos Imobiliários - Estrutura de Custos</title>
-    <script src="https://tailwindcss.com"></script>
+    <link rel="icon" type="image/png" href="/static/logo.png">
     <style>
-        /* Estilos de acessibilidade e transições suaves */
-        html { font-size: 16px; transition: font-size 0.15s ease; }
+        /* Estilos de acessibilidade e transições suaves nativos */
+        html { font-size: 16px; transition: font-size 0.15s ease; box-sizing: border-box; }
+        *, *:before, *:after { box-sizing: inherit; }
+        body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
+        
+        /* Layout e Grid de Infraestrutura */
+        .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
+        .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; }
+        .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
+        .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        
+        /* Cartões de Métricas Financeiras */
+        .metric-card { padding: 16px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .metric-card p { font-size: 11px; text-transform: uppercase; tracking: 0.05em; margin: 0 0 2px 0; }
+        .metric-card h3 { font-size: 18px; font-weight: 900; margin: 0; }
+        .metric-card h4 { font-size: 16px; font-weight: 900; margin: 0; }
+        
+        .bg-blue-metric { background-color: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
+        .bg-emerald-metric { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+        .text-emerald-value { color: #059669; }
+        .bg-slate-metric { background-color: #f8fafc; border-color: #cbd5e1; color: #334155; }
+        .bg-amber-metric { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
+        .text-amber-value { color: #d97706; }
+        
+        /* Cabeçalhos e Títulos */
+        .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; }
+        .page-title { font-size: 20px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; letter-spacing: -0.025em; margin: 0; }
+        .card-title { font-size: 14px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; tracking: 0.05em; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
+        
+        /* Componentes de Formulário e Tabelas */
+        .card { background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .flex-col-gap { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; text-align: left; }
+        .label-form { font-size: 12px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
+        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 13px; background-color: #ffffff; color: #1f2937; }
+        .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #334155; }
+        .input-form-blue { font-weight: bold; color: #1e3a8a; font-size: 14px; }
+        
+        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); background-color: #ffffff; }
+        .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 12px; color: #ffffff; text-transform: uppercase; tracking: 0.05em; text-align: left; }
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
+        th { padding: 12px; }
+        tbody { color: #374151; }
+        tr { border-bottom: 1px solid #e5e7eb; }
+        td { padding: 12px; }
+        
+        /* Botões Operacionais */
+        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; }
+        .btn-submit { width: 100%; background-color: #16a34a; color: #ffffff; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; tracking: 0.05em; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); transition: background-color 0.15s ease; }
+        .btn-submit:hover { background-color: #15803d; }
+        .btn-cancel { background-color: #e5e7eb; color: #374151; padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; }
+        .btn-delete-action { background-color: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .flex-btn-group { padding-top: 8px; display: flex; gap: 8px; }
+        
+        /* Media Queries Adaptativas */
+        @media (min-width: 640px) { .grid-top { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (min-width: 1024px) { .grid-top { grid-template-columns: repeat(4, minmax(0, 1fr)); } .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
+        
+        /* Modos Visuais Customizados */
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .card, body.dark-mode .metric-card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        body.dark-mode thead { background-color: #334155 !important; color: #ffffff !important; }
+        body.dark-mode tr { border-bottom-color: #334155 !important; }
+        body.dark-mode .bg-blue-metric, body.dark-mode .bg-emerald-metric, body.dark-mode .bg-slate-metric, body.dark-mode .bg-amber-metric { color: #f8fafc !important; }
+        body.dark-mode .text-emerald-value, body.dark-mode .text-amber-value { color: #38bdf8 !important; }
         
         body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-        body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste .table-container, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
         body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
-        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste label { color: #ffff00 !important; }
+        body.alto-contraste button, body.alto-contraste .btn-submit, body.alto-contraste .btn-delete-action { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste strong, body.alto-contraste div { color: #ffff00 !important; }
         
         @media print { #barra-acessibilidade, form, header, button, .actions-legal { display: none !important; } body { background-color: #fff; color: #000; } }
     </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased text-gray-800 transition-all duration-200">
+<!-- estrutura/estrutura.html - PARTE 1 - BLOCO B -->
+<body class="transition-all duration-200">
 
     <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
-    <div id="barra-acessibilidade" class="bg-[#0f172a] px-4 py-2 flex flex-col sm:flex-row justify-between items-center text-xs border-b border-[#334155] text-white sticky top-0 z-50 gap-2">
-        <span class="font-extrabold text-blue-400">®ψΣ TERADMAS</span>
-        <div class="flex flex-wrap gap-2 items-center justify-center">
-            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">⚫ Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">🌙 Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] px-2 py-0.5 rounded font-bold">🔊 Ativar Leitor</button>
+    <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 12px; position: sticky; top: 0; z-index: 50; user-select: none;">
+        <span style="font-weight: 800; color: #38bdf8;">®ψΣ TERADMAS</span>
+        <div style="display: flex; align-items: center; gap: 4px;">
+            <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
     </div>
 
-    <div class="container mx-auto p-4 max-w-7xl">
+    <div class="container">
         
         <!-- BARRA DE SUB-INDICADORES FINANCEIROS REQUERIDOS -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 font-bold text-sm text-center">
-            <div class="metric-card bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm">
-                <p class="text-[11px] uppercase text-blue-900 tracking-wider mb-0.5">💰 Capital Total Simulador</p>
-                <h3 class="text-lg text-blue-900 font-black" id="top_capital_total">R$ 0,00</h3>
+        <div class="grid-top">
+            <div class="metric-card bg-blue-metric">
+                <p>💰 Capital Total Simulador</p>
+                <h3 id="top_capital_total">R$ 0,00</h3>
             </div>
-            <div class="metric-card bg-emerald-50 border border-emerald-200 p-4 rounded-xl shadow-sm">
-                <p class="text-[11px] uppercase text-emerald-900 tracking-wider mb-0.5">🟩 Caixa de Giro Disponível</p>
-                <h3 class="text-lg text-emerald-600 font-black" id="top_giro_global">R$ 0,00</h3>
+            <div class="metric-card bg-emerald-metric">
+                <p>🟩 Caixa de Giro Disponível</p>
+                <h3 class="text-emerald-value" id="top_giro_global">R$ 0,00</h3>
             </div>
-            <div class="metric-card bg-slate-50 border border-slate-300 p-4 rounded-xl shadow-sm">
-                <p class="text-[11px] uppercase text-slate-700 tracking-wider mb-0.5">🔒 Custo Fixo (Contratos Ativos)</p>
-                <h4 class="text-base text-slate-800 font-black" id="top_custo_fixo">R$ 0,00</h4>
+            <div class="metric-card bg-slate-metric">
+                <p>🔒 Custo Fixo (Contratos Ativos)</p>
+                <h4 id="top_custo_fixo">R$ 0,00</h4>
             </div>
-            <div class="metric-card bg-amber-50 border border-amber-300 p-4 rounded-xl shadow-sm">
-                <p class="text-[11px] uppercase text-amber-900 tracking-wider mb-0.5">📈 Custos Variáveis Totais</p>
-                <h4 class="text-base text-amber-700 font-black" id="top_custo_variavel">R$ 0,00</h4>
+            <div class="metric-card bg-amber-metric">
+                <p>📈 Custos Variáveis Totais</p>
+                <h4 class="text-amber-value" id="top_custo_variavel">R$ 0,00</h4>
             </div>
         </div>
 
-        <div class="border-b pb-2 mb-4">
-            <h2 class="text-xl font-black text-blue-900 uppercase tracking-tight" id="txt_titulo_pagina">Página 1: Investimentos Imobiliários e Estrutura de Custos Fixos</h2>
+        <div class="page-header">
+            <h2 class="page-title" id="txt_titulo_pagina">Página 1: Investimentos Imobiliários e Estrutura de Custos Fixos</h2>
         </div>
-
+<!-- estrutura/estrutura.html - PARTE 2 -->
         <!-- 🚀 ARQUITETURA DE DUAS COLUNAS LADO A LADO -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div class="grid-main">
             <!-- QUADRO ESQUERDO: FORMULÁRIO DE CADASTRO (Ficha Técnica) -->
-            <div class="card bg-white p-5 rounded-xl border border-gray-200 shadow-sm lg:col-span-5">
-                <h3 class="text-sm font-black text-blue-900 uppercase tracking-wider mb-4 pb-1 border-b" id="txt_sub">Alocação de Espaço Físico</h3>
-                <form id="formImobiliario" onsubmit="salvarImovel(event)" class="space-y-3 text-xs">
+            <div class="card col-form">
+                <h3 class="card-title" id="txt_sub">Alocação de Espaço Físico</h3>
+                <form id="formImobiliario" onsubmit="salvarImovel(event)">
                     <input type="hidden" id="imovel_id" value="">
                     
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-600 uppercase">Identificação da Empresa / Grupo:</label>
-                        <input type="text" id="nome_grupo_display" readonly class="bg-gray-100 font-bold p-2 rounded-lg border outline-none text-slate-700">
+                    <div class="flex-col-gap">
+                        <label class="label-form">Identificação da Empresa / Grupo:</label>
+                        <input type="text" id="nome_grupo_display" readonly class="input-form input-form-readonly">
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-600 uppercase">Tipo do Imóvel / Galpão:</label>
-                        <select id="tipo_imovel" required class="border p-2 rounded-lg bg-white outline-none">
+                    <div class="flex-col-gap">
+                        <label class="label-form">Tipo do Imóvel / Galpão:</label>
+                        <select id="tipo_imovel" required class="select-form">
                             <option value="Galpão Industrial">Galpão Industrial de Médio Porte</option>
                             <option value="Sala Comercial">Sala Comercial / Escritório Integrado</option>
                             <option value="Estrutura de Vendas">Loja de Vendas e Showroom</option>
                         </select>
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-600 uppercase">Região / Localização Industrial:</label>
-                        <select id="regiao" required class="border p-2 rounded-lg bg-white outline-none">
+                    <div class="flex-col-gap">
+                        <label class="label-form">Região / Localização Industrial:</label>
+                        <select id="regiao" required class="select-form">
                             <option value="Distrito Industrial">Distrito Industrial (Zonamento Comercial)</option>
                             <option value="Zerar Logística - Centro">Centro Urbano (Zonamento Misto)</option>
                         </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="flex flex-col gap-1">
-                            <label class="font-bold text-gray-600 uppercase">Área Útil (m²):</label>
-                            <input type="number" id="area_util" value="150" required min="1" class="border p-2 rounded-lg outline-none">
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Área Útil (m²):</label>
+                            <input type="number" id="area_util" value="150" required min="1" class="input-form">
                         </div>
-                        <div class="flex flex-col gap-1">
-                            <label class="font-bold text-gray-600 uppercase">Taxa de Condomínio (R$):</label>
-                            <input type="number" id="valor_condominio" step="0.01" value="350.00" class="border p-2 rounded-lg outline-none">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Taxa de Condomínio (R$):</label>
+                            <input type="number" id="valor_condominio" step="0.01" value="350.00" class="input-form">
                         </div>
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-600 uppercase">Valor do Aluguel Mensal (R$):</label>
-                        <input type="number" id="valor_aluguel" step="0.01" value="2500.00" required class="border p-2 rounded-lg outline-none font-bold text-blue-900 text-sm">
+                    <div class="flex-col-gap">
+                        <label class="label-form">Valor do Aluguel Mensal (R$):</label>
+                        <input type="number" id="valor_aluguel" step="0.01" value="2500.00" required class="input-form input-form-blue">
                     </div>
-                    <div class="flex flex-col gap-1">
-                        <label class="font-bold text-gray-600 uppercase">Cláusulas / Observações Contratuais:</label>
-                        <input type="text" id="obs_contrato" placeholder="Ex: Locação anual renovável" class="border p-2 rounded-lg outline-none">
+                    <div class="flex-col-gap">
+                        <label class="label-form">Cláusulas / Observações Contratuais:</label>
+                        <input type="text" id="obs_contrato" placeholder="Ex: Locação anual renovável" class="input-form">
                     </div>
 
-                    <div class="pt-2 flex gap-2">
-                        <button type="submit" id="btn_salvar" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-2.5 rounded-lg uppercase tracking-wider text-[11px] transition">💾 Firmar Contrato</button>
-                        <button type="button" id="btn_cancelar" onclick="limparFormularioImobiliario()" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hidden text-[11px]">Cancelar</button>
+                    <div class="flex-btn-group">
+                        <button type="submit" id="btn_salvar" class="btn-submit">💾 Firmar Contrato</button>
+                        <button type="button" id="btn_cancelar" onclick="limparFormularioImobiliario()" class="btn-cancel" style="display: none;">Cancelar</button>
                     </div>
                 </form>
             </div>
+            
             <!-- QUADRO DIREITO: TABELA DE COMPARAÇÃO CORPORATIVA -->
-            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm lg:col-span-7">
-                <div class="p-3 bg-gray-800 font-bold text-xs text-white uppercase tracking-wider">Simulações Imobiliárias Ativas no Supabase</div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs text-left">
-                        <thead class="bg-gray-100 uppercase font-bold text-gray-600 border-b">
+            <div class="table-container col-table">
+                <div class="table-header-dark">Simulações Imobiliárias Ativas no Supabase</div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
                             <tr>
-                                <th class="p-3">Turma/Grupo</th>
-                                <th class="p-3">Estrutura / Região</th>
-                                <th class="p-3">Área Útil</th>
-                                <th class="p-3">Aluguel Base</th>
-                                <th class="p-3 text-center actions-legal">Ações Legais</th>
+                                <th>Turma/Grupo</th>
+                                <th>Estrutura / Região</th>
+                                <th>Área Útil</th>
+                                <th>Aluguel Base</th>
+                                <th style="text-align: center;" class="actions-legal">Ações Legais</th>
                             </tr>
                         </thead>
-                        <tbody id="tabela_imoveis" class="divide-y text-gray-700">
+                        <tbody id="tabela_imoveis">
+                            <!-- Alimentação dinâmica via AJAX realizada pelo arquivo estrutura.js -->
                         </tbody>
                     </table>
                 </div>
@@ -136,11 +202,11 @@
         </div>
 
         <!-- SEÇÃO MANTIDA: RODAPÉ INSTITUCIONAL, HOMENAGEM E EVOLUÇÃO TECNOLÓGICA -->
-        <footer class="mt-12 pt-6 border-t-2 border-blue-900 text-xs text-gray-500 pb-4 text-justify leading-relaxed font-sans">
-            <p class="mb-4"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
-            <p class="text-center font-bold mb-1">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
-            <p class="text-center font-black text-blue-900 mb-1">© Copyright Física Renato Pereira ®ψΣ.</p>
-            <p class="text-center text-slate-400">Ed. 00-10/2024. Rev. 01-05/2026.</p>
+        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
+            <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
         </footer>
     </div>
 
