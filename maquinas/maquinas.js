@@ -2,12 +2,12 @@
 const catalogos = {
     "cnc_mazak": { 
         nome: "Torno CNC Mazak Quick Turn", pot: 25, cons: 18, vel: "6000 RPM", avan: "36000 mm/min", 
-        mnt: 1000, preco: 450000, dep: 3750, venda: 90000, 
+        comp: 500, diam: 350, mnt: 1000, preco: 450000, dep: 3750, venda: 90000, 
         operador: "Carlos Souza", custo_op: 0.25, agua: 0.050, gases: 0.120 
     },
     "fresadora": { 
         nome: "Fresadora Universal", pot: 15, cons: 11, vel: "3000 RPM", avan: "12000 mm/min", 
-        mnt: 750, preco: 180000, dep: 1500, venda: 36000, 
+        comp: 800, diam: 400, mnt: 750, preco: 180000, dep: 1500, venda: 36000, 
         operador: "Marcos Lima", custo_op: 0.20, agua: 0.010, gases: 0.000
     }
 };
@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", function() {
     carregarDadosIniciais();
 });
 
+// 🔥 CORREÇÃO DE ACESSIBILIDADE: Nomes sintonizados rigorosamente com o HTML
 function mudarFonte(dir) {
     tamanhoFonteAtual += dir;
     document.documentElement.style.fontSize = Math.max(12, Math.min(24, tamanhoFonteAtual)) + 'px';
@@ -67,13 +68,13 @@ function carregarPreDefinido() {
         document.getElementById('operador_nome').value = item.operador;
         document.getElementById('custo_minuto_operador').value = item.custo_op;
         
-        // Injeção metrológica de fluidos e pneumática com tratamento de segurança
         document.getElementById('consumo_agua').value = item.agua.toFixed(3);
         document.getElementById('consumo_gases').value = item.gases.toFixed(3);
         
         calcularMinutoMaquina();
     }
 }
+// maquinas/maquinas.js - PARTE 2
 
 function calcularMinutoMaquina() {
     const depreciacao = parseFloat(document.getElementById('depreciacao_mensal').value) || 0;
@@ -103,12 +104,10 @@ function calcularMinutoMaquina() {
     const inputCMM = document.getElementById('custo_minuto_maquina');
     if (inputCMM) inputCMM.value = c_mm.toFixed(4);
 }
-// maquinas/maquinas.js - PARTE 2
 
 async function carregarDadosIniciais() {
     try {
         const resMetricas = await fetch('/api/financeiro/metricas?dept=maquinas');
-        if (!resMetricas.ok) throw new Error("Falha ao processar métricas de engenharia.");
         const metricas = await resMetricas.json();
         
         document.getElementById('top_capital_total').innerText = `R$ ${(metricas.capital_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
@@ -131,28 +130,26 @@ async function carregarDadosIniciais() {
             return;
         }
 
-        tbody.innerHTML = ativos.map(a => `
-            <tr>
-                <td style="font-weight: 900; color: #1e3a8a;">${a.nome_equipamento}<br><span style="font-size: 11px; color: #64748b;">Op: ${a.operador_nome}</span></td>
-                <td><strong>Potência:</strong> ${a.potencia} kW<br><span style="font-size: 11px; color: #475569;">H2O: ${a.consumo_agua} m³/h | Gás: ${a.consumo_gases} m³/h</span></td>
-                <td style="font-family: monospace;">${a.frequencia_manutencao} h</td>
-                <td style="color: #16a34a; font-weight: 800;">R$ ${(a.custo_minuto_maquina || 0).toFixed(4)}/min</td>
-                <td style="text-align: center; white-space: nowrap;" class="actions-legal">
-                    <button onclick="editarMaquina(${a.id})" class="btn-top" style="background-color: #fffbef; color: #b45309; border-color: #fef3c7; margin-right: 2px;">Editar</button>
-                    <button onclick="deletarMaquina(${a.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2;">Descartar</button>
+        tbody.innerHTML = ativos.map(m => `
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+                <td style="padding: 12px;"><strong>${m.nome_equipamento}</strong></td>
+                <td style="padding: 12px;">Elet: ${m.consumo_eletrico}kW | Água: ${m.consumo_agua || 0}m³<br>Gás: ${m.consumo_gases || 0}m³/h</td>
+                <td style="padding: 12px;"><strong>${m.operador_nome}</strong></td>
+                <td style="padding: 12px; font-family: monospace; font-weight: bold; color: #1e3a8a;">R$ ${(m.custo_minuto_maquina || 0).toFixed(4)}/min</td>
+                <td style="padding: 12px; text-align: center; white-space: nowrap;" class="actions-legal">
+                    <button onclick="editarMaquina(${m.id})" class="btn-top" style="background-color: #fffbef; color: #b45309; border-color: #fef3c7; margin-right: 2px;">Editar</button>
+                    <button onclick="deletarMaquina(${m.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2;">Descartar</button>
                 </td>
             </tr>
         `).join('');
-    } catch (err) {
-        console.error("Erro na carga inicial do Supabase:", err);
-    }
+    } catch (err) { console.error(err); }
 }
 
 async function salvarMaquina(e) {
     e.preventDefault();
     const dados = {
         id: document.getElementById('registro_id').value ? parseInt(document.getElementById('registro_id').value) : null,
-        nome_equipamento: document.getElementById('nome_equipamento').value.trim(),
+        nome_equipamento: document.getElementById('nome_equipamento').value,
         potencia: parseFloat(document.getElementById('potencia').value) || 0,
         consumo_eletrico: parseFloat(document.getElementById('consumo_eletrico').value) || 0,
         consumo_agua: parseFloat(document.getElementById('consumo_agua').value) || 0,
@@ -163,21 +160,19 @@ async function salvarMaquina(e) {
         preco_compra: parseFloat(document.getElementById('preco_compra').value) || 0,
         depreciacao_mensal: parseFloat(document.getElementById('depreciacao_mensal').value) || 0,
         valor_venda_final: parseFloat(document.getElementById('valor_venda_final').value) || 0,
-        operador_nome: document.getElementById('operador_nome').value.trim(),
+        operador_nome: document.getElementById('operador_nome').value,
         custo_minuto_operador: parseFloat(document.getElementById('custo_minuto_operador').value) || 0,
         custo_minuto_maquina: parseFloat(document.getElementById('custo_minuto_maquina').value) || 0
     };
 
     try {
-        const res = await fetch('/api/maquinas/salvar', {
+        await fetch('/api/maquinas/salvar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
-        if (res.ok) {
-            limparFormularioMaquina();
-            carregarDadosIniciais();
-        }
+        limparFormularioMaquina();
+        carregarDadosIniciais();
     } catch (err) { console.error(err); }
 }
 
@@ -190,8 +185,8 @@ async function editarMaquina(id) {
         document.getElementById('nome_equipamento').value = m.nome_equipamento;
         document.getElementById('potencia').value = m.potencia;
         document.getElementById('consumo_eletrico').value = m.consumo_eletrico;
-        document.getElementById('consumo_agua').value = m.consumo_agua;
-        document.getElementById('consumo_gases').value = m.consumo_gases;
+        document.getElementById('consumo_agua').value = m.consumo_agua || 0;
+        document.getElementById('consumo_gases').value = m.consumo_gases || 0;
         document.getElementById('velocidade').value = m.velocidade || '';
         document.getElementById('avanco').value = m.avanco || '';
         document.getElementById('frequencia_manutencao').value = m.frequencia_manutencao;
@@ -202,17 +197,17 @@ async function editarMaquina(id) {
         document.getElementById('custo_minuto_operador').value = m.custo_minuto_operador;
         document.getElementById('custo_minuto_maquina').value = m.custo_minuto_maquina;
         
-        document.getElementById('btn_salvar').innerText = "🔄 Atualizar Ativo Mecânico";
+        document.getElementById('btn_salvar').innerText = "🔄 Atualizar Máquina";
         const btnCancel = document.getElementById('btn_cancelar');
         if (btnCancel) btnCancel.style.display = 'inline-block';
     } catch (err) { console.error(err); }
 }
 
 async function deletarMaquina(id) {
-    if (!confirm('Confirmar o descarte e baixa contábil deste ativo do parque fabril?')) return;
+    if(!confirm('Deseja descartar este ativo imobilizado do parque fabril da empresa?')) return;
     try {
-        const res = await fetch(`/api/maquinas/deletar/${id}`, { method: 'DELETE' });
-        if (res.ok) carregarDadosIniciais();
+        await fetch(`/api/maquinas/deletar/${id}`, { method: 'DELETE' });
+        carregarDadosIniciais();
     } catch (err) { console.error(err); }
 }
 
