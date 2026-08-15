@@ -1,4 +1,4 @@
-// configuracao/inicializacao.js
+// erppadrao - configuracao/inicializacao.js
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 
@@ -25,8 +25,10 @@ function alternarAltoContraste() {
 function alternarLeitorAudio() {
     leitorAtivo = !leitorAtivo;
     const btn = document.getElementById('btn-leitor-audio');
+    
     if (btn) {
         btn.innerText = leitorAtivo ? "🔇 Desativar Leitor" : "🔊 Ativar Leitor";
+        btn.style.backgroundColor = leitorAtivo ? "#ef4444" : "#0284c7";
     }
     
     if (leitorAtivo) {
@@ -45,6 +47,16 @@ function alternarLeitorAudio() {
         
         const utterance = new SpeechSynthesisUtterance(blocosValidos.join(". "));
         utterance.lang = 'pt-BR';
+        
+        // Restaura o botão automaticamente quando a leitura terminar por completo
+        utterance.onend = function() {
+            leitorAtivo = false;
+            if (btn) {
+                btn.innerText = "🔊 Ativar Leitor";
+                btn.style.backgroundColor = "#0284c7";
+            }
+        };
+        
         window.speechSynthesis.speak(utterance);
     } else {
         window.speechSynthesis.cancel();
@@ -54,6 +66,7 @@ function alternarLeitorAudio() {
 // SALVAMENTO ASSÍNCRONO COM TRATAMENTO E ALERTA ACESSÍVEL DE ERROS
 async function salvarInicializacao(e) {
     e.preventDefault();
+    window.speechSynthesis.cancel();
     
     const msgErroDiv = document.getElementById('msg_erro');
     if (msgErroDiv) {
@@ -82,15 +95,14 @@ async function salvarInicializacao(e) {
         const r = await res.json();
         
         if (res.ok && r.status === 'sucesso') {
-            // Redireciona o grupo diretamente para a Página 1 (Módulo Imobiliário)
-            window.location.href = '/estrutura'; 
+            // 🌟 CORREÇÃO DE FLUXO: Redireciona para o painel principal (Grid) unificado
+            window.location.href = '/grid'; 
         } else {
             const erroTxt = r.message || "Erro crítico de persistência. Verifique os dados informados.";
             if (msgErroDiv) {
                 msgErroDiv.innerText = "❌ " + erroTxt;
                 msgErroDiv.style.display = 'block';
                 
-                // Se o leitor de áudio estiver ativo, força a leitura imediata da falha
                 if (leitorAtivo) {
                     window.speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance("Falha na inicialização. " + erroTxt);
