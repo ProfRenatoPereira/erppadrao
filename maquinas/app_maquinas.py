@@ -1,4 +1,5 @@
-# maquinas/app_maquinas.py - PARTE 1
+# erppadrao - maquinas/app_maquinas.py - PARTE 1 DE 3
+import os
 from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -14,31 +15,46 @@ def obter_conexao_master():
 def pagina_maquinas():
     if not session.get('logado'):
         return redirect('/login')
-    # Barreira de segurança: impede o acesso se a empresa não tiver o setup inicializado
     if not session.get('empresa_inicializada'):
         return redirect('/configuracao/inicializacao')
         
-    with open('maquinas/maquinas.html', 'r', encoding='utf-8') as f:
-        html = f.read()
-    return render_template_string(html)
+    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta da pasta do módulo
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_html = os.path.join(diretorio_atual, 'maquinas.html')
+    
+    try:
+        with open(caminho_html, 'r', encoding='utf-8') as f:
+            html = f.read()
+        return render_template_string(html)
+    except FileNotFoundError:
+        return "Erro Crítico: Arquivo 'maquinas.html' não encontrado no servidor.", 404
 
 @maquinas_blueprint.route('/maquinas/maquinas.js', methods=['GET'])
 def rota_maquinas_js():
-    # Rota local que serve o script do departamento sem misturar com pastas estáticas globais
-    with open('maquinas/maquinas.js', 'r', encoding='utf-8') as f:
-        js_conteudo = f.read()
-    return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta do script encapsulado
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_js = os.path.join(diretorio_atual, 'maquinas.js')
+    
+    try:
+        with open(caminho_js, 'r', encoding='utf-8') as f:
+            js_conteudo = f.read()
+        return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+    except FileNotFoundError:
+        return "console.error('Erro Crítico: Arquivo maquinas.js não encontrado.');", 404
+# erppadrao - maquinas/app_maquinas.py - PARTE 2 DE 3
 
 @maquinas_blueprint.route('/api/maquinas/listar', methods=['GET'])
 def api_listar_maquinas():
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
     conexao = None
+    cursor = None
+    
     try:
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        id_equipe = session.get('id_equipe', 'equipe_alfa')
         
         # Garante a criação da tabela metrológica antes do loop de leitura das equipes
         cursor.execute('''
@@ -54,16 +70,17 @@ def api_listar_maquinas():
         
         cursor.execute('SELECT * FROM ativos_maquinas WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        cursor.close()
         return jsonify([dict(linha) for linha in linhas])
         
     except psycopg2.DatabaseError as e:
+        if conexao: conexao.rollback()
         print(f"Erro ao listar máquinas da equipe: {e}")
         return jsonify({'status': 'erro', 'message': 'Falha interna ao recuperar registros do Supabase.'}), 500
     finally:
-        if conexao:
-            conexao.close()
-# maquinas/app_maquinas.py - PARTE 2
+        # 🛡️ PROTEÇÃO DO POOL: Garante o fechamento total das conexões mesmo sob falhas SQL
+        if cursor: cursor.close()
+        if conexao: conexao.close()
+# erppadrao - maquinas/app_maquinas.py - PARTE 3 DE 3
 
 @maquinas_blueprint.route('/api/maquinas/salvar', methods=['POST'])
 def api_salvar_maquina():
@@ -78,6 +95,7 @@ def api_salvar_maquina():
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     
     conexao = None
+    cursor = None
     try:
         conexao = obter_conexao_master()
         cursor = conexao.cursor()
@@ -129,7 +147,6 @@ def api_salvar_maquina():
                   valor_venda_final, operador_nome, custo_minuto_operador, custo_minuto_maquina))
             
         conexao.commit()
-        cursor.close()
         return jsonify({'status': 'sucesso', 'message': 'Ativo industrial atualizado com sucesso.'})
         
     except (ValueError, TypeError, psycopg2.DatabaseError) as err:
@@ -138,8 +155,8 @@ def api_salvar_maquina():
         print(f"Erro transacional ao salvar maquina no Supabase: {err}")
         return jsonify({'status': 'erro', 'message': 'Falha interna ao processar gravação.'}), 500
     finally:
-        if conexao:
-            conexao.close()
+        if cursor: cursor.close()
+        if conexao: conexao.close()
 
 
 @maquinas_blueprint.route('/api/maquinas/buscar/<int:id_reg>', methods=['GET'])
@@ -148,6 +165,7 @@ def api_buscar_maquina_id(id_reg):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     conexao = None
+    cursor = None
     try:
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
@@ -155,7 +173,6 @@ def api_buscar_maquina_id(id_reg):
         
         cursor.execute('SELECT * FROM ativos_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
         maquina = cursor.fetchone()
-        cursor.close()
         
         if not maquina: 
             return jsonify({'status': 'erro', 'message': 'Ativo não localizado.'}), 404
@@ -165,8 +182,8 @@ def api_buscar_maquina_id(id_reg):
         print(f"Erro ao buscar maquina por ID: {e}")
         return jsonify({'status': 'erro', 'message': 'Falha na requisição.'}), 500
     finally:
-        if conexao:
-            conexao.close()
+        if cursor: cursor.close()
+        if conexao: conexao.close()
 
 
 @maquinas_blueprint.route('/api/maquinas/deletar/<int:id_reg>', methods=['DELETE'])
@@ -175,15 +192,14 @@ def api_deletar_maquina(id_reg):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     conexao = None
+    cursor = None
     try:
         conexao = obter_conexao_master()
         cursor = conexao.cursor()
         id_equipe = session.get('id_equipe', 'equipe_alfa')
         
-        # Garante o isolamento de segurança estrito entre grupos de alunos
         cursor.execute('DELETE FROM ativos_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
         conexao.commit()
-        cursor.close()
         return jsonify({'status': 'removido', 'message': 'Ativo desmobilizado do parque fabril.'})
         
     except psycopg2.DatabaseError as e:
@@ -192,5 +208,5 @@ def api_deletar_maquina(id_reg):
         print(f"Erro ao deletar maquina: {e}")
         return jsonify({'status': 'erro', 'message': 'Erro de integridade ao descartar ativo.'}), 500
     finally:
-        if conexao:
-            conexao.close()
+        if cursor: cursor.close()
+        if conexao: conexao.close()
