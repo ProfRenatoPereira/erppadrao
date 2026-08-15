@@ -1,4 +1,4 @@
-# erppadrao - app_master.py
+# erppadrao - app_master.py - PARTE 1 DE 3
 import os
 from flask import Flask, session, jsonify, request, redirect, render_template_string
 from datetime import timedelta
@@ -12,7 +12,7 @@ URL_SUPABASE = os.environ.get(
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# Ativação correta do WhiteNoise para servir a pasta static de forma transparente
+# Ativação do WhiteNoise para servir os arquivos estáticos locais de forma direta
 app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(os.path.dirname(__file__), 'static'), prefix='static/')
 
 # Configurações de Segurança e Persistência de Sessão de Aula para Aula
@@ -45,6 +45,7 @@ from folha_pagamento.app_folha import folha_blueprint
 from manutencao.app_manutencao import manutencao_blueprint
 from requisicoes.app_requisicoes import requisicoes_blueprint
 from roi.app_roi import roi_blueprint
+# erppadrao - app_master.py - PARTE 2 DE 3
 
 # REGISTRO DAS MALHAS TÉCNICAS NO SERVIDOR CENTRAL FLASK
 app.register_blueprint(login_blueprint)
@@ -87,30 +88,26 @@ def verificar_fluxo_de_aula():
     if session.get('professor_master'):
         return
 
-    # 3. Bloqueio de Inicialização: Se a equipe não preencheu o capital, barra o Grid e módulos comerciais
+    # 3. Bloqueio de Inicialização: Se a equipe não preencheu o capital, barra o fluxo e manda para configuração
     if not session.get('empresa_inicializada') and request.endpoint != 'configuracao_blueprint.api_inicializar_empresa':
         if not request.path.startswith('/configuracao'):
             if request.is_json:
                 return jsonify({'status': 'erro', 'message': 'A empresa precisa ser inicializada primeiro.'}), 400
             return redirect('/configuracao/inicializacao')
+# erppadrao - app_master.py - PARTE 3 DE 3
 
-# ROTA EXECUTIVA DE ACESSO AO DASHBOARD PRINCIPAL (GRID)
+# 🌟 CORREÇÃO DO FLUXO INICIAL: Remove a dependência do arquivo 'grid.html' inexistente
 @app.route('/grid')
 @app.route('/')
 def rota_principal_grid():
     if not session.get('logado'):
         return redirect('/login')
-    
-    # 🌟 CORREÇÃO DE AMBIENTE: Localiza o arquivo forçando o caminho absoluto e nome estritamente minúsculo
-    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-    caminho_grid = os.path.join(diretorio_atual, 'static', 'grid.html')
-    
-    try:
-        with open(caminho_grid, 'r', encoding='utf-8') as f:
-            html = f.read()
-        return render_template_string(html)
-    except FileNotFoundError:
-        return "Erro Crítico: O arquivo 'static/grid.html' não foi encontrado no servidor Render. Verifique se o nome do arquivo no repositório está todo em minúsculo.", 404
+        
+    # Se o grupo já estiver logado e a empresa inicializada, envia direto para o Módulo Imobiliário
+    if session.get('empresa_inicializada'):
+        return redirect('/estrutura')
+    else:
+        return redirect('/configuracao/inicializacao')
 
 # ENDPOINT GLOBAL AJAX REST: COLETOR DE MÉTRICAS CROSS-CHECKING DO TOPBOARD
 @app.route('/api/financeiro/metricas', methods=['GET'])
