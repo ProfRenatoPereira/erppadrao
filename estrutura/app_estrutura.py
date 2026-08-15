@@ -1,4 +1,5 @@
-# estrutura/app_estrutura.py - PARTE 1
+# erppadrao - estrutura/app_estrutura.py - PARTE 1 DE 3
+import os
 from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -14,29 +15,43 @@ def obter_conexao_master():
 def pagina_estrutura():
     if not session.get('logado'):
         return redirect('/login')
-    # Renderiza a estrutura da Página 1 de dentro da própria pasta
-    with open('estrutura/estrutura.html', 'r', encoding='utf-8') as f:
-        html = f.read()
-    return render_template_string(html)
+        
+    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta para o arquivo HTML
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_html = os.path.join(diretorio_atual, 'estrutura.html')
+    
+    try:
+        with open(caminho_html, 'r', encoding='utf-8') as f:
+            html = f.read()
+        return render_template_string(html)
+    except FileNotFoundError:
+        return "Erro Crítico: Arquivo 'estrutura.html' não encontrado no servidor.", 404
 
 @estrutura_blueprint.route('/estrutura/estrutura.js', methods=['GET'])
 def rota_estrutura_js():
-    # Entrega o arquivo JavaScript local encapsulado para o navegador
-    with open('estrutura/estrutura.js', 'r', encoding='utf-8') as f:
-        js_conteudo = f.read()
-    return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta para o arquivo JS
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_js = os.path.join(diretorio_atual, 'estrutura.js')
+    
+    try:
+        with open(caminho_js, 'r', encoding='utf-8') as f:
+            js_conteudo = f.read()
+        return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+    except FileNotFoundError:
+        return "console.error('Erro Crítico: Arquivo estrutura.js não encontrado.');", 404
+# erppadrao - estrutura/app_estrutura.py - PARTE 2 DE 3
 
-# 🔥 CORREÇÃO DE SINTAXE APLICADA AQUI: Remoção do fragmento '@app_rest ='
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
 def api_imoveis_listar():
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
-    conexao = obter_conexao_master()
-    cursor = conexao.cursor(cursor_factory=RealDictCursor)
     id_equipe = session.get('id_equipe', 'equipe_alfa')
+    conexao = obter_conexao_master()
+    cursor = None
     
     try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
         # Garante a existência da tabela parametrizada com a coluna estável nome_empresa
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS imoveis_simulacao (
@@ -48,15 +63,16 @@ def api_imoveis_listar():
         
         cursor.execute('SELECT * FROM imoveis_simulacao WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        cursor.close()
-        conexao.close()
         return jsonify([dict(linha) for linha in linhas])
         
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
         print(f"Erro ao listar imóveis: {e}")
-        return jsonify({'status': 'erro', 'message': 'Erro de banco de dados.'}), 500
-# estrutura/app_estrutura.py - PARTE 2
+        return jsonify({'status': 'erro', 'message': 'Erro interno ao processar dados no banco.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
+
 
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['POST'])
 def api_imoveis_salvar():
@@ -67,18 +83,20 @@ def api_imoveis_salvar():
     if not dados:
         return jsonify({'status': 'erro', 'message': 'Dados ausentes'}), 400
         
-    conexao = obter_conexao_master()
-    cursor = conexao.cursor(cursor_factory=RealDictCursor)
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     nome_empresa = session.get('nome_empresa', 'GRUPO DIDÁTICO').upper()
-    
     id_reg = dados.get('id')
+    
+    conexao = obter_conexao_master()
+    cursor = None
     
     try:
         # Tratamento e tipagem segura das variáveis de custo fixo
         valor_aluguel = float(str(dados.get('valor_aluguel', 0)).replace(',', '.').strip())
         valor_condominio = float(str(dados.get('valor_condominio', 0)).replace(',', '.').strip())
         area_util = float(str(dados.get('area_util', 0)).replace(',', '.').strip())
+        
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
         if id_reg:
             cursor.execute('''
@@ -101,14 +119,16 @@ def api_imoveis_salvar():
         ''', (id_equipe, id_equipe))
             
         conexao.commit()
-        cursor.close()
-        conexao.close()
         return jsonify({'status': 'sucesso'})
-        
+# erppadrao - estrutura/app_estrutura.py - PARTE 3 DE 3
     except (ValueError, TypeError, psycopg2.DatabaseError) as err:
         if conexao: conexao.rollback()
         print(f"Erro transacional imobiliário: {err}")
         return jsonify({'status': 'erro', 'message': 'Falha interna ao processar persistência.'}), 500
+    finally:
+        # 🛡️ PROTEÇÃO DO POOL: Garante a liberação dos slots transacionais no Supabase
+        if cursor: cursor.close()
+        if conexao: conexao.close()
 
 
 @estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
@@ -116,11 +136,13 @@ def api_individual_imovel(id_reg):
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
-    conexao = obter_conexao_master()
-    cursor = conexao.cursor(cursor_factory=RealDictCursor)
     id_equipe = session.get('id_equipe', 'equipe_alfa')
+    conexao = obter_conexao_master()
+    cursor = None
     
     try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        
         if request.method == 'DELETE':
             # Remove o registro imobiliário com isolamento estrito de equipe
             cursor.execute('DELETE FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
@@ -133,15 +155,11 @@ def api_individual_imovel(id_reg):
             ''', (id_equipe, id_equipe))
             
             conexao.commit()
-            cursor.close()
-            conexao.close()
             return jsonify({'status': 'removido'})
             
         else:
             cursor.execute('SELECT * FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
             imovel = cursor.fetchone()
-            cursor.close()
-            conexao.close()
             if not imovel: 
                 return jsonify({'status': 'erro', 'message': 'Registro não localizado.'}), 404
             return jsonify(dict(imovel))
@@ -149,4 +167,8 @@ def api_individual_imovel(id_reg):
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
         print(f"Erro na rota individual: {e}")
-        return jsonify({'status': 'erro', 'message': 'Falha na operação.'}), 500
+        return jsonify({'status': 'erro', 'message': 'Falha interna na operação.'}), 500
+    finally:
+        # 🛡️ PROTEÇÃO DO POOL: Garante fechamento do canal de comunicação individual
+        if cursor: cursor.close()
+        if conexao: conexao.close()
