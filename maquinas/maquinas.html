@@ -1,4 +1,4 @@
-<!-- maquinas/maquinas.html - PARTE 1 DE 4 -->
+<!-- maquinas/maquinas.html - BLOCO 1 DE 4 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -7,57 +7,40 @@
     <title>Máquinas - Engenharia de Ativos</title>
     <link rel="icon" type="image/png" href="/static/logo.png">
     <style>
-        /* Estilos de acessibilidade e transições suaves nativos */
         html { font-size: 16px; transition: font-size 0.15s ease; box-sizing: border-box; }
         *, *:before, *:after { box-sizing: inherit; }
         body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
-        
-        /* 🏆 ARQUITETURA DO MENU CORPORATIVO INTEGRADO RESPONSIVO */
-        .corporate-header { background-color: #0f172a; color: white; padding: 0 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; }
-        .logo-area { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 14px; color: #38bdf8; text-transform: uppercase; padding: 12px 0; user-select: none; z-index: 10001; }
-        .logo-img { height: 26px; width: auto; border-radius: 4px; background-color: white; padding: 2px; }
-        
-        /* 🍔 BOTÃO HAMBÚRGUER NATIVO (OCULTO NO PC) */
-        .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
-        .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
-        #menu-toggle { display: none; }
-
-        .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; }
-        .nav-item { position: relative; }
-        .nav-link { display: block; padding: 16px 12px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; tracking: 0.05em; transition: all 0.15s; cursor: pointer; }
-        .nav-link:hover, .nav-item:hover .nav-link { background-color: #1e3a8a; color: white; }
-        
-        /* Sub-Menus Dropdown (PC) */
-        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #ffffff; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; border: 1px solid #cbd5e1; padding: 6px 0; list-style: none; z-index: 9999; }
-        .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; transition: background 0.15s; border-bottom: 1px solid #f1f5f9; }
-        .dropdown-menu a:last-child { border-bottom: none; }
-        .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
-        .nav-item:hover .dropdown-menu { display: block; }
-        
-        /* Layout e Grid de Infraestrutura */
         .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
-        .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 16px; }
+        .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 16px; }
         .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
         .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         
-        /* Painéis de Indicadores e BI */
-        .bi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 2rem; }
-        .chart-box { background: #fff; padding: 1.5rem; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .chart-box h4 { color: #1e3a8a; margin: 0 0 1rem 0; font-size: 1.1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; text-transform: uppercase; font-weight: bold; }
-<!-- maquinas/maquinas.html - PARTE 2 DE 4 -->
-        /* Cartões de Métricas Financeiras */
-        .metric-card { padding: 16px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; }
-        .metric-card h3, .metric-card h4 { font-size: 17px; font-weight: 900; margin: 0; }
-        .badge-percent { font-size: 10px; font-family: monospace; font-weight: bold; border-radius: 9999px; padding: 2px 8px; margin-top: 4px; }
+        .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; }
+        .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; font-weight: bold; }
+        .metric-card h3, .metric-card h4 { font-size: 16px; font-weight: 900; margin: 0; white-space: nowrap; }
+        .badge-percent { font-size: 10px; font-family: monospace; font-weight: bold; border-radius: 9999px; padding: 2px 8px; margin-top: 4px; display: inline-block; }
         
         .bg-blue-metric { background-color: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
         .bg-purple-metric { background-color: #faf5ff; border-color: #e9d5ff; color: #581c87; }
         .badge-purple-value { background-color: #f3e8ff; color: #6b21a8; }
         .bg-slate-metric { background-color: #f8fafc; border-color: #cbd5e1; color: #334155; }
         .bg-amber-metric { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
+
+        .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; flex-wrap: wrap; gap: 16px; }
+        .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; z-index: 10001; }
+        .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
+        .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
+        #menu-toggle { display: none; }
+/* maquinas/maquinas.html - BLOCO 2 DE 4 */
+        .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
+        .nav-item { position: relative; }
+        .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
+        .nav-link:hover, .nav-item:hover .nav-link { background-color: #1e3a8a; color: white; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #ffffff; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; border: 1px solid #cbd5e1; padding: 6px 0; list-style: none; z-index: 9999; }
+        .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; transition: background 0.15s; border-bottom: 1px solid #f1f5f9; }
+        .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
+        .nav-item:hover .dropdown-menu { display: block; }
         
-        /* Componentes de Formulário e Tabelas */
         .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; text-align: left; }
         .page-title { font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
         .card-title { font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
@@ -75,162 +58,138 @@
         th, td { padding: 12px; }
         tr { border-bottom: 1px solid #e5e7eb; }
         
-        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; }
-        .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; }
-        .btn-submit:hover { background-color: #15803d; }
-        .btn-cancel { background-color: #e5e7eb; color: #374151; padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; }
-        .flex-btn-group { padding-top: 8px; display: flex; gap: 8px; }
+        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
+        body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        body.dark-mode thead { background-color: #334155 !important; }
         
-        /* 📱 COMPORTAMENTO MOBILE DA BARRA DE ABAS */
-        @media (max-width: 868px) {
+        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
+        body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste .table-container, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste button, body.alto-contraste .btn-submit { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste td { color: #ffff00 !important; }
+        
+        @media (max-width: 1120px) {
             .menu-toggle-label { display: flex; }
             .nav-corporate-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: #0f172a; border-top: 1px solid #334155; padding: 8px 0; box-shadow: 0 10px 15px rgba(0,0,0,0.3); z-index: 9998; }
             .nav-item { width: 100%; }
             .nav-link { padding: 12px 20px; border-bottom: 1px solid #1e293b; color: #f8fafc; }
             .dropdown-menu { display: block; position: static; box-shadow: none; border: none; background-color: #172554 !important; padding: 0; min-width: 100%; }
-            .dropdown-menu a { padding: 10px 32px; color: #cbd5e1 !important; border-bottom-color: #1e3a8a !important; }
-            #menu-toggle:checked ~ nav .nav-corporate-menu { display: flex; }
-            #menu-toggle:checked ~ .menu-toggle-label span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
-            #menu-toggle:checked ~ .menu-toggle-label span:nth-child(2) { opacity: 0; }
-            #menu-toggle:checked ~ .menu-toggle-label span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+            #menu-toggle:checked ~ nav .nav-corporate-menu, #menu-toggle:checked ~ .nav-corporate-menu { display: flex; }
         }
         
-        /* Modos Visuais Customizados */
-        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table, body.dark-mode .chart-box { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
-        body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
-        body.dark-mode thead { background-color: #334155 !important; }
-        body.dark-mode .dropdown-menu { background-color: #1e293b; border-color: #334155; }
-        body.dark-mode .dropdown-menu a { color: #e2e8f0; }
-        body.dark-mode .dropdown-menu a:hover { background-color: #334155; }
-        
-        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-        body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste .table-container, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td, body.alto-contraste .chart-box { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
-        body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button, body.alto-contraste .btn-submit { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
-        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste strong, body.alto-contraste div, body.alto-contraste a { color: #ffff00 !important; }
-        
         @media (min-width: 640px) { .grid-top { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (min-width: 1024px) { .grid-top { grid-template-columns: repeat(4, minmax(0, 1fr)); } .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
-        @media print { #barra-acessibilidade, .corporate-header, form, button, .actions-legal { display: none !important; } }
+        @media (min-width: 1024px) { .grid-top { grid-template-columns: repeat(5, minmax(0, 1fr)); } .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
     </style>
 </head>
-<!-- maquinas/maquinas.html - PARTE 3 DE 4 -->
-<body class="transition-all duration-200">
+<!-- maquinas/maquinas.html - BLOCO 3 DE 4 -->
+<body style="transition: all 0.2s ease;">
 
-    <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
+    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA NATIVA -->
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
-        <span style="font-weight: bold; color: #94a3b8;">Acessibilidade Web WCAG</span>
-        <div style="display: flex; align-items: center; gap: 4px;">
-            <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Escuro</button>
+        <!-- Canto Esquerdo: Logo Vetorial Estolada -->
+        <div style="display: flex; align-items: center;">
+            <img src="/static/logo.svg" alt="Logo Corporativo Vetorial" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
+        </div>
+        
+        <!-- Canto Direito: Caixa de Ferramentas de Inclusão -->
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
+            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
             <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
     </div>
 
     <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
     <header class="corporate-header">
+        <!-- Identidade Visual Ampliada em 15% (height: 55px) com Subtítulo Pedagógico Alinhado -->
         <div class="logo-area">
-            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" onerror="this.style.display='none'">
-            <span>TERADMAS ERP v2.6</span>
+            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
+            <div style="display: flex; flex-direction: column; text-align: left;">
+                <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">TERADMAS ERP v2.6</span>
+                <span style="font-size: 10px; color: #94a3b8; font-weight: bold; line-height: 1.3; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</span>
+            </div>
         </div>
-        
         <input type="checkbox" id="menu-toggle">
-        <label for="menu-toggle" class="menu-toggle-label">
-            <span></span>
-            <span></span>
-            <span></span>
-        </label>
-        
+        <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
         <nav>
             <ul class="nav-corporate-menu">
-                <!-- CATEGORIA 1: ADMINISTRATIVO & ESTRUTURA -->
                 <li class="nav-item">
-                    <span class="nav-link">📁 Administrativo ▾</span>
+                    <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
                     <ul class="dropdown-menu">
-                        <a href="/configuracao/inicializacao">01. Fundação de Capital</a>
-                        <a href="/estrutura">02. Imobiliário e Custos</a>
-                        <a href="/orcamentos">03. Limites Orçamentários</a>
-                        <a href="/rh">04. Organograma e RH</a>
-                        <a href="/folha_pagamento">05. Folha de Pagamento</a>
-                        <a href="/requisicoes">06. Requisições Internas</a>
+                        <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
+                        <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
+                        <li><a href="/orcamentos">03. Limites Orçamentários</a></li>
+                        <li><a href="/rh">04. Organograma e RH</a></li>
+                        <li><a href="/folha_pagamento">05. Folha de Pagamento</a></li>
+                        <li><a href="/requisicoes">06. Requisições Internas</a></li>
                     </ul>
                 </li>
-                
-                <!-- CATEGORIA 2: ENGENHARIA DE PROCESSO -->
                 <li class="nav-item">
-                    <span class="nav-link">🛠️ Engenharia ▾</span>
+                    <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
                     <ul class="dropdown-menu">
-                        <a href="/maquinas">07. Gerenciador de Máquinas</a>
-                        <a href="/materiais">08. Catálogo de Materiais</a>
-                        <a href="/processos">09. Fluxos de Processos</a>
-                        <a href="/produtos">10. Fichas Técnicas (BOM)</a>
-                        <a href="/manutencao">11. Plano de Manutenção</a>
-                        <a href="/precificacao">12. Formação de Preço</a>
+                        <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
+                        <li><a href="/materiais">08. Catálogo de Materiais</a></li>
+                        <li><a href="/processos">09. Fluxos de Processos</a></li>
+                        <li><a href="/produtos">10. Fichas Técnicas (BOM)</a></li>
+                        <li><a href="/manutencao">11. Plano de Manutenção</a></li>
+                        <li><a href="/precificacao">12. Formação de Preço</a></li>
                     </ul>
                 </li>
-                
-                <!-- CATEGORIA 3: OPERAÇÃO INDUSTRIAL & FÁBRICA -->
                 <li class="nav-item">
-                    <span class="nav-link">🏭 Produção ▾</span>
+                    <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
                     <ul class="dropdown-menu">
-                        <a href="/compras_insumos">13. Compras de Insumos</a>
-                        <a href="/pcp">14. Planejamento (PCP)</a>
-                        <a href="/engenharia_producao">15. Execução de Fábrica</a>
-                        <a href="/estoque">16. Almoxarifado Central</a>
-                        <a href="/nota_fiscal">17. Emissão de Notas NF-e</a>
+                        <li><a href="/compras_insumos">13. Compras de Insumos</a></li>
+                        <li><a href="/pcp">14. Planejamento (PCP)</a></li>
+                        <li><a href="/engenharia_producao">15. Execução de Fábrica</a></li>
+                        <li><a href="/estoque">16. Almoxarifado Central</a></li>
+                        <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
                     </ul>
                 </li>
-                
-                <!-- CATEGORIA 4: INTELIGÊNCIA COMERCIAL & FINANÇAS -->
                 <li class="nav-item">
-                    <span class="nav-link">📈 Vendas & BI ▾</span>
+                    <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
                     <ul class="dropdown-menu">
-                        <a href="/clientes">18. Carteira de Clientes</a>
-                        <a href="/vendas">19. Módulo de Vendas</a>
-                        <a href="/financeiro">20. Fluxo de Caixa Geral</a>
-                        <a href="/roi">21. Retorno sobre Investimento</a>
-                        <a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a>
-                        <a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a>
+                        <li><a href="/clientes">18. Carteira de Clientes</a></li>
+                        <li><a href="/vendas">19. Módulo de Vendas</a></li>
+                        <li><a href="/financeiro">20. Fluxo de Caixa Geral</a></li>
+                        <li><a href="/roi">21. Retorno sobre Investimento</a></li>
+                        <li><a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a></li>
+                        <li><a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a></li>
                     </ul>
                 </li>
             </ul>
         </nav>
     </header>
-
+<!-- maquinas/maquinas.html - BLOCO 4 DE 4 -->
     <div class="container">
-        
-        <!-- INDICADORES FINANCEIROS PEDAGÓGICOS REQUERIDOS (REAL + PORCENTAGEM) -->
-        <div class="grid-top">
-            <div class="metric-card bg-blue-metric">
-                <p>💰 Capital Total Simulador</p>
-                <h3 id="top_capital_total">R$ 0,00</h3>
-            </div>
+        <!-- BARRA DE SUB-INDICADORES FINANCEIROS COMPLEMENTADA COM TETO ORÇAMENTÁRIO (40%) -->
+        <div class="grid-top" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 24px; margin-top: 16px;">
+            <div class="metric-card bg-blue-metric"><p>💰 Capital Total Simulador</p><h3 id="top_capital_total">R$ 0,00</h3></div>
             <div class="metric-card bg-purple-metric">
                 <p>🏢 Orçamento da Engenharia</p>
                 <h3 id="top_verba_reais">R$ 0,00</h3>
                 <span class="badge-percent badge-purple-value" id="top_verba_porcentagem">0.00% do Capital</span>
             </div>
-            <div class="metric-card bg-slate-metric">
-                <p>🔒 Custo Fixo Geral</p>
-                <h4 id="top_custo_fixo">R$ 0,00</h4>
-            </div>
-            <div class="metric-card bg-amber-metric">
-                <p>📈 Custos Variáveis Totais</p>
-                <h4 id="top_custo_variavel">R$ 0,00</h4>
+            <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo Geral</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
+            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis Totais</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
+            
+            <!-- Card de Controle de Teto Orçamentário Replicado (Limite de 40%) -->
+            <div class="metric-card" id="card_budget_limite" style="background-color: #f8fafc; border-color: #cbd5e1; color: #1e293b;">
+                <p>🎯 Limite do Setor (Max 40%)</p>
+                <h4 id="top_budget_setor" style="font-size: 14px; font-weight: 900; margin: 0;">R$ 0,00</h4>
+                <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+                    <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
+                </div>
+                <span id="txt_porcentagem_budget" style="font-size: 9px; font-weight: bold; color: #64748b; display: block; margin-top: 2px;">0% consumido</span>
             </div>
         </div>
 
-        <div class="page-header">
-            <h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2>
-        </div>
-<!-- maquinas/maquinas.html - PARTE 4 - BLOCO A -->
-        <!-- 🚀 ARQUITETURA LADO A LADO EM DUAS COLUNAS MASTER NATIVAS -->
+        <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2></div>
+
         <div class="grid-main">
-            
-            <!-- QUADRO ESQUERDO: FORMULÁRIO COMPACTO DE CADASTRO -->
             <div class="card col-form">
                 <h3 class="card-title" id="txt_sub">Configuração da Máquina</h3>
                 <form id="formMaquina" onsubmit="salvarMaquina(event)">
@@ -259,8 +218,6 @@
                             <input type="number" step="0.1" id="consumo_eletrico" required oninput="calcularMinutoMaquina()" class="input-form">
                         </div>
                     </div>
-                    
-                    <!-- 💧 FLUIDOS E GASES M³/H (REQUISITOS METROLÓGICOS) -->
                     <div class="grid-form-row">
                         <div class="flex-col-gap">
                             <label class="label-form" style="color: #1d4ed8;">Consumo de Água (m³/h):</label>
@@ -271,7 +228,6 @@
                             <input type="number" step="0.001" id="consumo_gases" value="0.000" oninput="calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;">
                         </div>
                     </div>
-
                     <div class="grid-form-row">
                         <div class="flex-col-gap">
                             <label class="label-form">Velocidade Máx (RPM):</label>
@@ -340,8 +296,151 @@
                     </div>
                 </form>
             </div>
-<!-- maquinas/maquinas.html - PARTE 4 - BLOCO B -->
-            <!-- QUADRO DIREITO: TABELA DE COMPARAÇÃO CORPORATIVA -->
+
+            <div class="table-container col-table">
+                <div class="table-header-dark">Ativos Industriais Cadastrados no Supabase</div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Equipamento / Operador</th>
+                                <th>Capacidades e Fluxos</th>
+<!-- maquinas/maquinas.html - BLOCO 4A DE 4 -->
+    <div class="container">
+        <!-- BARRA DE SUB-INDICADORES FINANCEIROS COMPLEMENTADA COM TETO ORÇAMENTÁRIO (40%) -->
+        <div class="grid-top" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 24px; margin-top: 16px;">
+            <div class="metric-card bg-blue-metric"><p>💰 Capital Total Simulador</p><h3 id="top_capital_total">R$ 0,00</h3></div>
+            <div class="metric-card bg-purple-metric">
+                <p>🏢 Orçamento da Engenharia</p>
+                <h3 id="top_verba_reais">R$ 0,00</h3>
+                <span class="badge-percent badge-purple-value" id="top_verba_porcentagem">0.00% do Capital</span>
+            </div>
+            <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo Geral</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
+            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis Totais</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
+            
+            <!-- Card de Controle de Teto Orçamentário Replicado (Limite de 40%) -->
+            <div class="metric-card" id="card_budget_limite" style="background-color: #f8fafc; border-color: #cbd5e1; color: #1e293b;">
+                <p>🎯 Limite do Setor (Max 40%)</p>
+                <h4 id="top_budget_setor" style="font-size: 14px; font-weight: 900; margin: 0;">R$ 0,00</h4>
+                <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+                    <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
+                </div>
+                <span id="txt_porcentagem_budget" style="font-size: 9px; font-weight: bold; color: #64748b; display: block; margin-top: 2px;">0% consumido</span>
+            </div>
+        </div>
+
+        <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2></div>
+
+        <div class="grid-main">
+            <div class="card col-form">
+                <h3 class="card-title" id="txt_sub">Configuração da Máquina</h3>
+                <form id="formMaquina" onsubmit="salvarMaquina(event)">
+                    <input type="hidden" id="registro_id" name="id">
+                    <input type="hidden" id="custo_estrutural_oculto" value="0.05">
+                    
+                    <div class="flex-col-gap">
+                        <label class="label-form">Selecionar Modelo Base:</label>
+                        <select id="seletor_modelo" onchange="carregarPreDefinido()" class="select-form">
+                            <option value="">-- Equipamento Personalizado --</option>
+                            <option value="cnc_mazak">Torno CNC Mazak Quick Turn</option>
+                            <option value="fresadora">Fresadora Universal</option>
+                        </select>
+                    </div>
+                    <!-- maquinas/maquinas.html - BLOCO 4B DE 4 -->
+                    <div class="flex-col-gap">
+                        <label class="label-form">Nome do Equipamento:</label>
+                        <input type="text" id="nome_equipamento" required placeholder="Ex: CNC Linha A" class="input-form">
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Potência (kW):</label>
+                            <input type="number" step="0.1" id="potencia" required oninput="calcularMinutoMaquina()" class="input-form">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Consumo Elétrico (kWh):</label>
+                            <input type="number" step="0.1" id="consumo_eletrico" required oninput="calcularMinutoMaquina()" class="input-form">
+                        </div>
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form" style="color: #1d4ed8;">Consumo de Água (m³/h):</label>
+                            <input type="number" step="0.001" id="consumo_agua" value="0.000" oninput="calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form" style="color: #1d4ed8;">Consumo de Gases (m³/h):</label>
+                            <input type="number" step="0.001" id="consumo_gases" value="0.000" oninput="calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;">
+                        </div>
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Velocidade Máx (RPM):</label>
+                            <input type="text" id="velocidade" placeholder="Ex: 5000" class="input-form">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Avanço Trabalho (mm/min):</label>
+                            <input type="text" id="avanco" placeholder="Ex: 30000" class="input-form">
+                        </div>
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Ciclo Preventiva (Horas):</label>
+                            <input type="number" id="frequencia_manutencao" required class="input-form">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Preço Aquisição (R$):</label>
+                            <input type="number" step="0.01" id="preco_compra" required class="input-form">
+                        </div>
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Depreciação Contábil (R$/Mês):</label>
+                            <input type="number" step="0.01" id="depreciacao_mensal" required oninput="calcularMinutoMaquina()" class="input-form">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Valor Residual Venda (R$):</label>
+                            <input type="number" step="0.01" id="valor_venda_final" required class="input-form">
+                        </div>
+                    </div>
+                    <!-- maquinas/maquinas.html - BLOCO 4C DE 4 -->
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Operador Alocado:</label>
+                            <input type="text" id="operador_nome" required placeholder="Ex: João Silva" class="input-form">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Custo MOD (R$/min):</label>
+                            <input type="number" step="0.0001" id="custo_minuto_operador" required oninput="calcularMinutoMaquina()" class="input-form">
+                        </div>
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Jornada Semanal:</label>
+                            <select id="jornada_semanal" onchange="calcularMinutoMaquina()" class="select-form">
+                                <option value="44">44 Horas (Padrão)</option>
+                                <option value="36">36 Horas</option>
+                            </select>
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Turnos Ativos:</label>
+                            <select id="turnos_trabalho" onchange="calcularMinutoMaquina()" class="select-form">
+                                <option value="1">1 Turno (Comercial)</option>
+                                <option value="2">2 Turnos (Dobrado)</option>
+                                <option value="3">3 Turnos (24h)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex-col-gap" style="background-color: #eff6ff; padding: 12px; border: 1px dashed #bfdbfe; border-radius: 8px; margin-top: 8px;">
+                        <label class="label-form" style="color: #1e3a8a; font-weight: 900;">CUSTO MINUTO MÁQUINA CALCULADO (R$/min):</label>
+                        <input type="number" step="0.0001" id="custo_minuto_maquina" readonly class="input-form input-form-readonly" style="color: #1e3a8a; font-weight: 900; background-color: #e2e8f0; font-size: 14px;">
+                    </div>
+                    
+                    <div class="flex-btn-group">
+                        <button type="submit" id="btn_salvar" class="btn-submit">💾 Registrar Ativo no Supabase</button>
+                        <button type="button" id="btn_cancelar" onclick="limparFormularioMaquina()" class="btn-cancel" style="display: none; margin-top: 8px;">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
             <div class="table-container col-table">
                 <div class="table-header-dark">Ativos Industriais Cadastrados no Supabase</div>
                 <div class="table-responsive">
@@ -352,28 +451,23 @@
                                 <th>Capacidades e Fluxos</th>
                                 <th>Ciclo Mnt.</th>
                                 <th>Custo Minuto</th>
-                                <th style="text-align: center;" class="actions-legal">Ações Legais</th>
+                                <th style="text-align: center;">Ações Legais</th>
                             </tr>
                         </thead>
-                        <tbody id="tabela_maquinas">
-                            <!-- Alimentação dinâmica via AJAX realizada pelo arquivo maquinas.js -->
-                        </tbody>
+                        <tbody id="tabela_maquinas"></tbody>
                     </table>
                 </div>
             </div>
-
         </div>
 
-        <!-- SEÇÃO INDIVIDUAL: RODAPÉ INSTITUCIONAL, HOMENAGEM E EVOLUÇÃO TECNOLÓGICA -->
         <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
-            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
             <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
             <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
             <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
         </footer>
     </div>
 
-    <!-- Script de controle dinâmico local -->
-    <script src="/grid-layout-handler-anti-cache" onerror="this.src='/maquinas/maquinas.js'"></script>
+    <script src="/maquinas/maquinas.js" defer></script>
 </body>
 </html>
