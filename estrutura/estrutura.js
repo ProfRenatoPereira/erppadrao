@@ -66,17 +66,17 @@ function calcularPrecoMercadoRefletido() {
     
     let precoM2 = 22.00; // Valor padrão para polos logísticos e industriais da RMC
     
-    // 🌟 CORREÇÃO DE ESCOPO: city corrigida para cidade para evitar quebras no script
+    // 🌟 CORREÇÃO: Variável city unificada para 'cidade' para não quebrar a compilação do JS
     if (cidade === "Curitiba") {
         if (bairro === "Centro") precoM2 = 30.00;
         else if (bairro === "Boqueirão") precoM2 = 25.00;
         else if (bairro === "CIC") precoM2 = 23.50;
     } else if (cidade === "São José dos Pinhais" || cidade === "Araucária" || cidade === "Pinhais") {
-        precoM2 = 21.00; // Áreas industriais estratégicas da RMC
+        precoM2 = 21.00; 
     }
     
     const valorAluguelMensal = area * precoM2;
-    const taxaAnualEstimada = area * 4.50; // IPTU e taxas coletadas por estimativa ao ano
+    const taxaAnualEstimada = area * 4.50; 
     
     const inputAluguel = document.getElementById('valor_aluguel');
     const inputTaxaAnual = document.getElementById('taxa_anual');
@@ -129,82 +129,86 @@ async function carregarDadosIniciais() {
     }
 }
 
-// 💾 FUNÇÃO OPERACIONAL: Persiste ou Atualiza o contrato imobiliário via REST POST
 async function salvarImovel(e) {
     e.preventDefault();
-    const idReg = document.getElementById('imovel_id').value;
-    
-    const payload = {
-        id: idReg ? parseInt(idReg) : null,
+    const dados = {
+        id: document.getElementById('imovel_id').value ? parseInt(document.getElementById('imovel_id').value) : null,
         tipo_imovel: document.getElementById('tipo_imovel').value,
         regiao: document.getElementById('cidade').value + " - " + document.getElementById('bairro').value,
-        area_util: parseFloat(document.getElementById('area_util').value),
-        valor_aluguel: parseFloat(document.getElementById('valor_aluguel').value),
+        area_util: parseFloat(document.getElementById('area_util').value) || 0,
+        valor_aluguel: parseFloat(document.getElementById('valor_aluguel').value) || 0,
         valor_condominio: parseFloat(document.getElementById('valor_condominio').value) || 0,
-        obs_contrato: "Contrato firmado via terminal acadêmico."
+        obs_contrato: "Taxa Anual Prevista: R$ " + (document.getElementById('taxa_anual')?.value || "0.00")
     };
 
     try {
         const res = await fetch('/api/estrutura/imoveis', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(dados)
         });
         if (res.ok) {
             limparFormularioImobiliario();
             carregarDadosIniciais();
-            alert("🎯 Contrato de alocação processado com sucesso!");
+            alert("🎯 Contrato imobiliário processado com sucesso!");
         }
-    } catch (err) {
-        alert("Erro ao tentar salvar o registro no Supabase.");
+    } catch (err) { 
+        console.error(err); 
     }
 }
 
-// ✏️ FUNÇÃO OPERACIONAL: Carrega os dados da tabela de volta para o formulário
 async function editarImovel(id) {
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`);
-        if (!res.ok) return;
         const i = await res.json();
         
         document.getElementById('imovel_id').value = i.id;
         document.getElementById('tipo_imovel').value = i.tipo_imovel;
         document.getElementById('area_util').value = i.area_util;
+        document.getElementById('valor_aluguel').value = i.valor_aluguel;
         document.getElementById('valor_condominio').value = i.valor_condominio;
         
-        const partesRegiao = i.regiao.split(" - ");
-        if(partesRegiao.length === 2) {
-            document.getElementById('cidade').value = partesRegiao[0];
-            document.getElementById('bairro').value = partesRegiao[1];
+        if (i.regiao && i.regiao.includes(" - ")) {
+            const partes = i.regiao.split(" - ");
+            if (document.getElementById('cidade')) document.getElementById('cidade').value = partes[0];
+            if (document.getElementById('bairro')) document.getElementById('bairro').value = partes[1];
         }
         
-        document.getElementById('btn_salvar').innerText = "💾 Atualizar Termos do Contrato";
-        document.getElementById('btn_cancelar').style.display = "inline-block";
-        calcularPrecoMercadoRefletido();
-    } catch(e) {
-        console.error("Falha ao recuperar registro individual.");
+        const btnSalvar = document.getElementById('btn_salvar');
+        if (btnSalvar) btnSalvar.innerText = "🔄 Atualizar Contrato";
+        
+        const btnCancel = document.getElementById('btn_cancelar');
+        if (btnCancel) btnCancel.style.display = 'inline-block';
+    } catch (err) { 
+        console.error(err); 
     }
 }
 
-// 🗑️ FUNÇÃO OPERACIONAL: Executa a rescisão e cancelamento do contrato imobiliário
 async function deletarImovel(id) {
-    if (!confirm("Atenção! Deseja mesmo rescindir este contrato de locação fabril?")) return;
+    if (!confirm('Confirmar a rescisão legal do contrato imobiliário? A verba sairá do custo fixo.')) return;
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' });
         if (res.ok) {
             carregarDadosIniciais();
-            alert("Contrato rescindido com sucesso.");
+            alert("🎯 Contrato rescindido com sucesso.");
         }
-    } catch(err) {
-        alert("Erro ao tentar processar a rescisão.");
+    } catch (err) { 
+        console.error(err); 
     }
 }
 
-// 🧹 FUNÇÃO OPERACIONAL: Reseta o estado estático do formulário
 function limparFormularioImobiliario() {
-    document.getElementById('imovel_id').value = "";
-    document.getElementById('formImobiliario').reset();
-    document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
-    document.getElementById('btn_cancelar').style.display = "none";
+    const form = document.getElementById('formImobiliario');
+    if (form) form.reset();
+    
+    const imovelInput = document.getElementById('imovel_id');
+    if (imovelInput) imovelInput.value = '';
+    
+    const btnSalvar = document.getElementById('btn_salvar');
+    if (btnSalvar) btnSalvar.innerText = "💾 Firmar Contrato de Locação";
+    
+    const btnCancel = document.getElementById('btn_cancelar');
+    if (btnCancel) btnCancel.style.display = 'none';
+    
     calcularPrecoMercadoRefletido();
 }
