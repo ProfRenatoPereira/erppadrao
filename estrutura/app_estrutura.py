@@ -1,5 +1,6 @@
-# estrutura/app_estrutura.py - PARTE 1
-from flask import Blueprint, request, render_template_string, session, jsonify, redirect
+# estrutura/app_estrutura.py
+import os
+from flask import Blueprint, request, render_template_string, session, jsonify, redirect, current_app
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
@@ -14,19 +15,30 @@ def obter_conexao_master():
 def pagina_estrutura():
     if not session.get('logado'):
         return redirect('/login')
-    # Renderiza a estrutura da Página 1 de dentro da própria pasta
-    with open('estrutura/estrutura.html', 'r', encoding='utf-8') as f:
-        html = f.read()
-    return render_template_string(html)
+    
+    # 🌟 CORREÇÃO: Caminho absoluto para o ambiente Linux da Render
+    caminho_html = os.path.join(current_app.root_path, 'estrutura', 'estrutura.html')
+    
+    try:
+        with open(caminho_html, 'r', encoding='utf-8') as f:
+            html = f.read()
+        return render_template_string(html)
+    except FileNotFoundError:
+        return "Erro Crítico: Arquivo 'estrutura/estrutura.html' não encontrado no servidor.", 404
 
 @estrutura_blueprint.route('/estrutura/estrutura.js', methods=['GET'])
 def rota_estrutura_js():
-    # Entrega o arquivo JavaScript local encapsulado para o navegador
-    with open('estrutura/estrutura.js', 'r', encoding='utf-8') as f:
-        js_conteudo = f.read()
-    return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+    # 🌟 CORREÇÃO: Caminho absoluto para o arquivo JavaScript
+    caminho_js = os.path.join(current_app.root_path, 'estrutura', 'estrutura.js')
+    
+    try:
+        with open(caminho_js, 'r', encoding='utf-8') as f:
+            js_conteudo = f.read()
+        return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+    except FileNotFoundError:
+        return "console.error('Erro Crítico: Arquivo estrutura.js não encontrado.');", 404
 
-# 🔥 CORREÇÃO DE SINTAXE APLICADA AQUI: Remoção do fragmento '@app_rest ='
+# API: LISTAR IMÓVEIS
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
 def api_imoveis_listar():
     if not session.get('logado'):
@@ -56,8 +68,8 @@ def api_imoveis_listar():
         if conexao: conexao.rollback()
         print(f"Erro ao listar imóveis: {e}")
         return jsonify({'status': 'erro', 'message': 'Erro de banco de dados.'}), 500
-# estrutura/app_estrutura.py - PARTE 2
 
+# API: SALVAR/EDITAR IMÓVEL
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['POST'])
 def api_imoveis_salvar():
     if not session.get('logado'):
@@ -110,7 +122,7 @@ def api_imoveis_salvar():
         print(f"Erro transacional imobiliário: {err}")
         return jsonify({'status': 'erro', 'message': 'Falha interna ao processar persistência.'}), 500
 
-
+# API: OPERAÇÕES INDIVIDUAIS (GET / DELETE)
 @estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_imovel(id_reg):
     if not session.get('logado'):
