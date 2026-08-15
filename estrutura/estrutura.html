@@ -1,4 +1,3 @@
-
 <!-- estrutura/estrutura.html - PARTE 1 DE 5 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -95,28 +94,36 @@
 </head>
 <body style="transition: all 0.2s ease;">
 
+    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA INTEGRADA COM LOGO -->
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
-        <span style="font-weight: bold; color: #94a3b8;">Acessibilidade Web WCAG</span>
-        <div style="display: flex; align-items: center; gap: 4px;">
-            <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-weight: bold; color: #94a3b8; display: flex; align-items: center;">♿ Acessibilidade:</span>
+            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
             <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Contraste</button>
             <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Escuro</button>
             <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
+        <div style="display: flex; align-items: center;">
+            <img src="/static/logo.svg" alt="Logo Corporativo Vetorial" style="height: 22px; width: auto; display: block;" onerror="console.error('Aviso: O arquivo logo.svg não foi localizado na pasta static.'); this.style.display='none';">
+        </div>
     </div>
 
-    <header class="corporate-header">
-        <div class="logo-area">
-            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" onerror="this.style.display='none'">
-            <span>TERADMAS ERP v2.6</span>
+    <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
+    <header class="corporate-header" style="background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative;">
+        <div class="logo-area" style="display: flex; align-items: center; gap: 14px; user-select: none; z-index: 10001;">
+            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" style="height: 48px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
+            <div style="display: flex; flex-direction: column; text-align: left;">
+                <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">TERADMAS ERP v2.6</span>
+                <span style="font-size: 10px; color: #94a3b8; font-weight: bold; line-height: 1.3; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</span>
+            </div>
         </div>
         <input type="checkbox" id="menu-toggle">
         <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
         <nav>
             <ul class="nav-corporate-menu">
                 <li class="nav-item">
-                    <span class="nav-link" tabindex="0">📁 Admin ▾</span>
+                    <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
                     <ul class="dropdown-menu">
                         <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
                         <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
@@ -163,14 +170,14 @@
     </header>
     <div class="container">
         <div class="grid-top">
-            <div class="metric-card bg-blue-metric"><p>💰 Capital Total</p><h3 id="top_capital_total">R$ 0,00</h3></div>
-            <div class="metric-card bg-emerald-metric"><p>🟩 Caixa de Giro</p><h3 id="top_giro_global">R$ 0,00</h3></div>
-            <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
-            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
+            <div class="metric-card bg-blue-metric"><p>💰 Capital Total Simulador</p><h3 id="top_capital_total">R$ 0,00</h3></div>
+            <div class="metric-card bg-emerald-metric"><p>🟩 Caixa de Giro Disponível</p><h3 id="top_giro_global">R$ 0,00</h3></div>
+            <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo Geral</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
+            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis Totais</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
         </div>
 
         <div class="page-header">
-            <h2 class="page-title" id="txt_titulo_pagina">Módulo Imobiliário e Estrutura de Custos Fixos</h2>
+            <h2 class="page-title" id="txt_titulo_pagina">Módulo Imobiliário e Estrutura de Custos Fixos Industriais</h2>
         </div>
 
         <div class="grid-main">
@@ -179,7 +186,7 @@
                 <form id="formImobiliario" onsubmit="salvarImovel(event)">
                     <input type="hidden" id="imovel_id" value="">
                     <div class="flex-col-gap">
-                        <label class="label-form">Identificação da Empresa:</label>
+                        <label class="label-form">Identificação da Empresa / Grupo:</label>
                         <input type="text" id="nome_grupo_display" readonly class="input-form input-form-readonly">
                     </div>
                     <div class="flex-col-gap">
@@ -212,26 +219,26 @@
                     </div>
                     <div class="grid-form-row">
                         <div class="flex-col-gap">
-                            <label class="label-form">Área Útil (m²):</label>
+                            <label class="label-form">Área Útil do Barracão (m²):</label>
                             <input type="number" id="area_util" value="150" required min="10" class="input-form" style="font-weight: bold;">
                         </div>
                         <div class="flex-col-gap">
-                            <label class="label-form">Condomínio (R$):</label>
+                            <label class="label-form">Taxa Condomínio / Manut. (R$):</label>
                             <input type="number" id="valor_condominio" step="0.01" value="350.00" class="input-form">
                         </div>
                     </div>
                     <div class="grid-form-row">
                         <div class="flex-col-gap">
-                            <label class="label-form" style="color: #1e3a8a;">Aluguel Mensal (R$):</label>
+                            <label class="label-form" style="color: #1e3a8a;">Aluguel Mensal Calculado (R$):</label>
                             <input type="number" id="valor_aluguel" readonly class="input-form input-form-readonly" style="color: #1e3a8a; font-size: 13px;">
                         </div>
                         <div class="flex-col-gap">
-                            <label class="label-form" style="color: #b45309;">Taxa Anual (R$):</label>
+                            <label class="label-form" style="color: #b45309;">Taxa Operacional Anual (R$):</label>
                             <input type="number" id="taxa_anual" readonly class="input-form input-form-readonly" style="color: #b45309; font-size: 13px;">
                         </div>
                     </div>
                     <div class="flex-btn-group">
-                        <button type="submit" id="btn_salvar" class="btn-submit">💾 Firmar Locação</button>
+                        <button type="submit" id="btn_salvar" class="btn-submit">💾 Firmar Contrato de Locação</button>
                         <button type="button" id="btn_cancelar" onclick="limparFormularioImobiliario()" class="btn-cancel" style="display: none; margin-top: 8px;">Cancelar</button>
                     </div>
                 </form>
@@ -243,14 +250,14 @@
                         <thead>
                             <tr>
                                 <th>Turma/Grupo</th>
-                                <th>Estrutura / Região</th>
+                                <th>Estrutura / Região de Alocação</th>
                                 <th>Área Útil</th>
                                 <th>Aluguel Mensal</th>
-                                <th style="text-align: center;" class="actions-legal">Ações</th>
+                                <th style="text-align: center;" class="actions-legal">Ações Disponíveis</th>
                             </tr>
                         </thead>
                         <tbody id="tabela_imoveis">
-                            <!-- Alimentação via JS -->
+                            <!-- Alimentação dinâmica via AJAX -->
                         </tbody>
                     </table>
                 </div>
@@ -258,12 +265,14 @@
         </div>
 
         <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
-            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens e conhecimentos multiplicado neste projeto aberto. Interação entre o <em>Homo sapiens</em> e a IA. Gratidão pela motivação de estimadas e valorosos estudantes.</p>
-            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido com diretrizes de acessibilidade web (WCAG).</p>
+            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
             <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
             <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
         </footer>
     </div>
-<script src="/estrutura/estrutura.js" defer></script>
+
+    <!-- 🌟 Mantém o arquivo encapsulado e isolado na própria pasta do módulo -->
+    <script src="/estrutura/estrutura.js" defer></script>
 </body>
 </html>
