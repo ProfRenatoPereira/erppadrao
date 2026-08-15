@@ -26,7 +26,7 @@
         body.alto-contraste .container-box { background-color: #000000 !important; border: 2px solid #ffffff !important; }
         body.alto-contraste .input-form { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
         body.alto-contraste .btn-submit { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; }
-        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste label { color: #ffff00 !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste label, body.alto-contraste p { color: #ffff00 !important; }
     </style>
 </head>
 <body style="min-height: 100vh; display: flex; flex-direction: column; transition: all 0.2s ease;">
@@ -42,7 +42,6 @@
             <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
     </div>
-
     <!-- CONTAINER DO FORMULÁRIO DE FUNDAÇÃO -->
     <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; padding: 16px;">
         <div class="container-box" style="background-color: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-width: 450px; padding: 24px; text-align: center;">
@@ -78,7 +77,7 @@
         </div>
     </div>
 
-    <!-- Script encapsulado dentro do próprio diretório do Blueprint -->
-    <script src="/configuracao/inicializacao.js"></script>
+    <!-- Script encapsulado dentro do próprio diretório ou pasta static global -->
+    <script src="/static/inicializacao.js" defer></script>
 </body>
 </html>
