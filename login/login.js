@@ -1,4 +1,4 @@
-// login/login.js
+// erppadrao - login/login.js
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 
@@ -25,8 +25,10 @@ function alternarAltoContraste() {
 function alternarLeitorAudio() {
     leitorAtivo = !leitorAtivo;
     const btn = document.getElementById('btn-leitor-audio');
+    
     if (btn) {
         btn.innerText = leitorAtivo ? "🔇 Desativar Leitor" : "🔊 Ativar Leitor";
+        btn.style.backgroundColor = leitorAtivo ? "#ef4444" : "#0284c7";
     }
     
     if (leitorAtivo) {
@@ -52,19 +54,29 @@ function alternarLeitorAudio() {
         utterance.lang = 'pt-BR';
         utterance.rate = 1.0; // Velocidade confortável de reprodução
         
+        // 🔄 RESTAURA O BOTÃO AUTOMATICAMENTE QUANDO O ÁUDIO TERMINAR
+        utterance.onend = function() {
+            leitorAtivo = false;
+            if (btn) {
+                btn.innerText = "🔊 Ativar Leitor";
+                btn.style.backgroundColor = "#0284c7";
+            }
+        };
+        
         window.speechSynthesis.speak(utterance);
     } else {
         window.speechSynthesis.cancel();
     }
 }
 
-// FUNÇÃO DE AUTENTICAÇÃO ASSÍNCRONA INTEGRADA (RESOLVE O PROBLEMA DA '?')
-async function executarAutenticacaoEstudantil() {
+// FUNÇÃO DE AUTENTICAÇÃO ASSÍNCRONA INTEGRADA
+async function ejecutarAutenticacaoEstudantil() {
     const idEquipeInput = document.getElementById('id_equipe')?.value.trim();
     const senhaInput = document.getElementById('senha')?.value.trim();
     const msgErroDiv = document.getElementById('msg_erro');
 
     if (!idEquipeInput || !senhaInput) {
+        window.speechSynthesis.cancel();
         alert("⚠️ Por favor, preencha todos os campos antes de continuar.");
         return;
     }
@@ -94,6 +106,7 @@ async function executarAutenticacaoEstudantil() {
 
         const r = await res.json();
         if (res.ok && r.status === 'sucesso') {
+            window.speechSynthesis.cancel();
             window.location.href = r.redirecionar;
         } else {
             const erroTxt = r.message || "Credenciais incorretas.";
