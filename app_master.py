@@ -5,7 +5,6 @@ from datetime import timedelta
 from whitenoise import WhiteNoise
 
 # ⚡ BLINDAGEM CONTRA ALUNOS: O Python lê a chave de forma invisível no Render.
-# Se algum estudante vasculhar o repositório GitHub, verá apenas este código genérico.
 URL_SUPABASE = os.environ.get(
     "DATABASE_URL", 
     "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
@@ -13,8 +12,8 @@ URL_SUPABASE = os.environ.get(
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# Ativação do WhiteNoise para servir os arquivos estáticos locais de forma direta
-app.wsgi_app = WhiteNoise(app.wsgi_app, root='static/')
+# Ativação correta do WhiteNoise para servir a pasta static de forma transparente
+app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(os.path.dirname(__file__), 'static'), prefix='static/')
 
 # Configurações de Segurança e Persistência de Sessão de Aula para Aula
 app.secret_key = "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
@@ -102,15 +101,16 @@ def rota_principal_grid():
     if not session.get('logado'):
         return redirect('/login')
     
-    # 🌟 CORREÇÃO DE SEGURANÇA: Constrói o caminho absoluto dinamicamente para o Render
-    caminho_grid = os.path.join(app.root_path, 'static', 'grid.html')
+    # 🌟 CORREÇÃO DE AMBIENTE: Localiza o arquivo forçando o caminho absoluto e nome estritamente minúsculo
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_grid = os.path.join(diretorio_atual, 'static', 'grid.html')
     
     try:
         with open(caminho_grid, 'r', encoding='utf-8') as f:
             html = f.read()
         return render_template_string(html)
     except FileNotFoundError:
-        return "Erro Crítico: O arquivo 'static/grid.html' não foi encontrado no servidor Render.", 404
+        return "Erro Crítico: O arquivo 'static/grid.html' não foi encontrado no servidor Render. Verifique se o nome do arquivo no repositório está todo em minúsculo.", 404
 
 # ENDPOINT GLOBAL AJAX REST: COLETOR DE MÉTRICAS CROSS-CHECKING DO TOPBOARD
 @app.route('/api/financeiro/metricas', methods=['GET'])
