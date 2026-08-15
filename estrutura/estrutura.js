@@ -13,12 +13,12 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('valor_condominio')?.addEventListener('input', calcularPrecoMercadoRefletido);
 });
 
-// 📐 NOVO MOTOR DE REDIMENSIONAMENTO FORÇADO (CORRIGE O TRAVAMENTO GLOBAL)
+// 📐 NOVO MOTOR DE REDIMENSIONAMENTO FORÇADO (CORRIGE O TRAVAMENTO)
 function mudarFonte(dir) {
     tamanhoFonteAtual += dir;
     tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
     
-    // Altera o padrão proporcional na raiz do documento para herança escalável
+    // Altera o padrão proporcional na raiz do documento
     document.documentElement.style.fontSize = tamanhoFonteAtual + 'px';
     
     // Varre e limpa classes fixas em pixels, aplicando o tamanho dinâmico direto no DOM
@@ -67,7 +67,6 @@ function alternarLeitorAudio() {
     }
 }
 
-// 🧠 MOTOR DE INTELIGÊNCIA IMOBILIÁRIA (Cotação real Curitiba e RMC)
 function calcularPrecoMercadoRefletido() {
     const cidade = document.getElementById('cidade')?.value;
     const bairro = document.getElementById('bairro')?.value;
@@ -79,7 +78,7 @@ function calcularPrecoMercadoRefletido() {
         return;
     }
     
-    let precoM2 = 22.00; // Custo base m² para áreas metropolitanas industriais
+    let precoM2 = 22.00;
     if (cidade === "Curitiba") {
         if (bairro === "Centro") precoM2 = 30.00;
         else if (bairro === "Boqueirão") precoM2 = 25.00;
