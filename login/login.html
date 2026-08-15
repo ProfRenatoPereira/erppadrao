@@ -23,7 +23,7 @@
         body.alto-contraste .container-box { background-color: #000000 !important; border: 2px solid #ffffff !important; }
         body.alto-contraste .input-form { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
         body.alto-contraste .btn-submit { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; }
-        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste label { color: #ffff00 !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste label, body.alto-contraste p { color: #ffff00 !important; }
     </style>
 </head>
 <body style="min-height: 100vh; display: flex; flex-direction: column; transition: all 0.2s ease;">
@@ -45,7 +45,6 @@
         <div class="container-box" style="background-color: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); width: 100%; max-width: 450px; padding: 24px;">
             
             <div style="text-align: center; margin-bottom: 20px;">
-                <!-- IDs adicionados para correspondência estrita com o leitor de áudio scriptado -->
                 <h1 id="txt_titulo" style="color: #1e3a8a; font-size: 22px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -0.5px;">TERCEIRO ADM ASSOCIADOS</h1>
                 <h2 id="txt_sub" style="font-size: 14px; font-weight: bold; color: #4b5563; margin-top: 4px; margin-bottom: 0;">Acesso ao ERP Acadêmico</h2>
             </div>
@@ -56,8 +55,7 @@
 
             <!-- Container visual/auditivo para exibição amigável de erros do Supabase -->
             <div id="msg_erro" class="alert-danger"></div>
-
-            <form id="formLogin" onsubmit="return false;" style="display: flex; flex-direction: column; gap: 12px;">
+            <form id="formLogin" onsubmit="executarAutenticacaoEstudantil(); return false;" style="display: flex; flex-direction: column; gap: 12px;">
                 <div>
                     <label style="font-size: 10px; font-weight: bold; color: #4b5563; text-transform: uppercase;">Identificador da Equipe (Usuário):</label>
                     <input type="text" id="id_equipe" required placeholder="Ex: equipe_alfa" class="input-form">
@@ -68,12 +66,92 @@
                     <input type="password" id="senha" required placeholder="••••••••" class="input-form">
                 </div>
 
-                <button type="button" onclick="executarAutenticacaoEstudantil()" class="btn-submit">Validar Credenciais de Acesso</button>
+                <button type="submit" class="btn-submit">Validar Credenciais de Acesso</button>
             </form>
         </div>
     </div>
 
-    <!-- CERTIFIQUE-SE DE QUE O FLASK ENCONTRE O SCRIPT EXTENDIDO NESTA DIRETRIZ -->
-    <script src="/login/login.js"></script>
+    <!-- LOGICA INTEGRADA DE LOGIN E ACESSIBILIDADE CROSS-AMBIENTE -->
+    <script>
+        let tamanhoFonteAtual = 14;
+        let leitorAtivo = false;
+
+        function mudarFonte(dir) {
+            tamanhoFonteAtual += dir;
+            tamanhoFonteAtual = Math.max(11, Math.min(20, tamanhoFonteAtual));
+            document.querySelectorAll('p, label, input, h1, h2, button').forEach(el => {
+                el.style.fontSize = tamanhoFonteAtual + 'px';
+            });
+        }
+
+        function alternarModoEscuro() {
+            document.body.classList.remove('alto-contraste');
+            document.body.classList.toggle('dark-mode');
+            const btn = document.getElementById('btn_tema');
+            btn.innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
+        }
+
+        function alternarAltoContraste() {
+            document.body.classList.remove('dark-mode');
+            document.body.classList.toggle('alto-contraste');
+        }
+
+        function alternarLeitorAudio() {
+            leitorAtivo = !leitorAtivo;
+            const btn = document.getElementById('btn-leitor-audio');
+            if (leitorAtivo) {
+                btn.innerText = "🔇 Desativar Leitor";
+                btn.style.backgroundColor = "#ef4444";
+                falarTexto(document.getElementById('txt_titulo').innerText + ". " + document.getElementById('txt_sub').innerText + ". " + document.getElementById('txt_desc').innerText);
+            } else {
+                btn.innerText = "🔊 Ativar Leitor";
+                btn.style.backgroundColor = "#0284c7";
+                window.speechSynthesis.cancel();
+            }
+        }
+
+        function falarTexto(texto) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(texto);
+                utterance.lang = 'pt-BR';
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        async function executarAutenticacaoEstudantil() {
+            const containerErro = document.getElementById('msg_erro');
+            containerErro.style.display = 'none';
+            containerErro.innerText = '';
+
+            const payload = {
+                id_equipe: document.getElementById('id_equipe').value,
+                senha: document.getElementById('senha').value
+            };
+
+            try {
+                const resposta = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const resultado = await resposta.json();
+
+                if (resposta.ok && resultado.status === 'sucesso') {
+                    window.location.href = resultado.redirecionar;
+                } else {
+                    containerErro.innerText = resultado.message || 'Credenciais inválidas.';
+                    containerErro.style.display = 'block';
+                    if (leitorAtivo) falarTexto(containerErro.innerText);
+                }
+            } catch (err) {
+                containerErro.innerText = 'Erro na comunicação com o servidor Render ou Supabase.';
+                containerErro.style.display = 'block';
+                if (leitorAtivo) falarTexto(containerErro.innerText);
+            }
+        }
+    </script>
+    <script src="/static/login.js" defer></script>
 </body>
 </html>
