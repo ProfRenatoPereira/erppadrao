@@ -1,4 +1,4 @@
-<!-- estrutura/estrutura.html - BLOCO 1 DE 5 -->
+<!-- estrutura/estrutura.html - PARTE 1 DE 4 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -21,7 +21,7 @@
         .bg-emerald-metric { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
         .bg-slate-metric { background-color: #f8fafc; border-color: #cbd5e1; color: #334155; }
         .bg-amber-metric { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
-/* estrutura/estrutura.html - BLOCO 2 DE 5 */
+
         .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; }
         .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; z-index: 10001; }
         .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
@@ -35,36 +35,6 @@
         .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; transition: background 0.15s; border-bottom: 1px solid #f1f5f9; }
         .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
         .nav-item:hover .dropdown-menu { display: block; }
-        
-        .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; text-align: left; }
-        .page-title { font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
-        .card-title { font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
-        .card { background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-        .flex-col-gap { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; text-align: left; }
-        .label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
-        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; }
-        .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #475569; }
-        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; }
-        .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; text-align: left; }
-        .table-responsive { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
-        thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
-        th, td { padding: 12px; }
-        tr { border-bottom: 1px solid #e5e7eb; }
-        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; }
-        .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; }
-        .btn-submit:hover { background-color: #15803d; }
-        .btn-cancel { background-color: #e5e7eb; color: #374151; padding: 8px 12px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; }
-        .flex-btn-group { padding-top: 8px; display: flex; gap: 8px; }
-
-        @media (max-width: 868px) {
-            .menu-toggle-label { display: flex; }
-            .nav-corporate-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: #0f172a; border-top: 1px solid #334155; padding: 8px 0; box-shadow: 0 10px 15px rgba(0,0,0,0.3); z-index: 9998; }
-            .nav-item { width: 100%; }
-            .nav-link { padding: 12px 20px; border-bottom: 1px solid #1e293b; color: #f8fafc; }
-            .dropdown-menu { display: block; position: static; box-shadow: none; border: none; background-color: #172554 !important; padding: 0; min-width: 100%; }
-            #menu-toggle:checked ~ nav .nav-corporate-menu, #menu-toggle:checked ~ .nav-corporate-menu { display: flex; }
-        }
         
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
         body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
@@ -81,14 +51,17 @@
         @media (min-width: 1024px) { .grid-top { grid-template-columns: repeat(4, minmax(0, 1fr)); } .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
     </style>
 </head>
-<!-- estrutura/estrutura.html - BLOCO 3 DE 5 -->
+<!-- estrutura/estrutura.html - PARTE 2 DE 4 -->
 <body style="transition: all 0.2s ease;">
 
-    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA -->
+    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA NATIVA -->
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
+        <!-- Canto Esquerdo: Logo Vetorial Estolada -->
         <div style="display: flex; align-items: center;">
             <img src="/static/logo.svg" alt="Logo Corporativo Vetorial" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
         </div>
+        
+        <!-- Canto Direito: Caixa de Ferramentas de Inclusão -->
         <div style="display: flex; align-items: center; gap: 6px;">
             <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
             <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
@@ -101,6 +74,7 @@
 
     <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
     <header class="corporate-header">
+        <!-- Área de Identidade Visual Ampliada em 15% (de 48px para 55px) -->
         <div class="logo-area">
             <img src="/static/logo.png" alt="Logo ERP" class="logo-img" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
             <div style="display: flex; flex-direction: column; text-align: left;">
@@ -158,13 +132,24 @@
             </ul>
         </nav>
     </header>
-<!-- estrutura/estrutura.html - BLOCO 4 DE 5 -->
+<!-- estrutura/estrutura.html - PARTE 3 DE 4 -->
     <div class="container">
-        <div class="grid-top">
-            <div class="metric-card bg-blue-metric"><p>💰 Capital Total Simulador</p><h3 id="top_capital_total">R$ 0,00</h3></div>
-            <div class="metric-card bg-emerald-metric"><p>🟩 Caixa de Giro Disponível</p><h3 id="top_giro_global">R$ 0,00</h3></div>
+        <!-- BARRA DE SUB-INDICADORES FINANCEIROS COMPLEMENTADA COM TETO ORÇAMENTÁRIO (40%) -->
+        <div class="grid-top" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; margin-top: 16px;">
+            <div class="metric-card bg-blue-metric"><p>💰 Capital Total</p><h3 id="top_capital_total">R$ 0,00</h3></div>
+            <div class="metric-card bg-emerald-metric"><p>🟩 Caixa de Giro</p><h3 id="top_giro_global">R$ 0,00</h3></div>
             <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo Geral</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
-            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis Totais</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
+            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
+            
+            <!-- 🚨 NOVO CARD PEDAGÓGICO: Controle de teto e limite orçamentário do Setor (40%) -->
+            <div class="metric-card" id="card_budget_limite" style="background-color: #f8fafc; border-color: #cbd5e1; color: #1e293b; text-align: left;">
+                <p>🎯 Limite do Setor (Max 40%)</p>
+                <h4 id="top_budget_setor" style="font-size: 15px; font-weight: 900; margin: 0; white-space: nowrap;">R$ 0,00</h4>
+                <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+                    <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
+                </div>
+                <span id="txt_porcentagem_budget" style="font-size: 9px; font-weight: bold; color: #64748b; display: block; margin-top: 2px;">0% consumido</span>
+            </div>
         </div>
 
         <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Módulo Imobiliário e Estrutura de Custos Fixos Industriais</h2></div>
@@ -232,7 +217,7 @@
                     </div>
                 </form>
             </div>
-<!-- estrutura/estrutura.html - BLOCO 5 DE 5 -->
+<!-- estrutura/estrutura.html - PARTE 4 DE 4 -->
             <div class="table-container col-table">
                 <div class="table-header-dark">Contratos Imobiliários Firmados no Supabase</div>
                 <div class="table-responsive">
