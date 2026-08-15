@@ -14,32 +14,18 @@ def criptografar_senha(senha_pura):
     """Gera hash SHA-256 pura via Python (independente de extensões do banco)."""
     return hashlib.sha256(senha_pura.encode('utf-8')).hexdigest()
 
-# 📄 ROTA PARA ENTREGAR O HTML DE LOGIN
-@login_blueprint.route('/login', methods=['GET'])
-def rota_login_html():
-    if session.get('logado'):
-        if session.get('professor_master'):
-            return redirect('/professor_painel_secreto')
-        return redirect('/grid')
-    with open('login/login.html', 'r', encoding='utf-8') as f:
-        html = f.read()
-    return render_template_string(html)
-
-# ⚡ ROTA PARA ENTREGAR O JAVASCRIPT DE LOGIN (Resolve o erro 404 e ReferenceError)
-@login_blueprint.route('/login/login.js', methods=['GET'])
-def rota_login_js():
-    with open('login/login.js', 'r', encoding='utf-8') as f:
-        js_conteudo = f.read()
-    # Envia com o Content-Type correto para o navegador aceitar a execução
-    return js_conteudo, 200, {'Content-Type': 'application/javascript'}
-
-# 🔐 ROTA LOGICIAL DE AUTENTICAÇÃO (MÉTODO POST)
-@login_blueprint.route('/login', methods=['POST'])
+@login_blueprint.route('/login', methods=['GET', 'POST'])
 def rota_login_autenticacao():
+    if request.method == 'GET':
+        if session.get('logado'):
+            if session.get('professor_master'):
+                return redirect('/professor_painel_secreto')
+            return redirect('/grid')
+        with open('login/login.html', 'r', encoding='utf-8') as f:
+            html = f.read()
+        return render_template_string(html)
+        
     dados = request.json
-    if not dados:
-        return jsonify({'status': 'erro', 'message': 'Dados não fornecidos.'}), 400
-
     id_equipe_input = dados.get('id_equipe', '').strip().lower()
     senha_input = dados.get('senha', '').strip()
     
@@ -57,7 +43,7 @@ def rota_login_autenticacao():
     conexao = obter_conexao_master()
     cursor = conexao.cursor(cursor_factory=RealDictCursor)
     
-    cursor.execute("SELECT * FROM credenciais_equipes WHERE equipe_id = %s AND senha = %s", (id_equipe_input, senha_criptografada))
+    cursor.execute("SELECT * FROM credenciais_equipes WHERE equipe_id = %s AND senha = %s", (id_equipe_input, senate_criptografada))
     equipe_valida = cursor.fetchone()
     
     cursor.close()
@@ -73,7 +59,6 @@ def rota_login_autenticacao():
     else:
         return jsonify({'status': 'erro', 'message': 'Credenciais inválidas ou equipe não homologada.'}), 401
 
-# 📄 ROTA PARA ENTREGAR O HTML DO PAINEL DO PROFESSOR
 @login_blueprint.route('/professor_painel_secreto')
 def rota_painel_professor_html():
     if not session.get('logado') or not session.get('professor_master'):
@@ -82,7 +67,6 @@ def rota_painel_professor_html():
         html = f.read()
     return render_template_string(html)
 
-# 📊 API PROFESSOR: LISTAR EQUIPES
 @login_blueprint.route('/api/professor/listar', methods=['GET'])
 def api_professor_listar_equipes():
     if not session.get('logado') or not session.get('professor_master'):
@@ -103,24 +87,13 @@ def api_professor_listar_equipes():
         
     return jsonify(resposta_mascarada)
 
-# 💾 API PROFESSOR: SALVAR/RESETAR EQUIPE
 @login_blueprint.route('/api/professor/salvar', methods=['POST'])
 def api_professor_salvar_equipe():
     if not session.get('logado') or not session.get('professor_master'):
         return jsonify({'error': 'Acesso negado'}), 401
-        
     dados = request.json
-    if not dados:
-        return jsonify({'error': 'Dados ausentes'}), 400
-        
-    equipe_id = dados.get('equipe_id', '').strip().lower()
-    senha_pura = dados.get('senha', '').strip()
-    nome_empresa = dados.get('nome_empresa', '').strip()
     
-    if not equipe_id or not senha_pura or not nome_empresa:
-        return jsonify({'error': 'Todos os campos são obrigatórios'}), 400
-        
-    senha_segura = criptografar_senha(senha_pura)
+    senha_segura = criptografar_senha(dados['senha'])
     
     conexao = obter_conexao_master()
     cursor = conexao.cursor()
@@ -128,14 +101,13 @@ def api_professor_salvar_equipe():
     cursor.execute('''
         INSERT INTO credenciais_equipes (equipe_id, senha, nome_empresa) VALUES (%s, %s, %s)
         ON CONFLICT (equipe_id) DO UPDATE SET senha = EXCLUDED.senha, nome_empresa = EXCLUDED.nome_empresa
-    ''', (equipe_id, senha_segura, nome_empresa))
+    ''', (dados['equipe_id'], senha_segura, dados['nome_empresa']))
     
     conexao.commit()
     cursor.close()
     conexao.close()
     return jsonify({'status': 'sucesso'})
 
-# 🗑️ API PROFESSOR: DELETAR EQUIPE
 @login_blueprint.route('/api/professor/deletar/<int:id_reg>', methods=['DELETE'])
 def api_professor_deletar_equipe(id_reg):
     if not session.get('logado') or not session.get('professor_master'):
@@ -148,7 +120,6 @@ def api_professor_deletar_equipe(id_reg):
     conexao.close()
     return jsonify({'status': 'sucesso'})
 
-# 🚪 ROTA DE LOGOUT
 @login_blueprint.route('/logout')
 def rota_logout_estudantil():
     session.clear()
