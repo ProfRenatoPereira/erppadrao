@@ -3,15 +3,17 @@ let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 
 document.addEventListener("DOMContentLoaded", function() {
+    // Carrega a malha transacional do banco de dados imediatamente
     carregarDadosIniciais();
     
-    // Vincula os gatilhos de cálculo automático aos campos de entrada
+    // 🧠 GATILHOS OPERACIONAIS: Vincula a readequação de preços aos inputs do formulário
     document.getElementById('cidade')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('bairro')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('area_util')?.addEventListener('input', calcularPrecoMercadoRefletido);
+    document.getElementById('valor_condominio')?.addEventListener('input', calcularPrecoMercadoRefletido);
 });
 
-// ⚡ ACESSIBILIDADE: Métodos sincronizados com a Topbar WCAG
+// ⚡ BARRA DE ACESSIBILIDADE CORPORATIVA WCAG: Métodos sintonizados com o topo
 function mudarFonte(dir) {
     tamanhoFonteAtual += dir;
     document.documentElement.style.fontSize = Math.max(12, Math.min(24, tamanhoFonteAtual)) + 'px';
@@ -56,17 +58,21 @@ function alternarLeitorAudio() {
     }
 }
 
-// 🧠 MOTOR DE INTELIGÊNCIA IMOBILIÁRIA (Cotação real Curitiba e RMC)
+// 📐 MOTOR DE ENGENHARIA ECONÔMICA (Parâmetros reais de Curitiba e RMC)
 function calcularPrecoMercadoRefletido() {
     const cidade = document.getElementById('cidade')?.value;
     const bairro = document.getElementById('bairro')?.value;
     const area = parseFloat(document.getElementById('area_util')?.value) || 0;
     
-    if (area <= 0) return;
+    if (area <= 0) {
+        if (document.getElementById('valor_aluguel')) document.getElementById('valor_aluguel').value = "0.00";
+        if (document.getElementById('taxa_anual')) document.getElementById('taxa_anual').value = "0.00";
+        return;
+    }
     
-    let precoM2 = 22.00; // Valor padrão para polos logísticos e industriais da RMC
+    let precoM2 = 22.00; // Custo base m² para áreas metropolitanas industriais
     
-    // 🌟 CORREÇÃO: Variável city unificada para 'cidade' para não quebrar a compilação do JS
+    // Validação de zoneamento urbano comercial e industrial de alta capabilidade
     if (cidade === "Curitiba") {
         if (bairro === "Centro") precoM2 = 30.00;
         else if (bairro === "Boqueirão") precoM2 = 25.00;
@@ -75,6 +81,7 @@ function calcularPrecoMercadoRefletido() {
         precoM2 = 21.00; 
     }
     
+    // Equações transacionais para renderização imediata nos inputs readonly
     const valorAluguelMensal = area * precoM2;
     const taxaAnualEstimada = area * 4.50; 
     
@@ -88,49 +95,65 @@ function calcularPrecoMercadoRefletido() {
 
 async function carregarDadosIniciais() {
     try {
+        // 📡 AJAX 1: Consome as métricas consolidadas do GerenciadorCaixa
         const resMetricas = await fetch('/api/financeiro/metricas?dept=estrutura');
-        if (!resMetricas.ok) throw new Error("Erro de comunicação.");
+        if (!resMetricas.ok) throw new Error("Falha na ponte de comunicação.");
         const metricas = await resMetricas.json();
         
-        document.getElementById('top_capital_total').innerText = `R$ ${(metricas.capital_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        document.getElementById('top_giro_global').innerText = `R$ ${(metricas.capital_disponivel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        document.getElementById('top_custo_fixo').innerText = `R$ ${(metricas.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-        document.getElementById('top_custo_variavel').innerText = `R$ ${(metricas.custo_valiavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        // Atualiza a barra de sub-indicadores superiores com formatação monetária local brasileira
+        if(document.getElementById('top_capital_total')) {
+            document.getElementById('top_capital_total').innerText = `R$ ${(metricas.capital_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        }
+        if(document.getElementById('top_giro_global')) {
+            document.getElementById('top_giro_global').innerText = `R$ ${(metricas.capital_disponivel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        }
+        if(document.getElementById('top_custo_fixo')) {
+            document.getElementById('top_custo_fixo').innerText = `R$ ${(metricas.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        }
+        if(document.getElementById('top_custo_variavel')) {
+            document.getElementById('top_custo_variavel').innerText = `R$ ${(metricas.custo_valiavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        }
         
+        // Injeta o nome corporativo oficial da equipe na caixa cinza de visualização
         const inputGrupo = document.getElementById('nome_grupo_display');
         if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
 
+        // 📡 AJAX 2: Recupera a malha de contratos firmados no banco
         const resImoveis = await fetch('/api/estrutura/imoveis');
         const imoveis = await resImoveis.json();
         const tbody = document.getElementById('tabela_imoveis');
         if (!tbody) return;
         
         if (!imoveis || imoveis.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic;">Nenhum espaço alocado no Supabase para este grupo.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum espaço alocado no Supabase para este grupo.</td></tr>`;
             return;
         }
 
+        // Renderização dinâmica da árvore de linhas da tabela
         tbody.innerHTML = imoveis.map(i => `
             <tr style="border-bottom: 1px solid #e5e7eb;">
                 <td style="font-weight: 900; color: #1e3a8a;">${i.nome_empresa}</td>
                 <td><strong>${i.tipo_imovel}</strong><br><span style="font-size: 11px; color: #94a3b8;">${i.regiao}</span></td>
-                <td style="font-family: monospace;">${i.area_util} m²</td>
-                <td style="color: #1e3a8a; font-weight: 800;">R$ ${(i.valor_aluguel || 0).toFixed(2)}</td>
+                <td style="font-family: monospace; font-weight: bold;">${i.area_util} m²</td>
+                <td style="color: #1e3a8a; font-weight: 800;">R$ ${(i.valor_aluguel || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
                 <td style="text-align: center; white-space: nowrap;" class="actions-legal">
-                    <button type="button" onclick="editarImovel(${i.id})" class="btn-top" style="background-color: #fffbef; color: #b45309; border-color: #fef3c7; margin-right: 2px;">Editar</button>
+                    <button type="button" onclick="editarImovel(${i.id})" class="btn-top" style="background-color: #fffbec; color: #b45309; border-color: #fde68a; margin-right: 2px;">Editar</button>
                     <button type="button" onclick="deletarImovel(${i.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2;">Rescindir</button>
                 </td>
             </tr>
         `).join('');
         
+        // Executa o recálculo estático para alinhar os preços correntes
         calcularPrecoMercadoRefletido();
     } catch (err) {
-        console.error("Erro na carga inicial:", err);
+        console.error("Erro transacional de carga inicial:", err);
     }
 }
 
+// 💾 COMANDO ASSÍNCRONO: Executa a injeção ou atualização do contrato no banco
 async function salvarImovel(e) {
-    e.preventDefault();
+    if(e && e.preventDefault) e.preventDefault();
+    
     const dados = {
         id: document.getElementById('imovel_id').value ? parseInt(document.getElementById('imovel_id').value) : null,
         tipo_imovel: document.getElementById('tipo_imovel').value,
@@ -150,22 +173,26 @@ async function salvarImovel(e) {
         if (res.ok) {
             limparFormularioImobiliario();
             carregarDadosIniciais();
-            alert("🎯 Contrato imobiliário processado com sucesso!");
+            alert("🎯 Contrato de alocação processado e salvo com sucesso!");
+        } else {
+            alert("❌ Erro na validação: Falha de integridade ao tentar persistir no Supabase.");
         }
     } catch (err) { 
-        console.error(err); 
+        console.error(err);
+        alert("❌ Erro operacional: O servidor central do Render não respondeu.");
     }
 }
 
+// ✏️ COMANDO ASSÍNCRONO: Puxa os dados do Supabase de volta para as caixas do formulário
 async function editarImovel(id) {
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`);
+        if (!res.ok) throw new Error("Contrato inacessível.");
         const i = await res.json();
         
         document.getElementById('imovel_id').value = i.id;
         document.getElementById('tipo_imovel').value = i.tipo_imovel;
         document.getElementById('area_util').value = i.area_util;
-        document.getElementById('valor_aluguel').value = i.valor_aluguel;
         document.getElementById('valor_condominio').value = i.valor_condominio;
         
         if (i.regiao && i.regiao.includes(" - ")) {
@@ -175,28 +202,36 @@ async function editarImovel(id) {
         }
         
         const btnSalvar = document.getElementById('btn_salvar');
-        if (btnSalvar) btnSalvar.innerText = "🔄 Atualizar Contrato";
+        if (btnSalvar) btnSalvar.innerText = "🔄 Atualizar Contrato Activo";
         
         const btnCancel = document.getElementById('btn_cancelar');
         if (btnCancel) btnCancel.style.display = 'inline-block';
+        
+        // Força a recalibragem instantânea dos campos calculados na tela
+        calcularPrecoMercadoRefletido();
     } catch (err) { 
-        console.error(err); 
+        console.error(err);
+        alert("❌ Erro ao tentar carregar contrato para alteração.");
     }
 }
 
+// 🗑️ COMANDO ASSÍNCRONO: Cancela o registro imobiliário com proteção transacional
 async function deletarImovel(id) {
     if (!confirm('Confirmar a rescisão legal do contrato imobiliário? A verba sairá do custo fixo.')) return;
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' });
         if (res.ok) {
             carregarDadosIniciais();
-            alert("🎯 Contrato rescindido com sucesso.");
+            alert("🎯 Contrato imobiliário rescindido e deletado.");
+        } else {
+            alert("❌ Falha na exclusão: Operação negada pela segurança do Supabase.");
         }
     } catch (err) { 
         console.error(err); 
     }
 }
 
+// 🧹 LIMPEZA OPERACIONAL: Limpa os estados de inputs e recoloca o botão no estado padrão
 function limparFormularioImobiliario() {
     const form = document.getElementById('formImobiliario');
     if (form) form.reset();
