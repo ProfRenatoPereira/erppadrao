@@ -1,4 +1,4 @@
-# erppadrao - GerenciadorCaixa.py
+# erppadrao - GerenciadorCaixa.py - PARTE 1 DE 2
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -56,8 +56,9 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         except Exception:
             if conexao: conexao.rollback()
 
-        # 3. Calcula o Caixa de Giro Global Disponível
-        capital_disponivel_total = capital_total - total_gasto_fluxo
+        # 🌟 EQUAÇÃO REVISADA: O Caixa de Giro agora desconta dinamicamente os aluguéis ativos firmados!
+        capital_disponivel_total = capital_total - total_gasto_fluxo - valor_aluguel
+# erppadrao - GerenciadorCaixa.py - PARTE 2 DE 2
 
         # 4. Busca o orçamento liberto específico alocado para o departamento atual
         if departamento_atual:
@@ -111,7 +112,7 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         return {
             'nome_empresa': nome_empresa.upper(),
             'capital_total': capital_total,
-            'capital_disponivel_total': capital_disponivel_total,
+            'capital_disponivel_total': max(0.0, capital_disponivel_total),
             'capital_disponivel_departamento': max(0.0, capital_disponivel_departamento),
             'custo_fixo_total': custo_fixo_total,
             'custo_valiavel_total': custo_valiavel_total
