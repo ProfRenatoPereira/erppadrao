@@ -81,10 +81,10 @@ async function salvarInicializacao(e) {
 
     try {
         const res = await fetch('/api/configuracao/inicializar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+});
 
         // Proteção contra respostas do servidor que não sejam JSON (Páginas de erro HTML)
         const contentType = res.headers.get("content-type");
