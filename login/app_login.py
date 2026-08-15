@@ -1,4 +1,5 @@
 # erppadrao - login/app_login.py
+import os
 from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -16,14 +17,22 @@ def criptografar_senha(senha_pura):
 
 @login_blueprint.route('/login', methods=['GET', 'POST'])
 def rota_login_autenticacao():
+    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta da pasta do Blueprint
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    
     if request.method == 'GET':
         if session.get('logado'):
             if session.get('professor_master'):
                 return redirect('/professor_painel_secreto')
             return redirect('/grid')
-        with open('login/login.html', 'r', encoding='utf-8') as f:
-            html = f.read()
-        return render_template_string(html)
+            
+        caminho_login_html = os.path.join(diretorio_atual, 'login.html')
+        try:
+            with open(caminho_login_html, 'r', encoding='utf-8') as f:
+                html = f.read()
+            return render_template_string(html)
+        except FileNotFoundError:
+            return "Erro Crítico: Arquivo 'login.html' não encontrado no diretório.", 404
         
     dados = request.json
     if not dados:
@@ -43,15 +52,15 @@ def rota_login_autenticacao():
         
     senha_criptografada = criptografar_senha(senha_input)
     
+    # 🛡️ PROTEÇÃO DE CONEXÃO: Garante o fechamento correto do pool com o Supabase
     conexao = obter_conexao_master()
-    cursor = conexao.cursor(cursor_factory=RealDictCursor)
-    
-    # Correção do erro de digitação de 'senate_criptografada' para 'senha_criptografada'
-    cursor.execute("SELECT * FROM credenciais_equipes WHERE equipe_id = %s AND senha = %s", (id_equipe_input, senha_criptografada))
-    equipe_valida = cursor.fetchone()
-    
-    cursor.close()
-    conexao.close()
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("SELECT * FROM credenciais_equipes WHERE equipe_id = %s AND senha = %s", (id_equipe_input, senha_criptografada))
+        equipe_valida = cursor.fetchone()
+    finally:
+        cursor.close()
+        conexao.close()
     
     if equipe_valida:
         session.clear()
@@ -67,9 +76,16 @@ def rota_login_autenticacao():
 def rota_painel_professor_html():
     if not session.get('logado') or not session.get('professor_master'):
         return redirect('/login')
-    with open('login/professor_painel_secreto.html', 'r', encoding='utf-8') as f:
-        html = f.read()
-    return render_template_string(html)
+        
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_painel_html = os.path.join(diretorio_atual, 'professor_painel_secreto.html')
+    
+    try:
+        with open(caminho_painel_html, 'r', encoding='utf-8') as f:
+            html = f.read()
+        return render_template_string(html)
+    except FileNotFoundError:
+        return "Erro Crítico: Arquivo 'professor_painel_secreto.html' não encontrado no diretório.", 404
 
 @login_blueprint.route('/api/professor/listar', methods=['GET'])
 def api_professor_listar_equipes():
@@ -77,11 +93,13 @@ def api_professor_listar_equipes():
         return jsonify({'error': 'Acesso negado'}), 401
     
     conexao = obter_conexao_master()
-    cursor = conexao.cursor(cursor_factory=RealDictCursor)
-    cursor.execute('SELECT id, equipe_id, nome_empresa FROM credenciais_equipes ORDER BY equipe_id ASC')
-    linhas = cursor.fetchall()
-    cursor.close()
-    conexao.close()
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        cursor.execute('SELECT id, equipe_id, nome_empresa FROM credenciais_equipes ORDER BY equipe_id ASC')
+        linhas = cursor.fetchall()
+    finally:
+        cursor.close()
+        conexao.close()
     
     resposta_mascarada = []
     for l in linhas:
@@ -100,7 +118,6 @@ def api_professor_salvar_equipe():
     if not dados:
         return jsonify({'error': 'Dados ausentes'}), 400
         
-    # Uso do .get() e tratamento de strings para evitar falhas ou variações de caixa alta/baixa
     equipe_id = dados.get('equipe_id', '').strip().lower()
     senha_pura = dados.get('senha', '').strip()
     nome_empresa = dados.get('nome_empresa', '').strip()
@@ -111,28 +128,33 @@ def api_professor_salvar_equipe():
     senha_segura = criptografar_senha(senha_pura)
     
     conexao = obter_conexao_master()
-    cursor = conexao.cursor()
-    
-    cursor.execute('''
-        INSERT INTO credenciais_equipes (equipe_id, senha, nome_empresa) VALUES (%s, %s, %s)
-        ON CONFLICT (equipe_id) DO UPDATE SET senha = EXCLUDED.senha, nome_empresa = EXCLUDED.nome_empresa
-    ''', (equipe_id, senha_segura, nome_empresa))
-    
-    conexao.commit()
-    cursor.close()
-    conexao.close()
+    try:
+        cursor = conexao.cursor()
+        cursor.execute('''
+            INSERT INTO credenciais_equipes (equipe_id, senha, nome_empresa) VALUES (%s, %s, %s)
+            ON CONFLICT (equipe_id) DO UPDATE SET senha = EXCLUDED.senha, nome_empresa = EXCLUDED.nome_empresa
+        ''', (equipe_id, senha_segura, nome_empresa))
+        conexao.commit()
+    finally:
+        cursor.close()
+        conexao.close()
+        
     return jsonify({'status': 'sucesso'})
 
 @login_blueprint.route('/api/professor/deletar/<int:id_reg>', methods=['DELETE'])
 def api_professor_deletar_equipe(id_reg):
     if not session.get('logado') or not session.get('professor_master'):
         return jsonify({'error': 'Acesso negado'}), 401
+        
     conexao = obter_conexao_master()
-    cursor = conexao.cursor()
-    cursor.execute('DELETE FROM credenciais_equipes WHERE id = %s', (id_reg,))
-    conexao.commit()
-    cursor.close()
-    conexao.close()
+    try:
+        cursor = conexao.cursor()
+        cursor.execute('DELETE FROM credenciais_equipes WHERE id = %s', (id_reg,))
+        conexao.commit()
+    finally:
+        cursor.close()
+        conexao.close()
+        
     return jsonify({'status': 'sucesso'})
 
 @login_blueprint.route('/logout')
