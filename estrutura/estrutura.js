@@ -13,12 +13,12 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('valor_condominio')?.addEventListener('input', calcularPrecoMercadoRefletido);
 });
 
-// 📐 NOVO MOTOR DE REDIMENSIONAMENTO FORÇADO (CORRIGE O TRAVAMENTO)
+// 📐 NOVO MOTOR DE REDIMENSIONAMENTO FORÇADO (CORRIGE O TRAVAMENTO GLOBAL)
 function mudarFonte(dir) {
     tamanhoFonteAtual += dir;
     tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
     
-    // Altera o padrão proporcional na raiz do documento
+    // Altera o padrão proporcional na raiz do documento para herança escalável
     document.documentElement.style.fontSize = tamanhoFonteAtual + 'px';
     
     // Varre e limpa classes fixas em pixels, aplicando o tamanho dinâmico direto no DOM
@@ -67,6 +67,7 @@ function alternarLeitorAudio() {
     }
 }
 
+// 🧠 MOTOR DE INTELIGÊNCIA IMOBILIÁRIA (Cotação real Curitiba e RMC)
 function calcularPrecoMercadoRefletido() {
     const cidade = document.getElementById('cidade')?.value;
     const bairro = document.getElementById('bairro')?.value;
@@ -78,7 +79,7 @@ function calcularPrecoMercadoRefletido() {
         return;
     }
     
-    let precoM2 = 22.00;
+    let precoM2 = 22.00; // Custo base m² para áreas metropolitanas industriais
     if (cidade === "Curitiba") {
         if (bairro === "Centro") precoM2 = 30.00;
         else if (bairro === "Boqueirão") precoM2 = 25.00;
@@ -112,6 +113,35 @@ async function carregarDadosIniciais() {
         const inputGrupo = document.getElementById('nome_grupo_display');
         if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
 
+        // 🧠 MOTOR DE GOVERNANÇA ORÇAMENTÁRIA DO SETOR (40% Máximo do Capital Inicial)
+        const capitalInicial = metricas.capital_total || 0;
+        const budgetMaximoSetor = capitalInicial * 0.40; 
+        const gastoAtualSetor = metricas.custo_fixo_total || 0; 
+        
+        let porcentagemConsumida = budgetMaximoSetor > 0 ? (gastoAtualSetor / budgetMaximoSetor) * 100 : 0;
+        porcentagemConsumida = Math.min(100, Math.max(0, porcentagemConsumida)); 
+        
+        const txtBudget = document.getElementById('top_budget_setor');
+        const barraProgresso = document.getElementById('barra_progresso_budget');
+        const txtPorcentagem = document.getElementById('txt_porcentagem_budget');
+        const cardBudget = document.getElementById('card_budget_limite');
+        
+        if (txtBudget) txtBudget.innerText = `R$ ${gastoAtualSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${budgetMaximoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if (barraProgresso) barraProgresso.style.width = `${porcentagemConsumida}%`;
+        if (txtPorcentagem) txtPorcentagem.innerText = `${porcentagemConsumida.toFixed(1)}% do teto consumido`;
+        
+        if (cardBudget && barraProgresso) {
+            if (gastoAtualSetor > budgetMaximoSetor) {
+                cardBudget.style.backgroundColor = "#fef2f2";
+                cardBudget.style.borderColor = "#fca5a5";
+                barraProgresso.style.backgroundColor = "#ef4444"; 
+            } else {
+                cardBudget.style.backgroundColor = "#f8fafc";
+                cardBudget.style.borderColor = "#cbd5e1";
+                barraProgresso.style.backgroundColor = "#3b82f6"; 
+            }
+        }
+
         const resImoveis = await fetch('/api/estrutura/imoveis');
         const imoveis = await resImoveis.json();
         const tbody = document.getElementById('tabela_imoveis');
@@ -136,7 +166,7 @@ async function carregarDadosIniciais() {
         `).join('');
         
         calcularPrecoMercadoRefletido();
-        mudarFonte(0); // Força a aplicação proporcional inicial de fontes da página
+        mudarFonte(0); // Sincroniza e aplica a escala de fonte correta WCAG
     } catch (err) { console.error(err); }
 }
 
