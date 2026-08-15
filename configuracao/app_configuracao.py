@@ -1,10 +1,11 @@
-# configuracao/app_configuracao.py
+# erppadrao - configuracao/app_configuracao.py
+import os
 from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
 
 configuracao_blueprint = Blueprint('configuracao_blueprint', __name__)
 
-def obter_conexao_master():
+def obtener_conexao_master():
     # Puxa dinamicamente a string do Supabase unificada no app_master
     from app_master import URL_SUPABASE
     return psycopg2.connect(URL_SUPABASE)
@@ -14,19 +15,31 @@ def obter_conexao_master():
 def rota_inicializacao_html():
     if not session.get('logado'):
         return redirect('/login')
-    # Entrega o arquivo localizado na própria pasta do módulo
-    with open('configuracao/inicializacao.html', 'r', encoding='utf-8') as f:
-        html = f.read()
-    return render_template_string(html)
+        
+    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta da pasta do módulo
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_html = os.path.join(diretorio_atual, 'inicializacao.html')
+    
+    try:
+        with open(caminho_html, 'r', encoding='utf-8') as f:
+            html = f.read()
+        return render_template_string(html)
+    except FileNotFoundError:
+        return "Erro Crítico: Arquivo 'inicializacao.html' não encontrado no servidor.", 404
 
 # ⚡ ROTA PARA ENTREGAR O JAVASCRIPT DE INICIALIZAÇÃO
 @configuracao_blueprint.route('/configuracao/inicializacao.js', methods=['GET'])
 def rota_inicializacao_js():
-    with open('configuracao/inicializacao.js', 'r', encoding='utf-8') as f:
-        js_conteudo = f.read()
-    # Retorna com o Content-Type correto para execução estrita no navegador
-    return js_conteudo, 200, {'Content-Type': 'application/javascript'}
-
+    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta para o arquivo JS do módulo
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_js = os.path.join(diretorio_atual, 'inicializacao.js')
+    
+    try:
+        with open(caminho_js, 'r', encoding='utf-8') as f:
+            js_conteudo = f.read()
+        return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+    except FileNotFoundError:
+        return "console.error('Erro Crítico: Arquivo inicializacao.js não encontrado.');", 404
 # 🔐 API REST: EXECUTOR DA INICIALIZAÇÃO DAS EQUIPES
 @configuracao_blueprint.route('/api/configuracao/inicializar', methods=['POST'])
 def api_inicializar_empresa():
@@ -55,7 +68,7 @@ def api_inicializar_empresa():
     
     conexao = None
     try:
-        conexao = obter_conexao_master()
+        conexao = obtener_conexao_master()
         cursor = conexao.cursor()
         
         # 1. Cria e Atualiza a Tabela Coringa de Configuração da Simulação
@@ -129,6 +142,6 @@ def api_inicializar_empresa():
         return jsonify({'status': 'erro', 'message': 'Falha interna ao persistir dados no banco de dados.'}), 500
         
     finally:
-        # Garante que a conexão será desalocada mesmo se a query falhar no Supabase
+        # 🛡️ PROTEÇÃO DO POOL: Garante o fechamento do slot de conexão mesmo diante de erros
         if conexao:
             conexao.close()
