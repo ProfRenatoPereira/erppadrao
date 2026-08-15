@@ -12,7 +12,7 @@ URL_SUPABASE = os.environ.get(
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# Ativação do WhiteNoise para servir os arquivos estáticos locais de forma direta
+# Ativação correta do WhiteNoise para servir a pasta static de forma transparente
 app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(os.path.dirname(__file__), 'static'), prefix='static/')
 
 # Configurações de Segurança e Persistência de Sessão de Aula para Aula
@@ -45,58 +45,9 @@ from folha_pagamento.app_folha import folha_blueprint
 from manutencao.app_manutencao import manutencao_blueprint
 from requisicoes.app_requisicoes import requisicoes_blueprint
 from roi.app_roi import roi_blueprint
-# erppadrao - app_master.py - PARTE 2 DE 3
-
-# REGISTRO DAS MALHAS TÉCNICAS NO SERVIDOR CENTRAL FLASK
-app.register_blueprint(login_blueprint)
-app.register_blueprint(configuracao_blueprint)
-app.register_blueprint(estrutura_blueprint)
-app.register_blueprint(maquinas_blueprint)
-app.register_blueprint(materiais_blueprint)
-app.register_blueprint(processos_blueprint)
-app.register_blueprint(produtos_blueprint)
-app.register_blueprint(precificacao_blueprint)
-app.register_blueprint(clientes_blueprint)
-app.register_blueprint(vendas_blueprint)
-app.register_blueprint(estoque_blueprint)
-app.register_blueprint(financeiro_blueprint)
-app.register_blueprint(nota_fiscal_blueprint)
-app.register_blueprint(rh_blueprint)
-app.register_blueprint(pcp_blueprint)
-app.register_blueprint(orcamentos_blueprint)
-app.register_blueprint(compras_blueprint)
-app.register_blueprint(producao_blueprint)
-app.register_blueprint(folha_blueprint)
-app.register_blueprint(manutencao_blueprint)
-app.register_blueprint(requisicoes_blueprint)
-app.register_blueprint(roi_blueprint)
-
-# 🛡️ MIDDLEWARE DE BARREIRA: Segurança de fluxo e proteção de estado sem loops de redirecionamento
-@app.before_request
-def verificar_fluxo_de_aula():
-    # 1. Liberação irrestrita para caminhos de arquivos estáticos, rotas de login e rota de logout
-    if request.path.startswith('/static') or request.path.startswith('/login') or request.path == '/logout':
-        return
-
-    # 2. Bloqueio de Autenticação Geral: Se não houver token de sessão ativo, manda para o login
-    if not session.get('logado'):
-        if request.is_json:
-            return jsonify({'status': 'erro', 'message': 'Sessão encerrada por inatividade.'}), 401
-        return redirect('/login')
-
-    # Professor master tem passe livre para inspecionar qualquer rota do sistema
-    if session.get('professor_master'):
-        return
-
-    # 3. Bloqueio de Inicialização: Se a equipe não preencheu o capital, barra o fluxo e manda para configuração
-    if not session.get('empresa_inicializada') and request.endpoint != 'configuracao_blueprint.api_inicializar_empresa':
-        if not request.path.startswith('/configuracao'):
-            if request.is_json:
-                return jsonify({'status': 'erro', 'message': 'A empresa precisa ser inicializada primeiro.'}), 400
-            return redirect('/configuracao/inicializacao')
 # erppadrao - app_master.py - PARTE 3 DE 3
 
-# 🌟 CORREÇÃO DO FLUXO INICIAL: Remove a dependência do arquivo 'grid.html' inexistente
+# 🌟 CORREÇÃO DEFINITIVA DO FLUXO: Remove o grid.html e inicia obrigatoriamente no login
 @app.route('/grid')
 @app.route('/')
 def rota_principal_grid():
