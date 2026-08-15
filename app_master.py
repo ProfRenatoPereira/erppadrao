@@ -102,9 +102,15 @@ def rota_principal_grid():
     if not session.get('logado'):
         return redirect('/login')
     
-    with open('static/grid.html', 'r', encoding='utf-8') as f:
-        html = f.read()
-    return render_template_string(html)
+    # 🌟 CORREÇÃO DE SEGURANÇA: Constrói o caminho absoluto dinamicamente para o Render
+    caminho_grid = os.path.join(app.root_path, 'static', 'grid.html')
+    
+    try:
+        with open(caminho_grid, 'r', encoding='utf-8') as f:
+            html = f.read()
+        return render_template_string(html)
+    except FileNotFoundError:
+        return "Erro Crítico: O arquivo 'static/grid.html' não foi encontrado no servidor Render.", 404
 
 # ENDPOINT GLOBAL AJAX REST: COLETOR DE MÉTRICAS CROSS-CHECKING DO TOPBOARD
 @app.route('/api/financeiro/metricas', methods=['GET'])
