@@ -11,13 +11,13 @@ URL_SUPABASE = os.environ.get(
 
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# Acoplamento do WhiteNoise para servir os arquivos estáticos de acessibilidade de forma resiliente
+# Acoplamento estrutural do WhiteNoise para servir os assets estáticos WCAG
 app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(os.path.dirname(__file__), 'static'), prefix='static/')
 
 app.secret_key = "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
 app.permanent_session_lifetime = timedelta(days=7)
 
-# Importação do motor de inteligência e dedução dinâmica do Caixa (Opção B)
+# Importação nativa do gerenciador de métricas e livro caixa unificado
 import GerenciadorCaixa
 # erppadrao - app_master.py - PARTE 2 DE 3
 from login.app_login import login_blueprint
@@ -43,7 +43,7 @@ from manutencao.app_manutencao import manutencao_blueprint
 from requisicoes.app_requisicoes import requisicoes_blueprint
 from roi.app_roi import roi_blueprint
 
-# Registro dos blocos lógicos na árvore do servidor Render
+# Amarração dos barramentos modulares ao servidor do Render
 app.register_blueprint(login_blueprint)
 app.register_blueprint(configuracao_blueprint)
 app.register_blueprint(estrutura_blueprint)
@@ -70,21 +70,21 @@ app.register_blueprint(roi_blueprint)
 
 @app.before_request
 def verificar_fluxo_de_aula():
-    # Ignora validações para assets e rotas críticas de login/desconexão
+    # Libera de forma irrestrita os arquivos estáticos e fluxos de autenticação
     if request.path.startswith('/static') or request.path.startswith('/login') or request.path == '/logout':
         return
 
-    # Bloqueio 1: Usuário não autenticado no simulador
+    # Validação 1: Barramento de login ativo na sessão do Flask
     if not session.get('logado'):
         if request.is_json:
             return jsonify({'status': 'erro', 'message': 'Sessão encerrada por inatividade.'}), 401
         return redirect('/login')
 
-    # Ignora restrições lineares caso seja o painel mestre do professor
+    # Ignora travas lineares para a conta administrativa do docente
     if session.get('professor_master'):
         return
 
-    # Bloqueio 2: Impede o avanço para os módulos se o capital do negócio não foi constituído
+    # Validação 2: Impede o avanço para qualquer módulo caso a empresa não tenha fundado o capital
     if not session.get('empresa_inicializada') and request.endpoint != 'configuracao_blueprint.api_inicializar_empresa':
         if not request.path.startswith('/configuracao'):
             if request.is_json:
@@ -97,7 +97,7 @@ def rota_raiz_direta():
     if not session.get('logado'):
         return redirect('/login')
     
-    # Encaminhamento linear baseado no estado real da sessão
+    # Redirecionamento linear baseado no estado contábil real do grupo
     if session.get('empresa_inicializada'):
         return redirect('/estrutura')
     else:
@@ -106,7 +106,7 @@ def rota_raiz_direta():
 
 @app.route('/grid')
 def rota_contingencia_grid():
-    # 🎯 PURGAÇÃO DE ROTAS: Contingência segura contra links residuais antigos encaminhando para Estrutura
+    # 🎯 CONTINGÊNCIA DE ROTAS: Captura links residuais do front-end e desvia com segurança para Estrutura
     if not session.get('logado'):
         return redirect('/login')
     return redirect('/estrutura')
@@ -120,7 +120,7 @@ def api_global_metricas_calculadas():
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     departamento = request.args.get('dept', '')
     
-    # Despacha a consulta dinamicamente para o módulo calculador central
+    # Executa a query síncrona lendo a tabela config_simulacao e o livro de fluxo_caixa
     metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, departamento)
     return jsonify(metricas)
 
