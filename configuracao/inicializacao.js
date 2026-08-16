@@ -1,7 +1,7 @@
 /* erppadrao - configuracao/inicializacao.js - PARTE 1 DE 2 */
 let escalaFonteGlobal = 16;
 
-// Motor JavaScript que força a injeção do tamanho dinâmico anulando classes fixas de pixel
+// Força a injeção do tamanho dinâmico usando style.setProperty com !important
 function mudarFonte(direcao) {
     escalaFonteGlobal += direcao;
     if (escalaFonteGlobal < 12) escalaFonteGlobal = 12;
@@ -23,26 +23,29 @@ function alternarModoEscuro() {
     }
 }
 
-// Vinculação explícita ao escopo global do navegador
+// Vinculação explícita das funções lógicas ao escopo de janela global
 window.mudarFonte = mudarFonte;
 window.alternarAltoContraste = alternarAltoContraste;
 window.alternarModoEscuro = alternarModoEscuro;
 /* erppadrao - configuracao/inicializacao.js - PARTE 2 DE 2 */
 async function salvarInicializacao(event) {
-    if (event && event.preventDefault) event.preventDefault();
+    // 🎯 BLOQUEIO CRÍTICO: Impede o recarregamento padrão da página e a interrogação (?) na URL
+    if (event && event.preventDefault) {
+        event.preventDefault();
+    }
     
-    // Captura os inputs de forma cascata cobrindo IDs e seletores genéricos
-    const inputNome = document.getElementById('nome_fantasia') || document.querySelector('input[name="nome_fantasia"]') || document.querySelector('input[type="text"]');
-    const inputCapital = document.getElementById('capital_social') || document.querySelector('input[name="capital_social"]') || document.querySelector('input[type="number"]');
+    // Captura os elementos de forma cascata cobrindo seletores por tipo
+    const inputNome = document.querySelector('input[type="text"]');
+    const inputCapital = document.querySelector('input[type="number"]');
     
     let valorCapital = 0;
     if (inputCapital) {
-        // Higienização de caracteres de moeda para evitar falhas de tipagem (ValueError) no Python
+        // Higienização completa contra formatações de string para enviar um número flutuante puro
         let textoCapital = inputCapital.value.toString().replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
         valorCapital = parseFloat(textoCapital) || 0;
     }
 
-    // 🎯 PAYLOAD DEFINIDO: Vincula os valores higienizados exatamente às chaves do formulário
+    // Estruturação do payload síncrono com as chaves esperadas pela rota defensiva do Python
     const payload = {
         nome_fantasia: inputNome ? inputNome.value.trim() : '',
         capital_social: valorCapital
@@ -57,20 +60,20 @@ async function salvarInicializacao(event) {
 
         if (resposta.ok) {
             const resultado = await resposta.json();
-            // Redireciona síncrono para o módulo imobiliário (/estrutura) aprovado pelo backend
+            // Desvia o fluxo linear diretamente para o módulo Imobiliário
             window.location.href = resultado.redirect || '/estrutura';
         } else {
-            alert("❌ Erro na validação dos dados de capital. Certifique-se de que o nome da organização e o aporte inicial estão corretos.");
+            alert("❌ Erro na validação: Certifique-se de preencher o nome da organização e o aporte de capital inicial.");
         }
     } catch (erro) {
         console.error("Falha transacional de barramento:", erro);
-        alert("❌ Falha de barramento: O servidor central do Render não respondeu.");
+        alert("❌ Erro de barramento: O servidor central do Render não respondeu à requisição assíncrona.");
     }
 }
 
-// Vinculação segura atrelada ao ciclo de vida do DOM
+// Vinculação automática ao formulário no carregamento do DOM
 window.addEventListener('DOMContentLoaded', () => {
-    const form = document.querySelector('form') || document.getElementById('formInicializacao');
+    const form = document.querySelector('form');
     if (form) {
         form.onsubmit = salvarInicializacao;
     }
