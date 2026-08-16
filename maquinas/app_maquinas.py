@@ -52,7 +52,7 @@ def api_listar_maquinas():
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # Garante a existência da tabela com a nova coluna is_patrimonio para a dinâmica contábil
+        # Garante a existência da tabela calibrada com a flag lógica is_patrimonio no Supabase
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS erp_maquinas (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, potencia REAL,
@@ -69,7 +69,7 @@ def api_listar_maquinas():
         return jsonify([dict(x) for x in linhas])
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
-        print(f"Erro ao listar maquinas: {e}")
+        print(f"Erro transacional ao listar ativos mecânicos: {e}")
         return jsonify([]), 200
     finally:
         if cursor: cursor.close()
@@ -109,14 +109,14 @@ def api_salvar_maquina():
         c_mq = float(str(dados.get('custo_minuto_maquina', 0)).replace(',', '.').strip())
         fr = int(dados.get('frequencia_manutencao', 0))
 
-        # 🧠 CONFORMIDADE ESTREITA: Consome a verba real calculada na linha 26 do GerenciadorCaixa
+        # 🧠 CONFORMIDADE DE VERBA: Consome o teto dinâmico calculado pelo GerenciadorCaixa
         import GerenciadorCaixa
         m = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, 'maquinas')
         verba_disponivel = m.get('capital_disponivel_departamento', 0.0)
 
-        # Se for um cadastro novo, impede o salvamento caso estoure o budget atual alocado do setor
+        # Se for um cadastro novo de ativo imobilizado, valida se há orçamento livre na Engenharia
         if pr > verba_disponivel and not id_reg:
-            return "Estouro Orçamentário: Saldo insuficiente na Engenharia.", 400
+            return "Estouro Orçamentário: Saldo insuficiente alocado na Engenharia.", 400
 
         if id_reg:
             cursor.execute('''
@@ -133,7 +133,7 @@ def api_salvar_maquina():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (id_equipe, nome_eq, pot, c_el, c_ag, c_gs, v, av, fr, pr, dep, v_vf, op, c_op, c_mq, journ, turn, is_pat))
 
-        # 📝 LANÇAMENTO NO LIVRO CAIXA: Movimenta a tabela fluxo_caixa para o gerenciador deduzir o saldo
+        # 📝 REGISTRO NO LIVRO CAIXA: Realiza o débito imediato para o Gerenciador deduzir do Giro da equipe
         if not id_reg:
             cursor.execute('''
                 INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
@@ -144,7 +144,7 @@ def api_salvar_maquina():
         return jsonify({'status': 'sucesso'}), 200
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
-        print(f"Erro transacional ao salvar maquina: {e}")
+        print(f"Erro transacional ao salvar ativo: {e}")
         return jsonify({'status': 'erro'}), 500
     finally:
         if cursor: cursor.close()
@@ -176,7 +176,7 @@ def api_deletar_maquina(id_reg):
         cursor.execute("SELECT preco_compra, nome_equipamento FROM erp_maquinas WHERE id = %s AND equipe_id = %s", (id_reg, id_equipe))
         maq = cursor.fetchone()
         if maq:
-            # Lança o estorno creditando o valor como crédito negativo no fluxo_caixa para reaver o capital de giro
+            # 📝 ESTORNO DE CAIXA: Lança o crédito negativo no fluxo_caixa para recompor o Capital de Giro
             valor_estorno = -float(maq['preco_compra'] or 0)
             cursor.execute('''
                 INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
@@ -188,7 +188,7 @@ def api_deletar_maquina(id_reg):
         return jsonify({'status': 'removido'}), 200
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
-        print(f"Erro ao deletar maquina: {e}")
+        print(f"Erro transacional ao liquidar maquina: {e}")
         return jsonify({'status': 'erro'}), 500
     finally:
         if cursor: cursor.close()
