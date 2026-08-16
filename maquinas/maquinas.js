@@ -3,7 +3,8 @@ let escalaFonteGlobal = 16;
 let sintetizadorLeitor = window.speechSynthesis;
 let flagLeitorAtivo = false;
 
-function mudarFonte(direcao) {
+// Vinculação imediata de escopo para evitar timing execution error
+window.mudarFonte = function(direcao) {
     escalaFonteGlobal += (direcao * 2);
     if (escalaFonteGlobal < 12) escalaFonteGlobal = 12;
     if (escalaFonteGlobal > 26) escalaFonteGlobal = 26;
@@ -15,21 +16,21 @@ function mudarFonte(direcao) {
     seletores.forEach(el => {
         el.style.setProperty('font-size', (escalaFonteGlobal - 4) + 'px', 'important');
     });
-}
+};
 
-function alternarAltoContraste() {
+window.alternarAltoContraste = function() {
     document.body.classList.remove('dark-mode');
     document.body.classList.toggle('alto-contraste');
-}
+};
 
-function alternarModoEscuro() {
+window.alternarModoEscuro = function() {
     document.body.classList.remove('alto-contraste');
     document.body.classList.toggle('dark-mode');
     const b = document.getElementById('btn_tema');
     if (b) b.innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
-}
+};
 
-function alternarLeitorAudio() {
+window.alternarLeitorAudio = function() {
     flagLeitorAtivo = !flagLeitorAtivo;
     const btn = document.getElementById('btn-leitor-audio');
     if (!btn) return;
@@ -48,16 +49,16 @@ function alternarLeitorAudio() {
         let utterance = new SpeechSynthesisUtterance(textoParaLer);
         utterance.lang = 'pt-BR';
         utterance.rate = 1.0;
-        utterance.onend = () => { if (flagLeitorAtivo) alternarLeitorAudio(); };
+        utterance.onend = () => { if (flagLeitorAtivo) window.alternarLeitorAudio(); };
         sintetizadorLeitor.speak(utterance);
     } else {
         btn.innerText = "🔊 Leitor";
         btn.style.backgroundColor = "#0284c7";
         sintetizadorLeitor.cancel();
     }
-}
+};
 /* erppadrao - maquinas/maquinas.js - PARTE 2 DE 4 */
-function carregarPreDefinido() {
+window.carregarPreDefinido = function() {
     const s = document.getElementById('seletor_modelo').value;
     if (!s) return;
 
@@ -145,10 +146,10 @@ function carregarPreDefinido() {
         document.getElementById('operador_nome').value = m.operador;
         document.getElementById('custo_minuto_operador').value = m.mod;
     }
-    calcularMinutoMaquina();
-}
+    window.calcularMinutoMaquina();
+};
 /* erppadrao - maquinas/maquinas.js - PARTE 3 DE 4 */
-function calcularMinutoMaquina() {
+window.calcularMinutoMaquina = function() {
     const d = parseFloat(document.getElementById('depreciacao_mensal').value) || 0;
     const kwh = parseFloat(document.getElementById('consumo_eletrico').value) || 0;
     const ag = parseFloat(document.getElementById('consumo_agua').value) || 0;
@@ -164,9 +165,9 @@ function calcularMinutoMaquina() {
     const c_mm = c_est + (d / minMes) + ((kwh * 0.75) / 60) + ((ag * 6.50) / 60) + ((gs * 4.80) / 60) + c_op;
     const inp = document.getElementById('custo_minuto_maquina');
     if (inp) inp.value = c_mm.toFixed(4);
-}
+};
 
-async function carregarDadosIniciais() {
+window.carregarDadosIniciais = async function() {
     try {
         const res = await fetch('/api/financeiro/metricas?dept=maquinas');
         if (!res.ok) throw new Error("Erro de ponte.");
@@ -268,42 +269,38 @@ async function carregarDadosIniciais() {
             }
         }
 
-        const tbody = document.getElementById('tabela_maquinas');
-        if (!tbody) return;
-        
-        if (!ativos || ativos.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum ativo mecânico imobilizado no Supabase.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = ativos.forEach(x => { /* laço resolvido pelo map funcional na parte 4 */ });
+        window.renderizarTabelaAtivos(ativos);
     } catch (e) { console.error(e); }
-}
+};
 /* erppadrao - maquinas/maquinas.js - PARTE 4 DE 4 */
-// Continuação direta da renderização do bloco catch anterior
-        const tbody = document.getElementById('tabela_maquinas');
-        if (tbody && ativos && ativos.length > 0) {
-            tbody.innerHTML = ativos.map(x => `
-                <tr>
-                    <td><strong>${x.nome_equipamento}</strong></td>
-                    <td>Elet: ${x.consumo_eletrico}kW | Água: ${x.consumo_agua}m³</td>
-                    <td><strong>${x.operador_nome}</strong></td>
-                    <td style="font-family: monospace; font-weight: bold; color: #1e3a8a;">R$ ${(x.custo_minuto_maquina || 0).toFixed(4)}/min</td>
-                    <td style="text-align: center; white-space: nowrap;">
-                        <button type="button" onclick="editarMaquina(${x.id})" class="btn-top" style="background-color: #fffbef; color: #b45309; border-color: #fef3c7;">Editar</button>
-                        <button type="button" onclick="deletarMaquina(${x.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2;">Descartar</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-        calcularMinutoMaquina();
-        mudarFonte(0);
-    } catch (e) { console.error(e); }
-}
+window.renderizarTabelaAtivos = function(ativos) {
+    const tbody = document.getElementById('tabela_maquinas');
+    if (!tbody) return;
+    
+    if (!ativos || ativos.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum ativo mecânico imobilizado no Supabase.</td></tr>`;
+        return;
+    }
 
-async function salvarMaquina(e) {
+    tbody.innerHTML = ativos.map(x => `
+        <tr>
+            <td><strong>${x.nome_equipamento}</strong></td>
+            <td>Elet: ${x.consumo_eletrico}kW | Água: ${x.consumo_agua}m³</td>
+            <td><strong>${x.operador_nome}</strong></td>
+            <td style="font-family: monospace; font-weight: bold; color: #1e3a8a;">R$ ${(x.custo_minuto_maquina || 0).toFixed(4)}/min</td>
+            <td style="text-align: center; white-space: nowrap;">
+                <button type="button" onclick="window.editarMaquina(${x.id})" class="btn-top" style="background-color: #fffbef; color: #b45309; border-color: #fef3c7;">Editar</button>
+                <button type="button" onclick="window.deletarMaquina(${x.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2;">Descartar</button>
+            </td>
+        </tr>
+    `).join('');
+    window.calcularMinutoMaquina();
+    window.mudarFonte(0);
+};
+
+window.salvarMaquina = async function(e) {
     if(e && e.preventDefault) e.preventDefault();
-    calcularMinutoMaquina();
+    window.calcularMinutoMaquina();
 
     const dados = {
         id: document.getElementById('registro_id').value ? parseInt(document.getElementById('registro_id').value) : null,
@@ -332,12 +329,12 @@ async function salvarMaquina(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
-        if (res.ok) { limparFormularioMaquina(); carregarDadosIniciais(); alert("🎯 Ativo salvo no Supabase!"); }
+        if (res.ok) { window.limparFormularioMaquina(); window.carregarDadosIniciais(); alert("🎯 Ativo salvo no Supabase!"); }
         else { alert("❌ Erro na validação: Saldo insuficiente ou estouro do teto (40%)."); }
     } catch (err) { alert("❌ Servidor central offline."); }
-}
+};
 
-async function editarMaquina(id) {
+window.editarMaquina = async function(id) {
     try {
         const res = await fetch(`/api/maquinas/buscar/${id}`);
         const m = await res.json();
@@ -360,36 +357,26 @@ async function editarMaquina(id) {
         if (document.getElementById('is_patrimonio')) document.getElementById('is_patrimonio').checked = m.is_patrimonio !== undefined ? m.is_patrimonio : true;
         if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Ativo";
         if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'inline-block';
-        calcularMinutoMaquina();
+        window.calcularMinutoMaquina();
     } catch (e) { alert("❌ Falha de barramento."); }
-}
+};
 
-async function deletarMaquina(id) {
+window.deletarMaquina = async function(id) {
     if(!confirm('Deseja descartar este ativo do parque fabril?')) return;
     try {
         const res = await fetch(`/api/maquinas/deletar/${id}`, { method: 'DELETE' });
-        if (res.ok) { carregarDadosIniciais(); alert("🎯 Baixa realizada."); }
+        if (res.ok) { window.carregarDadosIniciais(); alert("🎯 Baixa realizada."); }
         else { alert("❌ Falha interna."); }
     } catch (e) { alert("❌ Erro operacional."); }
-}
+};
 
-function limparFormularioMaquina() {
+window.limparFormularioMaquina = function() {
     const form = document.getElementById('formMaquina');
     if (form) form.reset();
     if (document.getElementById('registro_id')) document.getElementById('registro_id').value = '';
     if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Registrar Ativo";
     if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'none';
-    calcularMinutoMaquina();
-}
+    window.calcularMinutoMaquina();
+};
 
-window.mudarFonte = mudarFonte;
-window.alternarAltoContraste = alternarAltoContraste;
-window.alternarModoEscuro = alternarModoEscuro;
-window.alternarLeitorAudio = alternarLeitorAudio;
-window.carregarPreDefinido = carregarPreDefinido;
-window.calcularMinutoMaquina = calcularMinutoMaquina;
-window.salvarMaquina = salvarMaquina;
-window.editarMaquina = editarMaquina;
-window.deletarMaquina = deletarMaquina;
-window.limparFormularioMaquina = limparFormularioMaquina;
-window.addEventListener('DOMContentLoaded', carregarDadosIniciais);
+window.addEventListener('DOMContentLoaded', window.carregarDadosIniciais);
