@@ -46,7 +46,6 @@ function carregarPreDefinido() {
     const s = document.getElementById('seletor_modelo').value;
     if (!s) return;
 
-    // BANCO DE DADOS EXPANDIDO - 13 ATIVOS INDUSTRIAIS CORINGA
     const catalogo = {
         cnc_mazak: {
             nome: "Torno CNC Mazak Quick Turn", potencia: "22.0", consumo: "18.5", agua: "0.002", gases: "0.010",
@@ -60,7 +59,7 @@ function carregarPreDefinido() {
         },
         torno_mecanico: {
             nome: "Torno Mecânico Convencional", potencia: "5.5", consumo: "4.2", agua: "0.000", gases: "0.000",
-            velocidade: "1800", avanco: "1200", mnt: "1000", preco: "850000.00", depr: "708.33", residual: "17000.00",
+            velocidade: "1800", avanco: "1200", mnt: "1000", preco: "85000.00", depr: "708.33", residual: "17000.00",
             operador: "Torneiro Mecânico Oficial", mod: "0.3200"
         },
         serra_fita: {
@@ -85,7 +84,7 @@ function carregarPreDefinido() {
         },
         forno_reveni: {
             nome: "Forno de Revenimento Contínuo", potencia: "22.0", consumo: "16.5", agua: "0.000", gases: "0.020",
-            velocidade: "N/A", avanco: "N/A", mnt: "500", preco: "19000.00", depr: "1583.33", residual: "38000.00",
+            velocidade: "N/A", avanco: "N/A", mnt: "500", preco: "190000.00", depr: "1583.33", residual: "38000.00",
             operador: "Operador de Forno Industrial", mod: "0.3000"
         },
         compressor_ar: {
@@ -104,7 +103,7 @@ function carregarPreDefinido() {
             operador: "Logística Interna / Apoio", mod: "0.1800"
         },
         palets_aco: {
-            nome: "Paletes de Aço Reforçados Tipo Rack", potencia: "0.0", consumo: "0.0", agua: "0.000", gases: "0.000",
+            nome: "Paletes de Aço Reforçados Tipo Rack", potencia: "0.0", consumption: "0.0", agua: "0.000", gases: "0.000",
             velocidade: "N/A", avanco: "N/A", mnt: "9999", preco: "450.00", depr: "3.75", residual: "90.00",
             operador: "Almoxarife", mod: "0.1800"
         },
@@ -158,33 +157,47 @@ async function carregarDadosIniciais() {
         if (!res.ok) throw new Error("Erro de ponte.");
         const m = await res.json();
         
+        const resAt = await fetch('/api/maquinas/listar');
+        const ativos = await resAt.json();
+        
+        let valorTotalAtivosComprados = 0;
+        if (ativos && ativos.length > 0) {
+            ativos.forEach(x => {
+                valorTotalAtivosComprados += parseFloat(x.preco_compra || x.valor_aquisicao || 0);
+            });
+        }
+
         if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = `R$ ${(m.capital_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${(m.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${(m.custo_valiavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         if(document.getElementById('top_verba_reais')) document.getElementById('top_verba_reais').innerText = `R$ ${(m.capital_disponivel_departamento || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         
+        if(document.getElementById('top_patrimonio_maquinas')) {
+            document.getElementById('top_patrimonio_maquinas').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        }
+
         const cap = m.capital_total || 0;
         const verbaDisp = m.capital_disponivel_departamento || 0;
         if(document.getElementById('top_verba_porcentagem')) document.getElementById('top_verba_porcentagem').innerText = `${((verbaDisp / (cap || 1)) * 100).toFixed(2)}% do Capital`;
 
-        const bMax = cap * 0.40;
-        const gAt = m.custo_fixo_total || 0;
-        let pct = bMax > 0 ? (gAt / bMax) * 100 : 0;
+        const bMax = verbaDisp * 0.40;
+        let pct = bMax > 0 ? (valorTotalAtivosComprados / bMax) * 100 : 0;
         pct = Math.min(100, Math.max(0, pct));
         
-        if(document.getElementById('top_budget_setor')) document.getElementById('top_budget_setor').innerText = `R$ ${gAt.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${bMax.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if(document.getElementById('top_budget_setor')) document.getElementById('top_budget_setor').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${bMax.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('barra_progresso_budget')) document.getElementById('barra_progresso_budget').style.width = `${pct}%`;
         if(document.getElementById('txt_porcentagem_budget')) document.getElementById('txt_porcentagem_budget').innerText = `${pct.toFixed(1)}% do teto consumido`;
         
         const card = document.getElementById('card_budget_limite');
         const bar = document.getElementById('barra_progresso_budget');
         if (card && bar) {
-            if (gAt > bMax) { card.style.backgroundColor = "#fef2f2"; card.style.borderColor = "#fca5a5"; bar.style.backgroundColor = "#ef4444"; }
-            else { card.style.backgroundColor = "#f8fafc"; card.style.borderColor = "#cbd5e1"; bar.style.backgroundColor = "#3b82f6"; }
+            if (valorTotalAtivosComprados > bMax) { 
+                card.style.backgroundColor = "#fef2f2"; card.style.borderColor = "#fca5a5"; bar.style.backgroundColor = "#ef4444"; 
+            } else { 
+                card.style.backgroundColor = "#f8fafc"; card.style.borderColor = "#cbd5e1"; bar.style.backgroundColor = "#3b82f6"; 
+            }
         }
 
-        const resAt = await fetch('/api/maquinas/listar');
-        const ativos = await resAt.json();
         const tbody = document.getElementById('tabela_maquinas');
         if (!tbody) return;
         
@@ -213,7 +226,7 @@ async function carregarDadosIniciais() {
 /* erppadrao - maquinas/maquinas.js - PARTE 4 DE 4 */
 async function salvarMaquina(e) {
     if(e && e.preventDefault) e.preventDefault();
-    calcularMinutoMaquina(); // Garante a atualização matemática antes de salvar
+    calcularMinutoMaquina();
 
     const dados = {
         id: document.getElementById('registro_id').value ? parseInt(document.getElementById('registro_id').value) : null,
@@ -242,16 +255,9 @@ async function salvarMaquina(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
-        if (res.ok) { 
-            limparFormularioMaquina(); 
-            carregarDadosIniciais(); 
-            alert("🎯 Ativo salvo no Supabase!"); 
-        } else { 
-            alert("❌ Erro na validação: Saldo insuficiente ou estouro do teto (40%)."); 
-        }
-    } catch (err) { 
-        alert("❌ Servidor central offline."); 
-    }
+        if (res.ok) { limparFormularioMaquina(); carregarDadosIniciais(); alert("🎯 Ativo salvo no Supabase!"); }
+        else { alert("❌ Erro na validação: Saldo insuficiente ou estouro do teto (40%)."); }
+    } catch (err) { alert("❌ Servidor central offline."); }
 }
 
 async function editarMaquina(id) {
@@ -278,24 +284,16 @@ async function editarMaquina(id) {
         if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Ativo";
         if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'inline-block';
         calcularMinutoMaquina();
-    } catch (e) { 
-        alert("❌ Falha de barramento."); 
-    }
+    } catch (e) { alert("❌ Falha de barramento."); }
 }
 
 async function deletarMaquina(id) {
     if(!confirm('Deseja descartar este ativo do parque fabril?')) return;
     try {
         const res = await fetch(`/api/maquinas/deletar/${id}`, { method: 'DELETE' });
-        if (res.ok) { 
-            carregarDadosIniciais(); 
-            alert("🎯 Baixa realizada."); 
-        } else { 
-            alert("❌ Falha interna."); 
-        }
-    } catch (e) { 
-        alert("❌ Erro operacional."); 
-    }
+        if (res.ok) { carregarDadosIniciais(); alert("🎯 Baixa realizada."); }
+        else { alert("❌ Falha interna."); }
+    } catch (e) { alert("❌ Erro operacional."); }
 }
 
 function limparFormularioMaquina() {
@@ -307,7 +305,6 @@ function limparFormularioMaquina() {
     calcularMinutoMaquina();
 }
 
-// EXPORTAÇÃO COMPLETA DE ESCOPO GLOBAL PARA BLINDAGEM DE EVENTOS
 window.mudarFonte = mudarFonte;
 window.alternarAltoContraste = alternarAltoContraste;
 window.alternarModoEscuro = alternarModoEscuro;
