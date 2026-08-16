@@ -1,4 +1,4 @@
-<!-- erppadrao - maquinas/maquinas.html - PARTE 1 DE 5 -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 1 DE 6 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -15,7 +15,6 @@
         .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
         .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         
-        /* CARDS E INSUMOS ELÁSTICOS CONTRA ESTOUROS COGNITIVOS */
         .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; min-height: 95px; word-wrap: break-word; word-break: break-word; }
         .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; font-weight: bold; }
         .metric-card h3, .metric-card h4 { font-size: 16px; font-weight: 900; margin: 0; white-space: normal; word-break: break-all; }
@@ -34,7 +33,7 @@
         .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
         .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
         #menu-toggle { display: none; }
-/* erppadrao - maquinas/maquinas.html - PARTE 2 DE 5 */
+/* erppadrao - maquinas/maquinas.html - PARTE 2 DE 6 */
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
         .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
@@ -60,7 +59,6 @@
         th, td { padding: 12px; }
         tr { border-bottom: 1px solid #e5e7eb; }
         
-        /* BOTÕES ELÁSTICOS COM CONTENÇÃO DE TEXTO CONTRA ESTOURO DE FONTE A+ */
         .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; white-space: normal; word-wrap: break-word; word-break: break-word; display: inline-block; vertical-align: middle; }
         .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; white-space: normal; word-wrap: break-word; word-break: break-word; }
         .btn-submit:hover { background-color: #15803d; }
@@ -91,10 +89,9 @@
         @media (min-width: 1024px) { .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
     </style>
 </head>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 3 DE 5 -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 3 DE 6 -->
 <body style="transition: all 0.2s ease;">
 
-    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA NATIVA -->
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
         <div style="display: flex; align-items: center;">
             <img src="/static/Logo.svg" alt="Logo Corporativo Vetorial" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
@@ -109,7 +106,6 @@
         </div>
     </div>
 
-    <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
     <header class="corporate-header">
         <div class="logo-area">
             <img src="/static/logo.png" alt="Logo ERP" class="logo-img" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
@@ -168,12 +164,10 @@
             </ul>
         </nav>
     </header>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 4A DE 5 -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 4 DE 6 -->
     <div class="container">
-        <!-- 📊 PAINEL ESTRUTURADO DE CUSTOS, ATIVOS E LIMITES HORIZONTAIS DINÂMICOS -->
         <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px; font-family: sans-serif;">
             
-            <!-- LINHA 01: ESCOPO CORPORATIVO (MACRO EMPRESA) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
                     <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">💰 Capital Total:</span>
@@ -187,7 +181,6 @@
                 </div>
             </div>
 
-            <!-- LINHA 02: OPERAÇÃO INTERNA E CONSUMO DA ENGENHARIA -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
                     <span style="font-size: 11px; font-weight: bold; color: #581c87; text-transform: uppercase;">🏢 Orçamento Inicial Engenharia:</span>
@@ -201,7 +194,6 @@
                 </div>
             </div>
 
-            <!-- LINHA 03: GESTÃO PATRIMONIAL E TRAVA DE TETO (MÁQUINAS) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
                     <span style="font-size: 11px; font-weight: bold; color: #9a3412; text-transform: uppercase;">🏛️ Patrimônio Máquinas:</span>
@@ -219,36 +211,45 @@
                     <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: 900; color: #2563eb; text-align: right; display: block; margin-top: 2px;">0.0% do teto consumido</span>
                 </div>
             </div>
-
-            <!-- LINHA 04: RELATÓRIO DE CUSTOS FIXOS MENSAIS DO DEPARTAMENTO -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 5 DE 6 -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Geral:</span>
-                    <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 21.350,00/mês</strong>
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Geral (Aluguel):</span>
+                        <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 21.350,00/mês</strong>
+                    </div>
+                    <span id="pct_custo_fixo_geral" style="font-size: 10px; font-weight: bold; color: #8b5cf6;">➔ Custos Totais: 0.0% | Custos Fixos: 0.0%</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 420px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff;">
-                    <span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor (Operação/Mnt/MOD):</span>
-                    <strong id="top_custo_fixo_setor" style="font-size: 14px; font-weight: 900; color: #7c3aed;">R$ 0,00/mês</strong>
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff; flex-grow: 1;">
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor (Mnt/MOD):</span>
+                        <strong id="top_custo_fixo_setor" style="font-size: 14px; font-weight: 900; color: #7c3aed;">R$ 0,00/mês</strong>
+                    </div>
+                    <span id="pct_custo_fixo_setor" style="font-size: 10px; font-weight: bold; color: #6d28d9;">➔ Custos Totais: 0.0% | Custos Fixos: 0.0%</span>
                 </div>
             </div>
 
-            <!-- LINHA 05: RELATÓRIO DE CUSTOS VARIÁVEIS MENSAIS DO DEPARTAMENTO -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custos Variáveis:</span>
-                    <strong id="top_custo_variavel" style="font-size: 14px; font-weight: 900; color: #c2410c;">R$ 0,00/mês</strong>
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custos Variáveis Geral:</span>
+                        <strong id="top_custo_variavel" style="font-size: 14px; font-weight: 900; color: #c2410c;">R$ 0,00/mês</strong>
+                    </div>
+                    <span id="pct_custo_variavel_geral" style="font-size: 10px; font-weight: bold; color: #f97316;">➔ Custos Totais: 0.0% | Custos Variáveis: 0.0%</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 420px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #ffedd5;">
-                    <span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custos Variáveis do Setor (H.E./Ponta/Giro):</span>
-                    <strong id="top_custo_variavel_setor" style="font-size: 14px; font-weight: 900; color: #ea580c;">R$ 0,00/mês</strong>
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #ffedd5; flex-grow: 1;">
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custos Variáveis do Setor (Insumos):</span>
+                        <strong id="top_custo_variavel_setor" style="font-size: 14px; font-weight: 900; color: #ea580c;">R$ 0,00/mês</strong>
+                    </div>
+                    <span id="pct_custo_variavel_setor" style="font-size: 10px; font-weight: bold; color: #c2410c;">➔ Custos Totais: 0.0% | Custos Variáveis: 0.0%</span>
                 </div>
             </div>
         </div>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 4B DE 5 -->
+
         <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2></div>
 
         <div class="grid-main">
-            <!-- COLUNA DO FORMULÁRIO DE CADASTRO -->
             <div class="card col-form">
                 <h3 class="card-title" id="txt_sub">Configuração da Máquina</h3>
                 <form id="formMaquina" onsubmit="salvarMaquina(event)">
@@ -296,7 +297,7 @@
                         <div class="flex-col-gap"><label class="label-form">Velocidade (RPM):</label><input type="text" id="velocidade" class="input-form"></div>
                         <div class="flex-col-gap"><label class="label-form">Avanço (mm/min):</label><input type="text" id="avanco" class="input-form"></div>
                     </div>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 5 DE 5 -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 6 DE 6 -->
                     <div class="grid-form-row">
                         <div class="flex-col-gap"><label class="label-form">Ciclo Mnt (h):</label><input type="number" id="frequencia_manutencao" required class="input-form"></div>
                         <div class="flex-col-gap"><label class="label-form">Preço Compra (R$):</label><input type="number" step="0.01" id="preco_compra" required class="input-form"></div>
@@ -320,7 +321,6 @@
                         </div>
                     </div>
                     
-                    <!-- 📦 MARCADOR DE ATIVO IMOBILIZADO PATRIMONIAL ALINHADO -->
                     <div class="flex-col-gap" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; padding: 4px 0;">
                         <input type="checkbox" id="is_patrimonio" checked style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
                         <label for="is_patrimonio" class="label-form" style="color: #16a34a; font-weight: 900; cursor: pointer; margin: 0;">Classificar como Ativo Imobilizado (Patrimônio)</label>
@@ -337,7 +337,6 @@
                 </form>
             </div>
 
-            <!-- COLUNA DA TABELA DE INVENTÁRIO (CONEXÃO SUPABASE) -->
             <div class="table-container col-table">
                 <div class="table-header-dark">Ativos Mecânicos Cadastrados no Supabase</div>
                 <div class="table-responsive">
@@ -357,7 +356,6 @@
             </div>
         </div>
 
-        <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
         <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
             <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
             <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
@@ -365,7 +363,6 @@
             <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
         </footer>
     </div>
-    
     <script src="/maquinas/maquinas.js" defer></script>
 </body>
 </html>
