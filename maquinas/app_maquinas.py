@@ -39,6 +39,7 @@ def rota_maquinas_js():
     except FileNotFoundError:
         return "console.error('Arquivo maquinas.js não encontrado.');", 404
 # erppadrao - maquinas/app_maquinas.py - PARTE 2 DE 3
+
 @maquinas_blueprint.route('/api/maquinas/listar', methods=['GET'])
 def api_listar_maquinas():
     if not session.get('logado'):
@@ -51,7 +52,7 @@ def api_listar_maquinas():
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # Garante a existência da tabela atualizada com a coluna is_patrimonio
+        # Garante a existência da tabela com a nova coluna is_patrimonio para a dinâmica contábil
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS erp_maquinas (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, potencia REAL,
@@ -68,11 +69,13 @@ def api_listar_maquinas():
         return jsonify([dict(x) for x in linhas])
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
+        print(f"Erro ao listar maquinas: {e}")
         return jsonify([]), 200
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
 # erppadrao - maquinas/app_maquinas.py - PARTE 3 DE 3
+
 @maquinas_blueprint.route('/api/maquinas/salvar', methods=['POST'])
 def api_salvar_maquina():
     if not session.get('logado'): 
@@ -106,10 +109,12 @@ def api_salvar_maquina():
         c_mq = float(str(dados.get('custo_minuto_maquina', 0)).replace(',', '.').strip())
         fr = int(dados.get('frequencia_manutencao', 0))
 
+        # 🧠 CONFORMIDADE ESTREITA: Consome a verba real calculada na linha 26 do GerenciadorCaixa
         import GerenciadorCaixa
         m = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, 'maquinas')
         verba_disponivel = m.get('capital_disponivel_departamento', 0.0)
 
+        # Se for um cadastro novo, impede o salvamento caso estoure o budget atual alocado do setor
         if pr > verba_disponivel and not id_reg:
             return "Estouro Orçamentário: Saldo insuficiente na Engenharia.", 400
 
@@ -128,6 +133,7 @@ def api_salvar_maquina():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (id_equipe, nome_eq, pot, c_el, c_ag, c_gs, v, av, fr, pr, dep, v_vf, op, c_op, c_mq, journ, turn, is_pat))
 
+        # 📝 LANÇAMENTO NO LIVRO CAIXA: Movimenta a tabela fluxo_caixa para o gerenciador deduzir o saldo
         if not id_reg:
             cursor.execute('''
                 INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
@@ -170,6 +176,7 @@ def api_deletar_maquina(id_reg):
         cursor.execute("SELECT preco_compra, nome_equipamento FROM erp_maquinas WHERE id = %s AND equipe_id = %s", (id_reg, id_equipe))
         maq = cursor.fetchone()
         if maq:
+            # Lança o estorno creditando o valor como crédito negativo no fluxo_caixa para reaver o capital de giro
             valor_estorno = -float(maq['preco_compra'] or 0)
             cursor.execute('''
                 INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
@@ -178,7 +185,11 @@ def api_deletar_maquina(id_reg):
 
         cursor.execute('DELETE FROM erp_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
         conexao.commit()
-        return jsonify({'status': 'removido'})
+        return jsonify({'status': 'removido'}), 200
+    except psycopg2.DatabaseError as e:
+        if conexao: conexao.rollback()
+        print(f"Erro ao deletar maquina: {e}")
+        return jsonify({'status': 'erro'}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
