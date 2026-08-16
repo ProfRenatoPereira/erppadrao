@@ -1,19 +1,16 @@
-/* erppadrao - maquinas/maquinas.js - PARTE 1 DE 4 (CORRIGIDA - ACESSIBILIDADE WCAG) */
+/* erppadrao - maquinas/maquinas.js - PARTE 1 DE 4 */
 let escalaFonteGlobal = 16;
 let sintetizadorLeitor = window.speechSynthesis;
 let flagLeitorAtivo = false;
 
 function mudarFonte(direcao) {
-    // Altera o tamanho em blocos de 2px por clique para dar ganho real perceptível
     escalaFonteGlobal += (direcao * 2);
     if (escalaFonteGlobal < 12) escalaFonteGlobal = 12;
     if (escalaFonteGlobal > 26) escalaFonteGlobal = 26;
     
-    // Injeta em cascata forçando herança 'important' na raiz e em elementos críticos
     document.documentElement.style.setProperty('font-size', escalaFonteGlobal + 'px', 'important');
     document.body.style.setProperty('font-size', escalaFonteGlobal + 'px', 'important');
     
-    // Força o redimensionamento reativo em botões, tabelas e inputs para evitar congelamento por classe fixa
     const seletores = document.querySelectorAll('.btn-top, .btn-submit, .input-form, .select-form, td, th, label, p');
     seletores.forEach(el => {
         el.style.setProperty('font-size', (escalaFonteGlobal - 4) + 'px', 'important');
@@ -42,29 +39,16 @@ function alternarLeitorAudio() {
         btn.style.backgroundColor = "#dc2626";
         sintetizadorLeitor.cancel();
         
-        // 🧠 LEITURA PROFUNDA E SEMÂNTICA: Coleta todas as informações vitais da tela para os alunos
         let textoParaLer = "Módulo de Engenharia de Ativos. ";
-        
-        // Coleta dados dos Cards Financeiros
-        const cards = document.querySelectorAll('.metric-card');
-        cards.forEach(card => {
-            const rotulo = card.querySelector('p')?.innerText || "";
-            const valor = card.querySelector('h3, h4')?.innerText || "";
-            if (rotulo && valor) {
-                textoParaLer += `${rotulo}: ${valor}. `;
-            }
+        const faixas = document.querySelectorAll('.painel-orcamentario-horizontal > div');
+        faixas.forEach((faixa, index) => {
+            textoParaLer += `Linha horizontal ${index + 1}: ${faixa.innerText}. `;
         });
-        
-        textoParaLer += "Formulário de Configuração de Máquinas ativo na tela. Utilize os campos para parametrizar potência, consumo de água, gases e taxas de depreciação imobilizada.";
         
         let utterance = new SpeechSynthesisUtterance(textoParaLer);
         utterance.lang = 'pt-BR';
-        utterance.rate = 1.0; // Velocidade natural de dicção pedagógica
-        
-        utterance.onend = () => { 
-            if (flagLeitorAtivo) alternarLeitorAudio(); 
-        };
-        
+        utterance.rate = 1.0;
+        utterance.onend = () => { if (flagLeitorAtivo) alternarLeitorAudio(); };
         sintetizadorLeitor.speak(utterance);
     } else {
         btn.innerText = "🔊 Leitor";
@@ -77,6 +61,7 @@ function carregarPreDefinido() {
     const s = document.getElementById('seletor_modelo').value;
     if (!s) return;
 
+    // BANCO DE DADOS EXPANDIDO - 13 ATIVOS INDUSTRIAIS CORINGA
     const catalogo = {
         cnc_mazak: {
             nome: "Torno CNC Mazak Quick Turn", potencia: "22.0", consumo: "18.5", agua: "0.002", gases: "0.010",
@@ -134,7 +119,7 @@ function carregarPreDefinido() {
             operador: "Logística Interna / Apoio", mod: "0.1800"
         },
         palets_aco: {
-            nome: "Paletes de Aço Reforçados Tipo Rack", potencia: "0.0", consumption: "0.0", agua: "0.000", gases: "0.000",
+            nome: "Paletes de Aço Reforçados Tipo Rack", potencia: "0.0", consumo: "0.0", agua: "0.000", gases: "0.000",
             velocidade: "N/A", avanco: "N/A", mnt: "9999", preco: "450.00", depr: "3.75", residual: "90.00",
             operador: "Almoxarife", mod: "0.1800"
         },
@@ -192,40 +177,70 @@ async function carregarDadosIniciais() {
         const ativos = await resAt.json();
         
         let valorTotalAtivosComprados = 0;
+        let custoFixoAcumuladoSetor = 0;
+        let custoVariavelAcumuladoSetor = 0;
+
         if (ativos && ativos.length > 0) {
             ativos.forEach(x => {
                 valorTotalAtivosComprados += parseFloat(x.preco_compra || x.valor_aquisicao || 0);
+                
+                const hs = parseFloat(x.jornada_semanal) || 44;
+                const t = parseFloat(x.turnos_trabalho) || 1;
+                const minMes = hs * 4.33 * 60 * t;
+                
+                const custoModMensal = (parseFloat(x.custo_minuto_operador) || 0) * minMes;
+                const custoDepreciacaoMensal = parseFloat(x.depreciacao_mensal) || 0;
+                custoFixoAcumuladoSetor += (custoModMensal + custoDepreciacaoMensal);
+                
+                const custoInsumosMinuto = ((parseFloat(x.consumo_eletrico || 0) * 0.75) / 60) + 
+                                           ((parseFloat(x.consumo_agua || 0) * 6.50) / 60) + 
+                                           ((parseFloat(x.consumo_gases || 0) * 4.80) / 60);
+                custoVariavelAcumuladoSetor += (custoInsumosMinuto * minMes);
             });
         }
 
-        if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = `R$ ${(m.capital_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${(m.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${(m.custo_valiavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-        if(document.getElementById('top_verba_reais')) document.getElementById('top_verba_reais').innerText = `R$ ${(m.capital_disponivel_departamento || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        const capitalTotalEmpresa = parseFloat(m.capital_total) || 5000000.00;
+        const disponivelParaSetor = 2000000.00;
+        const saldoRestanteEngenharia = disponivelParaSetor - valorTotalAtivosComprados;
+        let pctTetoConsumido = disponivelParaSetor > 0 ? (valorTotalAtivosComprados / disponivelParaSetor) * 100 : 0;
         
-        if(document.getElementById('top_patrimonio_maquinas')) {
-            document.getElementById('top_patrimonio_maquinas').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        const pctDisponivel = (disponivelParaSetor / capitalTotalEmpresa) * 100;
+        const pctOrcamentoIni = (disponivelParaSetor / capitalTotalEmpresa) * 100;
+        const pctSaldoEng = (saldoRestanteEngenharia / capitalTotalEmpresa) * 100;
+        const pctPatrimonioMaq = (valorTotalAtivosComprados / capitalTotalEmpresa) * 100;
+
+        if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if(document.getElementById('top_disponivel_setor')) document.getElementById('top_disponivel_setor').innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if(document.getElementById('top_orcamento_inicial')) document.getElementById('top_orcamento_inicial').innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if(document.getElementById('top_patrimonio_maquinas')) document.getElementById('top_patrimonio_maquinas').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        
+        if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ 21.350,00/mês`;
+        if(document.getElementById('top_custo_fixo_setor')) document.getElementById('top_custo_fixo_setor').innerText = `R$ ${custoFixoAcumuladoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${(parseFloat(m.custo_valiavel_total) || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        if(document.getElementById('top_custo_variavel_setor')) document.getElementById('top_custo_variavel_setor').innerText = `R$ ${custoVariavelAcumuladoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+
+        const campoSaldo = document.getElementById('top_verba_reais');
+        if(campoSaldo) {
+            campoSaldo.innerText = `R$ ${saldoRestanteEngenharia.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+            campoSaldo.style.color = (saldoRestanteEngenharia < 0) ? "#dc2626" : "#166534";
         }
 
-        const cap = m.capital_total || 0;
-        const verbaDisp = m.capital_disponivel_departamento || 0;
-        if(document.getElementById('top_verba_porcentagem')) document.getElementById('top_verba_porcentagem').innerText = `${((verbaDisp / (cap || 1)) * 100).toFixed(2)}% do Capital`;
+        if(document.getElementById('pct_disponivel_setor')) document.getElementById('pct_disponivel_setor').innerText = `➔ ${pctDisponivel.toFixed(2)}% do Cap.`;
+        if(document.getElementById('pct_orcamento_inicial')) document.getElementById('pct_orcamento_inicial').innerText = `➔ ${pctOrcamentoIni.toFixed(2)}% do Cap.`;
+        if(document.getElementById('pct_saldo_engenharia')) document.getElementById('pct_saldo_engenharia').innerText = `➔ ${pctSaldoEng.toFixed(2)}% do Cap.`;
+        if(document.getElementById('pct_patrimonio_maquinas')) document.getElementById('pct_patrimonio_maquinas').innerText = `➔ ${pctPatrimonioMaq.toFixed(2)}% do Cap.`;
 
-        const bMax = verbaDisp * 0.40;
-        let pct = bMax > 0 ? (valorTotalAtivosComprados / bMax) * 100 : 0;
-        pct = Math.min(100, Math.max(0, pct));
-        
-        if(document.getElementById('top_budget_setor')) document.getElementById('top_budget_setor').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${bMax.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if(document.getElementById('barra_progresso_budget')) document.getElementById('barra_progresso_budget').style.width = `${pct}%`;
-        if(document.getElementById('txt_porcentagem_budget')) document.getElementById('txt_porcentagem_budget').innerText = `${pct.toFixed(1)}% do teto consumido`;
-        
+        if(document.getElementById('txt_valores_limite')) document.getElementById('txt_valores_limite').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if(document.getElementById('txt_porcentagem_budget')) document.getElementById('txt_porcentagem_budget').innerText = `${pctTetoConsumido.toFixed(1)}% do teto consumido`;
+        if(document.getElementById('barra_progresso_budget')) document.getElementById('barra_progresso_budget').style.width = `${Math.min(pctTetoConsumido, 100)}%`;
+
         const card = document.getElementById('card_budget_limite');
         const bar = document.getElementById('barra_progresso_budget');
         if (card && bar) {
-            if (valorTotalAtivosComprados > bMax) { 
-                card.style.backgroundColor = "#fef2f2"; card.style.borderColor = "#fca5a5"; bar.style.backgroundColor = "#ef4444"; 
-            } else { 
-                card.style.backgroundColor = "#f8fafc"; card.style.borderColor = "#cbd5e1"; bar.style.backgroundColor = "#3b82f6"; 
+            if (valorTotalAtivosComprados > disponivelParaSetor) {
+                card.style.backgroundColor = "#fef2f2"; card.style.borderColor = "#fca5a5"; bar.style.backgroundColor = "#ef4444";
+            } else {
+                card.style.backgroundColor = "#ffffff"; card.style.borderColor = "#cbd5e1"; bar.style.backgroundColor = "#3b82f6";
             }
         }
 
