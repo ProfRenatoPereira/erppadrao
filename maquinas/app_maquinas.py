@@ -111,7 +111,7 @@ def api_salvar_maquina():
         consumo_agua = float(str(dados.get('consumo_agua', 0)).replace(',', '.').strip())
         consumo_gases = float(str(dados.get('consumo_gases', 0)).replace(',', '.').strip())
         preco_compra = float(str(dados.get('preco_compra', 0)).replace(',', '.').strip())
-        depreciacao_mensal = float(str(dados.get('depreciacao_mensal', 0)).replace(',', '.').strip())
+        depreciacao_nova = float(str(dados.get('depreciacao_mensal', 0)).replace(',', '.').strip())
         valor_venda_final = float(str(dados.get('valor_venda_final', 0)).replace(',', '.').strip())
         custo_minuto_operador = float(str(dados.get('custo_minuto_operador', 0)).replace(',', '.').strip())
         custo_minuto_maquina = float(str(dados.get('custo_minuto_maquina', 0)).replace(',', '.').strip())
@@ -123,6 +123,24 @@ def api_salvar_maquina():
         diametro_max = float(str(dados.get('diametro_max', 0)).replace(',', '.').strip())
         horas_trabalhadas = int(dados.get('horas_trabalhadas', 0))
 
+        # 🧠 GOVERNANÇA ORÇAMENTÁRIA (OPÇÃO B): Validação estrita do Teto de 40% do Capital Inicial
+        cursor.execute("SELECT capital_inicial FROM erp_caixa_giro WHERE equipe_id = %s LIMIT 1;", (id_equipe,))
+        caixa = cursor.fetchone()
+        capital_inicial = float(caixa[0]) if caixa else 0.0
+        teto_maximo_setor = capital_inicial * 0.40
+
+        cursor.execute("SELECT COALESCE(SUM(depreciacao_mensal), 0) FROM ativos_maquinas WHERE equipe_id = %s;", (id_equipe,))
+        gasto_atual_depreciacao = float(cursor.fetchone()[0])
+
+        if id_reg:
+            cursor.execute("SELECT depreciacao_mensal FROM ativos_maquinas WHERE id = %s AND equipe_id = %s;", (id_reg, id_equipe))
+            antiga = cursor.fetchone()
+            if antiga:
+                gasto_atual_depreciacao -= float(antiga[0])
+
+        if (gasto_atual_depreciacao + depreciacao_nova) > teto_maximo_setor:
+            return "Estouro de Restrição Orçamental: O teto acumulado excede o limite de 40% do capital.", 400
+
         if id_reg:
             cursor.execute('''
                 UPDATE ativos_maquinas SET nome_equipamento=%s, potencia=%s, consumo_eletrico=%s, 
@@ -132,7 +150,7 @@ def api_salvar_maquina():
                 custo_minuto_maquina=%s WHERE id=%s AND equipe_id=%s
             ''', (nome_equipamento, potencia, consumo_eletrico, consumo_agua, consumo_gases, 
                   velocidade, avanco, comprimento_max, diametro_max, frequencia_manutencao, 
-                  horas_trabalhadas, preco_compra, depreciacao_mensal, valor_venda_final, 
+                  horas_trabalhadas, preco_compra, depreciacao_nova, valor_venda_final, 
                   operador_nome, custo_minuto_operador, custo_minuto_maquina, id_reg, id_equipe))
         else:
             cursor.execute('''
@@ -143,15 +161,22 @@ def api_salvar_maquina():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (id_equipe, nome_equipamento, potencia, consumo_eletrico, consumo_agua, 
                   consumo_gases, velocidade, avanco, comprimento_max, diametro_max, 
-                  frequencia_manutencao, horas_trabalhadas, preco_compra, depreciacao_mensal, 
+                  frequencia_manutencao, horas_trabalhadas, preco_compra, depreciacao_nova, 
                   valor_venda_final, operador_nome, custo_minuto_operador, custo_minuto_maquina))
             
+        # Sincronização em tempo real das deduções dinâmicas de custos fixos ativos (Opção B)
+        cursor.execute('''
+            UPDATE erp_caixa_giro 
+            SET custos_fixos_acumulados = (SELECT COALESCE(SUM(depreciacao_mensal), 0) FROM ativos_maquinas WHERE equipe_id = %s) + 
+                                          (SELECT COALESCE(SUM(valor_aluguel + taxa_condominio), 0) FROM erp_imobiliario WHERE equipe_id = %s)
+            WHERE equipe_id = %s;
+        ''', (id_equipe, id_equipe, id_equipe))
+
         conexao.commit()
-        return jsonify({'status': 'sucesso', 'message': 'Ativo industrial atualizado com sucesso.'})
+        return jsonify({'status': 'sucesso', 'message': 'Ativo industrial atualizado com sucesso.'}), 200
         
     except (ValueError, TypeError, psycopg2.DatabaseError) as err:
-        if conexao:
-            conexao.rollback()
+        if conexao: conexao.rollback()
         print(f"Erro transacional ao salvar maquina no Supabase: {err}")
         return jsonify({'status': 'erro', 'message': 'Falha interna ao processar gravação.'}), 500
     finally:
@@ -199,12 +224,20 @@ def api_deletar_maquina(id_reg):
         id_equipe = session.get('id_equipe', 'equipe_alfa')
         
         cursor.execute('DELETE FROM ativos_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+        
+        # Recalcula a dedução dinâmica do capital após descarte do ativo imobilizado
+        cursor.execute('''
+            UPDATE erp_caixa_giro 
+            SET custos_fixos_acumulados = (SELECT COALESCE(SUM(depreciacao_mensal), 0) FROM ativos_maquinas WHERE equipe_id = %s) + 
+                                          (SELECT COALESCE(SUM(valor_aluguel + taxa_condominio), 0) FROM erp_imobiliario WHERE equipe_id = %s)
+            WHERE equipe_id = %s;
+        ''', (id_equipe, id_equipe, id_equipe))
+
         conexao.commit()
         return jsonify({'status': 'removido', 'message': 'Ativo desmobilizado do parque fabril.'})
         
     except psycopg2.DatabaseError as e:
-        if conexao:
-            conexao.rollback()
+        if conexao: conexao.rollback()
         print(f"Erro ao deletar maquina: {e}")
         return jsonify({'status': 'erro', 'message': 'Erro de integridade ao descartar ativo.'}), 500
     finally:
