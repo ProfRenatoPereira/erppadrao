@@ -1,13 +1,23 @@
-/* erppadrao - maquinas/maquinas.js - PARTE 1 DE 4 */
+/* erppadrao - maquinas/maquinas.js - PARTE 1 DE 4 (CORRIGIDA - ACESSIBILIDADE WCAG) */
 let escalaFonteGlobal = 16;
 let sintetizadorLeitor = window.speechSynthesis;
 let flagLeitorAtivo = false;
 
 function mudarFonte(direcao) {
-    escalaFonteGlobal += direcao;
+    // Altera o tamanho em blocos de 2px por clique para dar ganho real perceptível
+    escalaFonteGlobal += (direcao * 2);
     if (escalaFonteGlobal < 12) escalaFonteGlobal = 12;
-    if (escalaFonteGlobal > 22) escalaFonteGlobal = 22;
+    if (escalaFonteGlobal > 26) escalaFonteGlobal = 26;
+    
+    // Injeta em cascata forçando herança 'important' na raiz e em elementos críticos
     document.documentElement.style.setProperty('font-size', escalaFonteGlobal + 'px', 'important');
+    document.body.style.setProperty('font-size', escalaFonteGlobal + 'px', 'important');
+    
+    // Força o redimensionamento reativo em botões, tabelas e inputs para evitar congelamento por classe fixa
+    const seletores = document.querySelectorAll('.btn-top, .btn-submit, .input-form, .select-form, td, th, label, p');
+    seletores.forEach(el => {
+        el.style.setProperty('font-size', (escalaFonteGlobal - 4) + 'px', 'important');
+    });
 }
 
 function alternarAltoContraste() {
@@ -26,15 +36,36 @@ function alternarLeitorAudio() {
     flagLeitorAtivo = !flagLeitorAtivo;
     const btn = document.getElementById('btn-leitor-audio');
     if (!btn) return;
+    
     if (flagLeitorAtivo) {
         btn.innerText = "🛑 Parar";
         btn.style.backgroundColor = "#dc2626";
         sintetizadorLeitor.cancel();
-        let t = document.getElementById('txt_titulo_pagina')?.innerText || "Máquinas";
-        let u = new SpeechSynthesisUtterance(t + ". Parque de Ativos Industrial.");
-        u.lang = 'pt-BR';
-        u.onend = () => { if (flagLeitorAtivo) alternarLeitorAudio(); };
-        sintetizadorLeitor.speak(u);
+        
+        // 🧠 LEITURA PROFUNDA E SEMÂNTICA: Coleta todas as informações vitais da tela para os alunos
+        let textoParaLer = "Módulo de Engenharia de Ativos. ";
+        
+        // Coleta dados dos Cards Financeiros
+        const cards = document.querySelectorAll('.metric-card');
+        cards.forEach(card => {
+            const rotulo = card.querySelector('p')?.innerText || "";
+            const valor = card.querySelector('h3, h4')?.innerText || "";
+            if (rotulo && valor) {
+                textoParaLer += `${rotulo}: ${valor}. `;
+            }
+        });
+        
+        textoParaLer += "Formulário de Configuração de Máquinas ativo na tela. Utilize os campos para parametrizar potência, consumo de água, gases e taxas de depreciação imobilizada.";
+        
+        let utterance = new SpeechSynthesisUtterance(textoParaLer);
+        utterance.lang = 'pt-BR';
+        utterance.rate = 1.0; // Velocidade natural de dicção pedagógica
+        
+        utterance.onend = () => { 
+            if (flagLeitorAtivo) alternarLeitorAudio(); 
+        };
+        
+        sintetizadorLeitor.speak(utterance);
     } else {
         btn.innerText = "🔊 Leitor";
         btn.style.backgroundColor = "#0284c7";
