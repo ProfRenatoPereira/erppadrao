@@ -15,7 +15,7 @@
         .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
         .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         
-        /* CARDS E INSUMOS ELÁSTICOS CONTRA ESTOUROS */
+        /* CARDS E INSUMOS ELÁSTICOS CONTRA ESTOUROS COGNITIVOS */
         .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; min-height: 95px; word-wrap: break-word; word-break: break-word; }
         .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; font-weight: bold; }
         .metric-card h3, .metric-card h4 { font-size: 16px; font-weight: 900; margin: 0; white-space: normal; word-break: break-all; }
@@ -60,7 +60,7 @@
         th, td { padding: 12px; }
         tr { border-bottom: 1px solid #e5e7eb; }
         
-        /* BOTÕES ELÁSTICOS COM CONTENÇÃO DE TEXTO CONTRA ESTOURO DE FONTE */
+        /* BOTÕES ELÁSTICOS COM CONTENÇÃO DE TEXTO CONTRA ESTOURO DE FONTE A+ */
         .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; white-space: normal; word-wrap: break-word; word-break: break-word; display: inline-block; vertical-align: middle; }
         .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; white-space: normal; word-wrap: break-word; word-break: break-word; }
         .btn-submit:hover { background-color: #15803d; }
@@ -168,41 +168,83 @@
             </ul>
         </nav>
     </header>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 4 DE 5 -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 4A DE 5 -->
     <div class="container">
-        <!-- CARDS SUPERIORES DE METRICAS E CONTROLE ORÇAMENTÁRIO (LAYOUT 3X2 PARA AMPLIAR ESPAÇO) -->
-        <div class="grid-top" style="display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; margin-top: 16px;">
-            <style>
-                @media (min-width: 1024px) {
-                    .grid-top { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
-                }
-            </style>
+        <!-- 📊 PAINEL ESTRUTURADO DE CUSTOS, ATIVOS E LIMITES HORIZONTAIS DINÂMICOS -->
+        <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px; font-family: sans-serif;">
             
-            <!-- LINHA 1 -->
-            <div class="metric-card bg-blue-metric"><p>💰 Capital Total</p><h3 id="top_capital_total">R$ 0,00</h3></div>
-            <div class="metric-card bg-purple-metric">
-                <p>🏢 Orçamento Engenharia</p>
-                <h3 id="top_verba_reais">R$ 0,00</h3>
-                <span class="badge-percent badge-purple-value" id="top_verba_porcentagem">0.00%</span>
-            </div>
-            <div class="metric-card" style="background-color: #f0fdf4; border-color: #bbf7d0; color: #166534;">
-                <p>🏛️ Patrimônio Máquinas</p>
-                <h3 id="top_patrimonio_maquinas">R$ 0,00</h3>
+            <!-- LINHA 01: ESCOPO CORPORATIVO (MACRO EMPRESA) -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">💰 Capital Total:</span>
+                    <strong id="top_capital_total" style="font-size: 15px; font-weight: 900; color: #1e3a8a;">R$ 5.000.000,00</strong>
+                    <span style="font-size: 11px; font-weight: bold; color: #3b82f6; margin-left: 4px;">➔ 100%</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #111827; text-transform: uppercase;">💰 Disponível para o Setor:</span>
+                    <strong id="top_disponivel_setor" style="font-size: 15px; font-weight: 900; color: #111827;">R$ 0,00</strong>
+                    <span id="pct_disponivel_setor" style="font-size: 11px; font-weight: bold; color: #10b981; margin-left: 4px;">➔ 0.00% do Cap.</span>
+                </div>
             </div>
 
-            <!-- LINHA 2 -->
-            <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo Geral</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
-            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
-            <div class="metric-card" id="card_budget_limite" style="background-color: #f8fafc; border-color: #cbd5e1;">
-                <p>🎯 Limite Setor (Max 40% Ativos)</p>
-                <h4 id="top_budget_setor" style="font-size: 14px; font-weight: 900; margin: 0;">R$ 0,00</h4>
-                <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 6px; overflow: hidden;">
-                    <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
+            <!-- LINHA 02: OPERAÇÃO INTERNA E CONSUMO DA ENGENHARIA -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #581c87; text-transform: uppercase;">🏢 Orçamento Inicial Engenharia:</span>
+                    <strong id="top_orcamento_inicial" style="font-size: 15px; font-weight: 900; color: #581c87;">R$ 0,00</strong>
+                    <span id="pct_orcamento_inicial" style="font-size: 11px; font-weight: bold; color: #a855f7; margin-left: 4px;">➔ 0.00% do Cap.</span>
                 </div>
-                <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: bold; display: block; margin-top: 4px;">0% consumido</span>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; background-color: #f0fdf4; padding: 4px 8px; border-radius: 6px; border: 1px dashed #bbf7d0;">
+                    <span style="font-size: 11px; font-weight: bold; color: #166534; text-transform: uppercase;">🏢 Saldo de Orçamento Engenharia:</span>
+                    <strong id="top_verba_reais" style="font-size: 15px; font-weight: 900; color: #166534;">R$ 0,00</strong>
+                    <span id="pct_saldo_engenharia" style="font-size: 11px; font-weight: bold; color: #15803d; margin-left: 4px;">➔ 0.00% do Cap.</span>
+                </div>
+            </div>
+
+            <!-- LINHA 03: GESTÃO PATRIMONIAL E TRAVA DE TETO (MÁQUINAS) -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #9a3412; text-transform: uppercase;">🏛️ Patrimônio Máquinas:</span>
+                    <strong id="top_patrimonio_maquinas" style="font-size: 15px; font-weight: 900; color: #9a3412;">R$ 0,00</strong>
+                    <span id="pct_patrimonio_maquinas" style="font-size: 11px; font-weight: bold; color: #ea580c; margin-left: 4px;">➔ 0.00% do Cap.</span>
+                </div>
+                <div id="card_budget_limite" style="display: flex; flex-direction: column; gap: 4px; min-width: 420px; flex-grow: 1; padding: 6px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">🎯 Limite Setor (Max 40% Ativos):</span>
+                        <span id="txt_valores_limite" style="font-size: 12px; font-weight: bold; color: #334155;">R$ 0,00 / R$ 2.000.000,00</span>
+                    </div>
+                    <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 2px;">
+                        <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: 900; color: #2563eb; text-align: right; display: block; margin-top: 2px;">0.0% do teto consumido</span>
+                </div>
+            </div>
+
+            <!-- LINHA 04: RELATÓRIO DE CUSTOS FIXOS MENSAIS DO DEPARTAMENTO -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Geral:</span>
+                    <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 21.350,00/mês</strong>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 420px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff;">
+                    <span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor (Operação/Mnt/MOD):</span>
+                    <strong id="top_custo_fixo_setor" style="font-size: 14px; font-weight: 900; color: #7c3aed;">R$ 0,00/mês</strong>
+                </div>
+            </div>
+
+            <!-- LINHA 05: RELATÓRIO DE CUSTOS VARIÁVEIS MENSAIS DO DEPARTAMENTO -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custos Variáveis:</span>
+                    <strong id="top_custo_variavel" style="font-size: 14px; font-weight: 900; color: #c2410c;">R$ 0,00/mês</strong>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 420px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #ffedd5;">
+                    <span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custos Variáveis do Setor (H.E./Ponta/Giro):</span>
+                    <strong id="top_custo_variavel_setor" style="font-size: 14px; font-weight: 900; color: #ea580c;">R$ 0,00/mês</strong>
+                </div>
             </div>
         </div>
-
+<!-- erppadrao - maquinas/maquinas.html - PARTE 4B DE 5 -->
         <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2></div>
 
         <div class="grid-main">
