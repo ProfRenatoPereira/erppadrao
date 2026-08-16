@@ -39,7 +39,6 @@ def rota_maquinas_js():
     except FileNotFoundError:
         return "console.error('Arquivo maquinas.js não encontrado.');", 404
 # erppadrao - maquinas/app_maquinas.py - PARTE 2 DE 3
-
 @maquinas_blueprint.route('/api/maquinas/listar', methods=['GET'])
 def api_listar_maquinas():
     if not session.get('logado'):
@@ -52,14 +51,14 @@ def api_listar_maquinas():
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # Garante a existência da tabela para persistência dos metadados técnicos dos ativos
+        # Garante a existência da tabela atualizada com a coluna is_patrimonio
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS erp_maquinas (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, potencia REAL,
                 consumo_eletrico REAL, consumo_agua REAL, consumo_gases REAL, velocidade TEXT,
                 avanco TEXT, frequencia_manutencao INTEGER, preco_compra REAL, depreciacao_mensal REAL, 
                 valor_venda_final REAL, operador_nome TEXT, custo_minuto_operador REAL, custo_minuto_maquina REAL,
-                jornada_semanal TEXT DEFAULT '44', turnos_trabalho TEXT DEFAULT '1'
+                jornada_semanal TEXT DEFAULT '44', turnos_trabalho TEXT DEFAULT '1', is_patrimonio BOOLEAN DEFAULT TRUE
             )
         ''')
         conexao.commit()
@@ -74,7 +73,6 @@ def api_listar_maquinas():
         if cursor: cursor.close()
         if conexao: conexao.close()
 # erppadrao - maquinas/app_maquinas.py - PARTE 3 DE 3
-
 @maquinas_blueprint.route('/api/maquinas/salvar', methods=['POST'])
 def api_salvar_maquina():
     if not session.get('logado'): 
@@ -88,13 +86,14 @@ def api_salvar_maquina():
     try:
         conexao = obter_conexao_master()
         cursor = conexao.cursor()
-
+        
         nome_eq = dados.get('nome_equipamento', '').strip()
         v = dados.get('velocidade', '').strip()
         av = dados.get('avanco', '').strip()
         op = dados.get('operador_nome', '').strip()
         journ = dados.get('jornada_semanal', '44')
         turn = dados.get('turnos_trabalho', '1')
+        is_pat = bool(dados.get('is_patrimonio', True))
         
         pot = float(str(dados.get('potencia', 0)).replace(',', '.').strip())
         c_el = float(str(dados.get('consumo_eletrico', 0)).replace(',', '.').strip())
@@ -107,12 +106,10 @@ def api_salvar_maquina():
         c_mq = float(str(dados.get('custo_minuto_maquina', 0)).replace(',', '.').strip())
         fr = int(dados.get('frequencia_manutencao', 0))
 
-        # 🧠 CONFORMIDADE ESTREITA: Consome a verba real calculada na linha 26 do GerenciadorCaixa
         import GerenciadorCaixa
         m = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, 'maquinas')
         verba_disponivel = m.get('capital_disponivel_departamento', 0.0)
 
-        # Se for um cadastro novo, impede o salvamento caso estoure o budget atual alocado do setor
         if pr > verba_disponivel and not id_reg:
             return "Estouro Orçamentário: Saldo insuficiente na Engenharia.", 400
 
@@ -121,17 +118,16 @@ def api_salvar_maquina():
                 UPDATE erp_maquinas SET nome_equipamento=%s, potencia=%s, consumo_eletrico=%s, consumo_agua=%s, 
                 consumo_gases=%s, velocidade=%s, avanco=%s, frequencia_manutencao=%s, preco_compra=%s, 
                 depreciacao_mensal=%s, valor_venda_final=%s, operador_nome=%s, custo_minuto_operador=%s, 
-                custo_minuto_maquina=%s, jornada_semanal=%s, turnos_trabalho=%s WHERE id=%s AND equipe_id=%s
-            ''', (nome_eq, pot, c_el, c_ag, c_gs, v, av, fr, pr, dep, v_vf, op, c_op, c_mq, journ, turn, id_reg, id_equipe))
+                custo_minuto_maquina=%s, jornada_semanal=%s, turnos_trabalho=%s, is_patrimonio=%s WHERE id=%s AND equipe_id=%s
+            ''', (nome_eq, pot, c_el, c_ag, c_gs, v, av, fr, pr, dep, v_vf, op, c_op, c_mq, journ, turn, is_pat, id_reg, id_equipe))
         else:
             cursor.execute('''
                 INSERT INTO erp_maquinas (equipe_id, nome_equipamento, potencia, consumo_eletrico, consumo_agua, 
                 consumo_gases, velocidade, avanco, frequencia_manutencao, preco_compra, depreciacao_mensal, 
-                valor_venda_final, operador_nome, custo_minuto_operador, custo_minuto_maquina, jornada_semanal, turnos_trabalho)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (id_equipe, nome_eq, pot, c_el, c_ag, c_gs, v, av, fr, pr, dep, v_vf, op, c_op, c_mq, journ, turn))
+                valor_venda_final, operador_nome, custo_minuto_operador, custo_minuto_maquina, jornada_semanal, turnos_trabalho, is_patrimonio)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (id_equipe, nome_eq, pot, c_el, c_ag, c_gs, v, av, fr, pr, dep, v_vf, op, c_op, c_mq, journ, turn, is_pat))
 
-        # 📝 LANÇAMENTO NO LIVRO CAIXA: Movimenta a tabela fluxo_caixa para o gerenciador deduzir o saldo
         if not id_reg:
             cursor.execute('''
                 INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
@@ -174,7 +170,6 @@ def api_deletar_maquina(id_reg):
         cursor.execute("SELECT preco_compra, nome_equipamento FROM erp_maquinas WHERE id = %s AND equipe_id = %s", (id_reg, id_equipe))
         maq = cursor.fetchone()
         if maq:
-            # Lança o estorno estornando o valor como crédito negativo no fluxo_caixa
             valor_estorno = -float(maq['preco_compra'] or 0)
             cursor.execute('''
                 INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
