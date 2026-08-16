@@ -25,7 +25,7 @@ def pagina_maquinas():
             html = f.read()
         return render_template_string(html)
     except FileNotFoundError:
-        return "Erro Crítico: Arquivo 'maquinas.html' não encontrado.", 404
+        return "Erro Crítico: Arquivo 'maquinas.html' não encontrado no servidor.", 404
 
 @maquinas_blueprint.route('/maquinas/maquinas.js', methods=['GET'])
 def rota_maquinas_js():
@@ -39,6 +39,7 @@ def rota_maquinas_js():
     except FileNotFoundError:
         return "console.error('Arquivo maquinas.js não encontrado.');", 404
 # erppadrao - maquinas/app_maquinas.py - PARTE 2 DE 3
+
 @maquinas_blueprint.route('/api/maquinas/listar', methods=['GET'])
 def api_listar_maquinas():
     if not session.get('logado'):
@@ -51,7 +52,7 @@ def api_listar_maquinas():
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # 🛡️ UNIFICAÇÃO DE TABELAS: Cria a estrutura erp_maquinas compatível com GerenciadorCaixa
+        # 🛡️ COMPATIBILIDADE INTEGRAL: Cria a tabela erp_maquinas para guardar os dados técnicos da tela
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS erp_maquinas (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, potencia REAL,
@@ -68,31 +69,29 @@ def api_listar_maquinas():
         return jsonify([dict(x) for x in linhas])
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
-        return jsonify({'status': 'erro', 'message': 'Erro no Supabase.'}), 500
+        return jsonify([]), 200
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
 # erppadrao - maquinas/app_maquinas.py - PARTE 3 DE 3
+
 @maquinas_blueprint.route('/api/maquinas/salvar', methods=['POST'])
 def api_salvar_maquina():
-    if not session.get('logado'):
-        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+    if not session.get('logado'): return jsonify({'status': 'erro'}), 401
     dados = request.json or {}
     id_reg = dados.get('id')
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     
-    conexao = None
-    cursor = None
+    conexao, cursor = None, None
     try:
         conexao = obter_conexao_master()
         cursor = conexao.cursor()
 
-        # 🔐 PROTEÇÃO CONTRA KEYERROR COM HIGIENIZAÇÃO DE VÍRGULAS NUMÉRICAS
         nome_eq = dados.get('nome_equipamento', '').strip()
         v = dados.get('velocidade', '').strip()
         av = dados.get('avanco', '').strip()
         op = dados.get('operador_nome', '').strip()
-        jorn = dados.get('jornada_semanal', '44')
+        journ = dados.get('jornada_semanal', '44')
         turn = dados.get('turnos_trabalho', '1')
         
         pot = float(str(dados.get('potencia', 0)).replace(',', '.').strip())
@@ -106,21 +105,13 @@ def api_salvar_maquina():
         c_mq = float(str(dados.get('custo_minuto_maquina', 0)).replace(',', '.').strip())
         fr = int(dados.get('frequencia_manutencao', 0))
 
-        # 🧠 GOVERNANÇA FINANCEIRA (OPÇÃO B): Checagem estrita de teto de 40% do capital inicial
-        cursor.execute("SELECT capital_inicial FROM erp_caixa_giro WHERE equipe_id = %s LIMIT 1;", (id_equipe,))
-        cx = cursor.fetchone()
-        cap_ini = float(cx[0]) if cx else 0.0
-        teto = cap_ini * 0.40
+        # 🧠 INTEGRAÇÃO COM GERENCIADOR: Puxa o saldo real calculado na linha 36 do seu motor
+        import GerenciadorCaixa
+        m = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, 'maquinas')
+        verba_disponivel = m.get('capital_disponivel_departamento', 0.0)
 
-        cursor.execute("SELECT COALESCE(SUM(depreciacao_mensal), 0) FROM erp_maquinas WHERE equipe_id = %s;", (id_equipe,))
-        g_at = float(cursor.fetchone()[0])
-        if id_reg:
-            cursor.execute("SELECT depreciacao_mensal FROM erp_maquinas WHERE id = %s AND equipe_id = %s;", (id_reg, id_equipe))
-            ant = cursor.fetchone()
-            if ant: g_at -= float(ant[0])
-
-        if (g_at + dep) > teto:
-            return "Estouro orçamentário na Engenharia.", 400
+        if pr > verba_disponivel and not id_reg:
+            return "Estouro Orçamentário: Saldo insuficiente na Engenharia.", 400
 
         if id_reg:
             cursor.execute('''
@@ -137,14 +128,13 @@ def api_salvar_maquina():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (id_equipe, nome_eq, pot, c_el, c_ag, c_gs, v, av, fr, pr, dep, v_vf, op, c_op, c_mq, journ, turn))
 
-        # Atualiza a dedução dinâmica do Caixa de Giro da equipe em tempo real
-        cursor.execute('''
-            UPDATE erp_caixa_giro 
-            SET custos_fixos_acumulados = (SELECT COALESCE(SUM(depreciacao_mensal), 0) FROM erp_maquinas WHERE equipe_id = %s) + 
-                                          (SELECT COALESCE(SUM(valor_aluguel + taxa_condominio), 0) FROM erp_imobiliario WHERE equipe_id = %s)
-            WHERE equipe_id = %s
-        ''', (id_equipe, id_equipe, id_equipe))
-        
+        # 📝 LANÇAMENTO SÍNCRONO NO LIVRO CAIXA: Alimenta a tabela fluxo_caixa para o seu gerenciador ler e abater o saldo
+        if not id_reg:
+            cursor.execute('''
+                INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
+                VALUES (%s, %s, %s, %s);
+            ''', (id_equipe, 'maquinas', f"Aquisição Ativo: {nome_eq}", pr))
+
         conexao.commit()
         return jsonify({'status': 'sucesso'}), 200
     except psycopg2.DatabaseError as e:
@@ -176,13 +166,17 @@ def api_deletar_maquina(id_reg):
     try:
         conexao = obter_conexao_master()
         cursor = conexao.cursor()
+        
+        cursor.execute("SELECT nome_equipamento, preco_compra FROM erp_maquinas WHERE id = %s AND equipe_id = %s", (id_reg, id_equipe))
+        maq = cursor.fetchone()
+        if maq:
+            # Estorna o valor inserindo uma movimentação de valor negativo no livro caixa
+            cursor.execute('''
+                INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
+                VALUES (%s, %s, %s, %s);
+            ''', (id_equipe, 'maquinas', f"Estorno Descarte: {maq[0]}", -float(maq[1])))
+
         cursor.execute('DELETE FROM erp_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-        cursor.execute('''
-            UPDATE erp_caixa_giro 
-            SET custos_fixos_acumulados = (SELECT COALESCE(SUM(depreciacao_mensal), 0) FROM erp_maquinas WHERE equipe_id = %s) + 
-                                          (SELECT COALESCE(SUM(valor_aluguel + taxa_condominio), 0) FROM erp_imobiliario WHERE equipe_id = %s)
-            WHERE equipe_id = %s
-        ''', (id_equipe, id_equipe, id_equipe))
         conexao.commit()
         return jsonify({'status': 'removido'})
     finally:
