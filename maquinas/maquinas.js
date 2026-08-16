@@ -1,5 +1,95 @@
-// erppadrao - maquinas/maquinas.js - PARTE 2 DE 2
+/* erppadrao - maquinas/maquinas.js - PARTE 1 DE 2 */
 
+// Variáveis Globais de Controle de Interface e Acessibilidade Corporativa (WCAG)
+let escalaFonteGlobal = 16;
+let sintetizadorLeitor = window.speechSynthesis;
+let flagLeitorAtivo = false;
+
+// ♿ INJEÇÃO FORÇADA DE ACESSIBILIDADE (WCAG) - ANULAÇÃO DE PIXEL FIXO via !important
+function mudarFonte(direcao) {
+    escalaFonteGlobal += direcao;
+    if (escalaFonteGlobal < 12) escalaFonteGlobal = 12;
+    if (escalaFonteGlobal > 22) escalaFonteGlobal = 22;
+    document.documentElement.style.setProperty('font-size', escalaFonteGlobal + 'px', 'important');
+}
+
+function alternarAltoContraste() {
+    document.body.classList.remove('dark-mode');
+    document.body.classList.toggle('alto-contraste');
+}
+
+function alternarModoEscuro() {
+    document.body.classList.remove('alto-contraste');
+    document.body.classList.toggle('dark-mode');
+    const botaoTema = document.getElementById('btn_tema');
+    if (botaoTema) {
+        botaoTema.innerText = document.body.classList.contains('dark-mode') ? "☀️ Modo Claro" : "🌙 Modo Escuro";
+    }
+}
+
+function alternarLeitorAudio() {
+    flagLeitorAtivo = !flagLeitorAtivo;
+    const botaoLeitor = document.getElementById('btn-leitor-audio');
+    if (!botaoLeitor) return;
+    
+    if (flagLeitorAtivo) {
+        botaoLeitor.innerText = "🛑 Parar Áudio";
+        botaoLeitor.style.backgroundColor = "#dc2626";
+        executarLeituraTela();
+    } else {
+        botaoLeitor.innerText = "🔊 Ativar Leitor";
+        botaoLeitor.style.backgroundColor = "#0284c7";
+        sintetizadorLeitor.cancel();
+    }
+}
+
+function executarLeituraTela() {
+    if (!flagLeitorAtivo) return;
+    sintetizadorLeitor.cancel();
+    const titulo = document.getElementById('txt_titulo_pagina')?.innerText || "Máquinas e Equipamentos";
+    const sub = document.getElementById('txt_sub')?.innerText || "";
+    let locucao = new SpeechSynthesisUtterance(`${titulo}. Configuração do Parque de Ativos Mecânicos. ${sub}`);
+    locucao.lang = 'pt-BR';
+    locucao.onend = () => { if (flagLeitorAtivo) alternarLeitorAudio(); };
+    sintetizadorLeitor.speak(locucao);
+}
+
+// 📋 DICIONÁRIO DE MODELOS PREDEFINIDOS PARA O FORMULÁRIO DE ENGENHARIA DE CUSTOS
+function carregarPreDefinido() {
+    const seletor = document.getElementById('seletor_modelo').value;
+    if (seletor === 'cnc_mazak') {
+        document.getElementById('nome_equipamento').value = "Torno CNC Mazak Quick Turn";
+        document.getElementById('potencia').value = "22.0";
+        document.getElementById('consumo_eletrico').value = "18.5";
+        document.getElementById('consumo_agua').value = "0.002";
+        document.getElementById('consumo_gases').value = "0.010";
+        document.getElementById('velocidade').value = "6000";
+        document.getElementById('avanco').value = "36000";
+        document.getElementById('frequencia_manutencao').value = "500";
+        document.getElementById('preco_compra').value = "650000.00";
+        document.getElementById('depreciacao_mensal').value = "5416.67";
+        document.getElementById('valor_venda_final').value = "130000.00";
+        document.getElementById('operador_nome').value = "Operador CNC Nível III";
+        document.getElementById('custo_minuto_operador').value = "0.4500";
+    } else if (seletor === 'fresadora') {
+        document.getElementById('nome_equipamento').value = "Fresadora Universal FU-3";
+        document.getElementById('potencia').value = "7.5";
+        document.getElementById('consumo_eletrico').value = "5.8";
+        document.getElementById('consumo_agua').value = "0.000";
+        document.getElementById('consumo_gases').value = "0.000";
+        document.getElementById('velocidade').value = "1800";
+        document.getElementById('avanco').value = "2000";
+        document.getElementById('frequencia_manutencao').value = "1000";
+        document.getElementById('preco_compra').value = "180000.00";
+        document.getElementById('depreciacao_mensal').value = "1500.00";
+        document.getElementById('valor_venda_final').value = "36000.00";
+        document.getElementById('operador_nome').value = "Mecânico Industrial";
+        document.getElementById('custo_minuto_operador').value = "0.3200";
+    }
+    calcularMinutoMaquina();
+}
+
+// 🧮 ENGENHARIA DE CUSTOS: CÁLCULO DIDÁTICO DO CUSTO MINUTO MÁQUINA (CMM)
 function calcularMinutoMaquina() {
     const depreciacao = parseFloat(document.getElementById('depreciacao_mensal').value) || 0;
     const consumoKwh = parseFloat(document.getElementById('consumo_eletrico').value) || 0;
@@ -18,6 +108,8 @@ function calcularMinutoMaquina() {
     
     const minutosNoMes = horasSemanais * 4.33 * 60 * turnos;
     
+    if (minutosNoMes <= 0) return;
+
     const depreciacaoPorMinuto = depreciacao / minutosNoMes;
     const energiaPorMinuto = (consumoKwh * custoKwhEnergia) / 60;
     const aguaPorMinuto = (consumoAguaHora * custoMetroCubicoAgua) / 60;
@@ -28,67 +120,9 @@ function calcularMinutoMaquina() {
     const inputCMM = document.getElementById('custo_minuto_maquina');
     if (inputCMM) inputCMM.value = c_mm.toFixed(4);
 }
+/* erppadrao - maquinas/maquinas.js - PARTE 2A DE 2 */
 
-async function carregarDadosIniciais() {
-    try {
-        const resMetricas = await fetch('/api/financeiro/metricas?dept=maquinas');
-        if (!resMetricas.ok) throw new Error("Falha na ponte de comunicação.");
-        const metricas = await resMetricas.json();
-        
-        // Injeta os dados monetários globais padronizados
-        if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = `R$ ${(metricas.capital_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = `R$ ${(metricas.capital_disponivel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${(metricas.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${(metricas.custo_valiavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-        
-        // Atualiza a verba local alocada para o departamento de engenharia
-        if(document.getElementById('top_verba_reais')) document.getElementById('top_verba_reais').innerText = `R$ ${(metricas.capital_disponivel_departamento || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        
-        // 🧠 MOTOR DE GOVERNANÇA ORÇAMENTÁRIA DO SETOR DE ATIVOS (40% Máximo do Capital Inicial)
-        const capitalInicial = metricas.capital_total || 0;
-        const budgetMaximoSetor = capitalInicial * 0.40; 
-        const gastoAtualSetor = metricas.custo_fixo_total || 0; 
-        
-        let porcentagemConsumida = budgetMaximoSetor > 0 ? (gastoAtualSetor / budgetMaximoSetor) * 100 : 0;
-        porcentagemConsumida = Math.min(100, Math.max(0, porcentagemConsumida)); 
-        
-        const txtBudget = document.getElementById('top_budget_setor');
-        const barraProgresso = document.getElementById('barra_progresso_budget');
-        const txtPorcentagem = document.getElementById('txt_porcentagem_budget');
-        const cardBudget = document.getElementById('card_budget_limite');
-        
-        if (txtBudget) txtBudget.innerText = `R$ ${gastoAtualSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${budgetMaximoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if (barraProgresso) barraProgresso.style.width = `${porcentagemConsumida}%`;
-        if (txtPorcentagem) txtPorcentagem.innerText = `${porcentagemConsumida.toFixed(1)}% do teto consumido`;
-        
-        if (cardBudget && barraProgresso) {
-            if (gastoAtualSetor > budgetMaximoSetor) {
-                cardBudget.style.backgroundColor = "#fef2f2";
-                cardBudget.style.borderColor = "#fca5a5";
-                barraProgresso.style.backgroundColor = "#ef4444"; 
-            } else {
-                cardBudget.style.backgroundColor = "#f8fafc";
-                cardBudget.style.borderColor = "#cbd5e1";
-                barraProgresso.style.backgroundColor = "#3b82f6"; 
-            }
-        }
-        
-        calcularMinutoMaquina();
-        mudarFonte(0); // Aplica a proporcionalidade inicial WCAG de fontes da página
-    } catch (err) { console.error(err); }
-}
-
-function limparFormularioMaquina() {
-    const form = document.getElementById('formMaquina');
-    if (form) form.reset();
-    if (document.getElementById('registro_id')) document.getElementById('registro_id').value = '';
-    if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Registrar Ativo no Supabase";
-    if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'none';
-    calcularMinutoMaquina();
-    mudarFonte(0);
-}
-// erppadrao - maquinas/maquinas.js - PARTE 2A DE 2
-
+// 📡 CONEXÃO ASSÍNCRONA COM O PARQUE DE ATIVOS DO SUPABASE (OPÇÃO B - DEDUÇÃO DINÂMICA)
 async function carregarDadosIniciais() {
     try {
         // 📡 AJAX 1: Consome as métricas consolidadas do GerenciadorCaixa para Engenharia
@@ -162,10 +196,10 @@ async function carregarDadosIniciais() {
         `).join('');
         
         calcularMinutoMaquina();
-        mudarFonte(0); // Garante a herança e redimensionamento inicial proporcional WCAG
+        mudarFonte(0);
     } catch (err) { console.error(err); }
 }
-// erppadrao - maquinas/maquinas.js - PARTE 2B DE 2
+/* erppadrao - maquinas/maquinas.js - PARTE 2B DE 2 */
 
 async function salvarMaquina(e) {
     if(e && e.preventDefault) e.preventDefault();
@@ -266,3 +300,17 @@ function limparFormularioMaquina() {
     calcularMinutoMaquina();
     mudarFonte(0);
 }
+
+// Injeção de Contexto das Rotinas e ganchos no Ciclo DOM do Render
+window.mudarFonte = mudarFonte;
+window.alternarAltoContraste = alternarAltoContraste;
+window.alternarModoEscuro = alternarModoEscuro;
+window.alternarLeitorAudio = alternarLeitorAudio;
+window.carregarPreDefinido = carregarPreDefinido;
+window.calcularMinutoMaquina = calcularMinutoMaquina;
+window.salvarMaquina = salvarMaquina;
+window.editarMaquina = editarMaquina;
+window.deletarMaquina = deletarMaquina;
+window.limparFormularioMaquina = limparFormularioMaquina;
+
+window.addEventListener('DOMContentLoaded', carregarDadosIniciais);
