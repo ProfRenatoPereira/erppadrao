@@ -11,13 +11,17 @@
         *, *:before, *:after { box-sizing: inherit; }
         body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
         .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
+        
+        /* Grids de Layout */
         .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 16px; }
         .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
-        .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
         
+        /* Cards de Indicadores */
         .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; }
         .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; font-weight: bold; }
-        .metric-card h3, .metric-card h4 { font-size: 16px; font-weight: 900; margin: 0; white-space: nowrap; }
+        .metric-card h3 { font-size: 16px; font-weight: 900; margin: 0; white-space: nowrap; }
+        .metric-card h4 { font-size: 14px; font-weight: 900; margin: 0; white-space: nowrap; }
         .badge-percent { font-size: 10px; font-family: monospace; font-weight: bold; border-radius: 9999px; padding: 2px 8px; margin-top: 4px; display: inline-block; }
         
         .bg-blue-metric { background-color: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
@@ -26,12 +30,13 @@
         .bg-slate-metric { background-color: #f8fafc; border-color: #cbd5e1; color: #334155; }
         .bg-amber-metric { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
 
+        /* Componentes de Interface Corporativa */
         .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; flex-wrap: wrap; gap: 16px; }
-        .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; z-index: 10001; }
+        .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; }
         .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
         .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
         #menu-toggle { display: none; }
-/* erppadrao - maquinas/maquinas.html - PARTE 2 DE 4 */
+        
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
         .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
@@ -41,6 +46,7 @@
         .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
         .nav-item:hover .dropdown-menu { display: block; }
         
+        /* Formulários e Elementos de Dados */
         .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; text-align: left; }
         .page-title { font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
         .card-title { font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
@@ -49,6 +55,8 @@
         .label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
         .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; }
         .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #475569; }
+        
+        /* Tabelas */
         .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; }
         .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; text-align: left; }
         .table-responsive { width: 100%; overflow-x: auto; }
@@ -56,7 +64,13 @@
         thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
         th, td { padding: 12px; }
         tr { border-bottom: 1px solid #e5e7eb; }
+
+        /* Botões de Controle Superior */
+        .btn-top { padding: 4px 10px; font-weight: bold; cursor: pointer; border-radius: 4px; border: 1px solid #475569; background: #334155; color: white; font-size: 11px; }
+        .btn-submit { padding: 10px 20px; border-radius: 8px; border: none; background: #1e3a8a; color: white; font-weight: bold; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+        .btn-cancel { padding: 10px 16px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; font-weight: bold; cursor: pointer; font-size: 11px; text-transform: uppercase; color: #1f2937; }
         
+        /* ♿ Estilos de Acessibilidade Estrita (WCAG) */
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
         body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
@@ -65,9 +79,10 @@
         body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
         body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste .table-container, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
         body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button, body.alto-contraste .btn-submit { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; }
+        body.alto-contraste button, body.alto-contraste .btn-submit, body.alto-contraste .btn-cancel, body.alto-contraste .btn-top { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
         body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste td { color: #ffff00 !important; }
-        
+
+        /* Media Queries de Responsividade */
         @media (max-width: 1120px) {
             .menu-toggle-label { display: flex; }
             .nav-corporate-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: #0f172a; border-top: 1px solid #334155; padding: 8px 0; box-shadow: 0 10px 15px rgba(0,0,0,0.3); z-index: 9998; }
@@ -77,10 +92,15 @@
             #menu-toggle:checked ~ nav .nav-corporate-menu, #menu-toggle:checked ~ .nav-corporate-menu { display: flex; }
         }
         @media (min-width: 640px) { .grid-top { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (min-width: 1024px) { .grid-top { grid-template-columns: repeat(5, minmax(0, 1fr)); } .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
+        @media (min-width: 1024px) { 
+            .grid-top { grid-template-columns: repeat(5, minmax(0, 1fr)); } 
+            .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } 
+            .col-form { grid-column: span 5 / span 5; } 
+            .col-table { grid-column: span 7 / span 7; } 
+        }
     </style>
 </head>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 3 DE 4 -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 2 DE 4 -->
 <body style="transition: all 0.2s ease;">
 
     <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA NATIVA -->
@@ -107,8 +127,10 @@
                 <span style="font-size: 10px; color: #94a3b8; font-weight: bold; line-height: 1.3; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</span>
             </div>
         </div>
+
         <input type="checkbox" id="menu-toggle">
         <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
+        
         <nav>
             <ul class="nav-corporate-menu">
                 <li class="nav-item">
@@ -123,7 +145,7 @@
                     </ul>
                 </li>
                 <li class="nav-item">
-                    <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
+                    <span class="nav-link" tabindex="0" style="color: white; background-color: #1e3a8a;">🛠️ Engenharia ▾</span>
                     <ul class="dropdown-menu">
                         <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
                         <li><a href="/materiais">08. Catálogo de Materiais</a></li>
@@ -157,99 +179,103 @@
             </ul>
         </nav>
     </header>
+<!-- erppadrao - maquinas/maquinas.html - PARTE 3 DE 4 -->
+    <div class="container">
+        <!-- 📊 CARDS SUPERIORES DE CONTROLE FINANCEIRO E DEDUÇÃO DINÂMICA (OPÇÃO B) -->
+        <div class="grid-top">
+            <div class="metric-card bg-blue-metric"><p>💰 Capital Total Simulador</p><h3 id="top_capital_total">R$ 0,00</h3></div>
+            <div class="metric-card bg-purple-metric">
+                <p>🏢 Orçamento da Engenharia</p>
+                <h3 id="top_verba_reais">R$ 0,00</h3>
+                <span class="badge-percent badge-purple-value" id="top_verba_porcentagem">0.00% do Capital</span>
+            </div>
+            <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo Geral</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
+            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis Totais</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
+            
+            <!-- 🚨 QUINTO CARD: TETO ORÇAMENTÁRIO MAX 40% (ENGENHARIA/INSTALAÇÕES) -->
+            <div class="metric-card" id="card_budget_limite" style="background-color: #f8fafc; border-color: #cbd5e1; color: #1e293b;">
+                <p>🎯 Limite do Setor (Max 40% Teto)</p>
+                <h4 id="top_budget_setor" style="font-size: 14px; font-weight: 900; margin: 0;">R$ 0,00</h4>
+                <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+                    <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
+                </div>
+                <span id="txt_porcentagem_budget" style="font-size: 9px; font-weight: bold; color: #64748b; display: block; margin-top: 2px;">0% consumido</span>
+            </div>
+        </div>
+
+        <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2></div>
+
+        <div class="grid-main">
+            <!-- 📝 COLUNA DO FORMULÁRIO (SPAN 5) -->
+            <div class="card col-form">
+                <h3 class="card-title" id="txt_sub">Configuração da Máquina</h3>
+                <form id="formMaquina" onsubmit="salvarMaquina(event)">
+                    <input type="hidden" id="registro_id" name="id">
+                    <input type="hidden" id="custo_estrutural_oculto" value="0.05">
+                    
+                    <div class="flex-col-gap">
+                        <label class="label-form">Selecionar Modelo Base:</label>
+                        <select id="seletor_modelo" onchange="carregarPreDefinido()" class="select-form">
+                            <option value="">-- Equipamento Personalizado --</option>
+                            <option value="cnc_mazak">Torno CNC Mazak Quick Turn</option>
+                            <option value="fresadora">Fresadora Universal</option>
+                        </select>
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form">Nome do Equipamento:</label>
+                        <input type="text" id="nome_equipamento" required placeholder="Ex: CNC Linha A" class="input-form">
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Potência (kW):</label>
+                            <input type="number" step="0.1" id="potencia" required oninput="calcularMinutoMaquina()" class="input-form">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Consumo Elétrico (kWh):</label>
+                            <input type="number" step="0.1" id="consumo_eletrico" required oninput="calcularMinutoMaquina()" class="input-form">
+                        </div>
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form" style="color: #1d4ed8;">Consumo de Água (m³/h):</label>
+                            <input type="number" step="0.001" id="consumo_agua" value="0.000" oninput="calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form" style="color: #1d4ed8;">Consumo de Gases (m³/h):</label>
+                            <input type="number" step="0.001" id="consumo_gases" value="0.000" oninput="calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;">
+                        </div>
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Velocidade Máx (RPM):</label>
+                            <input type="text" id="velocidade" placeholder="Ex: 5000" class="input-form">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Avanço Trabalho (mm/min):</label>
+                            <input type="text" id="avanco" placeholder="Ex: 30000" class="input-form">
+                        </div>
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Ciclo Preventiva (Horas):</label>
+                            <input type="number" id="frequencia_manutencao" required class="input-form">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Preço Aquisição (R$):</label>
+                            <input type="number" step="0.01" id="preco_compra" required class="input-form">
+                        </div>
+                    </div>
+                    <div class="grid-form-row">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Depreciação Contábil (R$/Mês):</label>
+                            <input type="number" step="0.01" id="depreciacao_mensal" required oninput="calcularMinutoMaquina()" class="input-form">
+                        </div>
+                        <div class="flex-col-gap">
+                            <label class="label-form">Valor Residual Venda (R$):</label>
+                            <input type="number" step="0.01" id="valor_venda_final" required class="input-form">
+                        </div>
+                    </div>
 <!-- erppadrao - maquinas/maquinas.html - PARTE 4 DE 4 -->
-    <div class="container">
-        <div class="grid-top" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 24px; margin-top: 16px;">
-            <div class="metric-card bg-blue-metric"><p>💰 Capital Total Simulador</p><h3 id="top_capital_total">R$ 0,00</h3></div>
-            <div class="metric-card bg-purple-metric">
-                <p>🏢 Orçamento da Engenharia</p>
-                <h3 id="top_verba_reais">R$ 0,00</h3>
-                <span class="badge-percent badge-purple-value" id="top_verba_porcentagem">0.00% do Capital</span>
-            </div>
-            <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo Geral</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
-            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis Totais</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
-            
-            <div class="metric-card" id="card_budget_limite" style="background-color: #f8fafc; border-color: #cbd5e1; color: #1e293b;">
-                <p>🎯 Limite do Setor (Max 40%)</p>
-                <h4 id="top_budget_setor" style="font-size: 14px; font-weight: 900; margin: 0;">R$ 0,00</h4>
-                <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
-                    <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
-                </div>
-                <span id="txt_porcentagem_budget" style="font-size: 9px; font-weight: bold; color: #64748b; display: block; margin-top: 2px;">0% consumido</span>
-            </div>
-        </div>
-
-        <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2></div>
-
-        <div class="grid-main">
-            <div class="card col-form">
-                <h3 class="card-title" id="txt_sub">Configuração da Máquina</h3>
-                <form id="formMaquina" onsubmit="salvarMaquina(event)">
-                    <input type="hidden" id="registro_id" name="id">
-                    <input type="hidden" id="custo_estrutural_oculto" value="0.05">
-                    
-                    <div class="flex-col-gap">
-                        <label class="label-form">Selecionar Modelo Base:</label>
-                        <select id="seletor_modelo" onchange="carregarPreDefinido()" class="select-form">
-                            <option value="">-- Equipamento Personalizado --</option>
-                            <option value="cnc_mazak">Torno CNC Mazak Quick Turn</option>
-                            <option value="fresadora">Fresadora Universal</option>
-                        </select>
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Nome do Equipamento:</label>
-                        <input type="text" id="nome_equipamento" required placeholder="Ex: CNC Linha A" class="input-form">
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Potência (kW):</label>
-                            <input type="number" step="0.1" id="potencia" required oninput="calcularMinutoMaquina()" class="input-form">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Consumo Elétrico (kWh):</label>
-                            <input type="number" step="0.1" id="consumo_eletrico" required oninput="calcularMinutoMaquina()" class="input-form">
-                        </div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form" style="color: #1d4ed8;">Consumo de Água (m³/h):</label>
-                            <input type="number" step="0.001" id="consumo_agua" value="0.000" oninput="calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form" style="color: #1d4ed8;">Consumo de Gases (m³/h):</label>
-                            <input type="number" step="0.001" id="consumo_gases" value="0.000" oninput="calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;">
-                        </div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Velocidade Máx (RPM):</label>
-                            <input type="text" id="velocidade" placeholder="Ex: 5000" class="input-form">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Avanço Trabalho (mm/min):</label>
-                            <input type="text" id="avanco" placeholder="Ex: 30000" class="input-form">
-                        </div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Ciclo Preventiva (Horas):</label>
-                            <input type="number" id="frequencia_manutencao" required class="input-form">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Preço Aquisição (R$):</label>
-                            <input type="number" step="0.01" id="preco_compra" required class="input-form">
-                        </div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Depreciação Contábil (R$/Mês):</label>
-                            <input type="number" step="0.01" id="depreciacao_mensal" required oninput="calcularMinutoMaquina()" class="input-form">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Valor Residual Venda (R$):</label>
-                            <input type="number" step="0.01" id="valor_venda_final" required class="input-form">
-                        </div>
-                    </div>
                     <div class="grid-form-row">
                         <div class="flex-col-gap">
                             <label class="label-form">Operador Alocado:</label>
@@ -281,158 +307,14 @@
                         <label class="label-form" style="color: #1e3a8a; font-weight: 900;">CUSTO MINUTO MÁQUINA CALCULADO (R$/min):</label>
                         <input type="number" step="0.0001" id="custo_minuto_maquina" readonly class="input-form input-form-readonly" style="color: #1e3a8a; font-weight: 900; background-color: #e2e8f0; font-size: 14px;">
                     </div>
-                    <div class="flex-btn-group">
+                    <div class="flex-btn-group" style="margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end;">
+                        <button type="button" id="btn_cancelar" onclick="limparFormularioMaquina()" class="btn-cancel" style="display: none;">Cancelar</button>
                         <button type="submit" id="btn_salvar" class="btn-submit">💾 Registrar Ativo no Supabase</button>
-                        <button type="button" id="btn_cancelar" onclick="limparFormularioMaquina()" class="btn-cancel" style="display: none; margin-top: 8px;">Cancelar</button>
                     </div>
                 </form>
             </div>
 
-            <div class="table-container col-table">
-                <div class="table-header-dark">Ativos Industriais Cadastrados no Supabase</div>
-                <div class="table-responsive">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Equipamento / Operador</th>
-                                <th>Capacidades e Fluxos</th>
-                                <th>Ciclo Mnt.</th>
-                                <th>Custo Minuto</th>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 4A DE 4 -->
-    <div class="container">
-        <!-- BARRA DE SUB-INDICADORES FINANCEIROS COMPLEMENTADA COM TETO ORÇAMENTÁRIO (40%) -->
-        <div class="grid-top" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 24px; margin-top: 16px;">
-            <div class="metric-card bg-blue-metric"><p>💰 Capital Total Simulador</p><h3 id="top_capital_total">R$ 0,00</h3></div>
-            <div class="metric-card bg-purple-metric">
-                <p>🏢 Orçamento da Engenharia</p>
-                <h3 id="top_verba_reais">R$ 0,00</h3>
-                <span class="badge-percent badge-purple-value" id="top_verba_porcentagem">0.00% do Capital</span>
-            </div>
-            <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo Geral</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
-            <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis Totais</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
-            
-            <!-- Card de Controle de Teto Orçamentário Replicado (Limite de 40%) -->
-            <div class="metric-card" id="card_budget_limite" style="background-color: #f8fafc; border-color: #cbd5e1; color: #1e293b;">
-                <p>🎯 Limite do Setor (Max 40%)</p>
-                <h4 id="top_budget_setor" style="font-size: 14px; font-weight: 900; margin: 0;">R$ 0,00</h4>
-                <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
-                    <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
-                </div>
-                <span id="txt_porcentagem_budget" style="font-size: 9px; font-weight: bold; color: #64748b; display: block; margin-top: 2px;">0% consumido</span>
-            </div>
-        </div>
-
-        <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2></div>
-
-        <div class="grid-main">
-            <div class="card col-form">
-                <h3 class="card-title" id="txt_sub">Configuração da Máquina</h3>
-                <form id="formMaquina" onsubmit="salvarMaquina(event)">
-                    <input type="hidden" id="registro_id" name="id">
-                    <input type="hidden" id="custo_estrutural_oculto" value="0.05">
-                    
-                    <div class="flex-col-gap">
-                        <label class="label-form">Selecionar Modelo Base:</label>
-                        <select id="seletor_modelo" onchange="carregarPreDefinido()" class="select-form">
-                            <option value="">-- Equipamento Personalizado --</option>
-                            <option value="cnc_mazak">Torno CNC Mazak Quick Turn</option>
-                            <option value="fresadora">Fresadora Universal</option>
-                        </select>
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Nome do Equipamento:</label>
-                        <input type="text" id="nome_equipamento" required placeholder="Ex: CNC Linha A" class="input-form">
-                    </div>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 4B DE 4 -->
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Potência (kW):</label>
-                            <input type="number" step="0.1" id="potencia" required oninput="calcularMinutoMaquina()" class="input-form">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Consumo Elétrico (kWh):</label>
-                            <input type="number" step="0.1" id="consumo_eletrico" required oninput="calcularMinutoMaquina()" class="input-form">
-                        </div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form" style="color: #1d4ed8;">Consumo de Água (m³/h):</label>
-                            <input type="number" step="0.001" id="consumo_agua" value="0.000" oninput="calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form" style="color: #1d4ed8;">Consumo de Gases (m³/h):</label>
-                            <input type="number" step="0.001" id="consumo_gases" value="0.000" oninput="calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;">
-                        </div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Velocidade Máx (RPM):</label>
-                            <input type="text" id="velocidade" placeholder="Ex: 5000" class="input-form">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Avanço Trabalho (mm/min):</label>
-                            <input type="text" id="avanco" placeholder="Ex: 30000" class="input-form">
-                        </div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Ciclo Preventiva (Horas):</label>
-                            <input type="number" id="frequencia_manutencao" required class="input-form">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Preço Aquisição (R$):</label>
-                            <input type="number" step="0.01" id="preco_compra" required class="input-form">
-                        </div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Depreciação Contábil (R$/Mês):</label>
-                            <input type="number" step="0.01" id="depreciacao_mensal" required oninput="calcularMinutoMaquina()" class="input-form">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Valor Residual Venda (R$):</label>
-                            <input type="number" step="0.01" id="valor_venda_final" required class="input-form">
-                        </div>
-                    </div>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 4C DE 4 -->
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Operador Alocado:</label>
-                            <input type="text" id="operador_nome" required placeholder="Ex: João Silva" class="input-form">
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Custo MOD (R$/min):</label>
-                            <input type="number" step="0.0001" id="custo_minuto_operador" required oninput="calcularMinutoMaquina()" class="input-form">
-                        </div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Jornada Semanal:</label>
-                            <select id="jornada_semanal" onchange="calcularMinutoMaquina()" class="select-form">
-                                <option value="44">44 Horas (Padrão)</option>
-                                <option value="36">36 Horas</option>
-                            </select>
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Turnos Ativos:</label>
-                            <select id="turnos_trabalho" onchange="calcularMinutoMaquina()" class="select-form">
-                                <option value="1">1 Turno (Comercial)</option>
-                                <option value="2">2 Turnos (Dobrado)</option>
-                                <option value="3">3 Turnos (24h)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="flex-col-gap" style="background-color: #eff6ff; padding: 12px; border: 1px dashed #bfdbfe; border-radius: 8px; margin-top: 8px;">
-                        <label class="label-form" style="color: #1e3a8a; font-weight: 900;">CUSTO MINUTO MÁQUINA CALCULADO (R$/min):</label>
-                        <input type="number" step="0.0001" id="custo_minuto_maquina" readonly class="input-form input-form-readonly" style="color: #1e3a8a; font-weight: 900; background-color: #e2e8f0; font-size: 14px;">
-                    </div>
-                    <div class="flex-btn-group">
-                        <button type="submit" id="btn_salvar" class="btn-submit">💾 Registrar Ativo no Supabase</button>
-                        <button type="button" id="btn_cancelar" onclick="limparFormularioMaquina()" class="btn-cancel" style="display: none; margin-top: 8px;">Cancelar</button>
-                    </div>
-                </form>
-            </div>
-
+            <!-- 📊 COLUNA DA TABELA DE ATIVOS INDUSTRIAIS (SPAN 7) -->
             <div class="table-container col-table">
                 <div class="table-header-dark">Ativos Industriais Cadastrados no Supabase</div>
                 <div class="table-responsive">
@@ -446,12 +328,15 @@
                                 <th style="text-align: center;">Ações Legais</th>
                             </tr>
                         </thead>
-                        <tbody id="tabela_maquinas"></tbody>
+                        <tbody id="tabela_maquinas">
+                            <!-- Sincronização Dinâmica via arquivo externo JS -->
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
+        <!-- 📑 RODAPÉ CORPORATIVO DE CRÉDITOS NORMATIVOS -->
         <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
             <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
             <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
@@ -460,6 +345,7 @@
         </footer>
     </div>
 
+    <!-- Inicialização externa e assíncrona do motor do ERP -->
     <script src="/maquinas/maquinas.js" defer></script>
 </body>
 </html>
