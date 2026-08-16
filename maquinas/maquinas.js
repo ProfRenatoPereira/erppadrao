@@ -379,4 +379,6 @@ window.limparFormularioMaquina = function() {
     window.calcularMinutoMaquina();
 };
 
-window.addEventListener('DOMContentLoaded', window.carregarDadosIniciais);
+// Dispara a carga de dados imediatamente para garantir o fetch do Supabase
+window.carregarDadosIniciais();
+
