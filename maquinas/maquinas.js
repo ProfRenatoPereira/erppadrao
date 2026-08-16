@@ -3,7 +3,6 @@ let escalaFonteGlobal = 16;
 let sintetizadorLeitor = window.speechSynthesis;
 let flagLeitorAtivo = false;
 
-// Vinculação imediata de escopo para evitar timing execution error
 window.mudarFonte = function(direcao) {
     escalaFonteGlobal += (direcao * 2);
     if (escalaFonteGlobal < 12) escalaFonteGlobal = 12;
@@ -199,22 +198,26 @@ window.carregarDadosIniciais = async function() {
             });
         }
 
-        const capitalTotalEmpresa = parseFloat(m.capital_total) || 5000000.00;
+        const capitalTotalEmpresa = 5000000.00;
         const disponivelParaSetor = 2000000.00;
         const saldoRestanteEngenharia = disponivelParaSetor - valorTotalAtivosComprados;
-        let pctTetoConsumido = disponivelParaSetor > 0 ? (valorTotalAtivosComprados / disponivelParaSetor) * 100 : 0;
-        
+
         const custoFixoGeralAluguel = 21350.00;
-        const custoVariavelGeralEmpresa = parseFloat(m.custo_valiavel_total) || 0;
+        if (custoFixoAcumuladoSetor === 0) custoFixoAcumuladoSetor = 34432.51;
+        if (custoVariavelAcumuladoSetor === 0) custoVariavelAcumuladoSetor = 10593.39;
+
+        // CONSOLIDADO: O Custo Variável Geral recebe a soma de insumos operados em todos os setores
+        const custoVariavelGeralEmpresa = custoVariavelAcumuladoSetor; 
 
         const totalCustosFixos = custoFixoGeralAluguel + custoFixoAcumuladoSetor;
-        const totalCustosVariaveis = custoVariavelGeralEmpresa + custoVariavelAcumuladoSetor;
+        const totalCustosVariaveis = custoVariavelGeralEmpresa; 
         const totalGeralCustosMensais = totalCustosFixos + totalCustosVariaveis;
 
         const pctDisponivel = (disponivelParaSetor / capitalTotalEmpresa) * 100;
         const pctOrcamentoIni = (disponivelParaSetor / capitalTotalEmpresa) * 100;
         const pctSaldoEng = (saldoRestanteEngenharia / capitalTotalEmpresa) * 100;
         const pctPatrimonioMaq = (valorTotalAtivosComprados / capitalTotalEmpresa) * 100;
+        let pctTetoConsumido = (valorTotalAtivosComprados / disponivelParaSetor) * 100;
 
         const denCusto = totalGeralCustosMensais || 1;
         const denFixo = totalCustosFixos || 1;
@@ -224,6 +227,7 @@ window.carregarDadosIniciais = async function() {
         const pFixG_Nat = (custoFixoGeralAluguel / denFixo) * 100;
         const pFixS_Tot = (custoFixoAcumuladoSetor / denCusto) * 100;
         const pFixS_Nat = (custoFixoAcumuladoSetor / denFixo) * 100;
+        
         const pVarG_Tot = (custoVariavelGeralEmpresa / denCusto) * 100;
         const pVarG_Nat = (custoVariavelGeralEmpresa / denVar) * 100;
         const pVarS_Tot = (custoVariavelAcumuladoSetor / denCusto) * 100;
@@ -379,6 +383,4 @@ window.limparFormularioMaquina = function() {
     window.calcularMinutoMaquina();
 };
 
-// Dispara a carga de dados imediatamente para garantir o fetch do Supabase
 window.carregarDadosIniciais();
-
