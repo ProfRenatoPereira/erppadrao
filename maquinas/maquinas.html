@@ -1,4 +1,4 @@
-<!-- erppadrao - maquinas/maquinas.html - PARTE 1 DE 5 (CORRIGIDA) -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 1 DE 5 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -11,7 +11,7 @@
         *, *:before, *:after { box-sizing: inherit; }
         body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
         .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
-        .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 16px; }
+        .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 16px; }
         .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
         .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         
@@ -34,7 +34,7 @@
         .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
         .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
         #menu-toggle { display: none; }
-/* erppadrao - maquinas/maquinas.html - PARTE 2 DE 5 (CORRIGIDA) */
+/* erppadrao - maquinas/maquinas.html - PARTE 2 DE 5 */
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
         .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
@@ -88,10 +88,10 @@
         body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste td { color: #ffff00 !important; }
         
         @media (min-width: 640px) { .grid-top { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (min-width: 1024px) { .grid-top { grid-template-columns: repeat(5, minmax(0, 1fr)); } .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
+        @media (min-width: 1024px) { .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
     </style>
 </head>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 3 DE 5 (CORRIGIDA) -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 3 DE 5 -->
 <body style="transition: all 0.2s ease;">
 
     <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA NATIVA -->
@@ -168,25 +168,38 @@
             </ul>
         </nav>
     </header>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 4 DE 5 (CORRIGIDA) -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 4 DE 5 -->
     <div class="container">
-        <!-- CARDS SUPERIORES DE METRICAS E CONTROLE ORÇAMENTÁRIO (TETO 40%) -->
-        <div class="grid-top">
+        <!-- CARDS SUPERIORES DE METRICAS E CONTROLE ORÇAMENTÁRIO (LAYOUT 3X2 PARA AMPLIAR ESPAÇO) -->
+        <div class="grid-top" style="display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; margin-top: 16px;">
+            <style>
+                @media (min-width: 1024px) {
+                    .grid-top { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+                }
+            </style>
+            
+            <!-- LINHA 1 -->
             <div class="metric-card bg-blue-metric"><p>💰 Capital Total</p><h3 id="top_capital_total">R$ 0,00</h3></div>
             <div class="metric-card bg-purple-metric">
                 <p>🏢 Orçamento Engenharia</p>
                 <h3 id="top_verba_reais">R$ 0,00</h3>
                 <span class="badge-percent badge-purple-value" id="top_verba_porcentagem">0.00%</span>
             </div>
+            <div class="metric-card" style="background-color: #f0fdf4; border-color: #bbf7d0; color: #166534;">
+                <p>🏛️ Patrimônio Máquinas</p>
+                <h3 id="top_patrimonio_maquinas">R$ 0,00</h3>
+            </div>
+
+            <!-- LINHA 2 -->
             <div class="metric-card bg-slate-metric"><p>🔒 Custo Fixo Geral</p><h4 id="top_custo_fixo">R$ 0,00</h4></div>
             <div class="metric-card bg-amber-metric"><p>📈 Custos Variáveis</p><h4 id="top_custo_variavel">R$ 0,00</h4></div>
             <div class="metric-card" id="card_budget_limite" style="background-color: #f8fafc; border-color: #cbd5e1;">
-                <p>🎯 Limite Setor (Max 40%)</p>
+                <p>🎯 Limite Setor (Max 40% Ativos)</p>
                 <h4 id="top_budget_setor" style="font-size: 14px; font-weight: 900; margin: 0;">R$ 0,00</h4>
-                <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
+                <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 6px; overflow: hidden;">
                     <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
                 </div>
-                <span id="txt_porcentagem_budget" style="font-size: 9px; font-weight: bold; display: block; margin-top: 2px;">0% consumido</span>
+                <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: bold; display: block; margin-top: 4px;">0% consumido</span>
             </div>
         </div>
 
@@ -241,7 +254,7 @@
                         <div class="flex-col-gap"><label class="label-form">Velocidade (RPM):</label><input type="text" id="velocidade" class="input-form"></div>
                         <div class="flex-col-gap"><label class="label-form">Avanço (mm/min):</label><input type="text" id="avanco" class="input-form"></div>
                     </div>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 5 DE 5 (CORRIGIDA) -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 5 DE 5 -->
                     <div class="grid-form-row">
                         <div class="flex-col-gap"><label class="label-form">Ciclo Mnt (h):</label><input type="number" id="frequencia_manutencao" required class="input-form"></div>
                         <div class="flex-col-gap"><label class="label-form">Preço Compra (R$):</label><input type="number" step="0.01" id="preco_compra" required class="input-form"></div>
