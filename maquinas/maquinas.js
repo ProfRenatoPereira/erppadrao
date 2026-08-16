@@ -61,7 +61,6 @@ function carregarPreDefinido() {
     const s = document.getElementById('seletor_modelo').value;
     if (!s) return;
 
-    // BANCO DE DADOS EXPANDIDO - 13 ATIVOS INDUSTRIAIS CORINGA
     const catalogo = {
         cnc_mazak: {
             nome: "Torno CNC Mazak Quick Turn", potencia: "22.0", consumo: "18.5", agua: "0.002", gases: "0.010",
@@ -204,19 +203,39 @@ async function carregarDadosIniciais() {
         const saldoRestanteEngenharia = disponivelParaSetor - valorTotalAtivosComprados;
         let pctTetoConsumido = disponivelParaSetor > 0 ? (valorTotalAtivosComprados / disponivelParaSetor) * 100 : 0;
         
+        const custoFixoGeralAluguel = 21350.00;
+        const custoVariavelGeralEmpresa = parseFloat(m.custo_valiavel_total) || 0;
+
+        const totalCustosFixos = custoFixoGeralAluguel + custoFixoAcumuladoSetor;
+        const totalCustosVariaveis = custoVariavelGeralEmpresa + custoVariavelAcumuladoSetor;
+        const totalGeralCustosMensais = totalCustosFixos + totalCustosVariaveis;
+
         const pctDisponivel = (disponivelParaSetor / capitalTotalEmpresa) * 100;
         const pctOrcamentoIni = (disponivelParaSetor / capitalTotalEmpresa) * 100;
         const pctSaldoEng = (saldoRestanteEngenharia / capitalTotalEmpresa) * 100;
         const pctPatrimonioMaq = (valorTotalAtivosComprados / capitalTotalEmpresa) * 100;
+
+        const denCusto = totalGeralCustosMensais || 1;
+        const denFixo = totalCustosFixos || 1;
+        const denVar = totalCustosVariaveis || 1;
+
+        const pFixG_Tot = (custoFixoGeralAluguel / denCusto) * 100;
+        const pFixG_Nat = (custoFixoGeralAluguel / denFixo) * 100;
+        const pFixS_Tot = (custoFixoAcumuladoSetor / denCusto) * 100;
+        const pFixS_Nat = (custoFixoAcumuladoSetor / denFixo) * 100;
+        const pVarG_Tot = (custoVariavelGeralEmpresa / denCusto) * 100;
+        const pVarG_Nat = (custoVariavelGeralEmpresa / denVar) * 100;
+        const pVarS_Tot = (custoVariavelAcumuladoSetor / denCusto) * 100;
+        const pVarS_Nat = (custoVariavelAcumuladoSetor / denVar) * 100;
 
         if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('top_disponivel_setor')) document.getElementById('top_disponivel_setor').innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('top_orcamento_inicial')) document.getElementById('top_orcamento_inicial').innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('top_patrimonio_maquinas')) document.getElementById('top_patrimonio_maquinas').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         
-        if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ 21.350,00/mês`;
+        if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${custoFixoGeralAluguel.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         if(document.getElementById('top_custo_fixo_setor')) document.getElementById('top_custo_fixo_setor').innerText = `R$ ${custoFixoAcumuladoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${(parseFloat(m.custo_valiavel_total) || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${custoVariavelGeralEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         if(document.getElementById('top_custo_variavel_setor')) document.getElementById('top_custo_variavel_setor').innerText = `R$ ${custoVariavelAcumuladoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
 
         const campoSaldo = document.getElementById('top_verba_reais');
@@ -229,6 +248,11 @@ async function carregarDadosIniciais() {
         if(document.getElementById('pct_orcamento_inicial')) document.getElementById('pct_orcamento_inicial').innerText = `➔ ${pctOrcamentoIni.toFixed(2)}% do Cap.`;
         if(document.getElementById('pct_saldo_engenharia')) document.getElementById('pct_saldo_engenharia').innerText = `➔ ${pctSaldoEng.toFixed(2)}% do Cap.`;
         if(document.getElementById('pct_patrimonio_maquinas')) document.getElementById('pct_patrimonio_maquinas').innerText = `➔ ${pctPatrimonioMaq.toFixed(2)}% do Cap.`;
+
+        if(document.getElementById('pct_custo_fixo_geral')) document.getElementById('pct_custo_fixo_geral').innerText = `➔ Custos Totais: ${pFixG_Tot.toFixed(1)}% | Custos Fixos: ${pFixG_Nat.toFixed(1)}%`;
+        if(document.getElementById('pct_custo_fixo_setor')) document.getElementById('pct_custo_fixo_setor').innerText = `➔ Custos Totais: ${pFixS_Tot.toFixed(1)}% | Custos Fixos: ${pFixS_Nat.toFixed(1)}%`;
+        if(document.getElementById('pct_custo_variavel_geral')) document.getElementById('pct_custo_variavel_geral').innerText = `➔ Custos Totais: ${pVarG_Tot.toFixed(1)}% | Custos Variáveis: ${pVarG_Nat.toFixed(1)}%`;
+        if(document.getElementById('pct_custo_variavel_setor')) document.getElementById('pct_custo_variavel_setor').innerText = `➔ Custos Totais: ${pVarS_Tot.toFixed(1)}% | Custos Variáveis: ${pVarS_Nat.toFixed(1)}%`;
 
         if(document.getElementById('txt_valores_limite')) document.getElementById('txt_valores_limite').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('txt_porcentagem_budget')) document.getElementById('txt_porcentagem_budget').innerText = `${pctTetoConsumido.toFixed(1)}% do teto consumido`;
@@ -252,24 +276,31 @@ async function carregarDadosIniciais() {
             return;
         }
 
-        tbody.innerHTML = ativos.map(x => `
-            <tr>
-                <td><strong>${x.nome_equipamento}</strong></td>
-                <td>Elet: ${x.consumo_eletrico}kW | Água: ${x.consumo_agua}m³</td>
-                <td><strong>${x.operador_nome}</strong></td>
-                <td style="font-family: monospace; font-weight: bold; color: #1e3a8a;">R$ ${(x.custo_minuto_maquina || 0).toFixed(4)}/min</td>
-                <td style="text-align: center; white-space: nowrap;">
-                    <button type="button" onclick="editarMaquina(${x.id})" class="btn-top" style="background-color: #fffbef; color: #b45309; border-color: #fef3c7;">Editar</button>
-                    <button type="button" onclick="deletarMaquina(${x.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2;">Descartar</button>
-                </td>
-            </tr>
-        `).join('');
-        
+        tbody.innerHTML = ativos.forEach(x => { /* laço resolvido pelo map funcional na parte 4 */ });
+    } catch (e) { console.error(e); }
+}
+/* erppadrao - maquinas/maquinas.js - PARTE 4 DE 4 */
+// Continuação direta da renderização do bloco catch anterior
+        const tbody = document.getElementById('tabela_maquinas');
+        if (tbody && ativos && ativos.length > 0) {
+            tbody.innerHTML = ativos.map(x => `
+                <tr>
+                    <td><strong>${x.nome_equipamento}</strong></td>
+                    <td>Elet: ${x.consumo_eletrico}kW | Água: ${x.consumo_agua}m³</td>
+                    <td><strong>${x.operador_nome}</strong></td>
+                    <td style="font-family: monospace; font-weight: bold; color: #1e3a8a;">R$ ${(x.custo_minuto_maquina || 0).toFixed(4)}/min</td>
+                    <td style="text-align: center; white-space: nowrap;">
+                        <button type="button" onclick="editarMaquina(${x.id})" class="btn-top" style="background-color: #fffbef; color: #b45309; border-color: #fef3c7;">Editar</button>
+                        <button type="button" onclick="deletarMaquina(${x.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2;">Descartar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
         calcularMinutoMaquina();
         mudarFonte(0);
     } catch (e) { console.error(e); }
 }
-/* erppadrao - maquinas/maquinas.js - PARTE 4 DE 4 */
+
 async function salvarMaquina(e) {
     if(e && e.preventDefault) e.preventDefault();
     calcularMinutoMaquina();
