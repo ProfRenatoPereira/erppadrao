@@ -59,7 +59,6 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         # 🌟 EQUAÇÃO REVISADA: O Caixa de Giro agora desconta dinamicamente os aluguéis ativos firmados!
         capital_disponivel_total = capital_total - total_gasto_fluxo - valor_aluguel
 # erppadrao - GerenciadorCaixa.py - PARTE 2 DE 2
-
         # 4. Busca o orçamento liberto específico alocado para o departamento atual
         if departamento_atual:
             try:
