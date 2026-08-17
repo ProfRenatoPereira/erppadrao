@@ -13,8 +13,11 @@
         .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
         .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 16px; }
         .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
-        .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         
+        /* LINHAS DO FORMULÁRIO HORIZONTAL */
+        .flex-form-row { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; margin-bottom: 4px; }
+        
+        /* CARDS E INSUMOS ELÁSTICOS CONTRA ESTOUROS COGNITIVOS */
         .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; min-height: 95px; word-wrap: break-word; word-break: break-word; }
         .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; font-weight: bold; }
         .metric-card h3, .metric-card h4 { font-size: 16px; font-weight: 900; margin: 0; white-space: normal; word-break: break-all; }
@@ -85,8 +88,7 @@
         body.alto-contraste button, body.alto-contraste .btn-submit, body.alto-contraste .btn-top { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; }
         body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste td { color: #ffff00 !important; }
         
-        @media (min-width: 640px) { .grid-top { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-        @media (min-width: 1024px) { .grid-main { grid-template-columns: repeat(12, minmax(0, 1fr)); } .col-form { grid-column: span 5 / span 5; } .col-table { grid-column: span 7 / span 7; } }
+        @media (min-width: 1024px) { .col-form { grid-column: span 12 / span 12; } .col-table { grid-column: span 12 / span 12; } }
     </style>
 </head>
 <!-- erppadrao - maquinas/maquinas.html - PARTE 3 DE 6 -->
@@ -217,7 +219,7 @@
                     <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: 900; color: #2563eb; text-align: right; display: block; margin-top: 2px;">0.0% do teto consumido</span>
                 </div>
             </div>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 5 DE 6 -->
+
             <!-- LINHA 04: RELATÓRIO DE CUSTOS FIXOS TOTAIS ACUMULADOS COM PORCENTAGEM RELATIVA DUPLA -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
@@ -225,14 +227,14 @@
                         <span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Total (Aluguel + Setores 1 a n):</span>
                         <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 0,00/mês</strong>
                     </div>
-                    <span id="pct_custo_fixo_geral" style="font-size: 10px; font-weight: bold; color: #8b5cf6;">➔ Custos Totais: 32.2% | Custos Fixos: 38.3%</span>
+                    <span id="pct_custo_fixo_geral" style="font-size: 10px; font-weight: bold; color: #8b5cf6;">➔ Custos Totais: 0.0% | Custos Fixos: 100.0%</span>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff; flex-grow: 1;">
                     <div>
                         <span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor (Mnt/MOD Específico):</span>
                         <strong id="top_custo_fixo_setor" style="font-size: 14px; font-weight: 900; color: #7c3aed;">R$ 0,00/mês</strong>
                     </div>
-                    <span id="pct_custo_fixo_setor" style="font-size: 10px; font-weight: bold; color: #6d28d9;">➔ Custos Totais: 51.9% | Custos Fixos: 61.7%</span>
+                    <span id="pct_custo_fixo_setor" style="font-size: 10px; font-weight: bold; color: #6d28d9;">➔ Custos Totais: 0.0% | Custos Fixos: 0.0%</span>
                 </div>
             </div>
 
@@ -250,12 +252,108 @@
                         <span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custo Variável do Setor (Insumos Específicos):</span>
                         <strong id="top_custo_variavel_setor" style="font-size: 14px; font-weight: 900; color: #ea580c;">R$ 0,00/mês</strong>
                     </div>
-                    <span id="pct_custo_variavel_setor" style="font-size: 10px; font-weight: bold; color: #c2410c;">➔ Custos Totais: 16.0% | Custos Variáveis: 100.0%</span>
+                    <span id="pct_custo_variavel_setor" style="font-size: 10px; font-weight: bold; color: #c2410c;">➔ Custos Totais: 0.0% | Custos Variáveis: 0.0%</span>
                 </div>
-            
+            </div>
+        </div>
+
+        <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2></div>
+<!-- erppadrao - maquinas/maquinas.html - PARTE 5 DE 6 -->
+        <div class="grid-main">
+            <!-- PAINEL DE INSERÇÃO INTEGRALMENTE DISTRIBUÍDO NA HORIZONTAL (100% ÚTIL) -->
+            <div class="card col-form" style="width: 100%; margin-bottom: 8px;">
+                <h3 class="card-title" id="txt_sub" style="border-bottom: 2px solid #1e3a8a; padding-bottom: 6px;">⚙️ Painel de Parametrização e Inserção de Ativos Industriais</h3>
+                
+                <form id="formMaquina" onsubmit="window.salvarMaquina(event)" style="display: flex; flex-direction: column; gap: 14px;">
+                    <input type="hidden" id="registro_id" name="id">
+                    <input type="hidden" id="custo_estrutural_oculto" value="0.05">
+                    
+                    <!-- FAIXA HORIZONTAL 01: SELEÇÃO E NOME -->
+                    <div class="flex-form-row">
+                        <div class="flex-col-gap" style="flex: 1; min-width: 280px; margin-bottom: 0;">
+                            <label class="label-form" style="color: #1e3a8a;">Modelo Base Industrial Coringa:</label>
+                            <select id="seletor_modelo" onchange="window.carregarPreDefinido()" class="select-form" style="height: 38px; border: 2px solid #cbd5e1; font-weight: bold;">
+                                <option value="">-- Selecione um Ativo Base ou Personalize --</option>
+                                <optgroup label="Usinagem e Corte Pesado">
+                                    <option value="cnc_mazak">Torno CNC Mazak Quick Turn</option>
+                                    <option value="centro_usid">Centro de Usinagem CNC</option>
+                                    <option value="torno_mecanico">Torno Mecânico Convencional</option>
+                                    <option value="serra_fita">Serra de Fita Industrial</option>
+                                    <option value="retifica">Retífica Cilíndrica</option>
+                                    <option value="furadeira_radial">Furadeira Radial</option>
+                                </optgroup>
+                                <optgroup label="Tratamento Térmico e Utilidades">
+                                    <option value="forno_atmo">Forno de Atmosfera Controlada</option>
+                                    <option value="forno_reveni">Forno de Revenimento</option>
+                                    <option value="compressor_ar">Compressor de Ar de Parafuso</option>
+                                </optgroup>
+                                <optgroup label="Movimentação Logística e Armazenagem">
+                                    <option value="empilhadeira_ele">Empilhadeira Elétrica</option>
+                                    <option value="cestos_inox">Cestos de Aço Inox (Forno)</option>
+                                    <option value="palets_aco">Paletes de Aço Reforçados</option>
+                                    <option value="caixas_trans">Caixas Metálicas para Transporte</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="flex-col-gap" style="flex: 2; min-width: 320px; margin-bottom: 0;">
+                            <label class="label-form">Nome de Identificação do Ativo:</label>
+                            <input type="text" id="nome_equipamento" required class="input-form" style="height: 38px; border: 2px solid #cbd5e1;" placeholder="Ex: Centro de Usinagem CNC - Linha Alpha">
+                        </div>
+                    </div>
+
+                    <!-- FAIXA HORIZONTAL 02: INSUMOS MECÂNICOS E UTILIDADES (4 COLUNAS) -->
+                    <div class="flex-form-row">
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Potência (kW):</label><input type="number" step="0.1" id="potencia" required oninput="window.calcularMinutoMaquina()" class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Consumo Elétrico (kWh):</label><input type="number" step="0.1" id="consumo_eletrico" required oninput="window.calcularMinutoMaquina()" class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form" style="color: #1d4ed8;">Consumo Água (m³/h):</label><input type="number" step="0.001" id="consumo_agua" value="0.000" oninput="window.calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form" style="color: #1d4ed8;">Consumo Gases (m³/h):</label><input type="number" step="0.001" id="consumo_gases" value="0.000" oninput="window.calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;"></div>
+                    </div>
+
+                    <!-- FAIXA HORIZONTAL 03: DIRETRIZES TÉCNICAS E OPERADOR -->
+                    <div class="flex-form-row">
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Velocidade (RPM/Hz):</label><input type="text" id="velocidade" class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Avanço (mm/min):</label><input type="text" id="avanco" class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Ciclo Manutenção (h):</label><input type="number" id="frequencia_manutencao" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 2; min-width: 220px; margin-bottom: 0;"><label class="label-form">Nome do Operador Alocado:</label><input type="text" id="operador_nome" required class="input-form"></div>
+                    </div>
+
+                    <!-- FAIXA HORIZONTAL 04: MATRIZ ECONÔMICA E OPERACIONAL -->
+                    <div class="flex-form-row">
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Preço Compra (R$):</label><input type="number" step="0.01" id="preco_compra" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Depreciação (R$/Mês):</label><input type="number" step="0.01" id="depreciacao_mensal" required oninput="window.calcularMinutoMaquina()" class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Vlr Residual Final (R$):</label><input type="number" step="0.01" id="valor_venda_final" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Custo MOD (R$/min):</label><input type="number" step="0.0001" id="custo_minuto_operador" required oninput="window.calcularMinutoMaquina()" class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 0.8; min-width: 100px; margin-bottom: 0;">
+                            <label class="label-form">Jornada:</label>
+                            <select id="jornada_semanal" onchange="window.calcularMinutoMaquina()" class="select-form"><option value="44">44h</option><option value="36">36h</option></select>
+                        </div>
+                        <div class="flex-col-gap" style="flex: 0.8; min-width: 100px; margin-bottom: 0;">
+                            <label class="label-form">Turnos:</label>
+                            <select id="turnos_trabalho" onchange="window.calcularMinutoMaquina()" class="select-form"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+                        </div>
+                    </div>
 <!-- erppadrao - maquinas/maquinas.html - PARTE 6 DE 6 -->
-            <!-- COLUNA DA TABELA DE INVENTÁRIO (CONEXÃO SUPABASE) -->
-            <div class="table-container col-table">
+                    <!-- MARCADOR DE CLASSIFICAÇÃO IMOBILIZADA E CAMPO DE RESULTADO MINUTO MÁQUINA -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 6px; background-color: #f8fafc; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 320px;">
+                            <input type="checkbox" id="is_patrimonio" checked style="width: 18px; height: 16px; margin: 0; cursor: pointer;">
+                            <label for="is_patrimonio" class="label-form" style="color: #16a34a; font-weight: 900; cursor: pointer; margin: 0; font-size: 12px;">Classificar como Ativo Imobilizado (Patrimônio Contábil)</label>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px; flex: 1; min-width: 360px; background-color: #eff6ff; padding: 6px 12px; border: 1px dashed #bfdbfe; border-radius: 6px;">
+                            <label class="label-form" style="color: #1e3a8a; font-weight: 900; margin: 0; white-space: nowrap;">CUSTO MINUTO MÁQUINA (R$/min):</label>
+                            <input type="number" step="0.0001" id="custo_minuto_maquina" readonly class="input-form input-form-readonly" style="margin-bottom: 0; color: #1e3a8a; font-size: 13px;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
+                        <button type="button" id="btn_cancelar" onclick="window.limparFormularioMaquina()" class="btn-cancel" style="display: none;">Cancelar</button>
+                        <button type="submit" id="btn_salvar" class="btn-submit" style="width: auto; padding: 10px 24px; margin-top: 0;">💾 Registrar Ativo no Parque Fabril</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- COLUNA DA TABELA DE INVENTÁRIO (CONEXÃO SUPABASE) OTIMIZADA LOGO ABAIXO -->
+            <div class="table-container col-table" style="width: 100%; margin-top: 12px;">
                 <div class="table-header-dark">Ativos Mecânicos Cadastrados no Supabase</div>
                 <div class="table-responsive">
                     <table>
@@ -283,7 +381,7 @@
         </footer>
     </div>
     
-    <!-- Chamada síncrona sem defer para evitar timing execution error -->
+    <!-- Chamada síncrona imediata sem defer para mitigar quebras de escopo temporal -->
     <script src="/maquinas/maquinas.js"></script>
 </body>
 </html>
