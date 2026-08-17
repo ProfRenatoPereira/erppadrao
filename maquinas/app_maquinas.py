@@ -74,7 +74,7 @@ def api_listar_maquinas():
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-# erppadrao - maquinas/app_maquinas.py - PARTE 3 DE 3
+# erppadrao - maquinas/app_maquinas.py - PARTE 3 DE 3 (CORRIGIDA)
 
 @maquinas_blueprint.route('/api/maquinas/salvar', methods=['POST'])
 def api_salvar_maquina():
@@ -109,7 +109,6 @@ def api_salvar_maquina():
         c_mq = float(str(dados.get('custo_minuto_maquina', 0)).replace(',', '.').strip())
         fr = int(dados.get('frequencia_manutencao', 0))
 
-        # CONFORMIDADE DE VERBA: Consome o teto dinâmico calculado pelo GerenciadorCaixa
         import GerenciadorCaixa
         m = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, 'maquinas')
         verba_disponivel = m.get('capital_disponivel_departamento', 0.0)
@@ -132,7 +131,6 @@ def api_salvar_maquina():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (id_equipe, nome_eq, pot, c_el, c_ag, c_gs, v, av, fr, pr, dep, v_vf, op, c_op, c_mq, journ, turn, is_pat))
 
-        # REGISTRO NO LIVRO CAIXA: Realiza o débito imediato para o Gerenciador deduzir do Giro da equipe
         if not id_reg:
             cursor.execute('''
                 INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
@@ -170,7 +168,7 @@ def api_deletar_maquina(id_reg):
     conexao, cursor = None, None
     try:
         conexao = obter_conexao_master()
-        cursor = psycopg2.connect(from app_master import URL_SUPABASE).cursor(cursor_factory=RealDictCursor) if False else conexao.cursor(cursor_factory=RealDictCursor)
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
         cursor.execute("SELECT preco_compra, nome_equipamento FROM erp_maquinas WHERE id = %s AND equipe_id = %s", (id_reg, id_equipe))
         maq = cursor.fetchone()
