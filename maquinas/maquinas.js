@@ -201,35 +201,34 @@ window.carregarDadosIniciais = async function() {
         const capitalTotalEmpresa = 5000000.00;
         const disponivelParaSetor = 2000000.00;
         const saldoRestanteEngenharia = disponivelParaSetor - valorTotalAtivosComprados;
+        let pctTetoConsumido = (valorTotalAtivosComprados / disponivelParaSetor) * 100;
 
         const custoFixoGeralAluguel = 21350.00;
         if (custoFixoAcumuladoSetor === 0) custoFixoAcumuladoSetor = 34432.51;
-        if (custoVariavelAcumuladoSetor === 0) custoVariavelAcumuladoSetor = 10593.39;
+        if (custoVariavelAcumuladoSetor === 0) custoVariavelAcumuladoSetor = 10593.38;
 
-        // CONSOLIDADO: O Custo Variável Geral recebe a soma de insumos operados em todos os setores
-        const custoVariavelGeralEmpresa = custoVariavelAcumuladoSetor; 
+        const custoVariavelGeralEmpresa = 0.00; 
 
-        const totalCustosFixos = custoFixoGeralAluguel + custoFixoAcumuladoSetor;
-        const totalCustosVariaveis = custoVariavelGeralEmpresa; 
-        const totalGeralCustosMensais = totalCustosFixos + totalCustosVariaveis;
+        const totalCustosFixosAcumulados = custoFixoGeralAluguel + custoFixoAcumuladoSetor;
+        const totalCustosVariaveisAcumulados = custoVariavelGeralEmpresa + custoVariavelAcumuladoSetor;
+        const totalGeralCustosMensais = totalCustosFixosAcumulados + totalCustosVariaveisAcumulados;
 
         const pctDisponivel = (disponivelParaSetor / capitalTotalEmpresa) * 100;
         const pctOrcamentoIni = (disponivelParaSetor / capitalTotalEmpresa) * 100;
         const pctSaldoEng = (saldoRestanteEngenharia / capitalTotalEmpresa) * 100;
         const pctPatrimonioMaq = (valorTotalAtivosComprados / capitalTotalEmpresa) * 100;
-        let pctTetoConsumido = (valorTotalAtivosComprados / disponivelParaSetor) * 100;
 
         const denCusto = totalGeralCustosMensais || 1;
-        const denFixo = totalCustosFixos || 1;
-        const denVar = totalCustosVariaveis || 1;
+        const denFixo = totalCustosFixosAcumulados || 1;
+        const denVar = totalCustosVariaveisAcumulados || 1;
 
-        const pFixG_Tot = (custoFixoGeralAluguel / denCusto) * 100;
-        const pFixG_Nat = (custoFixoGeralAluguel / denFixo) * 100;
+        const pFixG_Tot = (totalCustosFixosAcumulados / denCusto) * 100;
+        const pFixG_Nat = (totalCustosFixosAcumulados / denFixo) * 100;
         const pFixS_Tot = (custoFixoAcumuladoSetor / denCusto) * 100;
         const pFixS_Nat = (custoFixoAcumuladoSetor / denFixo) * 100;
         
-        const pVarG_Tot = (custoVariavelGeralEmpresa / denCusto) * 100;
-        const pVarG_Nat = (custoVariavelGeralEmpresa / denVar) * 100;
+        const pVarG_Tot = (totalCustosVariaveisAcumulados / denCusto) * 100;
+        const pVarG_Nat = (totalCustosVariaveisAcumulados / denVar) * 100;
         const pVarS_Tot = (custoVariavelAcumuladoSetor / denCusto) * 100;
         const pVarS_Nat = (custoVariavelAcumuladoSetor / denVar) * 100;
 
@@ -238,9 +237,9 @@ window.carregarDadosIniciais = async function() {
         if(document.getElementById('top_orcamento_inicial')) document.getElementById('top_orcamento_inicial').innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('top_patrimonio_maquinas')) document.getElementById('top_patrimonio_maquinas').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         
-        if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${custoFixoGeralAluguel.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${totalCustosFixosAcumulados.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         if(document.getElementById('top_custo_fixo_setor')) document.getElementById('top_custo_fixo_setor').innerText = `R$ ${custoFixoAcumuladoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${custoVariavelGeralEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${totalCustosVariaveisAcumulados.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         if(document.getElementById('top_custo_variavel_setor')) document.getElementById('top_custo_variavel_setor').innerText = `R$ ${custoVariavelAcumuladoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
 
         const campoSaldo = document.getElementById('top_verba_reais');
@@ -274,7 +273,7 @@ window.carregarDadosIniciais = async function() {
         }
 
         window.renderizarTabelaAtivos(ativos);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Erro na matriz acumuladora máster:", e); }
 };
 /* erppadrao - maquinas/maquinas.js - PARTE 4 DE 4 */
 window.renderizarTabelaAtivos = function(ativos) {
