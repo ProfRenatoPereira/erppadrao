@@ -30,7 +30,7 @@
         
         .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; flex-wrap: wrap; gap: 16px; }
         .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; z-index: 10001; }
-        .menu-toggle-label { display: flex; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; display: none; }
+        .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
         .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
         #menu-toggle { display: none; }
 /* erppadrao - maquinas/maquinas.html - PARTE 2 DE 6 */
@@ -71,7 +71,7 @@
             .nav-item { width: 100%; }
             .nav-link { padding: 12px 20px; border-bottom: 1px solid #1e293b; color: #f8fafc; }
             .dropdown-menu { display: block; position: static; box-shadow: none; border: none; background-color: #172554 !important; padding: 0; min-width: 100%; }
-            #menu-toggle:checked ~ nav .nav-corporate-menu { display: flex; }
+            #menu-toggle:checked ~ nav .nav-corporate-menu, #menu-toggle:checked ~ .nav-corporate-menu { display: flex; }
         }
         
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
@@ -99,11 +99,11 @@
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
             <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
-            <button type="button" onclick="window.mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
-            <button type="button" onclick="window.mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
-            <button type="button" onclick="window.alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
-            <button type="button" id="btn_tema" onclick="window.alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="window.alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
+            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
     </div>
 
@@ -217,136 +217,43 @@
                     <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: 900; color: #2563eb; text-align: right; display: block; margin-top: 2px;">0.0% do teto consumido</span>
                 </div>
             </div>
-
-            <!-- LINHA 04: RELATÓRIO DE CUSTOS FIXOS MENSAIS COM PORCENTAGEM RELATIVA DUPLA -->
+<!-- erppadrao - maquinas/maquinas.html - PARTE 5 DE 6 -->
+            <!-- LINHA 04: RELATÓRIO DE CUSTOS FIXOS TOTAIS ACUMULADOS COM PORCENTAGEM RELATIVA DUPLA -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div>
-                        <span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Geral (Aluguel):</span>
-                        <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 21.350,00/mês</strong>
+                        <span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Total (Aluguel + Setores 1 a n):</span>
+                        <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 0,00/mês</strong>
                     </div>
                     <span id="pct_custo_fixo_geral" style="font-size: 10px; font-weight: bold; color: #8b5cf6;">➔ Custos Totais: 32.2% | Custos Fixos: 38.3%</span>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff; flex-grow: 1;">
                     <div>
-                        <span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor (Mnt/MOD):</span>
-                        <strong id="top_custo_fixo_setor" style="font-size: 14px; font-weight: 900; color: #7c3aed;">R$ 34.432,51/mês</strong>
+                        <span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor (Mnt/MOD Específico):</span>
+                        <strong id="top_custo_fixo_setor" style="font-size: 14px; font-weight: 900; color: #7c3aed;">R$ 0,00/mês</strong>
                     </div>
                     <span id="pct_custo_fixo_setor" style="font-size: 10px; font-weight: bold; color: #6d28d9;">➔ Custos Totais: 51.9% | Custos Fixos: 61.7%</span>
                 </div>
             </div>
 
-            <!-- LINHA 05: RELATÓRIO DE CUSTOS VARIÁVEIS MENSAIS COM PORCENTAGEM RELATIVA DUPLA -->
+            <!-- LINHA 05: RELATÓRIO DE CUSTOS VARIÁVEIS TOTAIS ACUMULADOS COM PORCENTAGEM RELATIVA DUPLA -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div>
-                        <span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custos Variáveis Geral:</span>
+                        <span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custo Variável Total (Geral + Setores 1 a n):</span>
                         <strong id="top_custo_variavel" style="font-size: 14px; font-weight: 900; color: #c2410c;">R$ 0,00/mês</strong>
                     </div>
-                    <span id="pct_custo_variavel_geral" style="font-size: 10px; font-weight: bold; color: #f97316;">➔ Custos Totais: 0.0% | Custos Variáveis: 0.0%</span>
+                    <span id="pct_custo_variavel_geral" style="font-size: 10px; font-weight: bold; color: #f97316;">➔ Custos Totais: 0.0% | Custos Variáveis: 100.0%</span>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #ffedd5; flex-grow: 1;">
                     <div>
-                        <span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custos Variáveis do Setor (Insumos):</span>
-                        <strong id="top_custo_variavel_setor" style="font-size: 14px; font-weight: 900; color: #ea580c;">R$ 10.593,39/mês</strong>
+                        <span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custo Variável do Setor (Insumos Específicos):</span>
+                        <strong id="top_custo_variavel_setor" style="font-size: 14px; font-weight: 900; color: #ea580c;">R$ 0,00/mês</strong>
                     </div>
                     <span id="pct_custo_variavel_setor" style="font-size: 10px; font-weight: bold; color: #c2410c;">➔ Custos Totais: 16.0% | Custos Variáveis: 100.0%</span>
                 </div>
-            </div>
-        </div>
-<!-- erppadrao - maquinas/maquinas.html - PARTE 5 DE 6 -->
-        <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Engenharia de Ativos - Máquinas e Equipamentos</h2></div>
-
-        <div class="grid-main">
-            <!-- COLUNA DO FORMULÁRIO DE CADASTRO -->
-            <div class="card col-form">
-                <h3 class="card-title" id="txt_sub">Configuração da Máquina</h3>
-                <form id="formMaquina" onsubmit="window.salvarMaquina(event)">
-                    <input type="hidden" id="registro_id" name="id">
-                    <input type="hidden" id="custo_estrutural_oculto" value="0.05">
-                    
-                    <div class="flex-col-gap">
-                        <label class="label-form">Modelo Base Industrial Coringa:</label>
-                        <select id="seletor_modelo" onchange="window.carregarPreDefinido()" class="select-form">
-                            <option value="">-- Personalizado --</option>
-                            <optgroup label="Usinagem e Corte Pesado">
-                                <option value="cnc_mazak">Torno CNC Mazak Quick Turn</option>
-                                <option value="centro_usid">Centro de Usinagem CNC</option>
-                                <option value="torno_mecanico">Torno Mecânico Convencional</option>
-                                <option value="serra_fita">Serra de Fita Industrial</option>
-                                <option value="retifica">Retífica Cilíndrica</option>
-                                <option value="furadeira_radial">Furadeira Radial</option>
-                            </optgroup>
-                            <optgroup label="Tratamento Térmico e Utilidades">
-                                <option value="forno_atmo">Forno de Atmosfera Controlada</option>
-                                <option value="forno_reveni">Forno de Revenimento</option>
-                                <option value="compressor_ar">Compressor de Ar de Parafuso</option>
-                            </optgroup>
-                            <optgroup label="Movimentação Logística e Armazenagem">
-                                <option value="empilhadeira_ele">Empilhadeira Elétrica</option>
-                                <option value="cestos_inox">Cestos de Aço Inox (Forno)</option>
-                                <option value="palets_aco">Paletes de Aço Reforçados</option>
-                                <option value="caixas_trans">Caixas Metálicas para Transporte</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Nome do Equipamento:</label>
-                        <input type="text" id="nome_equipamento" required class="input-form">
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap"><label class="label-form">Potência (kW):</label><input type="number" step="0.1" id="potencia" required oninput="window.calcularMinutoMaquina()" class="input-form"></div>
-                        <div class="flex-col-gap"><label class="label-form">Consumo (kWh):</label><input type="number" step="0.1" id="consumo_eletrico" required oninput="window.calcularMinutoMaquina()" class="input-form"></div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap"><label class="label-form" style="color: #1d4ed8;">Água (m³/h):</label><input type="number" step="0.001" id="consumo_agua" value="0.000" oninput="window.calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;"></div>
-                        <div class="flex-col-gap"><label class="label-form" style="color: #1d4ed8;">Gases (m³/h):</label><input type="number" step="0.001" id="consumo_gases" value="0.000" oninput="window.calcularMinutoMaquina()" class="input-form" style="color: #1d4ed8; font-weight: bold; background-color: #eff6ff;"></div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap"><label class="label-form">Velocidade (RPM):</label><input type="text" id="velocidade" class="input-form"></div>
-                        <div class="flex-col-gap"><label class="label-form">Avanço (mm/min):</label><input type="text" id="avanco" class="input-form"></div>
-                    </div>
+            
 <!-- erppadrao - maquinas/maquinas.html - PARTE 6 DE 6 -->
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap"><label class="label-form">Ciclo Mnt (h):</label><input type="number" id="frequencia_manutencao" required class="input-form"></div>
-                        <div class="flex-col-gap"><label class="label-form">Preço Compra (R$):</label><input type="number" step="0.01" id="preco_compra" required class="input-form"></div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap"><label class="label-form">Depreciação (R$/Mês):</label><input type="number" step="0.01" id="depreciacao_mensal" required oninput="window.calcularMinutoMaquina()" class="input-form"></div>
-                        <div class="flex-col-gap"><label class="label-form">Vlr Residual (R$):</label><input type="number" step="0.01" id="valor_venda_final" required class="input-form"></div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap"><label class="label-form">Operador:</label><input type="text" id="operador_nome" required class="input-form"></div>
-                        <div class="flex-col-gap"><label class="label-form">Custo MOD (R$/min):</label><input type="number" step="0.0001" id="custo_minuto_operador" required oninput="window.calcularMinutoMaquina()" class="input-form"></div>
-                    </div>
-                    <div class="grid-form-row">
-                        <div class="flex-col-gap">
-                            <label class="label-form">Jornada:</label>
-                            <select id="jornada_semanal" onchange="window.calcularMinutoMaquina()" class="select-form"><option value="44">44h</option><option value="36">36h</option></select>
-                        </div>
-                        <div class="flex-col-gap">
-                            <label class="label-form">Turnos:</label>
-                            <select id="turnos_trabalho" onchange="window.calcularMinutoMaquina()" class="select-form"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
-                        </div>
-                    </div>
-                    
-                    <!-- 📦 MARCADOR DE ATIVO IMOBILIZADO PATRIMONIAL ALINHADO -->
-                    <div class="flex-col-gap" style="display: flex; flex-direction: row; align-items: center; gap: 8px; margin-top: 10px; padding: 4px 0;">
-                        <input type="checkbox" id="is_patrimonio" checked style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
-                        <label for="is_patrimonio" class="label-form" style="color: #16a34a; font-weight: 900; cursor: pointer; margin: 0;">Classificar como Ativo Imobilizado (Patrimônio)</label>
-                    </div>
-
-                    <div class="flex-col-gap" style="background-color: #eff6ff; padding: 12px; border: 1px dashed #bfdbfe; border-radius: 8px; margin-top: 8px;">
-                        <label class="label-form" style="color: #1e3a8a; font-weight: 900;">CUSTO MINUTO MÁQUINA (R$/min):</label>
-                        <input type="number" step="0.0001" id="custo_minuto_maquina" readonly class="input-form input-form-readonly">
-                    </div>
-                    <div style="margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end;">
-                        <button type="button" id="form_btn_cancelar" onclick="window.limparFormularioMaquina()" class="btn-cancel" style="display: none;">Cancelar</button>
-                        <button type="submit" id="btn_salvar" class="btn-submit">💾 Registrar Ativo</button>
-                    </div>
-                </form>
-            </div>
-
             <!-- COLUNA DA TABELA DE INVENTÁRIO (CONEXÃO SUPABASE) -->
             <div class="table-container col-table">
                 <div class="table-header-dark">Ativos Mecânicos Cadastrados no Supabase</div>
@@ -376,7 +283,7 @@
         </footer>
     </div>
     
-    <!-- Chamada alterada sem defer para execução imediata do escopo literal -->
+    <!-- Chamada síncrona sem defer para evitar timing execution error -->
     <script src="/maquinas/maquinas.js"></script>
 </body>
 </html>
