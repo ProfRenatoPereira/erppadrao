@@ -52,7 +52,7 @@ def api_listar_materiais():
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-# erppadrao - materiais/app_materiais.py - PARTE 3 DE 3
+# erppadrao - materiais/app_materiais.py - PARTE 3 DE 3 (TRAVA DE SALDO REMOVIDA)
 
 @materiais_blueprint.route('/api/materiais/salvar', methods=['POST'])
 def api_salvar_material():
@@ -79,10 +79,14 @@ def api_salvar_material():
         refugo_pad = float(str(dados.get('coeficiente_refugo', 0)).replace(',', '.').strip())
         l_time = int(dados.get('lead_time_entrega', 0))
 
+        # Validação simples de consistência de dados em vez de trava de caixa
+        if not nome_mat:
+            return "Erro: Nome do material é obrigatório.", 400
+
         if id_reg:
             cursor.execute('''
                 UPDATE erp_materiais SET 
-                    nome_material=%s, categoria=%s, unidade_medida=%s, preco_unitario=%s,
+                    nome_material=%s, categoria=%s, unity_medida=%s, preco_unitario=%s,
                     estoque_seguranca=%s, lead_time_entrega=%s, fornecedor_padrao=%s, 
                     coeficiente_refugo=%s, especificacao_tecnica=%s
                 WHERE id=%s AND equipe_id=%s
