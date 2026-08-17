@@ -52,7 +52,7 @@ def api_listar_maquinas():
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # Garante a existência da tabela com a coluna lógica is_patrimonio
+        # Garante a existência da tabela calibrada com a flag lógica is_patrimonio no Supabase
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS erp_maquinas (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, potencia REAL,
@@ -114,7 +114,6 @@ def api_salvar_maquina():
         m = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, 'maquinas')
         verba_disponivel = m.get('capital_disponivel_departamento', 0.0)
 
-        # Se for um cadastro novo de ativo imobilizado, valida se há orçamento livre na Engenharia
         if pr > verba_disponivel and not id_reg:
             return "Estouro Orçamentário: Saldo insuficiente alocado na Engenharia.", 400
 
@@ -171,12 +170,11 @@ def api_deletar_maquina(id_reg):
     conexao, cursor = None, None
     try:
         conexao = obter_conexao_master()
-        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        cursor = psycopg2.connect(from app_master import URL_SUPABASE).cursor(cursor_factory=RealDictCursor) if False else conexao.cursor(cursor_factory=RealDictCursor)
         
         cursor.execute("SELECT preco_compra, nome_equipamento FROM erp_maquinas WHERE id = %s AND equipe_id = %s", (id_reg, id_equipe))
         maq = cursor.fetchone()
         if maq:
-            # ESTORNO DE CAIXA: Lança o crédito negativo no fluxo_caixa para recompor o Capital de Giro
             valor_estorno = -float(maq['preco_compra'] or 0)
             cursor.execute('''
                 INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor)
