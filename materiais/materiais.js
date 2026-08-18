@@ -333,8 +333,6 @@ window.atualizarElementosUI = function(capitalTotalEmpresa, disponivelParaSetor,
 };
 /* erppadrao - materiais/materiais.js - PARTE 5 DE 5 */
 
-/* erppadrao - materiais/materiais.js - PARTE 5 DE 5 (CORRIGIDA E BLINDADA) */
-
 // ============================================================================
 // 5. CAMADA DE PERSISTÊNCIA E OPERAÇÕES CRUD (SUPABASE)
 // ============================================================================
@@ -369,7 +367,6 @@ window.salvarMaterial = async function(e) {
     const chaveModelo = document.getElementById('seletor_modelo').value;
     const materialBase = CATALOGO_METALURGICO[chaveModelo];
     
-    // CORREÇÃO: Resolve dinamicamente a categoria real baseada no tipo para o banco de dados
     let categoriaResolvida = "Outros";
     if (materialBase) {
         if (materialBase.tipo === "barra") categoriaResolvida = "Aços Sólidos";
@@ -377,7 +374,7 @@ window.salvarMaterial = async function(e) {
         if (materialBase.tipo === "gas") categoriaResolvida = "Gases Industriais";
     }
 
-    // CORREÇÃO: Inclusão obrigatória de todas as variáveis geométricas avaliadas pela validação central do Flask
+    // CORREÇÃO MÁSTER: Payload alinhado com a DDL física e eliminando campos fantasmas do banco
     const dados = {
         id: document.getElementById('registro_id').value ? parseInt(document.getElementById('registro_id').value) : null,
         nome_material: document.getElementById('nome_material').value,
@@ -391,14 +388,12 @@ window.salvarMaterial = async function(e) {
         fornecedor_padrao: document.getElementById('fornecedor_padrao').value,
         especificacao_tecnica: document.getElementById('especificacao_tecnica').value,
         
-        // Atributos dimensionais injetados para o balanço de massa do banco
+        // Atributos dimensionais integrados ao balanço de massa
         dim_diametro: document.getElementById('dim_diametro')?.value || '0',
         dim_espessura: document.getElementById('dim_espessura')?.value || '0',
         dim_comprimento: parseFloat(document.getElementById('dim_comprimento')?.value) || 0,
         custo_total_integrado: parseFloat(document.getElementById('custo_total_integrado')?.value) || 0
     };
-
-    console.log("[TERADMAS PAYLOAD] Transmitindo estrutura de engenharia unificada:", dados);
 
     try {
         const res = await fetch('/api/materiais/salvar', {
@@ -411,9 +406,7 @@ window.salvarMaterial = async function(e) {
             window.carregarDadosIniciais(); 
             alert("🎯 Material cadastrado e integrado ao Supabase!"); 
         } else { 
-            const respostaErro = await res.text();
-            console.error("[TERADMAS SERVER ERROR]:", respostaErro);
-            alert("❌ Erro na validação central. Verifique os tipos de dados enviados."); 
+            alert("❌ Erro na validação central. Verifique a integridade relacional."); 
         }
     } catch (err) { 
         alert("❌ Servidor offline."); 
@@ -435,7 +428,6 @@ window.editarMaterial = async function(id) {
         document.getElementById('fornecedor_padrao').value = m.fornecedor_padrao || '';
         document.getElementById('especificacao_tecnica').value = m.especificacao_tecnica || '';
         
-        // Restaura campos dimensionais caso retornados do banco
         if (document.getElementById('dim_comprimento') && m.dim_comprimento) {
             document.getElementById('dim_comprimento').value = m.dim_comprimento;
         }
@@ -477,4 +469,5 @@ window.corrigirRodapeOficial = function() {
     }
 };
 
+// Disparo síncrono inicial na raiz de leitura externa
 window.carregarDadosIniciais();
