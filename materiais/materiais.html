@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Materiais - Catálogo Industrial</title>
+    <title>Materiais - Catálogo Industrial Avançado</title>
     <link rel="icon" type="image/png" href="/static/logo.png">
     <style>
         html { font-size: 16px; transition: font-size 0.15s ease; box-sizing: border-box; }
@@ -146,9 +146,9 @@
     </header>
 
     <div class="container">
-        <!-- MATRIZ FINANCEIRA HORIZONTAL DE 5 BLOCOS INTEGRADOS -->
+        <!-- PAINEL HORIZONTAL MÁSTER DE CONTROLE E BALANÇO FINANCEIRO -->
         <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px;">
-            <!-- LINHA 1 -->
+            <!-- LINHA 1: Capital Master e Teto do Setor -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
                     <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">💰 Capital Total:</span>
@@ -162,7 +162,7 @@
                 </div>
             </div>
 <!-- erppadrao - materiais/materiais.html - PARTE 3 DE 4 -->
-            <!-- LINHA 2 -->
+            <!-- LINHA 2: Alocação Suprimentos vs Saldo Restante -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
                     <span style="font-size: 11px; font-weight: bold; color: #581c87; text-transform: uppercase;">🏢 Orçamento Inicial Materiais:</span>
@@ -176,7 +176,7 @@
                 </div>
             </div>
 
-            <!-- LINHA 3 -->
+            <!-- LINHA 3: Valoração de Inventário e Trava Volumétrica (Max 40%) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
                     <span style="font-size: 11px; font-weight: bold; color: #9a3412; text-transform: uppercase;">🏛️ Custo Total do Inventário:</span>
@@ -193,7 +193,7 @@
                 </div>
             </div>
 
-            <!-- LINHA 4 -->
+            <!-- LINHA 4: Custos Fixos (Geral vs Setor) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div><span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Total (Geral):</span> <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 0,00/mês</strong></div>
@@ -205,7 +205,7 @@
                 </div>
             </div>
 
-            <!-- LINHA 5 -->
+            <!-- LINHA 5: Custos Variáveis (Geral vs Giro Insumos) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div><span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custo Variável Total (Geral):</span> <strong id="top_custo_variavel" style="font-size: 14px; font-weight: 900; color: #c2410c;">R$ 0,00/mês</strong></div>
@@ -221,59 +221,86 @@
         <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Catálogo e Engenharia de Materiais Produtivos</h2></div>
 <!-- erppadrao - materiais/materiais.html - PARTE 4 DE 4 -->
         <div class="grid-main">
-            <!-- PAINEL DE PARAMETRIZAÇÃO -->
+            <!-- CARTÃO CENTRAL DE ENGENHARIA E PARAMETRIZAÇÃO -->
             <div class="card" style="width: 100%; margin-bottom: 8px;">
-                <h3 class="card-title" id="txt_sub" style="border-bottom: 2px solid #1e3a8a; padding-bottom: 6px;">📋 Parametrização e Homologação de Insumos Industriais</h3>
+                <h3 class="card-title" id="txt_sub" style="border-bottom: 2px solid #1e3a8a; padding-bottom: 6px;">📋 Parametrização, Geometria e Homologação de Insumos</h3>
                 <form id="formMaterial" onsubmit="window.salvarMaterial(event)" style="display: flex; flex-direction: column; gap: 14px;">
                     <input type="hidden" id="registro_id" name="id">
                     
                     <div class="flex-form-row">
                         <div class="flex-col-gap" style="flex: 1; min-width: 280px; margin-bottom: 0;">
-                            <label class="label-form" style="color: #1e3a8a;">Material Padrão Coringa:</label>
+                            <label class="label-form" style="color: #1e3a8a;">Material Padrão Coringa / Liga Comercial:</label>
                             <select id="seletor_modelo" onchange="window.carregarPreDefinido()" class="select-form" style="height: 38px; border: 2px solid #cbd5e1; font-weight: bold;">
-                                <option value="">-- Selecione um Insumo Base ou Personalize --</option>
-                                <optgroup label="Metais Ferrosos (Sólidos)">
-                                    <option value="aco_1020">Tarugo de Aço SAE 1020 (Corte)</option>
-                                    <option value="aco_1045">Barra de Aço SAE 1045 (Usinagem)</option>
-                                    <option value="aco_inox">Chapa de Aço Inox AISI 304</option>
+                                <option value="">-- Selecione a Liga Metalúrgica ou Insumo Base --</option>
+                                <optgroup label="Aços ao Carbono (Barras / Tarugos)">
+                                    <option value="aco_1020">Aço SAE 1020 (Baixo Carbono / Cementação)</option>
+                                    <option value="aco_1030">Aço SAE 1030 (Médio Carbono / Forjabilidade)</option>
+                                    <option value="aco_1045">Aço SAE 1045 (Médio Carbono / Estrutural)</option>
+                                    <option value="aco_1070">Aço SAE 1070 (Alto Carbono / Molas)</option>
                                 </optgroup>
-                                <optgroup label="Metais Não-Ferrosos e Ligas">
-                                    <option value="al_6061">Chapa de Alumínio 6061-T6</option>
+                                <optgroup label="Aços Liga de Alto Desempenho (Barras / Tarugos)">
+                                    <option value="aco_4320">Aço Liga SAE 4320 (Cr-Ni-Mo / Núcleo Tenaz)</option>
+                                    <option value="aco_4340">Aço Liga SAE 4340 (Alta Temperabilidade / Virabrequins)</option>
+                                    <option value="aco_8620">Aço Liga SAE 8620 (Engrenagens / Cementável)</option>
+                                    <option value="aco_8640">Aço Liga SAE 8640 (Fixadores de Alta Resistência)</option>
+                                    <option value="aco_inox_304">Aço Inox Austenítico AISI 304</option>
                                 </optgroup>
-                                <optgroup label="Consumíveis e Gases">
-                                    <option value="fluido_corte">Óleo Solúvel Semi-Sintético</option>
-                                    <option value="eletrodo_7018">Eletrodo Revestido AWS E7018</option>
-                                    <option value="gas_argon">Gás Argônio Industrial (Solda TIG)</option>
-                                    <option value="graxa_mnt">Graxa de Lítio Extrema Pressão</option>
+                                <optgroup label="Tubos Industriais e Estruturais (Ocos)">
+                                    <option value="tubo_1020">Tubo Mecânico SAE 1020 (Com/Sem Costura)</option>
+                                    <option value="tubo_1045">Tubo Industrial Hidráulico SAE 1045</option>
+                                    <option value="tubo_st52">Tubo de Alta Pressão ST52 (DIN 2391 / Grau E355)</option>
+                                </optgroup>
+                                <optgroup label="Gases e Atmosferas (Balanço Energético)">
+                                    <option value="gas_argon">Gás Argônio Industrial (Atmosfera TIG/Plasma)</option>
+                                    <option value="gas_nitrogenio">Gás Nitrogênio Especial (Tratamento Térmico / Corte Laser)</option>
                                 </optgroup>
                             </select>
                         </div>
                     </div>
 
-                    <!-- CAMPOS OPERACIONAIS DE ENGENHARIA -->
+                    <!-- CONTAINER GEOMÉTRICO DINÂMICO PARA BALANÇO DE MASSA -->
+                    <div class="flex-form-row" id="container_geometrico" style="display: none;">
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;">
+                            <label class="label-form">Diâmetro Externo (Ø): <span id="lbl_unidade_diametro" style="color:#2563eb; font-weight:900;">--</span></label>
+                            <select id="dim_diametro" class="select-form" onchange="window.calcularCustoOperacionalMaterial()"></select>
+                        </div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;" id="bloco_espessura">
+                            <label class="label-form">Espessura de Parede: <span id="lbl_unidade_espessura" style="color:#2563eb; font-weight:900;">--</span></label>
+                            <select id="dim_espessura" class="select-form" onchange="window.calcularCustoOperacionalMaterial()"></select>
+                        </div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;">
+                            <label class="label-form">Comprimento Linear / Vol: <span id="lbl_unidade_comprimento" style="color:#2563eb; font-weight:900;">--</span></label>
+                            <input type="number" step="0.01" id="dim_comprimento" class="input-form" placeholder="0.00" oninput="window.calcularCustoOperacionalMaterial()">
+                        </div>
+                    </div>
+
+                    <!-- IDENTIFICAÇÃO E CADASTRO LOGÍSTICO -->
                     <div class="flex-form-row">
-                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Código SKU:</label><input type="text" id="codigo_sku" required class="input-form"></div>
-                        <div class="flex-col-gap" style="flex: 2; min-width: 240px; margin-bottom: 0;"><label class="label-form">Nome do Material:</label><input type="text" id="nome_material" required class="input-form"></div>
-                        <div class="flex-col-gap" style="flex: 1; min-width: 120px; margin-bottom: 0;"><label class="label-form">Unidade Medida:</label><input type="text" id="unidade_medida" required class="input-form" placeholder="Ex: kg, m, l"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Código SKU:</label><input type="text" id="codigo_sku" required class="input-form" readonly></div>
+                        <div class="flex-col-gap" style="flex: 2; min-width: 240px; margin-bottom: 0;"><label class="label-form">Nome Comercial do Insumo:</label><input type="text" id="nome_material" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 120px; margin-bottom: 0;"><label class="label-form">Unidade de Controle (U.M.):</label><input type="text" id="unidade_medida" required class="input-form" readonly></div>
                     </div>
 
                     <div class="flex-form-row">
-                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Preço Unitário (R$):</label><input type="number" step="0.01" id="preco_unitario" required class="input-form"></div>
-                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Coeficiente Refugo (%):</label><input type="number" step="0.1" id="coeficiente_refugo" required class="input-form"></div>
-                        <div class="flex-col-gap" style="flex: 2; min-width: 240px; margin-bottom: 0;"><label class="label-form">Fornecedor Padrão de Cadeia:</label><input type="text" id="fornecedor_padrao" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Preço de Aquisição (R$):</label><input type="number" step="0.01" id="preco_unitario" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Fator de Refugo Processual (%):</label><input type="number" step="0.1" id="coeficiente_refugo" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 2; min-width: 240px; margin-bottom: 0;"><label class="label-form">Fornecedor Homologado:</label><input type="text" id="fornecedor_padrao" required class="input-form"></div>
                     </div>
 
                     <div class="flex-form-row">
-                        <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Lead Time Fornecedor (Dias):</label><input type="number" id="lead_time_entrega" required class="input-form"></div>
-                        <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Estoque de Segurança:</label><input type="number" step="0.1" id="estoque_seguranca" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Lead Time de Entrega (Dias):</label><input type="number" id="lead_time_entrega" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Estoque de Segurança Mínimo:</label><input type="number" step="0.1" id="estoque_seguranca" required class="input-form"></div>
                         <div class="flex-col-gap" style="flex: 2; min-width: 320px; margin-bottom: 0; background-color: #eff6ff; padding: 6px 12px; border: 1px dashed #bfdbfe; border-radius: 6px;">
+                            <label class="label-form" style="color: #1e3a8a; font-weight: 900; margin: 0;">Massa / Volume Total Calculado:</label>
+                            <input type="text" id="massa_calculada_exibicao" readonly class="input-form input-form-readonly" style="margin-bottom: 4px; color: #1e3a8a; font-size: 12px; background: transparent; border: none; padding: 0;">
+                            
                             <label class="label-form" style="color: #1e3a8a; font-weight: 900; margin: 0;">CUSTO OPERACIONAL TOTAL INTEGRADO (R$):</label>
                             <input type="number" step="0.01" id="custo_total_integrado" readonly class="input-form input-form-readonly" style="margin-bottom: 0; color: #1e3a8a; font-size: 13px;">
                         </div>
                     </div>
 
                     <div class="flex-form-row">
-                        <div class="flex-col-gap" style="flex: 1; min-width: 100%; margin-bottom: 0;"><label class="label-form">Especificações Técnicas de Engenharia:</label><input type="text" id="especificacao_tecnica" class="input-form" placeholder="Diretrizes metalúrgicas, dimensões brutas ou pureza química"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 100%; margin-bottom: 0;"><label class="label-form">Especificações Técnicas de Engenharia:</label><input type="text" id="especificacao_tecnica" class="input-form"></div>
                     </div>
 
                     <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
@@ -283,27 +310,20 @@
                 </form>
             </div>
 
-            <!-- TABELA DO CATÁLOGO DE INSUMOS -->
+            <!-- VISUALIZAÇÃO DO INVENTÁRIO PRODUTIVO -->
             <div class="table-container col-table" style="width: 100%; margin-top: 12px;">
-                <div class="table-header-dark">Insumos e Matérias-Primas Homologadas no Supabase</div>
+                <div class="table-header-dark">Insumos, Matérias-Primas e Geometrias no Supabase Inventory</div>
                 <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
                                 <th>Insumo / SKU</th>
-                                <th>Parâmetros Físicos / Preço</th>
+                                <th>Configuração Dimensional / Unidade</th>
                                 <th>Logística / Cadeia</th>
                                 <th>Custo Total</th>
                                 <th style="text-align: center;">Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="tabela_materiais"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <footer></footer>
     </div>
     <script src="/materiais/materiais.js"></script>
 </body>
