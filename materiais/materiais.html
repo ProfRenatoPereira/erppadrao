@@ -1,4 +1,4 @@
-<!-- erppadrao - materiais/materiais.html - PARTE 1 DE 6 -->
+<!-- erppadrao - materiais/materiais.html - PARTE 1 DE 4 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -26,7 +26,7 @@
         .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
         .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
         #menu-toggle { display: none; }
-/* erppadrao - materiais/materiais.html - PARTE 2 DE 6 */
+
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
         .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
@@ -35,7 +35,7 @@
         .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; transition: background 0.15s; border-bottom: 1px solid #f1f5f9; }
         .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
         .nav-item:hover .dropdown-menu { display: block; }
-        
+
         .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; text-align: left; }
         .page-title { font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
         .card-title { font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
@@ -77,7 +77,7 @@
         body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste td { color: #ffff00 !important; }
     </style>
 </head>
-<!-- erppadrao - materiais/materiais.html - PARTE 3 DE 6 -->
+<!-- erppadrao - materiais/materiais.html - PARTE 2 DE 4 -->
 <body style="transition: all 0.2s ease;">
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; user-select: none;">
         <div><img src="/static/Logo.svg" alt="Logo" style="height: 22px;" onerror="this.style.display='none';"></div>
@@ -144,9 +144,11 @@
             </ul>
         </nav>
     </header>
-<!-- erppadrao - materiais/materiais.html - PARTE 4 DE 6 -->
+
     <div class="container">
+        <!-- MATRIZ FINANCEIRA HORIZONTAL DE 5 BLOCOS INTEGRADOS -->
         <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px;">
+            <!-- LINHA 1 -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
                     <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">💰 Capital Total:</span>
@@ -159,7 +161,8 @@
                     <span id="pct_disponivel_setor" style="font-size: 11px; font-weight: bold; color: #10b981;">➔ 0.00% do Cap.</span>
                 </div>
             </div>
-
+<!-- erppadrao - materiais/materiais.html - PARTE 3 DE 4 -->
+            <!-- LINHA 2 -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
                     <span style="font-size: 11px; font-weight: bold; color: #581c87; text-transform: uppercase;">🏢 Orçamento Inicial Materiais:</span>
@@ -173,6 +176,7 @@
                 </div>
             </div>
 
+            <!-- LINHA 3 -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
                     <span style="font-size: 11px; font-weight: bold; color: #9a3412; text-transform: uppercase;">🏛️ Custo Total do Inventário:</span>
@@ -189,6 +193,7 @@
                 </div>
             </div>
 
+            <!-- LINHA 4 -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div><span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Total (Geral):</span> <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 0,00/mês</strong></div>
@@ -200,6 +205,7 @@
                 </div>
             </div>
 
+            <!-- LINHA 5 -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div><span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custo Variável Total (Geral):</span> <strong id="top_custo_variavel" style="font-size: 14px; font-weight: 900; color: #c2410c;">R$ 0,00/mês</strong></div>
@@ -213,8 +219,9 @@
         </div>
 
         <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Catálogo e Engenharia de Materiais Produtivos</h2></div>
-<!-- erppadrao - materiais/materiais.html - PARTE 5 DE 6 -->
+<!-- erppadrao - materiais/materiais.html - PARTE 4 DE 4 -->
         <div class="grid-main">
+            <!-- PAINEL DE PARAMETRIZAÇÃO -->
             <div class="card" style="width: 100%; margin-bottom: 8px;">
                 <h3 class="card-title" id="txt_sub" style="border-bottom: 2px solid #1e3a8a; padding-bottom: 6px;">📋 Parametrização e Homologação de Insumos Industriais</h3>
                 <form id="formMaterial" onsubmit="window.salvarMaterial(event)" style="display: flex; flex-direction: column; gap: 14px;">
@@ -229,49 +236,44 @@
                                     <option value="aco_1020">Tarugo de Aço SAE 1020 (Corte)</option>
                                     <option value="aco_1045">Barra de Aço SAE 1045 (Usinagem)</option>
                                     <option value="aco_inox">Chapa de Aço Inox AISI 304</option>
-                                    <option value="ferro_fundido">Bloco de Ferro Fundido Cinzento</option>
                                 </optgroup>
                                 <optgroup label="Metais Não-Ferrosos e Ligas">
-                                    <option value="aluminio_6061">Chapa de Alumínio Aeronáutico 6061</option>
-                                    <option value="bronze_tm23">Tarugo de Bronze Comercial TM23</option>
-                                    <option value="cobre_eletro">Barra de Cobre Eletrolítico Puro</option>
+                                    <option value="al_6061">Chapa de Alumínio 6061-T6</option>
                                 </optgroup>
-                                <optgroup label="Polímeros e Engenharia Estrutural">
-                                    <option value="nylon_66">Tarugo de Nylon 6.6 Técnico</option>
-                                    <option value="acrilico_trans">Chapa de Acrílico Cristal Cast</option>
-                                    <option value="pvc_cinza">Placa de PVC Rígido Industrial</option>
-                                </optgroup>
-                                <optgroup label="Fluidos, Químicos e Consumíveis">
-                                    <option value="fluido_corte">Óleo Solúvel Semi-Sintético (Corte)</option>
-                                    <option value="argonio_mnt">Gás Argônio Puro (Solda TIG)</option>
+                                <optgroup label="Consumíveis e Gases">
+                                    <option value="fluido_corte">Óleo Solúvel Semi-Sintético</option>
                                     <option value="eletrodo_7018">Eletrodo Revestido AWS E7018</option>
-                                    <option value="resina_epoxi">Resina Epóxi de Alta Viscosidade</option>
+                                    <option value="gas_argon">Gás Argônio Industrial (Solda TIG)</option>
+                                    <option value="graxa_mnt">Graxa de Lítio Extrema Pressão</option>
                                 </optgroup>
                             </select>
                         </div>
-                        <div class="flex-col-gap" style="flex: 2; min-width: 320px; margin-bottom: 0;">
-                            <label class="label-form">Descrição/Especificação Técnica:</label>
-                            <input type="text" id="nome_material" required class="input-form" style="height: 38px; border: 2px solid #cbd5e1;" placeholder="Ex: Tarugo Redondo de Aço Laminado SAE 1045 Ø2''">
-                        </div>
+                    </div>
+
+                    <!-- CAMPOS OPERACIONAIS DE ENGENHARIA -->
+                    <div class="flex-form-row">
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Código SKU:</label><input type="text" id="codigo_sku" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 2; min-width: 240px; margin-bottom: 0;"><label class="label-form">Nome do Material:</label><input type="text" id="nome_material" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 120px; margin-bottom: 0;"><label class="label-form">Unidade Medida:</label><input type="text" id="unidade_medida" required class="input-form" placeholder="Ex: kg, m, l"></div>
                     </div>
 
                     <div class="flex-form-row">
-                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Código Interno (SKU):</label><input type="text" id="codigo_sku" required class="input-form"></div>
-                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;">
-                            <label class="label-form">Unidade de Medida:</label>
-                            <select id="unidade_medida" class="select-form"><option value="kg">Quilo (kg)</option><option value="metro">Metro (m)</option><option value="unidade">Unidade (un)</option><option value="litro">Litro (L)</option></select>
-                        </div>
-                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Custo Unitário Base (R$):</label><input type="number" step="0.01" id="custo_base" required oninput="window.calcularCustoTotalMaterial()" class="input-form"></div>
-                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;" style="color: #c2410c;"><label class="label-form" style="color: #c2410c;">Taxa Refugo/Perda (%):</label><input type="number" step="0.1" id="taxa_refugo" required oninput="window.calcularCustoTotalMaterial()" class="input-form" style="background-color: #fff7ed; font-weight: bold; border-color: #ffedd5;"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Preço Unitário (R$):</label><input type="number" step="0.01" id="preco_unitario" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Coeficiente Refugo (%):</label><input type="number" step="0.1" id="coeficiente_refugo" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 2; min-width: 240px; margin-bottom: 0;"><label class="label-form">Fornecedor Padrão de Cadeia:</label><input type="text" id="fornecedor_padrao" required class="input-form"></div>
                     </div>
-<!-- erppadrao - materiais/materiais.html - PARTE 6 DE 6 -->
+
                     <div class="flex-form-row">
-                        <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Lead Time Fornecedor (Dias):</label><input type="number" id="lead_time" required class="input-form"></div>
-                        <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Estoque Mínimo (Segurança):</label><input type="number" step="0.1" id="estoque_minimo" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Lead Time Fornecedor (Dias):</label><input type="number" id="lead_time_entrega" required class="input-form"></div>
+                        <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Estoque de Segurança:</label><input type="number" step="0.1" id="estoque_seguranca" required class="input-form"></div>
                         <div class="flex-col-gap" style="flex: 2; min-width: 320px; margin-bottom: 0; background-color: #eff6ff; padding: 6px 12px; border: 1px dashed #bfdbfe; border-radius: 6px;">
                             <label class="label-form" style="color: #1e3a8a; font-weight: 900; margin: 0;">CUSTO OPERACIONAL TOTAL INTEGRADO (R$):</label>
                             <input type="number" step="0.01" id="custo_total_integrado" readonly class="input-form input-form-readonly" style="margin-bottom: 0; color: #1e3a8a; font-size: 13px;">
                         </div>
+                    </div>
+
+                    <div class="flex-form-row">
+                        <div class="flex-col-gap" style="flex: 1; min-width: 100%; margin-bottom: 0;"><label class="label-form">Especificações Técnicas de Engenharia:</label><input type="text" id="especificacao_tecnica" class="input-form" placeholder="Diretrizes metalúrgicas, dimensões brutas ou pureza química"></div>
                     </div>
 
                     <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px;">
@@ -281,6 +283,7 @@
                 </form>
             </div>
 
+            <!-- TABELA DO CATÁLOGO DE INSUMOS -->
             <div class="table-container col-table" style="width: 100%; margin-top: 12px;">
                 <div class="table-header-dark">Insumos e Matérias-Primas Homologadas no Supabase</div>
                 <div class="table-responsive">
@@ -288,8 +291,8 @@
                         <thead>
                             <tr>
                                 <th>Insumo / SKU</th>
-                                <th>Parâmetros Físicos</th>
-                                <th>Logística / Lead Time</th>
+                                <th>Parâmetros Físicos / Preço</th>
+                                <th>Logística / Cadeia</th>
                                 <th>Custo Total</th>
                                 <th style="text-align: center;">Ações</th>
                             </tr>
@@ -300,9 +303,7 @@
             </div>
         </div>
 
-        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
-            <p>© Copyright Física Renato Pereira ®ψΣ. Ed. 00-10/2024. Rev. 01-05/2026.</p>
-        </footer>
+        <footer></footer>
     </div>
     <script src="/materiais/materiais.js"></script>
 </body>
