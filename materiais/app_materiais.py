@@ -60,7 +60,7 @@ def api_listar_materiais():
                 dim_comprimento REAL,
                 custo_total_integrado REAL
             )
-        ''');
+        ''')
         conexao.commit()
         
         cursor.execute('SELECT * FROM erp_materiais WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
@@ -104,6 +104,7 @@ def api_salvar_material():
         if not nome_mat: return "Erro: Nome do material é obrigatório.", 400
 
         if id_reg:
+            # UPDATE: 14 campos na cláusula SET + 2 no WHERE = 16 marcadores %s
             cursor.execute('''
                 UPDATE erp_materiais SET 
                     nome_material=%s, codigo_sku=%s, categoria=%s, unidade_medida=%s, preco_unitario=%s,
@@ -113,12 +114,14 @@ def api_salvar_material():
                 WHERE id=%s AND equipe_id=%s
             ''', (nome_mat, cod_sku, cat_mat, un_medida, preco_un, estoque_seg, l_time, forn_padrao, refugo_pad, espec, dim_diametro, dim_espessura, dim_comprimento, custo_total_integrado, id_reg, id_equipe))
         else:
+            # INSERT: Exatamente 15 colunas nomeadas e exatamente 15 marcadores %s (CORRIGIDO)
             cursor.execute('''
                 INSERT INTO erp_materiais (
-                    equipe_id, nome_material, codigo_sku, categoria, unidade_medida, preco_unitario,
-                    estoque_seguranca, lead_time_entrega, fornecedor_padrao, coeficiente_refugo, especificacao_tecnica,
-                    dim_diametro, dim_espessura, dim_comprimento, custo_total_integrado
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    equipe_id, nome_material, codigo_sku, categoria, unidade_medida, 
+                    preco_unitario, estoque_seguranca, lead_time_entrega, fornecedor_padrao, 
+                    coeficiente_refugo, especificacao_tecnica, dim_diametro, dim_espessura, 
+                    dim_comprimento, custo_total_integrado
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ''', (id_equipe, nome_mat, cod_sku, cat_mat, un_medida, preco_un, estoque_seg, l_time, forn_padrao, refugo_pad, espec, dim_diametro, dim_espessura, dim_comprimento, custo_total_integrado))
 
         conexao.commit()
