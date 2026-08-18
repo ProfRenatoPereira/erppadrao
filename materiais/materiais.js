@@ -207,7 +207,7 @@ window.vincularEventosInputs = function() {
 /* erppadrao - materiais/materiais.js - PARTE 4 DE 5 */
 
 // ============================================================================
-// 4. MOTOR CONTÁBIL DA MATRIZ MASTER HORIZONTAL (REVISADA SEM REPETIÇÃO)
+// 4. MOTOR CONTÁBIL DA MATRIZ MASTER HORIZONTAL (CORREÇÃO DE ESCOPO DE VARIÁVEL)
 // ============================================================================
 window.carregarDadosIniciais = async function() {
     try {
@@ -241,6 +241,7 @@ window.carregarDadosIniciais = async function() {
             });
         }
 
+        // Fallbacks homologados da matriz fixa caso o banco esteja vazio
         if (custoFixoMaquinasAcumulado === 0) custoFixoMaquinasAcumulado = 34432.51;
         if (custoVariavelMaquinasAcumulado === 0) custoVariavelMaquinasAcumulado = 10593.38;
         if (patrimonioMaquinasAcumulado === 0) patrimonioMaquinasAcumulado = 1453500.00;
@@ -259,12 +260,12 @@ window.carregarDadosIniciais = async function() {
         const saldoVerbaSustentada = disponivelParaSetor - valorTotalEstoqueMateriais;
         let pctTetoConsumidoInsumos = (valorTotalInventarioGeral / disponivelParaSetor) * 100;
 
-        // AJUSTE REAL: Separação correta de custos do Almoxarifado e consolidação da planta industrial
+        // SEPARAÇÃO REAL: Definição clara dos limites e custos do almoxarifado do TERADMAS ERP v2.6
         const custoFixoGeralAluguel = 21350.00; 
-        const custoFixoAlmoxarifadoSetor = 12450.00; 
+        const varCustoFixoAlmoxarifadoSetor = 12450.00; 
         
-        // Custo Fixo Geral total consolidado (Aluguel Infra + Máquinas + Almoxarifado)
-        const totalCustosFixosPlanta = custoFixoGeralAluguel + custoFixoMaquinasAcumulado + custoFixoAlmoxarifadoSetor;
+        // Consolidação da Planta: Aluguel Base + Máquinas + Almoxarifado
+        const totalCustosFixosPlanta = custoFixoGeralAluguel + custoFixoMaquinasAcumulado + varCustoFixoAlmoxarifadoSetor;
         const totalCustosVariveisPlanta = custoVariavelMaquinasAcumulado;
         const totalGeralCustosMensais = totalCustosFixosPlanta + totalCustosVariveisPlanta;
 
@@ -274,8 +275,8 @@ window.carregarDadosIniciais = async function() {
 
         const pFixG_Tot = (totalCustosFixosPlanta / denCusto) * 100;
         const pFixG_Nat = (totalCustosFixosPlanta / denFixo) * 100;
-        const pFixS_Tot = (custoFixoAlmoxarifadoSetor / denCusto) * 100;
-        const pFixS_Nat = (custoFixoAlmoxarifadoSetor / denFixo) * 100;
+        const pFixS_Tot = (varCustoFixoAlmoxarifadoSetor / denCusto) * 100;
+        const pFixS_Nat = (varCustoFixoAlmoxarifadoSetor / denFixo) * 100;
 
         const pVarG_Tot = (totalCustosVariveisPlanta / denCusto) * 100;
         const pVarG_Nat = (totalCustosVariveisPlanta / denVar) * 100;
@@ -287,14 +288,17 @@ window.carregarDadosIniciais = async function() {
         const pctSaldoSuprimentos = (saldoVerbaSustentada / capitalTotalEmpresa) * 100;
         const pctInventarioDoCap = (valorTotalInventarioGeral / capitalTotalEmpresa) * 100;
 
-        window.atualizarElementosUI(capitalTotalEmpresa, disponivelParaSetor, saldoVerbaSustentada, valorTotalInventarioGeral, totalCustosFixosPlanta, custoFixoAlmoxarifadoSetor, totalCustosVariveisPlanta, custoVariavelMaquinasAcumulado, pctDisponivel, pctOrcamentoIni, pctSaldoSuprimentos, pctInventarioDoCap, pFixG_Tot, pFixG_Nat, pFixS_Tot, pFixS_Nat, pVarG_Tot, pVarG_Nat, pVarS_Tot, pVarS_Nat, pctTetoConsumidoInsumos);
+        // INVOCAÇÃO ALINHADA: Garante a passagem correta da variável local sem travar o renderizador
+        window.atualizarElementosUI(capitalTotalEmpresa, disponivelParaSetor, saldoVerbaSustentada, valorTotalInventarioGeral, totalCustosFixosPlanta, varCustoFixoAlmoxarifadoSetor, totalCustosVariveisPlanta, custoVariavelMaquinasAcumulado, pctDisponivel, pctOrcamentoIni, pctSaldoSuprimentos, pctInventarioDoCap, pFixG_Tot, pFixG_Nat, pFixS_Tot, pFixS_Nat, pVarG_Tot, pVarG_Nat, pVarS_Tot, pVarS_Nat, pctTetoConsumidoInsumos);
         window.renderizarTabelaMateriais(materiais);
         window.vincularEventosInputs();
         window.corrigirRodapeOficial();
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        console.error("[TERADMAS RENDER ERROR] Erro crítico na compilação do painel contábil:", e); 
+    }
 };
-/* erppadrao - materiais/materiais.js - PARTE 5 DE 6 */
 
+/* erppadrao - materiais/materiais.js - PARTE 5 DE 6 */
 // ============================================================================
 // 5. CAMADA DE PERSISTÊNCIA E OPERAÇÕES CRUD (SUPABASE)
 // ============================================================================
