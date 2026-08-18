@@ -1,4 +1,4 @@
-<!-- erppadrao - materiais/materiais.html - PARTE 1 DE 4 -->
+<!-- erppadrao - materiais/materiais.html - PARTE 1 DE 6 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -26,7 +26,7 @@
         .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
         .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
         #menu-toggle { display: none; }
-
+<!-- erppadrao - materiais/materiais.html - PARTE 2 DE 6 -->
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
         .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
@@ -77,7 +77,7 @@
         body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste td { color: #ffff00 !important; }
     </style>
 </head>
-<!-- erppadrao - materiais/materiais.html - PARTE 2 DE 4 -->
+<!-- erppadrao - materiais/materiais.html - PARTE 3 DE 6 -->
 <body style="transition: all 0.2s ease;">
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; user-select: none;">
         <div><img src="/static/Logo.svg" alt="Logo" style="height: 22px;" onerror="this.style.display='none';"></div>
@@ -144,7 +144,7 @@
             </ul>
         </nav>
     </header>
-
+<!-- erppadrao - materiais/materiais.html - PARTE 4 DE 6 -->
     <div class="container">
         <!-- PAINEL HORIZONTAL MÁSTER DE CONTROLE E BALANÇO FINANCEIRO -->
         <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px;">
@@ -161,7 +161,7 @@
                     <span id="pct_disponivel_setor" style="font-size: 11px; font-weight: bold; color: #10b981;">➔ 0.00% do Cap.</span>
                 </div>
             </div>
-<!-- erppadrao - materiais/materiais.html - PARTE 3 DE 4 -->
+
             <!-- LINHA 2: Alocação Suprimentos vs Saldo Restante -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
@@ -192,7 +192,7 @@
                     <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: 900; color: #2563eb; text-align: right; display: block;">0.0% consumido</span>
                 </div>
             </div>
-
+<!-- erppadrao - materiais/materiais.html - PARTE 5 DE 6 -->
             <!-- LINHA 4: Custos Fixos (Geral vs Setor) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
@@ -219,7 +219,7 @@
         </div>
 
         <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Catálogo e Engenharia de Materiais Produtivos</h2></div>
-<!-- erppadrao - materiais/materiais.html - PARTE 4 DE 4 -->
+
         <div class="grid-main">
             <!-- CARTÃO CENTRAL DE ENGENHARIA E PARAMETRIZAÇÃO -->
             <div class="card" style="width: 100%; margin-bottom: 8px;">
@@ -257,7 +257,7 @@
                             </select>
                         </div>
                     </div>
-
+<!-- erppadrao - materiais/materiais.html - PARTE 6 DE 6 -->
                     <!-- CONTAINER GEOMÉTRICO DINÂMICO PARA BALANÇO DE MASSA -->
                     <div class="flex-form-row" id="container_geometrico" style="display: none;">
                         <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;">
@@ -324,6 +324,13 @@
                                 <th style="text-align: center;">Ações</th>
                             </tr>
                         </thead>
+                        <tbody id="tabela_materiais"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <footer></footer>
     </div>
     <script src="/materiais/materiais.js"></script>
 </body>
