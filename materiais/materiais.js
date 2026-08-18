@@ -1,8 +1,12 @@
-/* erppadrao - materiais/materiais.js - PARTE 1 DE 5 */
+/* erppadrao - materiais/materiais.js - PARTE 1 DE 6 */
+
 let escalaFonteGlobal = 16;
 let sintetizadorLeitor = window.speechSynthesis;
 let flagLeitorAtivo = false;
 
+// ==========================================
+// 1. SUBSISTEMA DE ACESSIBILIDADE DE SESSÃO
+// ==========================================
 window.mudarFonte = function(direcao) {
     escalaFonteGlobal += (direcao * 2);
     if (escalaFonteGlobal < 12) escalaFonteGlobal = 12;
@@ -28,6 +32,7 @@ window.alternarModoEscuro = function() {
     const b = document.getElementById('btn_tema');
     if (b) b.innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
 };
+/* erppadrao - materiais/materiais.js - PARTE 2 DE 6 */
 
 window.alternarLeitorAudio = function() {
     flagLeitorAtivo = !flagLeitorAtivo;
@@ -56,7 +61,10 @@ window.alternarLeitorAudio = function() {
         sintetizadorLeitor.cancel();
     }
 };
-/* erppadrao - materiais/materiais.js - PARTE 2 DE 5 */
+
+// ==========================================
+// 2. DICIONÁRIO DE ATIVOS E ENGENHARIA BASE
+// ==========================================
 window.carregarPreDefinido = function() {
     const s = document.getElementById('seletor_modelo').value;
     if (!s) return;
@@ -91,41 +99,61 @@ window.carregarPreDefinido = function() {
             refugo: "3.0", leadtime: "3", estoque: "10.0", especificacao: "Graxa Azul para Mancais e Rolamentos de Alta Rotação"
         }
     };
+/* erppadrao - materiais/materiais.js - PARTE 3 DE 6 */
 
     const m = catalogo[s];
     if (m) {
-        document.getElementById('codigo_sku').value = m.sku;
-        document.getElementById('nome_material').value = m.nome;
-        document.getElementById('unidade_medida').value = m.unidade;
-        document.getElementById('preco_unitario').value = m.preco;
-        document.getElementById('coeficiente_refugo').value = m.refugo;
-        document.getElementById('lead_time_entrega').value = m.leadtime;
-        document.getElementById('estoque_seguranca').value = m.estoque;
-        document.getElementById('especificacao_tecnica').value = m.especificacao;
+        if(document.getElementById('codigo_sku')) document.getElementById('codigo_sku').value = m.sku;
+        if(document.getElementById('nome_material')) document.getElementById('nome_material').value = m.nome;
+        if(document.getElementById('unidade_medida')) document.getElementById('unidade_medida').value = m.unidade;
+        if(document.getElementById('preco_unitario')) document.getElementById('preco_unitario').value = m.preco;
+        if(document.getElementById('coeficiente_refugo')) document.getElementById('coeficiente_refugo').value = m.refugo;
+        if(document.getElementById('lead_time_entrega')) document.getElementById('lead_time_entrega').value = m.leadtime;
+        if(document.getElementById('estoque_seguranca')) document.getElementById('estoque_seguranca').value = m.estoque;
+        if(document.getElementById('especificacao_tecnica')) document.getElementById('especificacao_tecnica').value = m.especificacao;
         
-        // Atribui o respectivo fornecedor de cadeia baseado na categoria do SKU
-        if(m.sku.includes("STEEL") || m.sku.includes("ALUM")) {
-            document.getElementById('fornecedor_padrao').value = "Gerdau Comercial Metais S/A";
-        } else if(m.sku.includes("GAS")) {
-            document.getElementById('fornecedor_padrao').value = "White Martins Gases Industriais";
-        } else {
-            document.getElementById('fornecedor_padrao').value = "Distribuidora Central de Suprimentos Ltda";
+        if(document.getElementById('fornecedor_padrao')) {
+            if(m.sku.includes("STEEL") || m.sku.includes("ALUM")) {
+                document.getElementById('fornecedor_padrao').value = "Gerdau Comercial Metais S/A";
+            } else if(m.sku.includes("GAS")) {
+                document.getElementById('fornecedor_padrao').value = "White Martins Gases Industriais";
+            } else {
+                document.getElementById('fornecedor_padrao').value = "Distribuidora Central de Suprimentos Ltda";
+            }
         }
     }
     window.calcularCustoOperacionalMaterial();
 };
 
+// ==========================================
+// 3. MOTOR DE CÁLCULO E GATILHOS EM TEMPO REAL
+// ==========================================
 window.calcularCustoOperacionalMaterial = function() {
-    const pUn = parseFloat(document.getElementById('preco_unitario').value) || 0;
-    const ref = parseFloat(document.getElementById('coeficiente_refugo').value) || 0;
+    const pUn = parseFloat(document.getElementById('preco_unitario')?.value) || 0;
+    const ref = parseFloat(document.getElementById('coeficiente_refugo')?.value) || 0;
+    const estSeg = parseFloat(document.getElementById('estoque_seguranca')?.value) || 0;
     
-    // Coeficiente de segurança incorporando a taxa real de refugo do material
-    const custoCalculado = pUn * (1 + (ref / 100));
+    const custoCalculadoBase = pUn * (1 + (ref / 100));
+    const custoTotalIntegradoOp = custoCalculadoBase * estSeg;
     
-    const inp = document.getElementById('custo_minuto_maquina'); // Placeholder elástico de custo integrado
-    if (inp) inp.value = custoCalculado.toFixed(2);
+    const inp = document.getElementById('custo_total_integrado');
+    if (inp) {
+        inp.value = custoTotalIntegradoOp.toFixed(2);
+    }
 };
-/* erppadrao - materiais/materiais.js - PARTE 3 DE 5 */
+
+window.vincularEventosInputs = function() {
+    const ids = ['preco_unitario', 'coeficiente_refugo', 'estoque_seguranca', 'lead_time_entrega'];
+    ids.forEach(id => {
+        const elemento = document.getElementById(id);
+        if (elemento) elemento.oninput = window.calcularCustoOperacionalMaterial;
+    });
+};
+/* erppadrao - materiais/materiais.js - PARTE 4 DE 6 */
+
+// ==========================================
+// 4. INICIALIZAÇÃO DA MATRIZ CONTÁBIL MÁSTER
+// ==========================================
 window.carregarDadosIniciais = async function() {
     try {
         const resMetricas = await fetch('/api/financeiro/metricas?dept=materiais');
@@ -158,8 +186,8 @@ window.carregarDadosIniciais = async function() {
             });
         }
 
-        if (custoFixoMaquinasAcumulado === 0) custoFixoAcumuladoSetor = 34432.51;
-        if (custoVariavelMaquinasAcumulado === 0) custoVariavelAcumuladoSetor = 10593.38;
+        if (custoFixoMaquinasAcumulado === 0) custoFixoMaquinasAcumulado = 34432.51;
+        if (custoVariavelMaquinasAcumulado === 0) custoVariavelMaquinasAcumulado = 10593.38;
         if (patrimonioMaquinasAcumulado === 0) patrimonioMaquinasAcumulado = 1453500.00;
 
         const capitalTotalEmpresa = 5000000.00;
@@ -202,9 +230,15 @@ window.carregarDadosIniciais = async function() {
 
         window.atualizarElementosUI(capitalTotalEmpresa, disponivelParaSetor, saldoVerbaSustentada, valorTotalInventarioGeral, totalCustosFixosPlanta, custoFixoMaquinasAcumulado, totalCustosVariveisPlanta, custoVariavelMaquinasAcumulado, pctDisponivel, pctOrcamentoIni, pctSaldoSuprimentos, pctInventarioDoCap, pFixG_Tot, pFixG_Nat, pFixS_Tot, pFixS_Nat, pVarG_Tot, pVarG_Nat, pVarS_Tot, pVarS_Nat, pctTetoConsumidoInsumos);
         window.renderizarTabelaMateriais(materiais);
+        window.vincularEventosInputs();
+        window.corrigirRodapeOficial();
     } catch (e) { console.error(e); }
 };
-/* erppadrao - materiais/materiais.js - PARTE 4 DE 5 */
+/* erppadrao - materiais/materiais.js - PARTE 5 DE 6 */
+
+// ==========================================
+// 5. ATUALIZAÇÃO DA INTERFACE GRÁFICA (UI)
+// ==========================================
 window.atualizarElementosUI = function(capitalTotalEmpresa, disponivelParaSetor, saldoVerbaSustentada, valorTotalInventarioGeral, totalCustosFixosPlanta, custoFixoMaquinasAcumulado, totalCustosVariveisPlanta, custoVariavelMaquinasAcumulado, pctDisponivel, pctOrcamentoIni, pctSaldoSuprimentos, pctInventarioDoCap, pFixG_Tot, pFixG_Nat, pFixS_Tot, pFixS_Nat, pVarG_Tot, pVarG_Nat, pVarS_Tot, pVarS_Nat, pctTetoConsumidoInsumos) {
     if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
     if(document.getElementById('top_disponivel_setor')) document.getElementById('top_disponivel_setor').innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
@@ -213,6 +247,7 @@ window.atualizarElementosUI = function(capitalTotalEmpresa, disponivelParaSetor,
         document.getElementById('top_verba_reais').innerText = `R$ ${saldoVerbaSustentada.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         document.getElementById('top_verba_reais').style.color = (saldoVerbaSustentada < 0) ? "#dc2626" : "#166534";
     }
+
     if(document.getElementById('top_patrimonio_maquinas')) document.getElementById('top_patrimonio_maquinas').innerText = `R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
     if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${totalCustosFixosPlanta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
     if(document.getElementById('top_custo_fixo_setor')) document.getElementById('top_custo_fixo_setor').innerText = `R$ ${custoFixoMaquinasAcumulado.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
@@ -221,7 +256,7 @@ window.atualizarElementosUI = function(capitalTotalEmpresa, disponivelParaSetor,
 
     if(document.getElementById('pct_disponivel_setor')) document.getElementById('pct_disponivel_setor').innerText = `➔ ${pctDisponivel.toFixed(2)}% do Cap.`;
     if(document.getElementById('pct_orcamento_inicial')) document.getElementById('pct_orcamento_inicial').innerText = `➔ ${pctOrcamentoIni.toFixed(2)}% do Cap.`;
-    if(document.getElementById('pct_saldo_engenharia')) document.getElementById('pct_saldo_engenharia').innerText = `➔ ${pctSaldoSuprimentos.toFixed(2)}% do Cap.`;
+    if(document.getElementById('pct_saldo_suprimentos')) document.getElementById('pct_saldo_suprimentos').innerText = `➔ ${pctSaldoSuprimentos.toFixed(2)}% do Cap.`;
     if(document.getElementById('pct_patrimonio_maquinas')) document.getElementById('pct_patrimonio_maquinas').innerText = `➔ ${pctInventarioDoCap.toFixed(2)}% do Cap.`;
 
     if(document.getElementById('pct_custo_fixo_geral')) document.getElementById('pct_custo_fixo_geral').innerText = `➔ Custos Totais: ${pFixG_Tot.toFixed(1)}% | Custos Fixos: ${pFixG_Nat.toFixed(1)}%`;
@@ -243,9 +278,13 @@ window.atualizarElementosUI = function(capitalTotalEmpresa, disponivelParaSetor,
         }
     }
 };
+/* erppadrao - materiais/materiais.js - PARTE 6 DE 6 */
 
+// ==========================================
+// 6. PERSISTÊNCIA E RENDERIZAÇÃO DO CRUD
+// ==========================================
 window.renderizarTabelaMateriais = function(materiais) {
-    const tbody = document.getElementById('tabela_maquinas');
+    const tbody = document.getElementById('tabela_materiais');
     if (!tbody) return;
     
     if (!materiais || materiais.length === 0) {
@@ -267,7 +306,7 @@ window.renderizarTabelaMateriais = function(materiais) {
     `).join('');
     window.mudarFonte(0);
 };
-/* erppadrao - materiais/materiais.js - PARTE 5 DE 5 */
+
 window.salvarMaterial = async function(e) {
     if(e && e.preventDefault) e.preventDefault();
     window.calcularCustoOperacionalMaterial();
@@ -291,9 +330,16 @@ window.salvarMaterial = async function(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
-        if (res.ok) { window.limparFormularioMaterial(); window.carregarDadosIniciais(); alert("🎯 Material cadastrado!"); }
-        else { alert("❌ Erro na validação central."); }
-    } catch (err) { alert("❌ Servidor offline."); }
+        if (res.ok) { 
+            window.limparFormularioMaterial(); 
+            window.carregarDadosIniciais(); 
+            alert("🎯 Material cadastrado!"); 
+        } else { 
+            alert("❌ Erro na validação central."); 
+        }
+    } catch (err) { 
+        alert("❌ Servidor offline."); 
+    }
 };
 
 window.editarMaterial = async function(id) {
@@ -327,12 +373,28 @@ window.deletarMaterial = async function(id) {
 };
 
 window.limparFormularioMaterial = function() {
-    const form = document.getElementById('formMaquina');
+    const form = document.getElementById('formMaterial');
     if (form) form.reset();
     if (document.getElementById('registro_id')) document.getElementById('registro_id').value = '';
-    if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Registrar Ativo no Parque Fabril";
+    if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Homologar Material no Catálogo";
     if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'none';
     window.calcularCustoOperacionalMaterial();
 };
 
+// ==========================================
+// 7. SUBSISTEMA DE CORREÇÃO DO RODAPÉ MÁSTER
+// ==========================================
+window.corrigirRodapeOficial = function() {
+    const r = document.querySelector('footer');
+    if (r) {
+        r.style.textAlign = "center";
+        r.style.borderTop = "2px solid #1e3a8a";
+        r.style.padding = "16px 0";
+        r.innerHTML = `<p style="text-align: center; font-weight: bold; margin: 0; color: #4b5563;">
+            © 2026 TERADMAS ERP v2.6 | Ecossistema Integrado de Planejamento e Controle de Materiais Produtivos. Professor Renato - Todos os direitos reservados.
+        </p>`;
+    }
+};
+
+// Inicialização imediata
 window.carregarDadosIniciais();
