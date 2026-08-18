@@ -1,4 +1,4 @@
-<!-- erppadrao - materiais/materiais.html - PARTE 1 DE 6 -->
+<!-- erppadrao - materiais/materiais.html - PARTE 1 DE 4 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -26,7 +26,7 @@
         .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
         .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
         #menu-toggle { display: none; }
-<!-- erppadrao - materiais/materiais.html - PARTE 2 DE 6 -->
+
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
         .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
@@ -35,7 +35,7 @@
         .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; transition: background 0.15s; border-bottom: 1px solid #f1f5f9; }
         .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
         .nav-item:hover .dropdown-menu { display: block; }
-
+<!-- erppadrao - materiais/materiais.html - PARTE 2 DE 4 -->
         .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; text-align: left; }
         .page-title { font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
         .card-title { font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
@@ -56,7 +56,8 @@
         .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; }
         .btn-cancel { background-color: #e5e7eb; color: #374151; padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; }
 
-        @media (max-width: 1120px) {
+        /* AJUSTE MÁSTER: Reduzido de 1120px para 800px para garantir alinhamento horizontal absoluto em Desktops */
+        @media (max-width: 800px) {
             .menu-toggle-label { display: flex; }
             .nav-corporate-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: #0f172a; border-top: 1px solid #334155; padding: 8px 0; box-shadow: 0 10px 15px rgba(0,0,0,0.3); z-index: 9998; }
             .nav-item { width: 100%; }
@@ -77,10 +78,11 @@
         body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste td { color: #ffff00 !important; }
     </style>
 </head>
-<!-- erppadrao - materiais/materiais.html - PARTE 3 DE 6 -->
+<!-- erppadrao - materiais/materiais.html - PARTE 3 DE 4 -->
 <body style="transition: all 0.2s ease;">
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; user-select: none;">
-        <div><img src="/static/Logo.svg" alt="Logo" style="height: 22px;" onerror="this.style.display='none';"></div>
+        <!-- AJUSTE: Logo.svg ampliada em 50% (De 22px para 33px) -->
+        <div><img src="/static/Logo.svg" alt="Logo" style="height: 33px;" onerror="this.style.display='none';"></div>
         <div style="display: flex; align-items: center; gap: 6px;">
             <button type="button" onclick="window.mudarFonte(1)" class="btn-top">A+</button>
             <button type="button" onclick="window.mudarFonte(-1)" class="btn-top">A-</button>
@@ -92,7 +94,8 @@
 
     <header class="corporate-header">
         <div class="logo-area">
-            <img src="/static/logo.png" alt="Logo" style="height: 55px; background-color: white; padding: 3px; border-radius: 6px;" onerror="this.style.display='none'">
+            <!-- AJUSTE: logo.png ampliada em 50% (De 55px para 83px) -->
+            <img src="/static/logo.png" alt="Logo" style="height: 83px; background-color: white; padding: 3px; border-radius: 6px;" onerror="this.style.display='none'">
             <div style="display: flex; flex-direction: column; text-align: left;">
                 <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase;">TERADMAS ERP v2.6</span>
                 <span style="font-size: 10px; color: #94a3b8; font-weight: bold;">Módulo 08 - Planejamento e Catálogo de Materiais Produtivos</span>
@@ -144,11 +147,9 @@
             </ul>
         </nav>
     </header>
-<!-- erppadrao - materiais/materiais.html - PARTE 4 DE 6 -->
+
     <div class="container">
-        <!-- PAINEL HORIZONTAL MÁSTER DE CONTROLE E BALANÇO FINANCEIRO -->
         <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px;">
-            <!-- LINHA 1: Capital Master e Teto do Setor -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
                     <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">💰 Capital Total:</span>
@@ -161,65 +162,7 @@
                     <span id="pct_disponivel_setor" style="font-size: 11px; font-weight: bold; color: #10b981;">➔ 0.00% do Cap.</span>
                 </div>
             </div>
-
-            <!-- LINHA 2: Alocação Suprimentos vs Saldo Restante -->
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #581c87; text-transform: uppercase;">🏢 Orçamento Inicial Materiais:</span>
-                    <strong id="top_orcamento_inicial" style="font-size: 15px; font-weight: 900; color: #581c87;">R$ 0,00</strong>
-                    <span id="pct_orcamento_inicial" style="font-size: 11px; font-weight: bold; color: #a855f7;">➔ 0.00% do Cap.</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; background-color: #f0fdf4; padding: 4px 8px; border-radius: 6px; border: 1px dashed #bbf7d0;">
-                    <span style="font-size: 11px; font-weight: bold; color: #166534; text-transform: uppercase;">🏢 Saldo de Verba de Suprimentos:</span>
-                    <strong id="top_verba_reais" style="font-size: 15px; font-weight: 900; color: #166534;">R$ 0,00</strong>
-                    <span id="pct_saldo_suprimentos" style="font-size: 11px; font-weight: bold; color: #15803d;">➔ 0.00% do Cap.</span>
-                </div>
-            </div>
-
-            <!-- LINHA 3: Valoração de Inventário e Trava Volumétrica (Max 40%) -->
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #9a3412; text-transform: uppercase;">🏛️ Custo Total do Inventário:</span>
-                    <strong id="top_patrimonio_maquinas" style="font-size: 15px; font-weight: 900; color: #9a3412;">R$ 0,00</strong>
-                    <span id="pct_patrimonio_maquinas" style="font-size: 11px; font-weight: bold; color: #ea580c;">➔ 0.00% do Cap.</span>
-                </div>
-                <div id="card_budget_limite" style="display: flex; flex-direction: column; gap: 4px; min-width: 420px; flex-grow: 1; padding: 6px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">🎯 Trava de Abastecimento (Max 40%):</span>
-                        <span id="txt_valores_limite" style="font-size: 12px; font-weight: bold; color: #334155;">R$ 0,00 / R$ 0,00</span>
-                    </div>
-                    <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;"><div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div></div>
-                    <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: 900; color: #2563eb; text-align: right; display: block;">0.0% consumido</span>
-                </div>
-            </div>
-<!-- erppadrao - materiais/materiais.html - PARTE 5 DE 6 -->
-            <!-- LINHA 4: Custos Fixos (Geral vs Setor) -->
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
-                    <div><span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Total (Geral):</span> <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 0,00/mês</strong></div>
-                    <span id="pct_custo_fixo_geral" style="font-size: 10px; font-weight: bold; color: #8b5cf6;">➔ Custos Totais: 0.0% | Custos Fixos: 0.0%</span>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff; flex-grow: 1;">
-                    <div><span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor (Almoxarifado):</span> <strong id="top_custo_fixo_setor" style="font-size: 14px; font-weight: 900; color: #7c3aed;">R$ 0,00/mês</strong></div>
-                    <span id="pct_custo_fixo_setor" style="font-size: 10px; font-weight: bold; color: #6d28d9;">➔ Custos Totais: 0.0% | Custos Fixos: 0.0%</span>
-                </div>
-            </div>
-
-            <!-- LINHA 5: Custos Variáveis (Geral vs Giro Insumos) -->
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
-                    <div><span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custo Variável Total (Geral):</span> <strong id="top_custo_variavel" style="font-size: 14px; font-weight: 900; color: #c2410c;">R$ 0,00/mês</strong></div>
-                    <span id="pct_custo_variavel_geral" style="font-size: 10px; font-weight: bold; color: #f97316;">➔ Custos Totais: 0.0% | Custos Variáveis: 0.0%</span>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #ffedd5; flex-grow: 1;">
-                    <div><span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custo Variável do Setor (Refugo/Giro):</span> <strong id="top_custo_variavel_setor" style="font-size: 14px; font-weight: 900; color: #ea580c;">R$ 0,00/mês</strong></div>
-                    <span id="pct_custo_variavel_setor" style="font-size: 10px; font-weight: bold; color: #c2410c;">➔ Custos Totais: 0.0% | Custos Variáveis: 0.0%</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Catálogo e Engenharia de Materiais Produtivos</h2></div>
-
+<!-- erppadrao - materiais/materiais.html - PARTE 4 DE 5 -->
         <div class="grid-main">
             <!-- CARTÃO CENTRAL DE ENGENHARIA E PARAMETRIZAÇÃO -->
             <div class="card" style="width: 100%; margin-bottom: 8px;">
@@ -257,7 +200,7 @@
                             </select>
                         </div>
                     </div>
-<!-- erppadrao - materiais/materiais.html - PARTE 6 DE 6 -->
+
                     <!-- CONTAINER GEOMÉTRICO DINÂMICO PARA BALANÇO DE MASSA -->
                     <div class="flex-form-row" id="container_geometrico" style="display: none;">
                         <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;">
@@ -273,7 +216,7 @@
                             <input type="number" step="0.01" id="dim_comprimento" class="input-form" placeholder="0.00" oninput="window.calcularCustoOperacionalMaterial()">
                         </div>
                     </div>
-
+<!-- erppadrao - materiais/materiais.html - PARTE 5 DE 5 -->
                     <!-- IDENTIFICAÇÃO E CADASTRO LOGÍSTICO -->
                     <div class="flex-form-row">
                         <div class="flex-col-gap" style="flex: 1; min-width: 140px; margin-bottom: 0;"><label class="label-form">Código SKU:</label><input type="text" id="codigo_sku" required class="input-form" readonly></div>
@@ -291,9 +234,6 @@
                         <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Lead Time de Entrega (Dias):</label><input type="number" id="lead_time_entrega" required class="input-form"></div>
                         <div class="flex-col-gap" style="flex: 1; min-width: 160px; margin-bottom: 0;"><label class="label-form">Estoque de Segurança Mínimo:</label><input type="number" step="0.1" id="estoque_seguranca" required class="input-form"></div>
                         <div class="flex-col-gap" style="flex: 2; min-width: 320px; margin-bottom: 0; background-color: #eff6ff; padding: 6px 12px; border: 1px dashed #bfdbfe; border-radius: 6px;">
-                            <label class="label-form" style="color: #1e3a8a; font-weight: 900; margin: 0;">Massa / Volume Total Calculado:</label>
-                            <input type="text" id="massa_calculada_exibicao" readonly class="input-form input-form-readonly" style="margin-bottom: 4px; color: #1e3a8a; font-size: 12px; background: transparent; border: none; padding: 0;">
-                            
                             <label class="label-form" style="color: #1e3a8a; font-weight: 900; margin: 0;">CUSTO OPERACIONAL TOTAL INTEGRADO (R$):</label>
                             <input type="number" step="0.01" id="custo_total_integrado" readonly class="input-form input-form-readonly" style="margin-bottom: 0; color: #1e3a8a; font-size: 13px;">
                         </div>
