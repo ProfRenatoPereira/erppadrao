@@ -29,7 +29,7 @@ def rota_materiais_js():
         with open(caminho_js, 'r', encoding='utf-8') as f: js_conteudo = f.read()
         return js_conteudo, 200, {'Content-Type': 'application/javascript'}
     except FileNotFoundError: return "console.error('Script offline.');", 404
-# erppadrao - materiais/app_materiais.py - PARTE 2 DE 3
+# erppadrao - materiais/app_materiais.py - PARTE 2 DE 3 (MIGRATION SÍNCRONA DE UPGRADE)
 
 @materiais_blueprint.route('/api/materiais/listar', methods=['GET'])
 def api_listar_materiais():
@@ -40,35 +40,42 @@ def api_listar_materiais():
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # MIGRATION DDL INJETADA: Cria a tabela física homologada com suporte dimensional real
+        # 1. Garante a existência da estrutura base da tabela
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS erp_materiais (
                 id SERIAL PRIMARY KEY, 
-                equipe_id TEXT, 
-                nome_material TEXT, 
-                codigo_sku TEXT,
-                categoria TEXT,
-                unidade_medida TEXT, 
-                preco_unitario REAL, 
-                coeficiente_refugo REAL, 
-                lead_time_entrega INTEGER, 
-                estoque_seguranca REAL,
-                fornecedor_padrao TEXT,
-                especificacao_tecnica TEXT,
-                dim_diametro TEXT,
-                dim_espessura TEXT,
-                dim_comprimento REAL,
-                custo_total_integrado REAL
+                equipe_id TEXT
             )
         ''')
         conexao.commit()
         
+        # 2. Injeta e força a criação das novas colunas de engenharia caso não existam no Supabase
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS nome_material TEXT;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS codigo_sku TEXT;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS categoria TEXT;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS unidade_medida TEXT;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS preco_unitario REAL;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS coeficiente_refugo REAL;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS lead_time_entrega INTEGER;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS estoque_seguranca REAL;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS fornecedor_padrao TEXT;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS especificacao_tecnica TEXT;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS dim_diametro TEXT;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS dim_espessura TEXT;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS dim_comprimento REAL;")
+        cursor.execute("ALTER TABLE erp_materiais ADD COLUMN IF NOT EXISTS custo_total_integrado REAL;")
+        conexao.commit()
+        
+        # 3. Executa a listagem unificada dos insumos industriais
         cursor.execute('SELECT * FROM erp_materiais WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         return jsonify(cursor.fetchall())
-    except psycopg2.DatabaseError: return jsonify([]), 200
+    except psycopg2.DatabaseError as e: 
+        print(f"[TERADMAS DB MIGRATION ERROR] Falha ao readequar colunas: {e}")
+        return jsonify([]), 200
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
+
 # erppadrao - materiais/app_materiais.py - PARTE 3 DE 3
 
 @materiais_blueprint.route('/api/materiais/salvar', methods=['POST'])
