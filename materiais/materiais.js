@@ -339,7 +339,7 @@ window.atualizarElementosUI = function(capitalTotalEmpresa, disponivelParaSetor,
         }
     }
 };
-/* erppadrao - materiais/materiais.js - PARTE 5 DE 5 */
+/* erppadrao - materiais/materiais.js - PARTE 5 DE 5 (CORRIGIDA E BLINDADA) */
 
 // ============================================================================
 // 5. CAMADA DE PERSISTÊNCIA E OPERAÇÕES CRUD (SUPABASE)
@@ -441,7 +441,11 @@ window.limparFormularioMaterial = function() {
     if (document.getElementById('registro_id')) document.getElementById('registro_id').value = '';
     if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Homologar Material no Catálogo";
     if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'none';
-    if (document.getElementById('container_geometrico')) document.getElementById('container_geometrico').style.display = "none";
+    
+    // CORREÇÃO CIRÚRGICA: Eliminado o .style.style.display duplicado que travava a leitura do arquivo inteiro
+    const containerGeom = document.getElementById('container_geometrico');
+    if (containerGeom) containerGeom.style.display = "none";
+    
     window.calcularCustoOperacionalMaterial();
 };
 
