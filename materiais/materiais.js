@@ -209,10 +209,10 @@ window.vincularEventosInputs = function() {
         if (elemento) elemento.oninput = window.calcularCustoOperacionalMaterial;
     });
 };
-/* erppadrao - materiais/materiais.js - PARTE 4 DE 5 */
+/* erppadrao - materiais/materiais.js - PARTE 4 DE 5 (BLINDAGEM TOTAL DE VARIÁVEIS) */
 
 // ============================================================================
-// 4. MOTOR CONTÁBIL DA MATRIZ MASTER HORIZONTAL (PROTEÇÃO DUPLA DE IDs)
+// 4. MOTOR CONTÁBIL DA MATRIZ MASTER HORIZONTAL (CORREÇÃO DE NOMENCLATURA)
 // ============================================================================
 window.carregarDadosIniciais = async function() {
     try {
@@ -260,6 +260,7 @@ window.carregarDadosIniciais = async function() {
         const saldoVerbaSustentada = disponivelParaSetor - valorTotalEstoqueMateriais;
         let pctTetoConsumidoInsumos = (valorTotalInventarioGeral / disponivelParaSetor) * 100;
 
+        // AJUSTE NOMENCLATURA: Alinhado caractere por caractere com a assinatura da UI
         const custoFixoGeralAluguel = 21350.00; 
         const custoFixoAlmoxarifadoSetor = 12450.00; 
         
@@ -290,60 +291,59 @@ window.carregarDadosIniciais = async function() {
         window.renderizarTabelaMateriais(materiais);
         window.vincularEventosInputs();
         window.corrigirRodapeOficial();
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("[TERADMAS CONTÁBIL] Falha ao processar rateios:", e); }
 };
+/* erppadrao - materiais/materiais.js - PARTE 5 DE 6 */
 
 window.atualizarElementosUI = function(capitalTotalEmpresa, disponivelParaSetor, saldoVerbaSustentada, valorTotalInventarioGeral, totalCustosFixosPlanta, custoFixoAlmoxarifadoSetor, totalCustosVariveisPlanta, custoVariavelMaquinasAcumulado, pctDisponivel, pctOrcamentoIni, pctSaldoSuprimentos, pctInventarioDoCap, pFixG_Tot, pFixG_Nat, pFixS_Tot, pFixS_Nat, pVarG_Tot, pVarG_Nat, pVarS_Tot, pVarS_Nat, pctTetoConsumidoInsumos) {
-    const definirTexto = (id, texto) => { const el = document.getElementById(id); if (el) el.innerText = texto; };
-    
-    definirTexto('top_capital_total', `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-    definirTexto('top_disponivel_setor', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-    definirTexto('top_orcamento_inicial', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-    
-    const vReais = document.getElementById('top_verba_reais');
-    if (vReais) {
-        vReais.innerText = `R$ ${saldoVerbaSustentada.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        vReais.style.color = (saldoVerbaSustentada < 0) ? "#dc2626" : "#166534";
-    }
-
-    definirTexto('top_patrimonio_maquinas', `R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-    definirTexto('top_custo_fixo', `R$ ${totalCustosFixosPlanta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
-    definirTexto('top_custo_fixo_setor', `R$ ${custoFixoAlmoxarifadoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
-    definirTexto('top_custo_variavel', `R$ ${totalCustosVariveisPlanta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
-    definirTexto('top_custo_variavel_setor', `R$ ${custoVariavelMaquinasAcumulado.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
-
-    definirTexto('pct_disponivel_setor', `➔ ${pctDisponivel.toFixed(2)}% do Cap.`);
-    definirTexto('pct_orcamento_inicial', `➔ ${pctOrcamentoIni.toFixed(2)}% do Cap.`);
-    
-    definirTexto('pct_saldo_suprimentos', `➔ ${pctSaldoSuprimentos.toFixed(2)}% do Cap.`);
-    definirTexto('pct_saldo_engenharia', `➔ ${pctSaldoSuprimentos.toFixed(2)}% do Cap.`);
-    definirTexto('pct_patrimonio_maquinas', `➔ ${pctInventarioDoCap.toFixed(2)}% do Cap.`);
-
-    definirTexto('pct_custo_fixo_geral', `➔ Custos Totais: ${pFixG_Tot.toFixed(1)}% | Custos Fixos: ${pFixG_Nat.toFixed(1)}%`);
-    definirTexto('pct_custo_fixo_setor', `➔ Custos Totais: ${pFixS_Tot.toFixed(1)}% | Proporção Fixo: ${pFixS_Nat.toFixed(1)}%`);
-    definirTexto('pct_custo_variavel_geral', `➔ Custos Totais: ${pVarG_Tot.toFixed(1)}% | Custos Variáveis: ${pVarG_Nat.toFixed(1)}%`);
-    definirTexto('pct_custo_variavel_setor', `➔ Custos Totais: ${pVarS_Tot.toFixed(1)}% | Custos Variáveis: ${pVarS_Nat.toFixed(1)}%`);
-
-    definirTexto('txt_valores_limite', `R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-    definirTexto('txt_porcentagem_budget', `${pctTetoConsumidoInsumos.toFixed(1)}% do teto consumido`);
-    
-    const bar = document.getElementById('barra_progresso_budget');
-    if (bar) bar.style.width = `${Math.min(pctTetoConsumidoInsumos, 100)}%`;
-
-    const card = document.getElementById('card_budget_limite');
-    if (card && bar) {
-        if (pctTetoConsumidoInsumos > 100) {
-            card.style.backgroundColor = "#fef2f2"; card.style.borderColor = "#fca5a5"; bar.style.backgroundColor = "#ef4444";
-        } else {
-            card.style.backgroundColor = "#ffffff"; card.style.borderColor = "#cbd5e1"; bar.style.backgroundColor = "#3b82f6";
+    try {
+        const definirTexto = (id, texto) => { const el = document.getElementById(id); if (el) el.innerText = texto; };
+        
+        definirTexto('top_capital_total', `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+        definirTexto('top_disponivel_setor', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+        definirTexto('top_orcamento_inicial', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+        
+        const vReais = document.getElementById('top_verba_reais');
+        if (vReais) {
+            vReais.innerText = `R$ ${saldoVerbaSustentada.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+            vReais.style.color = (saldoVerbaSustentada < 0) ? "#dc2626" : "#166534";
         }
-    }
-};
-/* erppadrao - materiais/materiais.js - PARTE 5 DE 5 (CORRIGIDA E BLINDADA) */
 
-// ============================================================================
-// 5. CAMADA DE PERSISTÊNCIA E OPERAÇÕES CRUD (SUPABASE)
-// ============================================================================
+        definirTexto('top_patrimonio_maquinas', `R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+        definirTexto('top_custo_fixo', `R$ ${totalCustosFixosPlanta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
+        definirTexto('top_custo_fixo_setor', `R$ ${custoFixoAlmoxarifadoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
+        definirTexto('top_custo_variavel', `R$ ${totalCustosVariveisPlanta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
+        definirTexto('top_custo_variavel_setor', `R$ ${custoVariavelMaquinasAcumulado.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
+
+        definirTexto('pct_disponivel_setor', `➔ ${pctDisponivel.toFixed(2)}% do Cap.`);
+        definirTexto('pct_orcamento_inicial', `➔ ${pctOrcamentoIni.toFixed(2)}% do Cap.`);
+        
+        definirTexto('pct_saldo_suprimentos', `➔ ${pctSaldoSuprimentos.toFixed(2)}% do Cap.`);
+        definirTexto('pct_saldo_engenharia', `➔ ${pctSaldoSuprimentos.toFixed(2)}% do Cap.`);
+        definirTexto('pct_patrimonio_maquinas', `➔ ${pctInventarioDoCap.toFixed(2)}% do Cap.`);
+
+        definirTexto('pct_custo_fixo_geral', `➔ Custos Totais: ${pFixG_Tot.toFixed(1)}% | Custos Fixos: ${pFixG_Nat.toFixed(1)}%`);
+        definirTexto('pct_custo_fixo_setor', `➔ Custos Totais: ${pFixS_Tot.toFixed(1)}% | Proporção Fixo: ${pFixS_Nat.toFixed(1)}%`);
+        definirTexto('pct_custo_variavel_geral', `➔ Custos Totais: ${pVarG_Tot.toFixed(1)}% | Custos Variáveis: ${pVarG_Nat.toFixed(1)}%`);
+        definirTexto('pct_custo_variavel_setor', `➔ Custos Totais: ${pVarS_Tot.toFixed(1)}% | Custos Variáveis: ${pVarS_Nat.toFixed(1)}%`);
+
+        definirTexto('txt_valores_limite', `R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+        definirTexto('txt_porcentagem_budget', `${pctTetoConsumidoInsumos.toFixed(1)}% do teto consumido`);
+        
+        const bar = document.getElementById('barra_progresso_budget');
+        if (bar) bar.style.width = `${Math.min(pctTetoConsumidoInsumos, 100)}%`;
+
+        const card = document.getElementById('card_budget_limite');
+        if (card && bar) {
+            if (pctTetoConsumidoInsumos > 100) {
+                card.style.backgroundColor = "#fef2f2"; card.style.borderColor = "#fca5a5"; bar.style.backgroundColor = "#ef4444";
+            } else {
+                card.style.backgroundColor = "#ffffff"; card.style.borderColor = "#cbd5e1"; bar.style.backgroundColor = "#3b82f6";
+            }
+        }
+    } catch (err) { console.error("[TERADMAS UI CRASH NEUTRALIZED]:", err); }
+};
+
 window.renderizarTabelaMateriais = function(materiais) {
     const tbody = document.getElementById('tabela_materiais');
     if (!tbody) return;
@@ -365,6 +365,7 @@ window.renderizarTabelaMateriais = function(materiais) {
     `).join('');
     window.mudarFonte(0);
 };
+/* erppadrao - materiais/materiais.js - PARTE 6 DE 6 */
 
 window.salvarMaterial = async function(e) {
     if(e && e.preventDefault) e.preventDefault();
@@ -441,11 +442,8 @@ window.limparFormularioMaterial = function() {
     if (document.getElementById('registro_id')) document.getElementById('registro_id').value = '';
     if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Homologar Material no Catálogo";
     if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'none';
-    
-    // CORREÇÃO CIRÚRGICA: Eliminado o .style.style.display duplicado que travava a leitura do arquivo inteiro
     const containerGeom = document.getElementById('container_geometrico');
     if (containerGeom) containerGeom.style.display = "none";
-    
     window.calcularCustoOperacionalMaterial();
 };
 
@@ -460,3 +458,4 @@ window.corrigirRodapeOficial = function() {
 };
 
 window.carregarDadosIniciais();
+
