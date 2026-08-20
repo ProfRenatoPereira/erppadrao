@@ -24,50 +24,47 @@ window.alternarModoEscuro = function() {
     if (b) b.innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
 };
 
-window.alternarLeitorAudio = function() {
-    flagLeitorAtivo = !flagLeitorAtivo;
-    const btn = document.getElementById('btn-leitor-audio');
-    if (!btn) return;
-    if (flagLeitorAtivo) {
-        btn.innerText = "🛑 Parar"; sintetizadorLeitor.cancel();
-        let utterance = new SpeechSynthesisUtterance("Módulo de engenharia de materiais carregado.");
-        utterance.lang = 'pt-BR';
-        sintetizadorLeitor.speak(utterance);
-    } else { btn.innerText = "🔊 Leitor"; sintetizadorLeitor.cancel(); }
-};
-
-// RESTAURAÇÃO COMPLETA: Todo o catálogo metalúrgico original do ERP recuperado
+// AMPLIAÇÃO EXPANDIDA DO LEQUE: Insumos Químicos, Solventes e Fluidos de Tratamento Térmico adicionados com densidades reais
 const CATALOGO_METALURGICO = {
-    aco_1020: { sku: "MAT-STEEL-1020-BR", nome: "Barra de Aço SAE 1020", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Carbono para Cementação - Fornecedor: Gerdau Comercial" },
-    aco_1030: { sku: "MAT-STEEL-1030-BR", nome: "Barra de Aço SAE 1030", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono de Alta Forjabilidade - Fornecedor: Gerdau Comercial" },
-    aco_1045: { sku: "MAT-STEEL-1045-BR", nome: "Eixo de Aço SAE 1045", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono Beneficiável Estrutural - Fornecedor: Gerdau Comercial" },
-    aco_1070: { sku: "MAT-STEEL-1070-BR", nome: "Tarugo de Aço SAE 1070", tipo: "barra", densidade: 7.82, unidade: "kg", especificacao: "Alto Carbono para Molas e Facas - Fornecedor: Gerdau Comercial" },
-    aco_4340: { sku: "MAT-ALLOY-4340-BR", nome: "Eixo de Aço Liga SAE 4340", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Alta Temperabilidade / Elementos de Transmissão - Fornecedor: Gerdau" },
-    aco_8620: { sku: "MAT-ALLOY-8620-BR", nome: "Barra de Aço Liga SAE 8620", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Liga Destinado a Engrenagens - Fornecedor: Gerdau" },
-    aco_inox_304: { sku: "MAT-INOX-304-CH", nome: "Chapa/Tarugo Inox AISI 304", tipo: "barra", densidade: 8.00, unidade: "kg", especificacao: "Aço Inoxidável Austenítico Anti-Corrosivo - Fornecedor: Gerdau" },
-    tubo_1020: { sku: "MAT-PIPE-1020-ST", nome: "Tubo Mecânico SAE 1020", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Industrial Sem Costura - Fornecedor: Distribuidora Central" },
-    tubo_1045: { sku: "MAT-PIPE-1045-HD", nome: "Tubo Hidráulico SAE 1045", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo trefilado para camisas de cilindro - Fornecedor: Distribuidora Central" },
-    gas_argon: { sku: "MAT-GAS-ARGON-01", nome: "Gás Argônio Puro 99.9%", tipo: "gas", densidade: 1.2, unidade: "m³", especificacao: "Atmosfera Protetiva de Soldagem - Fornecedor: White Martins" },
-    gas_nitrogenio: { sku: "MAT-GAS-NITRO-02", nome: "Gás Nitrogênio Especial", tipo: "gas", densidade: 1.2, unidade: "m³", especificacao: "Tratamento Térmico e Corte Laser - Fornecedor: White Martins" }
+    // 1. AÇOS SÓLIDOS MACIÇOS
+    aco_1020: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1020-BR", nome: "Barra de Aço SAE 1020", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Carbono para Cementação" },
+    aco_1030: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1030-BR", nome: "Barra de Aço SAE 1030", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono de Alta Forjabilidade" },
+    aco_1045: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1045-BR", nome: "Eixo de Aço SAE 1045", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono Beneficiável" },
+    aco_1070: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1070-BR", nome: "Tarugo de Aço SAE 1070", tipo: "barra", densidade: 7.82, unidade: "kg", especificacao: "Alto Carbono para Molas" },
+    aco_4340: { grupo: "Aços Sólidos (Barras)", sku: "MAT-ALLOY-4340-BR", nome: "Eixo de Aço Liga SAE 4340", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Alta Temperabilidade" },
+    aco_8620: { grupo: "Aços Sólidos (Barras)", sku: "MAT-ALLOY-8620-BR", nome: "Barra de Aço Liga SAE 8620", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Liga Cementável para Engrenagens" },
+    aco_inox_304: { grupo: "Aços Sólidos (Barras)", sku: "MAT-INOX-304-CH", nome: "Chapa/Tarugo Inox AISI 304", tipo: "barra", densidade: 8.00, unidade: "kg", especificacao: "Aço Inoxidável Austenítico" },
+    
+    // 2. TUBOS MECÂNICOS CAVADOS
+    tubo_1020: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1020-ST", nome: "Tubo Mecânico SAE 1020", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Industrial Sem Costura" },
+    tubo_1045: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1045-HD", nome: "Tubo Hidráulico SAE 1045", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Trefilado Brunido" },
+    
+    // 3. INSUMOS QUÍMICOS E LUBRIFICANTES PRODUTIVOS
+    quim_tinta: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-PAINT-IND", nome: "Tinta Primer Epóxi Industrial", tipo: "fluido", densidade: 1.25, unidade: "L", especificacao: "Revestimento de Proteção Anticorrosiva" },
+    quim_graxa: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-GREASE-EP2", nome: "Graxa de Alta Temperatura EP2", tipo: "fluido", densidade: 0.92, unidade: "kg", especificacao: "Lubrificação de Rolamentos e Mancais de Carga" },
+    quim_desengraxante: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-DEGREASE", nome: "Desengraxante Alcalino Concentrado", tipo: "fluido", densidade: 1.05, unity: "L", unidade: "L", especificacao: "Decapagem e Lavagem de Peças Pós-Usinagem" },
+    quim_oleo_forno: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-OIL-FURN", nome: "Óleo Mineral para Fornos de Têmpera", tipo: "fluido", densidade: 0.88, unidade: "L", especificacao: "Meio de Resfriamento Acelerado Contornado" },
+    quim_oleo_maquina: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-OIL-MACH", nome: "Óleo Lubrificante Hidráulico AW 68", tipo: "fluido", densidade: 0.89, unidade: "L", especificacao: "Fluidos de Transmissão de Sistema de Prensas" },
+    quim_oleo_corte: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-OIL-CUT", nome: "Óleo de Corte Solúvel Semissintético", tipo: "fluido", densidade: 0.95, unidade: "L", especificacao: "Fluido de Refrigeração para Torneamento/Fresagem" },
+    
+    // 4. GASES INDUSTRIAIS
+    gas_argon: { grupo: "Gases Industriais", sku: "MAT-GAS-ARGON-01", nome: "Gás Argônio Puro 99.9%", tipo: "gas", densidade: 1.2, unidade: "m³", especificacao: "Atmosfera Protetiva de Soldagem TIG" },
+    gas_nitrogenio: { grupo: "Gases Industriais", sku: "MAT-GAS-NITRO-02", nome: "Gás Nitrogênio Especial", tipo: "gas", densidade: 1.2, unidade: "m³", especificacao: "Tratamento Térmico e Inertização" }
 };
 /* erppadrao - materiais/materiais.js - PARTE 2 DE 4 */
 
 const OPCOES_DIAMETROS = [
-    { valor: "0.0127", texto: "1/2\" (12,70 mm)" },
-    { valor: "0.01905", texto: "3/4\" (19,05 mm)" },
-    { valor: "0.0254", texto: "1\" (25,40 mm)" },
-    { valor: "0.0381", texto: "1.1/2\" (38,10 mm)" },
-    { valor: "0.0508", texto: "2\" (50,80 mm)" },
-    { valor: "0.0762", texto: "3\" (76,20 mm)" },
-    { valor: "0.1016", texto: "4\" (101,60 mm)" }
+    { valor: "0.0127", texto: "1/2\" (12,70 mm) / Padrão Pequeno" },
+    { valor: "0.0254", texto: "1\" (25,40 mm) / Lote Médio" },
+    { valor: "0.0508", texto: "2\" (50,80 mm) / Eixo Pesado" },
+    { valor: "0.1016", texto: "4\" (101,60 mm) / Tarugo Máster" }
 ];
 
 const OPCOES_ESPESSURAS = [
-    { valor: "0.0020", texto: "2,00 mm" },
-    { valor: "0.00318", texto: "1/8\" (3,18 mm)" },
-    { valor: "0.00476", texto: "3/16\" (4,76 mm)" },
-    { valor: "0.00635", texto: "1/4\" (6,35 mm)" },
-    { valor: "0.00952", texto: "3/8\" (9,52 mm)" }
+    { valor: "0.0020", texto: "Chapa / Parede 2,00 mm" },
+    { valor: "0.00318", texto: "Parede 1/8\" (3,18 mm)" },
+    { valor: "0.00635", texto: "Parede 1/4\" (6,35 mm)" },
+    { valor: "0.01905", texto: "Tambor Galão Comercial / N/A" }
 ];
 
 window.carregarPreDefinido = function() {
@@ -87,11 +84,16 @@ window.carregarPreDefinido = function() {
     if (document.getElementById('nome_material')) document.getElementById('nome_material').value = material.nome;
     if (document.getElementById('unidade_medida')) document.getElementById('unidade_medida').value = material.unidade;
     if (document.getElementById('especificacao_tecnica')) document.getElementById('especificacao_tecnica').value = material.especificacao;
-    if (document.getElementById('fornecedor_padrao')) document.getElementById('fornecedor_padrao').value = material.sku.includes("GAS") ? "White Martins" : "Gerdau S/A";
+    
+    if (document.getElementById('fornecedor_padrao')) {
+        if(material.sku.includes("GAS")) { document.getElementById('fornecedor_padrao').value = "White Martins S/A"; }
+        else if(material.sku.includes("CHEM")) { document.getElementById('fornecedor_padrao').value = "Distribuidora Ipiranga Químicos"; }
+        else { document.getElementById('fornecedor_padrao').value = "Gerdau Comercial Metais S/A"; }
+    }
 
-    if (material.tipo === "gas") {
-        if (document.getElementById('lbl_unidade_diametro')) document.getElementById('lbl_unidade_diametro').innerText = "N/A";
-        if (document.getElementById('lbl_unidade_comprimento')) document.getElementById('lbl_unidade_comprimento').innerText = "m³ Vol";
+    if (material.tipo === "gas" || material.tipo === "fluido") {
+        if (document.getElementById('lbl_unidade_diametro')) document.getElementById('lbl_unidade_diametro').innerText = "N/A Embalagem";
+        if (document.getElementById('lbl_unidade_comprimento')) document.getElementById('lbl_unidade_comprimento').innerText = material.unidade === "L" ? "Volume Litros" : "Volume Unidade";
         if (bEspessura) bEspessura.style.display = "none";
     } else {
         if (document.getElementById('lbl_unidade_diametro')) document.getElementById('lbl_unidade_diametro').innerText = "Pol / mm";
@@ -102,18 +104,19 @@ window.carregarPreDefinido = function() {
             OPCOES_ESPESSURAS.forEach(o => eSelect.add(new Option(o.texto, o.valor)));
         } else if (bEspessura) { bEspessura.style.display = "none"; }
     }
-    document.getElementById('preco_unitario').value = material.tipo === "gas" ? "85.00" : material.tipo === "tubo" ? "32.40" : "18.50";
+    
+    document.getElementById('preco_unitario').value = material.sku.includes("CHEM") ? "42.80" : material.tipo === "gas" ? "85.00" : "18.50";
     document.getElementById('coeficiente_refugo').value = "5.0";
     document.getElementById('lead_time_entrega').value = "4";
     document.getElementById('estoque_seguranca').value = "10";
-    document.getElementById('dim_comprimento').value = "6.00";
+    document.getElementById('dim_comprimento').value = material.tipo === "fluido" ? "20.00" : "6.00";
     document.getElementById('quantidade_pecas_lote').value = "50";
     window.calcularCustoOperacionalMaterial();
 };
 /* erppadrao - materiais/materiais.js - PARTE 3 DE 4 */
 
 // ============================================================================
-// 3. MOTOR DE PROCESSAMENTO FÍSICO COM MULTIPLICADOR DE PEÇAS
+// 3. MOTOR DE PROCESSAMENTO FÍSICO (MASSA E CUBAGEM DA PEÇA CORRIGIDOS)
 // ============================================================================
 window.calcularCustoOperacionalMaterial = function() {
     const chave = document.getElementById('seletor_modelo').value;
@@ -122,17 +125,22 @@ window.calcularCustoOperacionalMaterial = function() {
 
     const pUn = parseFloat(document.getElementById('preco_unitario')?.value) || 0;
     const ref = parseFloat(document.getElementById('coeficiente_refugo')?.value) || 0;
-    const estSeg = parseFloat(document.getElementById('estoque_seguranca')?.value) || 0;
     const compInput = parseFloat(document.getElementById('dim_comprimento')?.value) || 0;
     const qtdPecas = parseInt(document.getElementById('quantidade_pecas_lote')?.value) || 1;
 
     let volumeUnitarioM3 = 0, volumeTotalM3 = 0, massaUnitariaKg = 0, massaTotalKg = 0;
 
-    if (material.tipo === "gas") {
-        volumeUnitarioM3 = compInput;
+    if (material.tipo === "gas" || material.tipo === "fluido") {
+        // Balanço Volumétrico Químico: Litros/m³ diretos multiplicados pela cubagem do lote
+        if (material.unidade === "L") {
+            volumeUnitarioM3 = compInput / 1000; // Converte litros para m³ real
+            massaUnitariaKg = compInput * material.densidade; // Massa unitária base
+        } else {
+            volumeUnitarioM3 = compInput;
+            massaUnitariaKg = compInput * material.densidade;
+        }
         volumeTotalM3 = volumeUnitarioM3 * qtdPecas;
-        massaUnitariaKg = volumeUnitarioM3 * material.densidade;
-        massaTotalKg = volumeTotalM3 * material.densidade;
+        massaTotalKg = massaUnitariaKg * qtdPecas;
     } else {
         const diametro = parseFloat(document.getElementById('dim_diametro')?.value) || 0;
         const raioExt = diametro / 2;
@@ -148,24 +156,24 @@ window.calcularCustoOperacionalMaterial = function() {
         massaTotalKg = massaUnitariaKg * qtdPecas;
     }
 
-    // FIX CORREÇÃO MÁSTER: Mudado de .value para .innerText para casar com a div do HTML e destravar a tela
+    // CORREÇÃO CIRÚRGICA: .innerText injeta síncrono sem quebrar o Chrome
     const displayMassa = document.getElementById('massa_calculada_exibicao');
     if (displayMassa) {
-        displayMassa.innerText = `Peça Unitária: ${volumeUnitarioM3.toFixed(5)} m³ (${massaUnitariaKg.toFixed(3)} kg/peça) | Volume Lote: ${volumeTotalM3.toFixed(3)} m³`;
+        displayMassa.innerText = `Massa por Peça/Galão: ${massaUnitariaKg.toFixed(3)} kg | Vol. Unitário: ${volumeUnitarioM3.toFixed(5)} m³`;
     }
 
-    // Calcula os lotes verdes horizontais considerando o fator de peças
+    // Alimenta as caixas verdes inferiores
     const dComprando = document.getElementById('balanco_comprando');
-    if (dComprando) dComprando.innerText = `${(volumeTotalM3 * (1 + ref/100)).toFixed(3)} m³ / ${(massaTotalKg * (1 + ref/100)).toFixed(2)} kg`;
+    if (dComprando) dComprando.innerText = `${(volumeTotalM3 * (1 + ref/100)).toFixed(3)} m³ / ${(massaTotalKg * (1 + ref/100)).toFixed(2)} ${material.unidade}`;
     
     if (document.getElementById('balanco_encomendado')) {
-        document.getElementById('balanco_encomendado').innerText = `${(volumeTotalM3 * 1.5).toFixed(3)} m³ / ${(massaTotalKg * 1.5).toFixed(2)} kg`;
+        document.getElementById('balanco_encomendado').innerText = `${(volumeTotalM3 * 1.2).toFixed(3)} m³ / ${(massaTotalKg * 1.2).toFixed(2)} kg`;
     }
     if (document.getElementById('balanco_entregue')) {
         document.getElementById('balanco_entregue').innerText = `${volumeTotalM3.toFixed(3)} m³ / ${massaTotalKg.toFixed(2)} kg`;
     }
 
-    const custoTotalIntegradoOp = pUn * (1 + (ref / 100)) * (material.tipo === "gas" ? volumeTotalM3 : massaTotalKg);
+    const custoTotalIntegradoOp = pUn * (1 + (ref / 100)) * (material.unidade === "L" || material.unidade === "m³" ? (compInput * qtdPecas) : massaTotalKg);
     if (document.getElementById('custo_total_integrado')) document.getElementById('custo_total_integrado').value = custoTotalIntegradoOp.toFixed(2);
 };
 
@@ -180,18 +188,29 @@ window.vincularEventosInputs = function() {
 
 window.carregarDadosIniciais = async function() {
     try {
-        // Preenche o Select dinamicamente com todas as ligas metalúrgicas recuperadas
+        // MONTAGEM DO LEQUE ELABORADO DE CATEGORIAS: Agrupa por optgroup no HTML de forma organizada
         const seletor = document.getElementById('seletor_modelo');
         if (seletor && seletor.options.length <= 1) {
+            const gruposMap = {};
             Object.keys(CATALOGO_METALURGICO).forEach(key => {
-                seletor.add(new Option(CATALOGO_METALURGICO[key].nome, key));
+                const g = CATALOGO_METALURGICO[key].grupo;
+                if (!gruposMap[g]) gruposMap[g] = [];
+                gruposMap[g].push({ val: key, text: CATALOGO_METALURGICO[key].nome });
+            });
+            
+            Object.keys(gruposMap).forEach(gName => {
+                const optGroup = document.createElement('optgroup');
+                optGroup.label = gName;
+                gruposMap[gName].forEach(item => {
+                    optGroup.appendChild(new Option(item.text, item.val));
+                });
+                seletor.appendChild(optGroup);
             });
         }
 
         const resMat = await fetch('/api/materiais/listar');
         const materiais = await resMat.json();
         
-        // FIX CONTÁBIL COMPLETO: Valores separados e calculados sem espelhar o módulo de máquinas
         const capitalTotalEmpresa = 5000000.00;
         const disponivelParaSetor = 2000000.00;
         const custoFixoGeralAluguel = 21350.00;
@@ -205,8 +224,6 @@ window.carregarDadosIniciais = async function() {
         definirTexto('top_orcamento_inicial', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
         definirTexto('top_custo_fixo', `R$ ${totalCustosFixosPlanta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
         definirTexto('top_custo_fixo_setor', `R$ ${custoFixoAlmoxarifadoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
-        
-        // Pinta com precisão a Linha 5 dos Custos Variáveis
         definirTexto('top_custo_variavel', "R$ 10.593,38/mês");
         definirTexto('top_custo_variavel_setor', "R$ 4.210,12/mês");
 
@@ -239,7 +256,7 @@ window.salvarMaterial = async function(e) {
         id: document.getElementById('registro_id').value ? parseInt(document.getElementById('registro_id').value) : null,
         nome_material: document.getElementById('nome_material').value,
         codigo_sku: document.getElementById('codigo_sku').value,
-        categoria: "Aços Estruturais",
+        categoria: "Insumo Industrial",
         unidade_medida: document.getElementById('unidade_medida').value,
         preco_unitario: parseFloat(document.getElementById('preco_unitario').value) || 0,
         coeficiente_refugo: parseFloat(document.getElementById('coeficiente_refugo').value) || 0,
