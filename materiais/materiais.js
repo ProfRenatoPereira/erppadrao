@@ -172,7 +172,7 @@ window.calcularCustoOperacionalMaterial = function() {
     const custoTotalIntegradoOp = pUn * (1 + (ref / 100)) * (material.unidade === "L" || material.unidade === "m³" ? (compInput * qtdPecas) : massaTotalKg);
     if (document.getElementById('custo_total_integrado')) document.getElementById('custo_total_integrado').value = custoTotalIntegradoOp.toFixed(2);
 };
-/* erppadrao - materiais/materiais.js - PARTE 4 DE 4 */
+/* erppadrao - materiais/materiais.js - PARTE 4 DE 4 (REVISADA COM BOTÃO EDITAR) */
 
 window.carregarDadosIniciais = function() {
     fetch('/api/materiais/listar')
@@ -226,7 +226,7 @@ window.carregarDadosIniciais = function() {
         }).catch(e => console.error(e));
 };
 
-// CORREÇÃO: Renderiza a quantidade física em estoque e calcula o Custo Total real ponderado na listagem do Supabase
+// REVISÃO: Adicionado o botão Editar perfeitamente alinhado na horizontal com o deletar
 window.renderizarTabelaMateriais = function(materiais) {
     const tbody = document.getElementById('tabela_materiais');
     if (!tbody) return;
@@ -250,7 +250,10 @@ window.renderizarTabelaMateriais = function(materiais) {
                     <small style="color: #64748b; display:block;">Un: R$ ${precoUn.toFixed(2)}</small>
                     <strong style="color:#166534; font-size:13px;">Total: R$ ${custoTotalLote.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
                 </td>
-                <td style="text-align:center;"><button type="button" onclick="window.deletarMaterial(${x.id})" class="btn-top" style="color:#dc2626; border-color:#fee2e2; background:#fef2f2;">Deletar</button></td>
+                <td style="text-align:center; white-space:nowrap;">
+                    <button type="button" onclick="window.editarMaterial(${x.id})" class="btn-top" style="color:#b45309; border-color:#fef3c7; background:#fffbef; margin-right:4px;">Editar</button>
+                    <button type="button" onclick="window.deletarMaterial(${x.id})" class="btn-top" style="color:#dc2626; border-color:#fee2e2; background:#fef2f2;">Deletar</button>
+                </td>
             </tr>
         `;
     }).join('');
@@ -302,3 +305,4 @@ window.vincularEventosInputs = function() {
 function float(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 
 window.carregarDadosIniciais();
+
