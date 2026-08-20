@@ -1,4 +1,4 @@
-/* erppadrao - materiais/materiais.js - PARTE 1 DE 5 */
+/* erppadrao - materiais/materiais.js - PARTE 1 DE 4 */
 
 let escalaFonteGlobal = 16;
 let sintetizadorLeitor = window.speechSynthesis;
@@ -36,7 +36,7 @@ window.alternarLeitorAudio = function() {
     } else { btn.innerText = "🔊 Leitor"; sintetizadorLeitor.cancel(); }
 };
 
-// LEQUE COMPLETO DE INSUMOS COM DICIONÁRIO DE ENGENHARIA RESILIENTE
+// DICIONÁRIO DE ENGENHARIA METALÚRGICA E QUÍMICA EXPANDIDO
 const CATALOGO_METALURGICO = {
     aco_1020: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1020-BR", nome: "Barra de Aço SAE 1020", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Carbono para Cementação" },
     aco_1030: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1030-BR", nome: "Barra de Aço SAE 1030", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono de Alta Forjabilidade" },
@@ -46,9 +46,8 @@ const CATALOGO_METALURGICO = {
     aco_8620: { grupo: "Aços Sólidos (Barras)", sku: "MAT-ALLOY-8620-BR", nome: "Barra de Aço Liga SAE 8620", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Liga Cementável para Engrenagens" },
     aco_inox_304: { grupo: "Aços Sólidos (Barras)", sku: "MAT-INOX-304-CH", nome: "Chapa/Tarugo Inox AISI 304", tipo: "barra", densidade: 8.00, unidade: "kg", especificacao: "Aço Inoxidável Austenítico" }
 };
-/* erppadrao - materiais/materiais.js - PARTE 2 DE 5 */
+/* erppadrao - materiais/materiais.js - PARTE 2 DE 4 */
 
-// EXTENSÃO ISENTA DE ERROS PARA INTEGRAR COMPONENTES QUÍMICOS E LUBRIFICANTES
 Object.assign(CATALOGO_METALURGICO, {
     tubo_1020: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1020-ST", nome: "Tubo Mecânico SAE 1020", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Industrial Sem Costura" },
     tubo_1045: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1045-HD", nome: "Tubo Hidráulico SAE 1045", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Trefilado Brunido" },
@@ -75,7 +74,6 @@ const OPCOES_ESPESSURAS = [
     { valor: "0.00635", texto: "Parede 1/4\" (6,35 mm)" },
     { valor: "0.01905", texto: "Tambor Galão Comercial / N/A" }
 ];
-/* erppadrao - materiais/materiais.js - PARTE 3 DE 5 */
 
 window.carregarPreDefinido = function() {
     const chave = document.getElementById('seletor_modelo').value;
@@ -123,7 +121,7 @@ window.carregarPreDefinido = function() {
     document.getElementById('quantidade_pecas_lote').value = "50";
     window.calcularCustoOperacionalMaterial();
 };
-/* erppadrao - materiais/materiais.js - PARTE 4 DE 5 */
+/* erppadrao - materiais/materiais.js - PARTE 3 DE 4 */
 
 window.calcularCustoOperacionalMaterial = function() {
     const chave = document.getElementById('seletor_modelo').value;
@@ -162,7 +160,6 @@ window.calcularCustoOperacionalMaterial = function() {
         massaTotalKg = massaUnitariaKg * qtdPecas;
     }
 
-    // BLINDAGEM DO DISPLAY DE MASSA: innerText evita travamentos síncronos e conflitos de tag
     const displayMassa = document.getElementById('massa_calculada_exibicao');
     if (displayMassa) {
         displayMassa.innerText = `Massa por Peça/Galão: ${massaUnitariaKg.toFixed(3)} kg | Vol. Unitário: ${volumeUnitarioM3.toFixed(5)} m³`;
@@ -175,9 +172,8 @@ window.calcularCustoOperacionalMaterial = function() {
     const custoTotalIntegradoOp = pUn * (1 + (ref / 100)) * (material.unidade === "L" || material.unidade === "m³" ? (compInput * qtdPecas) : massaTotalKg);
     if (document.getElementById('custo_total_integrado')) document.getElementById('custo_total_integrado').value = custoTotalIntegradoOp.toFixed(2);
 };
-/* erppadrao - materiais/materiais.js - PARTE 5 DE 5 */
+/* erppadrao - materiais/materiais.js - PARTE 4 DE 4 */
 
-// ENGINE DE PROCESSAMENTO CONTÁBIL HORIZONTAL AMARRADO AOS IDS DA VALORAÇÃO REAL
 window.carregarDadosIniciais = function() {
     fetch('/api/materiais/listar')
         .then(res => res.json())
@@ -206,7 +202,6 @@ window.carregarDadosIniciais = function() {
 
             const definirTexto = (id, texto) => { const el = document.getElementById(id); if (el) el.innerText = texto; };
             
-            // INJEÇÃO CIRÚRGICA NOS ELEMENTOS DE VALORAÇÃO MONETÁRIA DEIXANDO O CSS INTATO
             definirTexto('top_capital_total_val', `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
             definirTexto('top_disponivel_setor_val', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
             definirTexto('top_orcamento_inicial_val', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
@@ -228,10 +223,10 @@ window.carregarDadosIniciais = function() {
             if (bar) bar.style.width = `${Math.min(pctTetoConsumido, 100)}%`;
 
             window.renderizarTabelaMateriais(materiais);
-            window.vincularEventosInputs();
         }).catch(e => console.error(e));
 };
 
+// CORREÇÃO: Renderiza a quantidade física em estoque e calcula o Custo Total real ponderado na listagem do Supabase
 window.renderizarTabelaMateriais = function(materiais) {
     const tbody = document.getElementById('tabela_materiais');
     if (!tbody) return;
@@ -239,15 +234,26 @@ window.renderizarTabelaMateriais = function(materiais) {
         tbody.innerHTML = `<tr><td colspan="5" style="padding:16px; text-align:center; font-style:italic;">Nenhum material cadastrado no banco Supabase.</td></tr>`;
         return;
     }
-    tbody.innerHTML = materiais.map(x => `
-        <tr>
-            <td><strong>${x.nome_material}</strong><br><small>SKU: ${x.codigo_sku}</small></td>
-            <td>Controle: ${x.unidade_medida} | Refugo: ${x.coeficiente_refugo}%</td>
-            <td><strong>${x.fornecedor_padrao}</strong></td>
-            <td style="color:#166534; font-weight:bold;">R$ ${(x.preco_unitario || 0).toFixed(2)}</td>
-            <td style="text-align:center;"><button type="button" onclick="window.deletarMaterial(${x.id})" class="btn-top" style="color:#dc2626; border-color:#fee2e2; background:#fef2f2;">Deletar</button></td>
-        </tr>
-    `).join('');
+    
+    tbody.innerHTML = materiais.map(x => {
+        const precoUn = float(x.preco_unitario || 0);
+        const qtdEstoque = float(x.estoque_seguranca || 0);
+        const refugoFator = 1 + (float(x.coeficiente_refugo || 0) / 100);
+        const custoTotalLote = precoUn * qtdEstoque * refugoFator;
+
+        return `
+            <tr>
+                <td><strong>${x.nome_material}</strong><br><small style="color: #64748b;">SKU: ${x.codigo_sku || 'N/A'}</small></td>
+                <td>Controle: <strong>${x.unidade_medida || 'kg'}</strong> | Refugo: ${x.coeficiente_refugo || 0}%<br><small style="color:#2563eb;">Dimensões: Ø ${x.dim_diametro || '0'} | Esp: ${x.dim_espessura || '0'} | Comp: ${x.dim_comprimento || 0}m</small></td>
+                <td><strong>${x.fornecedor_padrao || 'Homologado'}</strong><br><span style="color: #1e3a8a; font-weight: bold;">📦 Qtd Estoque: ${qtdEstoque.toFixed(1)} ${x.unidade_medida || 'un'}</span></td>
+                <td style="font-family: monospace;">
+                    <small style="color: #64748b; display:block;">Un: R$ ${precoUn.toFixed(2)}</small>
+                    <strong style="color:#166534; font-size:13px;">Total: R$ ${custoTotalLote.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>
+                </td>
+                <td style="text-align:center;"><button type="button" onclick="window.deletarMaterial(${x.id})" class="btn-top" style="color:#dc2626; border-color:#fee2e2; background:#fef2f2;">Deletar</button></td>
+            </tr>
+        `;
+    }).join('');
 };
 
 window.salvarMaterial = async function(e) {
@@ -283,6 +289,14 @@ window.limparFormularioMaterial = function() {
     document.getElementById('formMaterial').reset();
     const containerGeom = document.getElementById('container_geometrico');
     if (containerGeom) containerGeom.style.display = "none";
+};
+
+window.vincularEventosInputs = function() {
+    const ids = ['preco_unitario', 'coeficiente_refugo', 'estoque_seguranca', 'dim_comprimento', 'dim_diametro', 'dim_espessura', 'quantidade_pecas_lote'];
+    ids.forEach(id => {
+        const elemento = document.getElementById(id);
+        if (elemento) elemento.oninput = window.calcularCustoOperacionalMaterial;
+    });
 };
 
 function float(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
