@@ -168,21 +168,18 @@
             </ul>
         </nav>
     </header>
-   <!-- erppadrao - materiais/materiais.html - PARTE 3 DE 4 -->
+  <!-- erppadrao - materiais/materiais.html - PARTE 3 DE 4 -->
     <div class="container">
         <!-- PAINEL HORIZONTAL MASTER DE CONTROLE CONTÁBIL -->
         <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px;">
-            <!-- LINHA 1 -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;"><span>💰 CAPITAL TOTAL:</span> <strong id="top_capital_total">R$ 5.000.000,00</strong></div>
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;"><span>💰 DISPONÍVEL PARA O SETOR:</span> <strong id="top_disponivel_setor">R$ 2.000.000,00</strong></div>
             </div>
-            <!-- LINHA 2 -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;"><span>🏢 ORÇAMENTO INICIAL MATERIAIS:</span> <strong id="top_orcamento_inicial">R$ 2.000.000,00</strong></div>
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; background-color: #f0fdf4; padding: 4px 8px; border-radius: 6px; border: 1px dashed #bbf7d0;"><span>🏢 SALDO DE VERBA DE SUPRIMENTOS:</span> <strong id="top_verba_reais">R$ 0,00</strong></div>
             </div>
-            <!-- LINHA 3 -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;"><span>🏛️ CUSTO TOTAL DO INVENTÁRIO:</span> <strong id="top_patrimonio_maquinas">R$ 0,00</strong></div>
                 <div id="card_budget_limite" style="display: flex; flex-direction: column; gap: 4px; min-width: 420px; flex-grow: 1; padding: 6px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1;">
@@ -191,12 +188,10 @@
                     <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: bold; text-align: right; display: block;">0.0% consumido</span>
                 </div>
             </div>
-            <!-- LINHA 4: FIXO -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;"><div><span>🔒 CUSTO FIXO TOTAL (GERAL):</span> <strong id="top_custo_fixo">R$ 0,00/mês</strong></div><span id="pct_custo_fixo_geral" style="font-size: 10px; color: #6b21a8;"></span></div>
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff; flex-grow: 1;"><div><span>🔒 CUSTO FIXO DO SETOR (ALMOXARIFADO):</span> <strong id="top_custo_fixo_setor">R$ 0,00/mês</strong></div><span id="pct_custo_fixo_setor" style="font-size: 10px; color: #7c3aed;"></span></div>
             </div>
-            <!-- LINHA 5: CORREÇÃO DO BLOCO DOS CUSTOS VARIÁVEIS -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;"><div><span>📈 CUSTO VARIÁVEL TOTAL (GERAL):</span> <strong id="top_custo_variavel">R$ 0,00/mês</strong></div><span id="pct_custo_variavel_geral" style="font-size: 10px; color: #c2410c;"></span></div>
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #ffedd5; flex-grow: 1;"><div><span>📈 CUSTO VARIÁVEL DO SETOR (REFUGO/GIRO):</span> <strong id="top_custo_variavel_setor">R$ 0,00/mês</strong></div><span id="pct_custo_variavel_setor" style="font-size: 10px; color: #ea580c;"></span></div>
@@ -209,19 +204,19 @@
                 <form id="formMaterial" onsubmit="window.salvarMaterial(event)" style="display: flex; flex-direction: column; gap: 14px;">
                     <input type="hidden" id="registro_id" name="id">
                     <div class="flex-form-row">
-                        <div class="flex-col-gap" style="flex: 1;"><label class="label-form">MATERIAL BASE METALÚRGICO CORINGA / LIGA COMERCIAL:</label>
+                        <div class="flex-col-gap" style="flex: 1;"><label class="label-form">MATERIAL BASE METALÚRGICO / CATEGORIAS E LUBRIFICANTES:</label>
+                            <!-- REVISÃO DEFINITIVA: Grupos organizados e injetados de forma síncrona -->
                             <select id="seletor_modelo" onchange="window.carregarPreDefinido()" class="select-form" style="height: 38px; border: 2px solid #cbd5e1; font-weight: bold; color: #1e3a8a;">
-                                <option value="">-- Escolha o Insumo Avançado de Engenharia --</option>
+                                <option value="">-- Selecione o Insumo Industrial (Estruturado) --</option>
                             </select>
                         </div>
                     </div>
                     
-                    <!-- GEOMETRIA E NOVO CAMPO DE ENTRADA DE QUANTIDADE DE COMPONENTES -->
                     <div class="flex-form-row" id="container_geometrico" style="display: none;">
-                        <div class="flex-col-gap" style="flex: 1;"><label class="label-form">DIÂMETRO EXTERNO (Ø): <span id="lbl_unidade_diametro" style="color:#2563eb; font-weight:bold;"></span></label><select id="dim_diametro" class="select-form" onchange="window.calcularCustoOperacionalMaterial()"></select></div>
-                        <div class="flex-col-gap" style="flex: 1;" id="bloco_espessura"><label class="label-form">ESPESSURA PAREDE: <span id="lbl_unidade_espessura" style="color:#2563eb; font-weight:bold;"></span></label><select id="dim_espessura" class="select-form" onchange="window.calcularCustoOperacionalMaterial()"></select></div>
-                        <div class="flex-col-gap" style="flex: 1;"><label class="label-form">COMPRIMENTO DO COMPONENTE (M): <span id="lbl_unidade_comprimento" style="color:#2563eb; font-weight:bold;"></span></label><input type="number" step="0.01" id="dim_comprimento" class="input-form" placeholder="0.00" oninput="window.calcularCustoOperacionalMaterial()"></div>
-                        <div class="flex-col-gap" style="flex: 1;"><label class="label-form" style="color:#16a34a;">QUANTIDADE DE PEÇAS NO LOTE:</label><input type="number" id="quantidade_pecas_lote" class="input-form" value="1" min="1" style="border: 2px solid #16a34a; font-weight:bold;" oninput="window.calcularCustoOperacionalMaterial()"></div>
+                        <div class="flex-col-gap" style="flex: 1;"><label class="label-form">DIÂMETRO / DIMENSÃO MÁXIMA: <span id="lbl_unidade_diametro" style="color:#2563eb; font-weight:bold;"></span></label><select id="dim_diametro" class="select-form" onchange="window.calcularCustoOperacionalMaterial()"></select></div>
+                        <div class="flex-col-gap" style="flex: 1;" id="bloco_espessura"><label class="label-form">ESPESSURA PAREDE / EMBALAGEM: <span id="lbl_unidade_espessura" style="color:#2563eb; font-weight:bold;"></span></label><select id="dim_espessura" class="select-form" onchange="window.calcularCustoOperacionalMaterial()"></select></div>
+                        <div class="flex-col-gap" style="flex: 1;"><label class="label-form">COMPRIMENTO / EXTENSÃO INDUSTRIAL: <span id="lbl_unidade_comprimento" style="color:#2563eb; font-weight:bold;"></span></label><input type="number" step="0.01" id="dim_comprimento" class="input-form" placeholder="0.00" oninput="window.calcularCustoOperacionalMaterial()"></div>
+                        <div class="flex-col-gap" style="flex: 1;"><label class="label-form" style="color:#16a34a;">QUANTIDADE DE COMPONENTES NO LOTE:</label><input type="number" id="quantidade_pecas_lote" class="input-form" value="1" min="1" style="border: 2px solid #16a34a; font-weight:bold;" oninput="window.calcularCustoOperacionalMaterial()"></div>
                     </div>
                     
                     <div class="flex-form-row">
@@ -246,7 +241,7 @@
                         <div class="flex-col-gap" style="flex: 1;"><label class="label-form">ESTOQUE DE SEGURANÇA MÍNIMO:</label><input type="number" step="0.1" id="estoque_seguranca" required class="input-form"></div>
                         <div class="flex-col-gap" style="flex: 2; background-color: #eff6ff; padding: 6px 12px; border: 1px dashed #bfdbfe; border-radius: 6px;">
                             <label class="label-form" style="color: #1e3a8a; font-weight:bold;">RESULTADO DA MASSA E DIÂMETRO DO COMPONENTE:</label>
-                            <!-- CORREÇÃO MÁSTER: Mudado de span para div com ID amarrado síncrono para evitar erros de render no Chrome -->
+                            <!-- DISPLAY CORRIGIDO: Pega innerText via JS sem estourar e travar o render contábil -->
                             <div id="massa_calculada_exibicao" style="font-weight: bold; color: #2563eb; font-size:12px; margin-bottom: 4px; padding: 2px 0;">Aguardando seleção...</div>
                             <label class="label-form" style="color: #1e3a8a; font-weight:bold;">CUSTO OPERACIONAL TOTAL INTEGRADO (R$):</label>
                             <input type="number" step="0.01" id="custo_total_integrado" readonly class="input-form input-form-readonly" style="color:#166534; font-size:14px; font-family:monospace;">
