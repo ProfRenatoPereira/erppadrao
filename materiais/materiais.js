@@ -36,7 +36,7 @@ window.alternarLeitorAudio = function() {
     } else { btn.innerText = "🔊 Leitor"; sintetizadorLeitor.cancel(); }
 };
 
-// LEQUE EXPANDIDO DE INSUMOS E LUBRIFICANTES INDUSTRIAIS CONSOLIDADOS
+// LEQUE COMPLETO DE INSUMOS COM DICIONÁRIO DE ENGENHARIA RESILIENTE
 const CATALOGO_METALURGICO = {
     aco_1020: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1020-BR", nome: "Barra de Aço SAE 1020", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Carbono para Cementação" },
     aco_1030: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1030-BR", nome: "Barra de Aço SAE 1030", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono de Alta Forjabilidade" },
@@ -48,7 +48,7 @@ const CATALOGO_METALURGICO = {
 };
 /* erppadrao - materiais/materiais.js - PARTE 2 DE 5 */
 
-// EXTENSÃO DO DICIONÁRIO DE MATERIAIS PARA COMPLEMENTAR A PARTE 1
+// EXTENSÃO ISENTA DE ERROS PARA INTEGRAR COMPONENTES QUÍMICOS E LUBRIFICANTES
 Object.assign(CATALOGO_METALURGICO, {
     tubo_1020: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1020-ST", nome: "Tubo Mecânico SAE 1020", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Industrial Sem Costura" },
     tubo_1045: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1045-HD", nome: "Tubo Hidráulico SAE 1045", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Trefilado Brunido" },
@@ -125,7 +125,6 @@ window.carregarPreDefinido = function() {
 };
 /* erppadrao - materiais/materiais.js - PARTE 4 DE 5 */
 
-// MOTOR DE CALCULO FÍSICO EXPANDIDO COM MULTIPLICADOR DE COMPONENTES DO LOTE
 window.calcularCustoOperacionalMaterial = function() {
     const chave = document.getElementById('seletor_modelo').value;
     const material = CATALOGO_METALURGICO[chave];
@@ -163,7 +162,7 @@ window.calcularCustoOperacionalMaterial = function() {
         massaTotalKg = massaUnitariaKg * qtdPecas;
     }
 
-    // FIX CHROME BLINDAGEM: .innerText injeta síncrono e impede o travamento do display na div
+    // BLINDAGEM DO DISPLAY DE MASSA: innerText evita travamentos síncronos e conflitos de tag
     const displayMassa = document.getElementById('massa_calculada_exibicao');
     if (displayMassa) {
         displayMassa.innerText = `Massa por Peça/Galão: ${massaUnitariaKg.toFixed(3)} kg | Vol. Unitário: ${volumeUnitarioM3.toFixed(5)} m³`;
@@ -176,17 +175,9 @@ window.calcularCustoOperacionalMaterial = function() {
     const custoTotalIntegradoOp = pUn * (1 + (ref / 100)) * (material.unidade === "L" || material.unidade === "m³" ? (compInput * qtdPecas) : massaTotalKg);
     if (document.getElementById('custo_total_integrado')) document.getElementById('custo_total_integrado').value = custoTotalIntegradoOp.toFixed(2);
 };
-
-window.vincularEventosInputs = function() {
-    const ids = ['preco_unitario', 'coeficiente_refugo', 'estoque_seguranca', 'dim_comprimento', 'dim_diametro', 'dim_espessura', 'quantidade_pecas_lote'];
-    ids.forEach(id => {
-        const elemento = document.getElementById(id);
-        if (elemento) elemento.oninput = window.calcularCustoOperacionalMaterial;
-    });
-};
 /* erppadrao - materiais/materiais.js - PARTE 5 DE 5 */
 
-// ENGINE REVISADA: Calcula os saldos e o patrimônio do inventário com base no Supabase
+// ENGINE DE PROCESSAMENTO CONTÁBIL HORIZONTAL AMARRADO AOS IDS DA VALORAÇÃO REAL
 window.carregarDadosIniciais = function() {
     fetch('/api/materiais/listar')
         .then(res => res.json())
@@ -195,7 +186,6 @@ window.carregarDadosIniciais = function() {
             const disponivelParaSetor = 2000000.00;
             const patrimonioMaquinasFixo = 1453500.00; 
 
-            // Varre dinamicamente os registros gravados no Supabase e consolida a redução orçamentária
             let valorTotalEstoqueMateriais = 0;
             if (materiais && materiais.length > 0) {
                 materiais.forEach(mat => {
@@ -216,24 +206,23 @@ window.carregarDadosIniciais = function() {
 
             const definirTexto = (id, texto) => { const el = document.getElementById(id); if (el) el.innerText = texto; };
             
-            definirTexto('top_capital_total', `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-            definirTexto('top_disponivel_setor', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-            definirTexto('top_orcamento_inicial', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+            // INJEÇÃO CIRÚRGICA NOS ELEMENTOS DE VALORAÇÃO MONETÁRIA DEIXANDO O CSS INTATO
+            definirTexto('top_capital_total_val', `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+            definirTexto('top_disponivel_setor_val', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+            definirTexto('top_orcamento_inicial_val', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
             
-            // ATUALIZAÇÃO DOS CARDS DO TOPO DA TELA COM OS DADOS REAIS DO BANCO
-            const vReais = document.getElementById('top_verba_reais');
-            if (vReais) {
-                vReais.innerText = `R$ ${saldoVerbaSustentada.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-                vReais.style.color = (saldoVerbaSustentada < 0) ? "#dc2626" : "#166534";
-            }
-            definirTexto('top_patrimonio_maquinas', `R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+            const vReais = document.getElementById('top_verba_reais_val');
+            if (vReais) vReais.innerText = `R$ ${saldoVerbaSustentada.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             
-            definirTexto('top_custo_fixo', `R$ ${totalCustosFixosPlanta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
-            definirTexto('top_custo_fixo_setor', `R$ ${custoFixoAlmoxarifadoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
-            definirTexto('top_custo_variavel', "R$ 10.593,38/mês");
-            definirTexto('top_custo_variavel_setor', "R$ 4.210,12/mês");
+            definirTexto('top_patrimonio_maquinas_val', `R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+            definirTexto('top_custo_fixo_val', `R$ ${totalCustosFixosPlanta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
+            definirTexto('top_custo_fixo_setor_val', `R$ ${custoFixoAlmoxarifadoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
+            definirTexto('top_custo_variavel_val', "R$ 10.593,38/mês");
+            definirTexto('top_custo_variavel_setor_val', "R$ 4.210,12/mês");
 
-            definirTexto('txt_valores_limite', `R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
+            const vLimite = document.getElementById('txt_valores_limite');
+            if (vLimite) vLimite.innerHTML = `TRAVA DE ABASTECIMENTO (MAX 40%): <strong>R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>`;
+            
             definirTexto('txt_porcentagem_budget', `${pctTetoConsumido.toFixed(1)}% do teto consumido`);
             const bar = document.getElementById('barra_progresso_budget');
             if (bar) bar.style.width = `${Math.min(pctTetoConsumido, 100)}%`;
@@ -292,7 +281,8 @@ window.deletarMaterial = async function(id) {
 
 window.limparFormularioMaterial = function() {
     document.getElementById('formMaterial').reset();
-    document.getElementById('container_geometrico').style.display = "none";
+    const containerGeom = document.getElementById('container_geometrico');
+    if (containerGeom) containerGeom.style.display = "none";
 };
 
 function float(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
