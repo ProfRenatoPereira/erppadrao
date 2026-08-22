@@ -8,26 +8,35 @@
     <style>
         html { font-size: 16px; transition: font-size 0.15s ease; box-sizing: border-box; }
         *, *:before, *:after { box-sizing: inherit; }
-        body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
+        body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; transition: all 0.2s ease; }
         .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
         .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 16px; }
-        .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
+        .grid-main { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; align-items: start; }
+        
+        /* LINHAS DO FORMULÁRIO HORIZONTAL */
         .flex-form-row { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; margin-bottom: 4px; }
+        
+        /* CARDS E INSUMOS ELÁSTICOS CONTRA ESTOUROS COGNITIVOS */
         .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; min-height: 95px; word-wrap: break-word; word-break: break-word; }
         .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; font-weight: bold; }
         .metric-card h3, .metric-card h4 { font-size: 16px; font-weight: 900; margin: 0; white-space: normal; word-break: break-all; }
+        
         .bg-blue-metric { background-color: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
         .bg-emerald-metric { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
         .bg-slate-metric { background-color: #f8fafc; border-color: #cbd5e1; color: #334155; }
         .bg-amber-metric { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
         .bg-purple-metric { background-color: #faf5ff; border-color: #e9d5ff; color: #6b21a8; }
+        
         .badge-percent { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-top: 4px; }
         .badge-purple-value { background-color: #f3e8ff; color: #6b21a8; }
+        
         .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; flex-wrap: wrap; gap: 16px; }
         .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; z-index: 10001; }
+        .logo-img { height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px; }
         .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
         .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
         #menu-toggle { display: none; }
+        /* ESTILOS DO MENU CORPORATIVO COM DROPDOWN VIA HOVER */
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
         .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
@@ -36,26 +45,29 @@
         .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; transition: background 0.15s; border-bottom: 1px solid #f1f5f9; }
         .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
         .nav-item:hover .dropdown-menu { display: block; }
+        
         .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; text-align: left; }
         .page-title { font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
         .card-title { font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
-        .card { background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .card { background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); grid-column: span 5 / span 5; }
         .flex-col-gap { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; text-align: left; }
         .label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
         .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; }
         .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #475569; }
-        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; }
+        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; grid-column: span 7 / span 7; }
         .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; text-align: left; }
         .table-responsive { width: 100%; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
         thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
         th, td { padding: 12px; }
         tr { border-bottom: 1px solid #e5e7eb; }
-        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; white-space: normal; word-wrap: break-word; word-break: break-word; display: inline-block; vertical-align: middle; }
-        .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; white-space: normal; word-wrap: break-word; word-break: break-word; }
+        
+        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; display: inline-block; vertical-align: middle; }
+        .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; }
         .btn-submit:hover { background-color: #15803d; }
-        .btn-cancel { background-color: #e5e7eb; color: #374151; padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; white-space: normal; word-wrap: break-word; }
+        .btn-cancel { background-color: #e5e7eb; color: #374151; padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; }
         .flex-btn-group { padding-top: 8px; display: flex; gap: 8px; }
+
         @media (max-width: 1120px) {
             .menu-toggle-label { display: flex; }
             .nav-corporate-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: #0f172a; border-top: 1px solid #334155; padding: 8px 0; box-shadow: 0 10px 15px rgba(0,0,0,0.3); z-index: 9998; }
@@ -63,39 +75,33 @@
             .nav-link { padding: 12px 20px; border-bottom: 1px solid #1e293b; color: #f8fafc; }
             .dropdown-menu { display: block; position: static; box-shadow: none; border: none; background-color: #172554 !important; padding: 0; min-width: 100%; }
             #menu-toggle:checked ~ nav .nav-corporate-menu, #menu-toggle:checked ~ .nav-corporate-menu { display: flex; }
+            .card, .table-container { grid-column: span 12 / span 12; }
         }
+        
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
         body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
         body.dark-mode thead { background-color: #334155 !important; }
+        
         body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
         body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste .table-container, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
         body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
         body.alto-contraste button, body.alto-contraste .btn-submit, body.alto-contraste .btn-top { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; }
         body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste td { color: #ffff00 !important; }
-        @media (min-width: 1024px) { .col-form { grid-column: span 12 / span 12; } .col-table { grid-column: span 12 / span 12; } }
     </style>
 </head>
 <body style="transition: all 0.2s ease;">
+    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA NATIVA -->
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
         <div style="display: flex; align-items: center;">
-            <img src="/static/Logo.svg" alt="Logo" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
-        </div>
-        <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
-            <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
-        </div>
-    </div>
+            <img src="/static/Logo.svg" alt="Logo Corporativo Vetorial" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
+        </div>    <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
     <header class="corporate-header">
         <div class="logo-area">
-            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
+            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" onerror="this.style.display='none'">
             <div style="display: flex; flex-direction: column; text-align: left;">
                 <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">TERADMAS ERP v2.6</span>
-                <span style="font-size: 10px; color: #94a3b8; font-weight: bold; line-height: 1.3; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais</span>
+                <span style="font-size: 10px; color: #94a3b8; font-weight: bold; line-height: 1.3; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</span>
             </div>
         </div>
         <input type="checkbox" id="menu-toggle">
@@ -103,11 +109,14 @@
         <nav>
             <ul class="nav-corporate-menu">
                 <li class="nav-item">
-                    <span class="nav-link" tabindex="0">📁 Admin ▾</span>
+                    <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
                     <ul class="dropdown-menu">
                         <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
                         <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
                         <li><a href="/orcamentos">03. Limites Orçamentários</a></li>
+                        <li><a href="/rh">04. Organograma e RH</a></li>
+                        <li><a href="/folha_pagamento">05. Folha de Pagamento</a></li>
+                        <li><a href="/requisicoes">06. Requisições Internas</a></li>
                     </ul>
                 </li>
                 <li class="nav-item">
@@ -116,44 +125,65 @@
                         <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
                         <li><a href="/materiais">08. Catálogo de Materiais</a></li>
                         <li><a href="/processos">09. Fluxos de Processos</a></li>
+                        <li><a href="/produtos">10. Fichas Técnicas (BOM)</a></li>
+                        <li><a href="/manutencao">11. Plano de Manutenção</a></li>
+                        <li><a href="/precificacao">12. Formação de Preço</a></li>
                     </ul>
                 </li>
             </ul>
         </nav>
     </header>
+
     <div class="container">
+        <!-- 📊 PAINEL ESTRUTURADO DE CUSTOS, ATIVOS E LIMITES HORIZONTAIS DINÂMICOS -->
         <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px; font-family: sans-serif;">
+            
+            <!-- LINHA 01: ESCOPO CORPORATIVO (MACRO EMPRESA) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">💰 Capital Total:</span>
+                    <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">💰 Capital Total Máster:</span>
                     <strong id="top_capital_total" style="font-size: 15px; font-weight: 900; color: #1e3a8a;">R$ 5.000.000,00</strong>
+                    <span style="font-size: 11px; font-weight: bold; color: #3b82f6; margin-left: 4px;">➔ 100%</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #111827; text-transform: uppercase;">💰 Disponível para o Setor:</span>
-                    <strong id="top_disponivel_setor" style="font-size: 15px; font-weight: 900; color: #111827;">R$ 2.000.000,00</strong>
-                    <span id="pct_disponivel_setor" style="font-size: 11px; font-weight: bold; color: #10b981; margin-left: 4px;">➔ 40.00% do Cap.</span>
+                    <span style="font-size: 11px; font-weight: bold; color: #111827; text-transform: uppercase;">💰 Teto Disponível Setor Ativos:</span>
+                    <strong id="top_disponivel_setor" style="font-size: 15px; font-weight: 900; color: #111827;">R$ 1.000.000,00</strong>
+                    <span id="pct_disponivel_setor" style="font-size: 11px; font-weight: bold; color: #10b981; margin-left: 4px;">➔ 20.00% do Cap.</span>
                 </div>
             </div>
+
+            <!-- LINHA 02: OPERAÇÃO INTERNA E CONSUMO DA ENGENHARIA -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #581c87; text-transform: uppercase;">🏢 Orçamento Inicial Engenharia:</span>
-                    <strong id="top_orcamento_inicial" style="font-size: 15px; font-weight: 900; color: #581c87;">R$ 2.000.000,00</strong>
+                    <span style="font-size: 11px; font-weight: bold; color: #581c87; text-transform: uppercase;">🏢 Verba Inicial Homologada:</span>
+                    <strong id="top_orcamento_inicial" style="font-size: 15px; font-weight: 900; color: #581c87;">R$ 1.000.000,00</strong>
+                    <span id="pct_orcamento_inicial" style="font-size: 11px; font-weight: bold; color: #a855f7; margin-left: 4px;">➔ 20.00% do Cap.</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; background-color: #f0fdf4; padding: 4px 8px; border-radius: 6px; border: 1px dashed #bbf7d0;">
-                    <span style="font-size: 11px; font-weight: bold; color: #166534; text-transform: uppercase;">🏢 Saldo de Orçamento Engenharia:</span>
+                    <span style="font-size: 11px; font-weight: bold; color: #166534; text-transform: uppercase;">🏢 Saldo Disponível de Verba:</span>
                     <strong id="top_verba_reais" style="font-size: 15px; font-weight: 900; color: #166534;">R$ 0,00</strong>
                     <span id="pct_saldo_engenharia" style="font-size: 11px; font-weight: bold; color: #15803d; margin-left: 4px;">➔ 0.00% do Cap.</span>
                 </div>
             </div>
+
+            <!-- LINHA 03: GESTÃO PATRIMONIAL E VALOR LÍQUIDO DEPRECIADO -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
-                    <span style="font-size: 11px; font-weight: bold; color: #9a3412; text-transform: uppercase;">🏛️ Patrimônio Máquinas:</span>
-                    <strong id="top_patrimonio_maquinas" style="font-size: 15px; font-weight: 900; color: #9a3412;">R$ 0,00</strong>
+                <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 6px; min-width: 290px;">
+                        <span style="font-size: 11px; font-weight: bold; color: #9a3412; text-transform: uppercase;">🏛️ Patrimônio Histórico (Aquisição):</span>
+                        <strong id="top_patrimonio_maquinas" style="font-size: 14px; font-weight: 900; color: #9a3412;">R$ 0,00</strong>
+                        <span id="pct_patrimonio_maquinas" style="font-size: 10px; font-weight: bold; color: #ea580c; margin-left: 4px;">➔ 0.00%</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; min-width: 290px; background-color: #fffbeb; padding: 4px 8px; border-radius: 6px; border: 1px solid #fef3c7;">
+                        <span style="font-size: 11px; font-weight: bold; color: #b45309; text-transform: uppercase;">📉 Valor Contábil Líquido Atualizado:</span>
+                        <strong id="top_patrimonio_liquido_real" style="font-size: 14px; font-weight: 900; color: #b45309;">R$ 0,00</strong>
+                        <span id="pct_patrimonio_liquido_real" style="font-size: 10px; font-weight: bold; color: #d97706; margin-left: 4px;">➔ 0.00%</span>
+                    </div>
                 </div>
-                <div id="card_budget_limite" style="display: flex; flex-direction: column; gap: 4px; min-width: 420px; flex-grow: 1; padding: 6px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1;">
+                <div id="card_budget_limite" style="display: flex; flex-direction: column; gap: 4px; min-width: 380px; flex-grow: 1; padding: 6px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">🎯 Limite Setor (Max 40% Ativos):</span>
-                        <span id="txt_valores_limite" style="font-size: 12px; font-weight: bold; color: #334155;">R$ 0,00 / R$ 2.000.000,00</span>
+                        <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">🎯 Limite Setor (Max 20% Máquinas):</span>
+                        <span id="txt_valores_limite" style="font-size: 12px; font-weight: bold; color: #334155;">R$ 0,00 / R$ 1.000.000,00</span>
                     </div>
                     <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 2px;">
                         <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
@@ -161,86 +191,109 @@
                     <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: 900; color: #2563eb; text-align: right; display: block; margin-top: 2px;">0.0% do teto consumido</span>
                 </div>
             </div>
+            <!-- LINHA 04: RELATÓRIO DE CUSTOS FIXOS TOTAIS ACUMULADOS -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div>
-                        <span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Total:</span>
+                        <span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Total (Aluguel + Setores 1 a n):</span>
                         <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 0,00/mês</strong>
                     </div>
                     <span id="pct_custo_fixo_geral" style="font-size: 10px; font-weight: bold; color: #8b5cf6;">➔ Custos Totais: 0.0% | Custos Fixos: 100.0%</span>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff; flex-grow: 1;">
                     <div>
-                        <span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor:</span>
+                        <span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor (Mnt/MOD Específico):</span>
                         <strong id="top_custo_fixo_setor" style="font-size: 14px; font-weight: 900; color: #7c3aed;">R$ 0,00/mês</strong>
                     </div>
                     <span id="pct_custo_fixo_setor" style="font-size: 10px; font-weight: bold; color: #6d28d9;">➔ Custos Totais: 0.0% | Custos Fixos: 0.0%</span>
                 </div>
             </div>
+
+            <!-- LINHA 05: RELATÓRIO DE CUSTOS VARIÁVEIS TOTAIS ACUMULADOS -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div>
-                        <span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custo Variável Total:</span>
+                        <span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custo Variável Total (Geral + Setores 1 a n):</span>
                         <strong id="top_custo_variavel" style="font-size: 14px; font-weight: 900; color: #c2410c;">R$ 0,00/mês</strong>
                     </div>
+                    <span id="pct_custo_variavel_geral" style="font-size: 10px; font-weight: bold; color: #f97316;">➔ Custos Totais: 0.0% | Custos Variáveis: 100.0%</span>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #ffedd5; flex-grow: 1;">
                     <div>
-                        <span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custo Variável do Setor:</span>
+                        <span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custo Variável do Setor (Insumos Específicos):</span>
                         <strong id="top_custo_variavel_setor" style="font-size: 14px; font-weight: 900; color: #ea580c;">R$ 0,00/mês</strong>
                     </div>
+                    <span id="pct_custo_variavel_setor" style="font-size: 10px; font-weight: bold; color: #c2410c;">➔ Custos Totais: 0.0% | Custos Variáveis: 0.0%</span>
                 </div>
             </div>
         </div>
+
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
+            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
+        </div>
+    </div>
         <div class="border-b pb-2 mb-4">
             <h2 class="text-xl font-black text-blue-900 uppercase tracking-tight" id="txt_titulo_pagina">Página 12: Engenharia de Processos - Estudo de Tempos, Métodos e Roteiros</h2>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" style="display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px;">
-            <div class="card bg-white p-5 rounded-xl border border-gray-200 shadow-sm lg:col-span-5" style="grid-column: span 5 / span 5;">
-                <h3 class="text-sm font-black text-blue-900 uppercase tracking-wider mb-4 pb-1 border-b">Mapeamento de Operações</h3>
-                <form id="formProcesso" onsubmit="salvarProcesso(event)" style="display: flex; flex-direction: column; gap: 12px;">
+
+        <!-- 🚀 ARQUITETURA LADO A LADO DA ENGENHARIA DE PROCESSOS -->
+        <div class="grid-main">
+            
+            <!-- QUADRO ESQUERDO: FORMULÁRIO DE CADASTRO -->
+            <div class="card">
+                <h3 class="card-title">Mapeamento de Operações</h3>
+                <form id="formProcesso" onsubmit="window.salvarProcesso(event)">
                     <input type="hidden" id="registro_id" name="id">
-                    <div class="flex flex-col gap-1" style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="font-bold text-gray-600 uppercase" style="font-size: 11px;">Nome da Operação / Fase do Processo:</label>
-                        <input type="text" id="nome_operacao" required placeholder="Ex: Torneamento Externo" class="input-form">
+                    
+                    <div class="flex-col-gap">
+                        <label class="label-form">Nome da Operação / Fase do Processo:</label>
+                        <input type="text" id="nome_operacao" required placeholder="Ex: Torneamento Externo, Mistura de Massa, Corte a Laser" class="input-form">
                     </div>
-                    <div class="flex flex-col gap-1" style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="font-bold text-gray-600 uppercase" style="font-size: 11px;">Equipamento Vinculado:</label>
-                        <select id="maquina_vinculada" onchange="buscarCustoMinutoMaquina()" class="select-form">
+                    <div class="flex-col-gap">
+                        <label class="label-form">Equipamento Vinculado (Posto de Trabalho):</label>
+                        <select id="maquina_vinculada" onchange="window.buscarCustoMinutoMaquina()" class="select-form">
                             <option value="">-- Carregando Máquinas do Supabase --</option>
                         </select>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
-                        <div class="flex flex-col gap-1" style="display: flex; flex-direction: column; gap: 4px;">
-                            <label class="font-bold text-gray-600 uppercase" style="font-size: 11px;">Tempo Setup (Minutos):</label>
-                            <input type="number" step="0.1" id="tempo_setup" value="10.0" oninput="calcularCustoOperacao()" class="input-form">
+                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px;">
+                        <div class="flex-col-gap" style="margin-bottom:0;">
+                            <label class="label-form">Tempo Setup (Minutos):</label>
+                            <input type="number" step="0.1" id="tempo_setup" value="10.0" oninput="window.calcularCustoOperacao()" class="input-form">
                         </div>
-                        <div class="flex flex-col gap-1" style="display: flex; flex-direction: column; gap: 4px;">
-                            <label class="font-bold text-gray-600 uppercase" style="font-size: 11px;">Tempo Operação (Min/Peça):</label>
-                            <input type="number" step="0.1" id="tempo_operacao" value="2.5" oninput="calcularCustoOperacao()" class="input-form">
+                        <div class="flex-col-gap" style="margin-bottom:0;">
+                            <label class="label-form">Tempo Operação (Min/Peça):</label>
+                            <input type="number" step="0.1" id="tempo_operacao" value="2.5" oninput="window.calcularCustoOperacao()" class="input-form">
                         </div>
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
-                        <div class="flex flex-col gap-1" style="display: flex; flex-direction: column; gap: 4px;">
-                            <label class="font-bold text-gray-600 uppercase" style="font-size: 11px;">Custo Máquina Minuto (Ref. R$):</label>
+                    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px;">
+                        <div class="flex-col-gap" style="margin-bottom:0;">
+                            <label class="label-form">Custo Máquina Minuto (Ref. R$):</label>
                             <input type="number" step="0.0001" id="custo_ref_maquina" readonly class="input-form input-form-readonly">
                         </div>
-                        <div class="flex flex-col gap-1" style="display: flex; flex-direction: column; gap: 4px;">
-                            <label class="font-bold text-gray-600 uppercase" style="font-size: 11px;">Sequência (Op. #):</label>
-                            <input type="number" id="sequencia_op" value="10" class="input-form">
+                        <div class="flex-col-gap" style="margin-bottom:0;">
+                            <label class="label-form">Sequência do Processo (Op. #):</label>
+                            <input type="number" id="sequencia_op" value="10" placeholder="Ex: 10, 20, 30" class="input-form">
                         </div>
                     </div>
-                    <div class="flex flex-col gap-1 bg-blue-50 p-2.5 rounded-lg border border-dashed border-blue-300" style="display: flex; flex-direction: column; gap: 4px; background-color: #eff6ff; padding: 10px; border-radius: 8px; border: 1px dashed #bfdbfe;">
-                        <label class="text-[11px] font-black text-blue-900 uppercase">CUSTO DIRETO DA OPERAÇÃO POR UNIDADE (R$):</label>
-                        <input type="text" id="custo_total_operacao" readonly class="input-form" style="background-color: #dbeafe; font-weight: 900; color: #1e3a8a;">
+                    <div class="flex-col-gap" style="background-color: #eff6ff; padding: 10px; border-radius: 8px; border: 1px dashed #bfdbfe;">
+                        <label class="label-form" style="color: #1e3a8a;">CUSTO DIRETO DA OPERAÇÃO POR UNIDADE (R$):</label>
+                        <input type="text" id="custo_total_operacao" readonly class="input-form" style="background-color: #bfdbfe; font-weight: 900; color: #1e3a8a;">
                     </div>
-                    <div style="display: flex; gap: 8px; padding-top: 8px;">
-                        <button type="submit" id="btn_salvar" class="btn-submit" style="flex: 1;">⚙️ Homologar Operação</button>
-                        <button type="button" id="btn_cancelar" onclick="limparFormularioProcessos()" class="btn-cancel hidden">Cancelar</button>
+
+                    <div class="flex-btn-group">
+                        <button type="submit" id="btn_salvar" class="btn-submit" style="margin-top:0;">⚙️ Homologar Operação</button>
+                        <button type="button" id="btn_cancelar" onclick="window.limparFormularioProcessos()" class="btn-cancel" style="display:none;">Cancelar</button>
                     </div>
                 </form>
             </div>
-            <div class="table-container" style="grid-column: span 7 / span 7;">
+
+            <!-- QUADRO DIREITO: TABELA DE CRONOANÁLISE DE ROTEIROS -->
+            <div class="table-container">
                 <div class="table-header-dark">Planilha Analítica de Roteiros de Produção (Cronoanálise)</div>
                 <div class="table-responsive">
                     <table>
@@ -258,15 +311,18 @@
                     </table>
                 </div>
             </div>
+
         </div>
+
         <!-- SEÇÃO: RODAPÉ INSTITUCIONAL, HOMENAGEM E EVOLUÇÃO TECNOLÓGICA -->
         <footer class="mt-12 pt-6 border-t-2 border-blue-900 text-xs text-gray-500 pb-4 text-justify leading-relaxed font-sans" style="margin-top: 48px; padding-top: 16px; border-top: 2px solid #1e3a8a; color: #6b7280; font-size: 12px;">
-            <p class="mb-4" style="text-align: justify; margin-bottom: 16px;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p class="mb-4"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e demais conhecimentos utilizados e multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a Inteligência Artificial. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
             <p class="text-center font-bold mb-1" style="text-align: center; font-weight: bold; margin-bottom: 4px;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
             <p class="text-center font-black text-blue-900 mb-1" style="text-align: center; font-weight: 900; color: #1e3a8a; margin-bottom: 4px;">© Copyright Física Renato Pereira ®ψΣ.</p>
             <p class="text-center text-slate-400" style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
         </footer>
     </div>
+
     <script src="/static/global_metrics.js"></script>
     <script src="/processos/processos.js"></script>
 </body>
