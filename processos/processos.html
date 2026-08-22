@@ -1,3 +1,7 @@
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE PROCESSOS
+   PARTE 1 DE 6 - DICIONÁRIO EXPANDIDO DE OPERAÇÕES DIDÁTICAS PARA ADMINISTRAÇÃO
+   ========================================================================== */
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -29,14 +33,12 @@
         
         .badge-percent { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-top: 4px; }
         .badge-purple-value { background-color: #f3e8ff; color: #6b21a8; }
-        
         .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; flex-wrap: wrap; gap: 16px; }
         .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; z-index: 10001; }
         .logo-img { height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px; }
         .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
         .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
         #menu-toggle { display: none; }
-        /* ESTILOS DO MENU CORPORATIVO COM DROPDOWN VIA HOVER */
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
         .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
@@ -45,7 +47,6 @@
         .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; transition: background 0.15s; border-bottom: 1px solid #f1f5f9; }
         .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
         .nav-item:hover .dropdown-menu { display: block; }
-        
         .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; text-align: left; }
         .page-title { font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
         .card-title { font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
@@ -61,13 +62,11 @@
         thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
         th, td { padding: 12px; }
         tr { border-bottom: 1px solid #e5e7eb; }
-        
         .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; display: inline-block; vertical-align: middle; }
         .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; }
         .btn-submit:hover { background-color: #15803d; }
         .btn-cancel { background-color: #e5e7eb; color: #374151; padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; }
         .flex-btn-group { padding-top: 8px; display: flex; gap: 8px; }
-
         @media (max-width: 1120px) {
             .menu-toggle-label { display: flex; }
             .nav-corporate-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: #0f172a; border-top: 1px solid #334155; padding: 8px 0; box-shadow: 0 10px 15px rgba(0,0,0,0.3); z-index: 9998; }
@@ -77,12 +76,10 @@
             #menu-toggle:checked ~ nav .nav-corporate-menu, #menu-toggle:checked ~ .nav-corporate-menu { display: flex; }
             .card, .table-container { grid-column: span 12 / span 12; }
         }
-        
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
         body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
         body.dark-mode thead { background-color: #334155 !important; }
-        
         body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
         body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste .table-container, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
         body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
@@ -94,8 +91,18 @@
     <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA NATIVA -->
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
         <div style="display: flex; align-items: center;">
-            <img src="/static/Logo.svg" alt="Logo Corporativo Vetorial" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
-        </div>    <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
+            <img src="/static/Logo.svg" alt="Logo" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
+            <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
+        </div>
+    </div>
+    <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
     <header class="corporate-header">
         <div class="logo-area">
             <img src="/static/logo.png" alt="Logo ERP" class="logo-img" onerror="this.style.display='none'">
@@ -135,7 +142,7 @@
     </header>
 
     <div class="container">
-        <!-- 📊 PAINEL ESTRUTURADO DE CUSTOS, ATIVOS E LIMITES HORIZONTAIS DINÂMICOS -->
+        <!-- 📊 PAINEL ESTRUTURADO DE CUSTOS, ATIVOS E LIMITES HORIZONTAIS DINÂMICOS CORRIGIDOS -->
         <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px; font-family: sans-serif;">
             
             <!-- LINHA 01: ESCOPO CORPORATIVO (MACRO EMPRESA) -->
@@ -166,7 +173,7 @@
                 </div>
             </div>
 
-            <!-- LINHA 03: GESTÃO PATRIMONIAL E VALOR LÍQUIDO DEPRECIADO -->
+            <!-- LINHA 03: GESTÃO PATRIMONIAL E NOVO CARD DE ATIVOS AMORTIZADOS -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 6px; min-width: 290px;">
@@ -182,7 +189,7 @@
                 </div>
                 <div id="card_budget_limite" style="display: flex; flex-direction: column; gap: 4px; min-width: 380px; flex-grow: 1; padding: 6px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">🎯 Limite Setor (Max 20% Máquinas):</span>
+                        <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">🎯 Limite Setor (Max 20% Ativos):</span>
                         <span id="txt_valores_limite" style="font-size: 12px; font-weight: bold; color: #334155;">R$ 0,00 / R$ 1.000.000,00</span>
                     </div>
                     <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 2px;">
@@ -191,7 +198,7 @@
                     <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: 900; color: #2563eb; text-align: right; display: block; margin-top: 2px;">0.0% do teto consumido</span>
                 </div>
             </div>
-            <!-- LINHA 04: RELATÓRIO DE CUSTOS FIXOS TOTAIS ACUMULADOS -->
+            <!-- LINHA 04: RELATÓRIO DE CUSTOS FIXOS TOTAIS ACUMULADOS COM PORCENTAGEM RELATIVA DUPLA -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div>
@@ -209,7 +216,7 @@
                 </div>
             </div>
 
-            <!-- LINHA 05: RELATÓRIO DE CUSTOS VARIÁVEIS TOTAIS ACUMULADOS -->
+            <!-- LINHA 05: RELATÓRIO DE CUSTOS VARIÁVEIS TOTAIS ACUMULADOS COM PORCENTAGEM RELATIVA DUPLA -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
                     <div>
@@ -228,32 +235,43 @@
             </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
-            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
-        </div>
-    </div>
         <div class="border-b pb-2 mb-4">
             <h2 class="text-xl font-black text-blue-900 uppercase tracking-tight" id="txt_titulo_pagina">Página 12: Engenharia de Processos - Estudo de Tempos, Métodos e Roteiros</h2>
         </div>
-
         <!-- 🚀 ARQUITETURA LADO A LADO DA ENGENHARIA DE PROCESSOS -->
         <div class="grid-main">
             
-            <!-- QUADRO ESQUERDO: FORMULÁRIO DE CADASTRO -->
+            <!-- QUADRO ESQUERDO: FORMULÁRIO DE CADASTRO DIDÁTICO REESTRUTURADO -->
             <div class="card">
                 <h3 class="card-title">Mapeamento de Operações</h3>
                 <form id="formProcesso" onsubmit="window.salvarProcesso(event)">
                     <input type="hidden" id="registro_id" name="id">
                     
                     <div class="flex-col-gap">
-                        <label class="label-form">Nome da Operação / Fase do Processo:</label>
-                        <input type="text" id="nome_operacao" required placeholder="Ex: Torneamento Externo, Mistura de Massa, Corte a Laser" class="input-form">
+                        <label class="label-form">1. Selecione o Produto / Item de Estudo:</label>
+                        <select id="seletor_produto_base" onchange="window.dispararSelecaoProdutoDidatico()" class="select-form" style="font-weight: bold; color: #1e3a8a;">
+                            <option value="">-- Escolha o Item Metálico/Ativo --</option>
+                            <option value="eixo_transmissao">Eixo de Transmissão Principal SAE 4340</option>
+                            <option value="pino_articulacao">Pino de Articulação de Carga SAE 1045</option>
+                            <option value="bucha_bronze">Bucha de Desgaste Mecânico de Bronze/Inox</option>
+                            <option value="engrenagem_elicoidal">Engrenagem Helicoidal de Redutores SAE 8620</option>
+                            <option value="placa_base">Placa Base de Acoplamento Estrutural</option>
+                            <option value="matriz_estampo">Matriz de Estampo de Alta Carga SAE 1070</option>
+                        </select>
                     </div>
+
+                    <div class="flex-col-gap">
+                        <label class="label-form">2. Roteiro / Fase do Processo Industrial:</label>
+                        <select id="seletor_operacao_didatica" onchange="window.carregarFaseOperacionalPredefinida()" class="select-form">
+                            <option value="">-- Aguardando escolha do produto --</option>
+                        </select>
+                    </div>
+
+                    <div class="flex-col-gap">
+                        <label class="label-form">Nome da Operação Selecionada:</label>
+                        <input type="text" id="nome_operacao" required readonly class="input-form input-form-readonly">
+                    </div>
+
                     <div class="flex-col-gap">
                         <label class="label-form">Equipamento Vinculado (Posto de Trabalho):</label>
                         <select id="maquina_vinculada" onchange="window.buscarCustoMinutoMaquina()" class="select-form">
@@ -294,7 +312,7 @@
 
             <!-- QUADRO DIREITO: TABELA DE CRONOANÁLISE DE ROTEIROS -->
             <div class="table-container">
-                <div class="table-header-dark">Planilha Analítica de Roteiros de Produção (Cronoanálise)</div>
+                <div class="table-header-dark">Planilah Analítica de Roteiros de Produção (Cronoanálise)</div>
                 <div class="table-responsive">
                     <table>
                         <thead>
