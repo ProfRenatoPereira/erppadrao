@@ -1,4 +1,7 @@
-/* erppadrao - materiais/materiais.js - PARTE 1 DE 4 */
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 08: ENGENHARIA DE MATERIAIS
+   PARTE 1 DE 4 - ACESSIBILIDADE E SELEÇÃO BASE DO CATÁLOGO
+   ========================================================================== */
 
 let escalaFonteGlobal = 16;
 let sintetizadorLeitor = window.speechSynthesis;
@@ -36,29 +39,32 @@ window.alternarLeitorAudio = function() {
     } else { btn.innerText = "🔊 Leitor"; sintetizadorLeitor.cancel(); }
 };
 
-// DICIONÁRIO DE ENGENHARIA METALÚRGICA E QUÍMICA EXPANDIDO
+// DICIONÁRIO DE ENGENHARIA METALÚRGICA E QUÍMICA CORRIGIDO COM PREÇOS DINÂMICOS
 const CATALOGO_METALURGICO = {
-    aco_1020: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1020-BR", nome: "Barra de Aço SAE 1020", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Carbono para Cementação" },
-    aco_1030: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1030-BR", nome: "Barra de Aço SAE 1030", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono de Alta Forjabilidade" },
-    aco_1045: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1045-BR", nome: "Eixo de Aço SAE 1045", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono Beneficiável Estrutural" },
-    aco_1070: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1070-BR", nome: "Tarugo de Aço SAE 1070", tipo: "barra", densidade: 7.82, unidade: "kg", especificacao: "Alto Carbono para Molas e Facas" },
-    aco_4340: { grupo: "Aços Sólidos (Barras)", sku: "MAT-ALLOY-4340-BR", nome: "Eixo de Aço Liga SAE 4340", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Alta Temperabilidade" },
-    aco_8620: { grupo: "Aços Sólidos (Barras)", sku: "MAT-ALLOY-8620-BR", nome: "Barra de Aço Liga SAE 8620", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Liga Cementável para Engrenagens" },
-    aco_inox_304: { grupo: "Aços Sólidos (Barras)", sku: "MAT-INOX-304-CH", nome: "Chapa/Tarugo Inox AISI 304", tipo: "barra", densidade: 8.00, unidade: "kg", especificacao: "Aço Inoxidável Austenítico" }
+    aco_1020: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1020-BR", nome: "Barra de Aço SAE 1020", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Carbono para Cementação", preco_base: "18.50" },
+    aco_1030: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1030-BR", nome: "Barra de Aço SAE 1030", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono de Alta Forjabilidade", preco_base: "21.40" },
+    aco_1045: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1045-BR", nome: "Eixo de Aço SAE 1045", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Médio Carbono Beneficiável Estrutural", preco_base: "24.80" },
+    aco_1070: { grupo: "Aços Sólidos (Barras)", sku: "MAT-STEEL-1070-BR", nome: "Tarugo de Aço SAE 1070", tipo: "barra", densidade: 7.82, unidade: "kg", especificacao: "Alto Carbono para Molas e Facas", preco_base: "29.10" },
+    aco_4340: { grupo: "Aços Sólidos (Barras)", sku: "MAT-ALLOY-4340-BR", nome: "Eixo de Aço Liga SAE 4340", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Alta Temperabilidade", preco_base: "38.50" },
+    aco_8620: { grupo: "Aços Sólidos (Barras)", sku: "MAT-ALLOY-8620-BR", nome: "Barra de Aço Liga SAE 8620", tipo: "barra", densidade: 7.85, unidade: "kg", especificacao: "Aço Liga Cementável para Engrenagens", preco_base: "34.20" },
+    aco_inox_304: { grupo: "Aços Sólidos (Barras)", sku: "MAT-INOX-304-CH", nome: "Chapa/Tarugo Inox AISI 304", tipo: "barra", densidade: 8.00, unidade: "kg", especificacao: "Aço Inoxidável Austenítico", preco_base: "55.00" }
 };
-/* erppadrao - materiais/materiais.js - PARTE 2 DE 4 */
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 08: ENGENHARIA DE MATERIAIS
+   PARTE 2 DE 4 - EXTENSÃO DO CATÁLOGO E CARGA PREDEFINIDA
+   ========================================================================== */
 
 Object.assign(CATALOGO_METALURGICO, {
-    tubo_1020: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1020-ST", nome: "Tubo Mecânico SAE 1020", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Industrial Sem Costura" },
-    tubo_1045: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1045-HD", nome: "Tubo Hidráulico SAE 1045", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Trefilado Brunido" },
-    quim_tinta: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-PAINT-IND", nome: "Tinta Primer Epóxi Industrial", tipo: "fluido", densidade: 1.25, unidade: "L", especificacao: "Revestimento de Proteção Anticorrosiva" },
-    quim_graxa: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-GREASE-EP2", nome: "Graxa de Alta Temperatura EP2", tipo: "fluido", densidade: 0.92, unidade: "kg", especificacao: "Lubrificação de Rolamentos" },
-    quim_desengraxante: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-DEGREASE", nome: "Desengraxante Alcalino Concentrado", tipo: "fluido", densidade: 1.05, unidade: "L", especificacao: "Decapagem e Lavagem de Peças" },
-    quim_oleo_forno: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-OIL-FURN", nome: "Óleo Mineral para Fornos de Têmpera", tipo: "fluido", densidade: 0.88, unidade: "L", especificacao: "Meio de Resfriamento Acelerado" },
-    quim_oleo_maquina: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-OIL-MACH", nome: "Óleo Lubrificante Hidráulico AW 68", tipo: "fluido", densidade: 0.89, unidade: "L", especificacao: "Fluidos de Transmissão" },
-    quim_oleo_corte: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-OIL-CUT", nome: "Óleo de Corte Solúvel Semissintético", tipo: "fluido", densidade: 0.95, unidade: "L", especificacao: "Fluido de Refrigeração" },
-    gas_argon: { grupo: "Gases Industriais", sku: "MAT-GAS-ARGON-01", nome: "Gás Argônio Puro 99.9%", tipo: "gas", densidade: 1.2, unidade: "m³", especificacao: "Atmosfera Protetiva de Soldagem" },
-    gas_nitrogenio: { grupo: "Gases Industriais", sku: "MAT-GAS-NITRO-02", nome: "Gás Nitrogênio Especial", tipo: "gas", densidade: 1.2, unidade: "m³", especificacao: "Tratamento Térmico e Inertização" }
+    tubo_1020: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1020-ST", nome: "Tubo Mecânico SAE 1020", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Industrial Sem Costura", preco_base: "22.30" },
+    tubo_1045: { grupo: "Tubos Mecânicos (Ocos)", sku: "MAT-PIPE-1045-HD", nome: "Tubo Hidráulico SAE 1045", tipo: "tubo", densidade: 7.85, unidade: "kg", especificacao: "Tubo Trefilado Brunido", preco_base: "31.15" },
+    quim_tinta: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-PAINT-IND", nome: "Tinta Primer Epóxi Industrial", tipo: "fluido", densidade: 1.25, unidade: "L", especificacao: "Revestimento de Proteção Anticorrosiva", preco_base: "42.80" },
+    quim_graxa: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-GREASE-EP2", nome: "Graxa de Alta Temperatura EP2", tipo: "fluido", densidade: 0.92, unidade: "kg", especificacao: "Lubrificação de Rolamentos", preco_base: "36.50" },
+    quim_desengraxante: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-DEGREASE", nome: "Desengraxante Alcalino Concentrado", tipo: "fluido", densidade: 1.05, unidade: "L", especificacao: "Decapagem e Lavagem de Peças", preco_base: "19.90" },
+    quim_oleo_forno: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-OIL-FURN", nome: "Óleo Mineral para Fornos de Têmpera", tipo: "fluido", densidade: 0.88, unidade: "L", especificacao: "Meio de Resfriamento Acelerado", preco_base: "48.00" },
+    quim_oleo_maquina: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-OIL-MACH", nome: "Óleo Lubrificante Hidráulico AW 68", tipo: "fluido", densidade: 0.89, unidade: "L", especificacao: "Fluidos de Transmissão", preco_base: "26.40" },
+    quim_oleo_corte: { grupo: "Químicos e Lubrificantes", sku: "MAT-CHEM-OIL-CUT", nome: "Óleo de Corte Solúvel Semissintético", tipo: "fluido", densidade: 0.95, unidade: "L", especificacao: "Fluido de Refrigeração", preco_base: "32.10" },
+    gas_argon: { grupo: "Gases Industriais", sku: "MAT-GAS-ARGON-01", nome: "Gás Argônio Puro 99.9%", tipo: "gas", densidade: 1.2, unidade: "m³", especificacao: "Atmosfera Protetiva de Soldagem", preco_base: "85.00" },
+    gas_nitrogenio: { grupo: "Gases Industriais", sku: "MAT-GAS-NITRO-02", nome: "Gás Nitrogênio Especial", tipo: "gas", densidade: 1.2, unidade: "m³", especificacao: "Tratamento Térmico e Inertização", preco_base: "79.00" }
 });
 
 const OPCOES_DIAMETROS = [
@@ -113,7 +119,9 @@ window.carregarPreDefinido = function() {
         } else if (bEspessura) { bEspessura.style.display = "none"; }
     }
     
-    document.getElementById('preco_unitario').value = material.sku.includes("CHEM") ? "42.80" : material.tipo === "gas" ? "85.00" : "18.50";
+    // CORREÇÃO: Alocação dinâmica utilizando a nova propriedade individual 'preco_base'
+    document.getElementById('preco_unitario').value = material.preco_base || "18.50";
+    
     document.getElementById('coeficiente_refugo').value = "5.0";
     document.getElementById('lead_time_entrega').value = "4";
     document.getElementById('estoque_seguranca').value = "10";
@@ -121,7 +129,10 @@ window.carregarPreDefinido = function() {
     document.getElementById('quantidade_pecas_lote').value = "50";
     window.calcularCustoOperacionalMaterial();
 };
-/* erppadrao - materiais/materiais.js - PARTE 3 DE 4 */
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 08: ENGENHARIA DE MATERIAIS
+   PARTE 3 DE 4 - CUBAGEM, BALANÇO DE MASSA E REATIVIDADE
+   ========================================================================== */
 
 window.calcularCustoOperacionalMaterial = function() {
     const chave = document.getElementById('seletor_modelo').value;
@@ -172,7 +183,10 @@ window.calcularCustoOperacionalMaterial = function() {
     const custoTotalIntegradoOp = pUn * (1 + (ref / 100)) * (material.unidade === "L" || material.unidade === "m³" ? (compInput * qtdPecas) : massaTotalKg);
     if (document.getElementById('custo_total_integrado')) document.getElementById('custo_total_integrado').value = custoTotalIntegradoOp.toFixed(2);
 };
-/* erppadrao - materiais/materiais.js - PARTE 4 DE 4 (REVISADA COM BOTÃO EDITAR) */
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 08: ENGENHARIA DE MATERIAIS
+   PARTE 4 DE 4 - TRAVA CONTÁBIL SUPABASE E CONSUMO DA API FLASK
+   ========================================================================== */
 
 window.carregarDadosIniciais = function() {
     fetch('/api/materiais/listar')
@@ -226,7 +240,6 @@ window.carregarDadosIniciais = function() {
         }).catch(e => console.error(e));
 };
 
-// REVISÃO: Adicionado o botão Editar perfeitamente alinhado na horizontal com o deletar
 window.renderizarTabelaMateriais = function(materiais) {
     const tbody = document.getElementById('tabela_materiais');
     if (!tbody) return;
@@ -305,4 +318,3 @@ window.vincularEventosInputs = function() {
 function float(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 
 window.carregarDadosIniciais();
-
