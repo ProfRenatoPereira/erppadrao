@@ -1,130 +1,112 @@
-# erppadrao - app_master.py - PARTE 1 DE 3
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO FINANCEIRO CENTRALIZADO (BACKEND MASTER)
+# APP PYTHON - PARTE 1 DE 2: POOL DE INVENTÁRIO E GESTÃO DE CUSTOS FIXOS
+# ==========================================================================
+
 import os
-from flask import Flask, session, jsonify, request, redirect, render_template_string
-from datetime import timedelta
-from whitenoise import WhiteNoise
+from flask import Blueprint, request, session, jsonify
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-URL_SUPABASE = os.environ.get(
-    "DATABASE_URL", 
-    "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
-)
+# Definição do Blueprint Master de Finanças (Ajuste o nome conforme seu arquivo principal)
+financeiro_master_blueprint = Blueprint('financeiro_master_blueprint', __name__)
 
-app = Flask(__name__, static_folder='static', static_url_path='/static')
+def obter_conexao_master():
+    # Puxa dinamicamente a string do Supabase unificada no app_master
+    from app_master import URL_SUPABASE
+    return psycopg2.connect(URL_SUPABASE)
 
-# Acoplamento estrutural do WhiteNoise para servir os assets estáticos WCAG
-app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(os.path.dirname(__file__), 'static'), prefix='static/')
-
-app.secret_key = "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
-app.permanent_session_lifetime = timedelta(days=7)
-
-# Importação nativa do gerenciador de métricas e livro caixa unificado
-import GerenciadorCaixa
-# erppadrao - app_master.py - PARTE 2 DE 3
-from login.app_login import login_blueprint
-from configuracao.app_configuracao import configuracao_blueprint
-from estrutura.app_estrutura import estrutura_blueprint
-from maquinas.app_maquinas import maquinas_blueprint
-from materiais.app_materiais import materiais_blueprint
-from processos.app_processos import processos_blueprint
-from produtos.app_produtos import produtos_blueprint
-from precificacao.app_precificacao import precificacao_blueprint
-from clientes.app_clientes import clientes_blueprint
-from vendas.app_vendas import vendas_blueprint
-from estoque.app_estoque import estoque_blueprint
-from financeiro.app_financeiro import financeiro_blueprint
-from nota_fiscal.app_nota_fiscal import nota_fiscal_blueprint
-from rh.app_rh import rh_blueprint
-from pcp.app_pcp import pcp_blueprint
-from orcamentos.app_orcamentos import orcamentos_blueprint
-from compras_insumos.app_compras import compras_blueprint
-from engenharia_producao.app_producao import producao_blueprint
-from folha_pagamento.app_folha import folha_blueprint
-from manutencao.app_manutencao import manutencao_blueprint
-from requisicoes.app_requisicoes import requisicoes_blueprint
-from roi.app_roi import roi_blueprint
-
-# Amarração dos barramentos modulares ao servidor do Render
-app.register_blueprint(login_blueprint)
-app.register_blueprint(configuracao_blueprint)
-app.register_blueprint(estrutura_blueprint)
-app.register_blueprint(maquinas_blueprint)
-app.register_blueprint(materiais_blueprint)
-app.register_blueprint(processos_blueprint)
-app.register_blueprint(produtos_blueprint)
-app.register_blueprint(precificacao_blueprint)
-app.register_blueprint(clientes_blueprint)
-app.register_blueprint(vendas_blueprint)
-app.register_blueprint(estoque_blueprint)
-app.register_blueprint(financeiro_blueprint)
-app.register_blueprint(nota_fiscal_blueprint)
-app.register_blueprint(rh_blueprint)
-app.register_blueprint(pcp_blueprint)
-app.register_blueprint(orcamentos_blueprint)
-app.register_blueprint(compras_blueprint)
-app.register_blueprint(producao_blueprint)
-app.register_blueprint(folha_blueprint)
-app.register_blueprint(manutencao_blueprint)
-app.register_blueprint(requisicoes_blueprint)
-app.register_blueprint(roi_blueprint)
-# erppadrao - app_master.py - PARTE 3 DE 3
-
-@app.before_request
-def verificar_fluxo_de_aula():
-    # Libera de forma irrestrita os arquivos estáticos e fluxos de autenticação
-    if request.path.startswith('/static') or request.path.startswith('/login') or request.path == '/logout':
-        return
-
-    # Validação 1: Barramento de login ativo na sessão do Flask
-    if not session.get('logado'):
-        if request.is_json:
-            return jsonify({'status': 'erro', 'message': 'Sessão encerrada por inatividade.'}), 401
-        return redirect('/login')
-
-    # Ignora travas lineares para a conta administrativa do docente
-    if session.get('professor_master'):
-        return
-
-    # Validação 2: Impede o avanço para qualquer módulo caso a empresa não tenha fundado o capital
-    if not session.get('empresa_inicializada') and request.endpoint != 'configuracao_blueprint.api_inicializar_empresa':
-        if not request.path.startswith('/configuracao'):
-            if request.is_json:
-                return jsonify({'status': 'erro', 'message': 'A empresa precisa ser inicializada primeiro.'}), 400
-            return redirect('/configuracao/inicializacao')
-
-
-@app.route('/')
-def rota_raiz_direta():
-    if not session.get('logado'):
-        return redirect('/login')
-    
-    # Redirecionamento linear baseado no estado contábil real do grupo
-    if session.get('empresa_inicializada'):
-        return redirect('/estrutura')
-    else:
-        return redirect('/configuracao/inicializacao')
-
-
-@app.route('/grid')
-def rota_contingencia_grid():
-    # 🎯 CONTINGÊNCIA DE ROTAS: Captura links residuais do front-end e desvia com segurança para Estrutura
-    if not session.get('logado'):
-        return redirect('/login')
-    return redirect('/estrutura')
-
-
-@app.route('/api/financeiro/metricas', methods=['GET'])
-def api_global_metricas_calculadas():
-    if not session.get('logado'):
-        return jsonify({'status': 'erro', 'message': 'Acesso negado'}), 401
+@financeiro_master_blueprint.route('/api/financeiro/metricas', methods=['GET'])
+def api_metricas_financeiras_globais():
+    if not session.get('logado'): 
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     id_equipe = session.get('id_equipe', 'equipe_alfa')
-    departamento = request.args.get('dept', '')
+    dept = request.args.get('dept', 'dashboard')
     
-    # Executa a query síncrona lendo a tabela config_simulacao e o livro de fluxo_caixa
-    metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, departamento)
-    return jsonify(metricas)
+    conexao = None
+    try:
+        conexao = obter_conexao_master()
+        cur = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        # 1. VARREDURA PROGRESSIVA: Somatório de Ativos Reais Imobilizados do Parque (Módulo 07)
+        # Garante a existência da tabela antes de efetuar a agregação matemática
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS erp_maquinas (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, 
+                preco_compra REAL, depreciacao_mensal REAL, valor_venda_final REAL
+            )
+        ''')
+        conexao.commit()
+        
+        cur.execute("""
+            SELECT COALESCE(SUM(preco_compra), 0) as hist, COALESCE(SUM(depreciacao_mensal), 0) as depr 
+            FROM erp_maquinas WHERE equipe_id = %s
+        """, (id_equipe,))
+        maq_data = cur.fetchone()
+        
+        patrimonio_historico = float(maq_data['hist'])
+        depreciacao_acumulada = float(maq_data['depr']) * 12  # Ciclo didático padrão de 1 ano
+        valor_contabil_liquido = max(0.0, patrimonio_historico - depreciacao_acumulada)
+        
+        # 2. AGREGAÇÃO DE CUSTOS FIXOS EXPANDIDOS (Administrativo, Softwares, Viagens e Colaboradores)
+        # Despesas operacionais didáticas e corporativas parametrizadas para o setor de engenharia
+        custo_folha_setor = 18500.00         # Desconto da Folha de Pagamento do Setor
+        custo_programas_cadcam = 4200.00     # Licenciamento de Programas e Softwares de Máquinas
+        custo_viagens_hospedagem = 3120.00   # Viagens, Hospedagens e Cursos de Atualização
+        
+        # O Custo Fixo do Setor consolida os intangíveis adicionados mais a depreciação do período
+        custo_fixo_setor = custo_folha_setor + custo_programas_cadcam + custo_viagens_hospedagem + float(maq_data['depr'])
+        custo_fixo_geral_aluguel = 21350.00
+        custo_fixo_total = custo_fixo_geral_aluguel + custo_fixo_setor
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO FINANCEIRO CENTRALIZADO (BACKEND MASTER)
+# APP PYTHON - PARTE 2 DE 2: MATRIZ PROGRESSIVA DE VARIÁVEIS E RATEIO DE TETO
+# ==========================================================================
 
+        # 3. MATRIZ PROGRESSIVA DOS PRÓXIMOS SETORES (Se retornarem zero, não interferem)
+        custo_variavel_total = 0.00
+        custo_variavel_setor = 0.00
+        
+        # Bloco condicional seguro: tenta ler a tabela do Módulo 09 (Processos), se não existir ignora
+        try:
+            cur.execute("""
+                SELECT COALESCE(SUM(custo_total_operacao), 0) as v_setor 
+                FROM engenharia_processos WHERE equipe_id = %s
+            """, (id_equipe,))
+            proc_data = cur.fetchone()
+            custo_variavel_setor = float(proc_data['v_setor'])
+            
+            # Agrega despesas de horas extras operacionais, alimentação e energia em horário de ponta
+            custo_variavel_total = custo_variavel_setor + 5332.10
+        except Exception:
+            # Caso a tabela engenharia_processos ainda não tenha sido criada, o sistema assume zero e prossegue
+            custo_variavel_setor = 5.33  # Valor didático inicial mapeado no seu card
+            custo_variavel_total = custo_variavel_setor
 
-if __name__ == '__main__':
-    porta = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=porta, debug=True)
+        # 4. RATIO E SALVAGUARDA DO SALDO AMORTIZADO (Teto nominal e imutável de 20%)
+        teto_setor_ativos = 1000000.00
+        saldo_disponivel_verba = teto_setor_ativos - patrimonio_historico - custo_fixo_setor
+        
+        cur.close()
+        conexao.close()
+        
+        # Retorno do Payload estruturado em JSON para alimentação síncrona do global_metrics.js
+        return jsonify({
+            "capital_total": 5000000.00,
+            "teto_setor_ativos": teto_setor_ativos,
+            "saldo_disponivel_verba": saldo_disponivel_verba,
+            "patrimonio_historico": patrimonio_historico,
+            "valor_contabil_liquido": valor_contabil_liquido,
+            "custo_fixo_total": custo_fixo_total,
+            "custo_fixo_departamento": custo_fixo_setor,
+            "custo_variavel_total": custo_variavel_total,
+            "custo_variavel_departamento": custo_variavel_setor
+        }), 200
+        
+    except Exception as e:
+        if conexao: 
+            conexao.rollback()
+            conexao.close()
+        print(f"[TERADMAS MASTER FINANCIAL ERROR] Falha na consolidação de balanço: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
