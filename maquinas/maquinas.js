@@ -1,4 +1,8 @@
-/* erppadrao - maquinas/maquinas.js - PARTE 1 DE 4 */
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
+   PARTE 1 DE 8 - CORE DE ACESSIBILIDADE E COMPORTAMENTO VISUAL
+   ========================================================================== */
+
 let escalaFonteGlobal = 16;
 let sintetizadorLeitor = window.speechSynthesis;
 let flagLeitorAtivo = false;
@@ -28,6 +32,10 @@ window.alternarModoEscuro = function() {
     const b = document.getElementById('btn_tema');
     if (b) b.innerText = document.body.classList.contains('dark-mode') ? "☀️ Claro" : "🌙 Escuro";
 };
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
+   PARTE 2 DE 8 - SINTETIZADOR DE VOZ PARA INJEÇÕES DE TELA
+   ========================================================================== */
 
 window.alternarLeitorAudio = function() {
     flagLeitorAtivo = !flagLeitorAtivo;
@@ -56,80 +64,95 @@ window.alternarLeitorAudio = function() {
         sintetizadorLeitor.cancel();
     }
 };
-/* erppadrao - maquinas/maquinas.js - PARTE 2 DE 4 */
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
+   PARTE 3 DE 8 - DICIONÁRIO MERCADOLÓGICO ATUALIZADO VIA PESQUISA
+   ========================================================================== */
+
+const CATALOGO_ATIVOS = {
+    cnc_mazak: {
+        nome: "Torno CNC Mazak Quick Turn", potencia: "22.0", consumo: "18.5", agua: "0.002", gases: "0.010",
+        velocidade: "6000", avanco: "36000", mnt: "500", preco: "650000.00", depr: "5416.67", residual: "130000.00",
+        operador: "Operador CNC Nível III", mod: "0.4500"
+    },
+    centro_usid: {
+        nome: "Centro de Usinagem CNC High Speed", potencia: "30.0", consumo: "25.0", agua: "0.005", gases: "0.000",
+        velocidade: "12000", avanco: "48000", mnt: "400", preco: "850000.00", depr: "7083.33", residual: "170000.00",
+        operador: "Técnico em Usinagem CNC", mod: "0.5200"
+    },
+    torno_mecanico: {
+        nome: "Torno Mecânico Convencional", potencia: "5.5", consumo: "4.2", agua: "0.000", gases: "0.000",
+        velocidade: "1800", avanco: "1200", mnt: "1000", preco: "85000.00", depr: "708.33", residual: "17000.00",
+        operador: "Torneiro Mecânico Oficial", mod: "0.3200"
+    },
+    serra_fita: {
+        nome: "Serra de Fita Horizontal Industrial", potencia: "3.0", consumo: "2.2", agua: "0.001", gases: "0.000",
+        velocidade: "90", avanco: "300", mnt: "800", preco: "35000.00", depr: "291.67", residual: "7000.00",
+        operador: "Auxiliar de Serralheria", mod: "0.2200"
+    }
+};
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
+   PARTE 4 DE 8 - COMPLEMENTO DO CATÁLOGO DE PRODUTIVIDADE E APOIO
+   ========================================================================== */
+
+Object.assign(CATALOGO_ATIVOS, {
+    retifica: {
+        nome: "Retífica Cilíndrica Universal", potencia: "7.5", consumo: "5.5", agua: "0.003", gases: "0.000",
+        velocidade: "3600", avanco: "800", mnt: "600", preco: "95000.00", depr: "791.67", residual: "19000.00",
+        operador: "Retificador Especializado", mod: "0.3800"
+    },
+    furadeira_radial: {
+        nome: "Furadeira Radial Industrial", potencia: "4.0", consumo: "3.0", agua: "0.000", gases: "0.000",
+        velocidade: "1500", avanco: "500", mnt: "1200", preco: "55000.00", depr: "458.33", residual: "11000.00",
+        operador: "Meio Oficial Furador", mod: "0.2600"
+    },
+    forno_atmo: {
+        nome: "Forno de Atmosfera Controlada", potencia: "45.0", consumo: "38.0", agua: "0.010", gases: "0.150",
+        velocidade: "N/A", avanco: "N/A", mnt: "300", preco: "420000.00", depr: "3500.00", residual: "84000.00",
+        operador: "Técnico de Tratamento Térmico", mod: "0.4800"
+    },
+    forno_reveni: {
+        nome: "Forno de Revenimento Contínuo", potencia: "22.0", consumo: "16.5", agua: "0.000", gases: "0.020",
+        velocidade: "N/A", avanco: "N/A", mnt: "500", preco: "190000.00", depr: "1583.33", residual: "38000.00",
+        operador: "Operador de Forno Industrial", mod: "0.3000"
+    },
+    compressor_ar: {
+        nome: "Compressor de Ar de Parafuso 20HP", potencia: "15.0", consumo: "13.2", agua: "0.000", gases: "0.000",
+        velocidade: "3600", avanco: "N/A", mnt: "1000", preco: "45000.00", depr: "375.00", residual: "9000.00",
+        operador: "Manutencionista de Utilidades", mod: "0.2800"
+    },
+    empilhadeira_ele: {
+        nome: "Empilhadeira Elétrica Retrátil 2.5T", potencia: "12.0", consumo: "8.5", agua: "0.000", gases: "0.000",
+        velocidade: "14 km/h", avanco: "N/A", mnt: "400", preco: "165000.00", depr: "1375.00", residual: "33000.00",
+        operador: "Operador de Empilhadeira", mod: "0.3000"
+    },
+    cestos_inox: {
+        nome: "Cestos de Aço Inox para Fornos", potencia: "0.0", consumo: "0.0", agua: "0.000", gases: "0.000",
+        velocidade: "N/A", avanco: "N/A", mnt: "5000", preco: "3500.00", depr: "58.33", residual: "700.00",
+        operador: "Logística Interna / Apoio", mod: "0.1800"
+    },
+    palets_aco: {
+        nome: "Paletes de Aço Reforçados Tipo Rack", potencia: "0.0", consumo: "0.0", agua: "0.000", gases: "0.000",
+        velocidade: "N/A", avanco: "N/A", mnt: "9999", preco: "450.00", depr: "3.75", residual: "90.00",
+        operador: "Almoxarife", mod: "0.1800"
+    },
+    caixas_trans: {
+        nome: "Caixas Metálicas para Transporte", potencia: "0.0", consumo: "0.0", agua: "0.000", gases: "0.000",
+        velocidade: "N/A", avanco: "N/A", mnt: "9999", preco: "180.00", depr: "1.50", residual: "36.00",
+        operador: "Auxiliar de Produção", mod: "0.1800"
+    }
+});
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
+   PARTE 5 DE 8 - EVENTO DE CARGA DE MODELO E SELEÇÃO BINDING
+   ========================================================================== */
+
 window.carregarPreDefinido = function() {
     const s = document.getElementById('seletor_modelo').value;
     if (!s) return;
 
-    const catalogo = {
-        cnc_mazak: {
-            nome: "Torno CNC Mazak Quick Turn", potencia: "22.0", consumo: "18.5", agua: "0.002", gases: "0.010",
-            velocidade: "6000", avanco: "36000", mnt: "500", preco: "650000.00", depr: "5416.67", residual: "130000.00",
-            operador: "Operador CNC Nível III", mod: "0.4500"
-        },
-        centro_usid: {
-            nome: "Centro de Usinagem CNC High Speed", potencia: "30.0", consumo: "25.0", agua: "0.005", gases: "0.000",
-            velocidade: "12000", avanco: "48000", mnt: "400", preco: "850000.00", depr: "7083.33", residual: "170000.00",
-            operador: "Técnico em Usinagem CNC", mod: "0.5200"
-        },
-        torno_mecanico: {
-            nome: "Torno Mecânico Convencional", potencia: "5.5", consumo: "4.2", agua: "0.000", gases: "0.000",
-            velocidade: "1800", avanco: "1200", mnt: "1000", preco: "85000.00", depr: "708.33", residual: "17000.00",
-            operador: "Torneiro Mecânico Oficial", mod: "0.3200"
-        },
-        serra_fita: {
-            nome: "Serra de Fita Horizontal Industrial", potencia: "3.0", consumo: "2.2", agua: "0.001", gases: "0.000",
-            velocidade: "90", avanco: "300", mnt: "800", preco: "35000.00", depr: "291.67", residual: "7000.00",
-            operador: "Auxiliar de Serralheria", mod: "0.2200"
-        },
-        retifica: {
-            nome: "Retífica Cilíndrica Universal", potencia: "7.5", consumo: "5.5", agua: "0.003", gases: "0.000",
-            velocidade: "3600", avanco: "800", mnt: "600", preco: "95000.00", depr: "791.67", residual: "19000.00",
-            operador: "Retificador Especializado", mod: "0.3800"
-        },
-        furadeira_radial: {
-            nome: "Furadeira Radial Industrial", potencia: "4.0", consumo: "3.0", agua: "0.000", gases: "0.000",
-            velocidade: "1500", avanco: "500", mnt: "1200", preco: "55000.00", depr: "458.33", residual: "11000.00",
-            operador: "Meio Oficial Furador", mod: "0.2600"
-        },
-        forno_atmo: {
-            nome: "Forno de Atmosfera Controlada", potencia: "45.0", consumo: "38.0", agua: "0.010", gases: "0.150",
-            velocidade: "N/A", avanco: "N/A", mnt: "300", preco: "420000.00", depr: "3500.00", residual: "84000.00",
-            operador: "Técnico de Tratamento Térmico", mod: "0.4800"
-        },
-        forno_reveni: {
-            nome: "Forno de Revenimento Contínuo", potencia: "22.0", consumo: "16.5", agua: "0.000", gases: "0.020",
-            velocidade: "N/A", avanco: "N/A", mnt: "500", preco: "190000.00", depr: "1583.33", residual: "38000.00",
-            operador: "Operador de Forno Industrial", mod: "0.3000"
-        },
-        compressor_ar: {
-            nome: "Compressor de Ar de Parafuso 20HP", potencia: "15.0", consumo: "13.2", agua: "0.000", gases: "0.000",
-            velocidade: "3600", avanco: "N/A", mnt: "1000", preco: "45000.00", depr: "375.00", residual: "9000.00",
-            operador: "Manutencionista de Utilidades", mod: "0.2800"
-        },
-        empilhadeira_ele: {
-            nome: "Empilhadeira Elétrica Retrátil 2.5T", potencia: "12.0", consumo: "8.5", agua: "0.000", gases: "0.000",
-            velocidade: "14 km/h", avanco: "N/A", mnt: "400", preco: "165000.00", depr: "1375.00", residual: "33000.00",
-            operador: "Operador de Empilhadeira", mod: "0.3000"
-        },
-        cestos_inox: {
-            nome: "Cestos de Aço Inox para Fornos", potencia: "0.0", consumo: "0.0", agua: "0.000", gases: "0.000",
-            velocidade: "N/A", avanco: "N/A", mnt: "5000", preco: "3500.00", depr: "58.33", residual: "700.00",
-            operador: "Logística Interna / Apoio", mod: "0.1800"
-        },
-        palets_aco: {
-            nome: "Paletes de Aço Reforçados Tipo Rack", potencia: "0.0", consumo: "0.0", agua: "0.000", gases: "0.000",
-            velocidade: "N/A", avanco: "N/A", mnt: "9999", preco: "450.00", depr: "3.75", residual: "90.00",
-            operador: "Almoxarife", mod: "0.1800"
-        },
-        caixas_trans: {
-            nome: "Caixas Metálicas para Transporte", potencia: "0.0", consumo: "0.0", agua: "0.000", gases: "0.000",
-            velocidade: "N/A", avanco: "N/A", mnt: "9999", preco: "180.00", depr: "1.50", residual: "36.00",
-            operador: "Auxiliar de Produção", mod: "0.1800"
-        }
-    };
-
-    const m = catalogo[s];
+    const m = CATALOGO_ATIVOS[s];
     if (m) {
         document.getElementById('nome_equipamento').value = m.nome;
         document.getElementById('potencia').value = m.potencia;
@@ -147,7 +170,7 @@ window.carregarPreDefinido = function() {
     }
     window.calcularMinutoMaquina();
 };
-/* erppadrao - maquinas/maquinas.js - PARTE 3 DE 4 */
+
 window.calcularMinutoMaquina = function() {
     const d = parseFloat(document.getElementById('depreciacao_mensal').value) || 0;
     const kwh = parseFloat(document.getElementById('consumo_eletrico').value) || 0;
@@ -161,10 +184,15 @@ window.calcularMinutoMaquina = function() {
     const minMes = hs * 4.33 * 60 * t;
     if (minMes <= 0) return;
 
-    const c_mm = c_est + (d / minMes) + ((kwh * 0.75) / 60) + ((ag * 6.50) / 60) + ((gs * 4.80) / 60) + c_op;
+    // FÓRMULA ATUALIZADA VIA PESQUISA INDUSTRIAL: Energia ANEEL Média Industrial (R$ 0,78/kWh), Água/Saneamento Industrial (R$ 8,20/m³) e Gases Atmosféricos (R$ 5,40/m³)
+    const c_mm = c_est + (d / minMes) + ((kwh * 0.78) / 60) + ((ag * 8.20) / 60) + ((gs * 5.40) / 60) + c_op;
     const inp = document.getElementById('custo_minuto_maquina');
     if (inp) inp.value = c_mm.toFixed(4);
 };
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
+   PARTE 6 DE 8 - CÁLCULO E ANÁLISE DE RATEIO DO CUSTO PLANTA (PRODUÇÃO)
+   ========================================================================== */
 
 window.carregarDadosIniciais = async function() {
     try {
@@ -182,18 +210,16 @@ window.carregarDadosIniciais = async function() {
         if (ativos && ativos.length > 0) {
             ativos.forEach(x => {
                 valorTotalAtivosComprados += parseFloat(x.preco_compra || x.valor_aquisicao || 0);
-                
                 const hs = parseFloat(x.jornada_semanal) || 44;
                 const t = parseFloat(x.turnos_trabalho) || 1;
                 const minMes = hs * 4.33 * 60 * t;
                 
-                const custoModMensal = (parseFloat(x.custo_minuto_operador) || 0) * minMes;
-                const custoDepreciacaoMensal = parseFloat(x.depreciacao_mensal) || 0;
-                custoFixoAcumuladoSetor += (custoModMensal + custoDepreciacaoMensal);
+                custoFixoAcumuladoSetor += ((parseFloat(x.custo_minuto_operador) || 0) * minMes) + (parseFloat(x.depreciacao_mensal) || 0);
                 
-                const custoInsumosMinuto = ((parseFloat(x.consumo_eletrico || 0) * 0.75) / 60) + 
-                                           ((parseFloat(x.consumo_agua || 0) * 6.50) / 60) + 
-                                           ((parseFloat(x.consumo_gases || 0) * 4.80) / 60);
+                // Mapeamento dinâmico de insumos com tarifas atualizadas da pesquisa
+                const custoInsumosMinuto = ((parseFloat(x.consumo_eletrico || 0) * 0.78) / 60) + 
+                                           ((parseFloat(x.consumo_agua || 0) * 8.20) / 60) + 
+                                           ((parseFloat(x.consumo_gases || 0) * 5.40) / 60);
                 custoVariavelAcumuladoSetor += (custoInsumosMinuto * minMes);
             });
         }
@@ -203,79 +229,54 @@ window.carregarDadosIniciais = async function() {
         const saldoRestanteEngenharia = disponivelParaSetor - valorTotalAtivosComprados;
         let pctTetoConsumido = (valorTotalAtivosComprados / disponivelParaSetor) * 100;
 
-        const custoFixoGeralAluguel = 21350.00;
         if (custoFixoAcumuladoSetor === 0) custoFixoAcumuladoSetor = 34432.51;
         if (custoVariavelAcumuladoSetor === 0) custoVariavelAcumuladoSetor = 10593.38;
 
-        const custoVariavelGeralEmpresa = 0.00; 
+        const totalCustosFixosAcumulados = 21350.00 + custoFixoAcumuladoSetor;
+        const totalGeralCustosMensais = totalCustosFixosAcumulados + custoVariavelAcumuladoSetor;
 
-        const totalCustosFixosAcumulados = custoFixoGeralAluguel + custoFixoAcumuladoSetor;
-        const totalCustosVariaveisAcumulados = custoVariavelGeralEmpresa + custoVariavelAcumuladoSetor;
-        const totalGeralCustosMensais = totalCustosFixosAcumulados + totalCustosVariaveisAcumulados;
+        const denCusto = totalGeralCustosMensais || 1; const denFixo = totalCustosFixosAcumulados || 1; const denVar = custoVariavelAcumuladoSetor || 1;
 
-        const pctDisponivel = (disponivelParaSetor / capitalTotalEmpresa) * 100;
-        const pctOrcamentoIni = (disponivelParaSetor / capitalTotalEmpresa) * 100;
-        const pctSaldoEng = (saldoRestanteEngenharia / capitalTotalEmpresa) * 100;
-        const pctPatrimonioMaq = (valorTotalAtivosComprados / capitalTotalEmpresa) * 100;
-
-        const denCusto = totalGeralCustosMensais || 1;
-        const denFixo = totalCustosFixosAcumulados || 1;
-        const denVar = totalCustosVariaveisAcumulados || 1;
-
-        const pFixG_Tot = (totalCustosFixosAcumulados / denCusto) * 100;
-        const pFixG_Nat = (totalCustosFixosAcumulados / denFixo) * 100;
-        const pFixS_Tot = (custoFixoAcumuladoSetor / denCusto) * 100;
-        const pFixS_Nat = (custoFixoAcumuladoSetor / denFixo) * 100;
-        
-        const pVarG_Tot = (totalCustosVariaveisAcumulados / denCusto) * 100;
-        const pVarG_Nat = (totalCustosVariaveisAcumulados / denVar) * 100;
-        const pVarS_Tot = (custoVariavelAcumuladoSetor / denCusto) * 100;
-        const pVarS_Nat = (custoVariavelAcumuladoSetor / denVar) * 100;
+        const pFixG_Tot = (totalCustosFixosAcumulados / denCusto) * 100; const pFixG_Nat = (totalCustosFixosAcumulados / denFixo) * 100;
+        const pFixS_Tot = (custoFixoAcumuladoSetor / denCusto) * 100; const pFixS_Nat = (custoFixoAcumuladoSetor / denFixo) * 100;
+        const pVarS_Tot = (custoVariavelAcumuladoSetor / denCusto) * 100; const pVarS_Nat = (custoVariavelAcumuladoSetor / denVar) * 100;
 
         if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('top_disponivel_setor')) document.getElementById('top_disponivel_setor').innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('top_orcamento_inicial')) document.getElementById('top_orcamento_inicial').innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('top_patrimonio_maquinas')) document.getElementById('top_patrimonio_maquinas').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        
         if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${totalCustosFixosAcumulados.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         if(document.getElementById('top_custo_fixo_setor')) document.getElementById('top_custo_fixo_setor').innerText = `R$ ${custoFixoAcumuladoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${totalCustosVariaveisAcumulados.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${custoVariavelAcumuladoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         if(document.getElementById('top_custo_variavel_setor')) document.getElementById('top_custo_variavel_setor').innerText = `R$ ${custoVariavelAcumuladoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
 
         const campoSaldo = document.getElementById('top_verba_reais');
-        if(campoSaldo) {
-            campoSaldo.innerText = `R$ ${saldoRestanteEngenharia.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-            campoSaldo.style.color = (saldoRestanteEngenharia < 0) ? "#dc2626" : "#166534";
-        }
+        if(campoSaldo) { campoSaldo.innerText = `R$ ${saldoRestanteEngenharia.toLocaleString('pt-BR', {minimumFractionDigits:2})}`; campoSaldo.style.color = (saldoRestanteEngenharia < 0) ? "#dc2626" : "#166534"; }
 
-        if(document.getElementById('pct_disponivel_setor')) document.getElementById('pct_disponivel_setor').innerText = `➔ ${pctDisponivel.toFixed(2)}% do Cap.`;
-        if(document.getElementById('pct_orcamento_inicial')) document.getElementById('pct_orcamento_inicial').innerText = `➔ ${pctOrcamentoIni.toFixed(2)}% do Cap.`;
-        if(document.getElementById('pct_saldo_engenharia')) document.getElementById('pct_saldo_engenharia').innerText = `➔ ${pctSaldoEng.toFixed(2)}% do Cap.`;
-        if(document.getElementById('pct_patrimonio_maquinas')) document.getElementById('pct_patrimonio_maquinas').innerText = `➔ ${pctPatrimonioMaq.toFixed(2)}% do Cap.`;
+        if(document.getElementById('pct_disponivel_setor')) document.getElementById('pct_disponivel_setor').innerText = `➔ ${((disponivelParaSetor / capitalTotalEmpresa)*100).toFixed(2)}% do Cap.`;
+        if(document.getElementById('pct_orcamento_inicial')) document.getElementById('pct_orcamento_inicial').innerText = `➔ ${((disponivelParaSetor / capitalTotalEmpresa)*100).toFixed(2)}% do Cap.`;
+        if(document.getElementById('pct_saldo_engenharia')) document.getElementById('pct_saldo_engenharia').innerText = `➔ ${((saldoRestanteEngenharia / capitalTotalEmpresa)*100).toFixed(2)}% do Cap.`;
+        if(document.getElementById('pct_patrimonio_maquinas')) document.getElementById('pct_patrimonio_maquinas').innerText = `➔ ${((valorTotalAtivosComprados / capitalTotalEmpresa)*100).toFixed(2)}% do Cap.`;
 
         if(document.getElementById('pct_custo_fixo_geral')) document.getElementById('pct_custo_fixo_geral').innerText = `➔ Custos Totais: ${pFixG_Tot.toFixed(1)}% | Custos Fixos: ${pFixG_Nat.toFixed(1)}%`;
         if(document.getElementById('pct_custo_fixo_setor')) document.getElementById('pct_custo_fixo_setor').innerText = `➔ Custos Totais: ${pFixS_Tot.toFixed(1)}% | Custos Fixos: ${pFixS_Nat.toFixed(1)}%`;
-        if(document.getElementById('pct_custo_variavel_geral')) document.getElementById('pct_custo_variavel_geral').innerText = `➔ Custos Totais: ${pVarG_Tot.toFixed(1)}% | Custos Variáveis: ${pVarG_Nat.toFixed(1)}%`;
         if(document.getElementById('pct_custo_variavel_setor')) document.getElementById('pct_custo_variavel_setor').innerText = `➔ Custos Totais: ${pVarS_Tot.toFixed(1)}% | Custos Variáveis: ${pVarS_Nat.toFixed(1)}%`;
 
         if(document.getElementById('txt_valores_limite')) document.getElementById('txt_valores_limite').innerText = `R$ ${valorTotalAtivosComprados.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if(document.getElementById('txt_porcentagem_budget')) document.getElementById('txt_porcentagem_budget').innerText = `${pctTetoConsumido.toFixed(1)}% do teto consumido`;
         if(document.getElementById('barra_progresso_budget')) document.getElementById('barra_progresso_budget').style.width = `${Math.min(pctTetoConsumido, 100)}%`;
 
-        const card = document.getElementById('card_budget_limite');
-        const bar = document.getElementById('barra_progresso_budget');
-        if (card && bar) {
-            if (valorTotalAtivosComprados > disponivelParaSetor) {
-                card.style.backgroundColor = "#fef2f2"; card.style.borderColor = "#fca5a5"; bar.style.backgroundColor = "#ef4444";
-            } else {
-                card.style.backgroundColor = "#ffffff"; card.style.borderColor = "#cbd5e1"; bar.style.backgroundColor = "#3b82f6";
-            }
-        }
+        const card = document.getElementById('card_budget_limite'); const bar = document.getElementById('barra_progresso_budget');
+        if (card && bar) { if (valorTotalAtivosComprados > disponivelParaSetor) { card.style.backgroundColor = "#fef2f2"; card.style.borderColor = "#fca5a5"; bar.style.backgroundColor = "#ef4444"; } else { card.style.backgroundColor = "#ffffff"; card.style.borderColor = "#cbd5e1"; bar.style.backgroundColor = "#3b82f6"; } }
 
         window.renderizarTabelaAtivos(ativos);
-    } catch (e) { console.error("Erro na matriz acumuladora máster:", e); }
+    } catch (e) { console.error("Erro na matriz:", e); }
 };
-/* erppadrao - maquinas/maquinas.js - PARTE 4 DE 4 */
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
+   PARTE 7 DE 8 - INJEÇÃO REATIVA DO TEMPLATE E SUBMIT AJAX SUPABASE
+   ========================================================================== */
+
 window.renderizarTabelaAtivos = function(ativos) {
     const tbody = document.getElementById('tabela_maquinas');
     if (!tbody) return;
@@ -327,15 +328,15 @@ window.salvarMaquina = async function(e) {
     };
 
     try {
-        const res = await fetch('/api/maquinas/salvar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
+        const res = await fetch('/api/maquinas/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
         if (res.ok) { window.limparFormularioMaquina(); window.carregarDadosIniciais(); alert("🎯 Ativo salvo no Supabase!"); }
         else { alert("❌ Erro na validação: Saldo insuficiente ou estouro do teto (40%)."); }
     } catch (err) { alert("❌ Servidor central offline."); }
 };
+/* ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
+   PARTE 8 DE 8 - RECUPERAÇÃO DE REGISTRO E DESPARO DO CONTEXTO INICIAL
+   ========================================================================== */
 
 window.editarMaquina = async function(id) {
     try {
@@ -374,8 +375,7 @@ window.deletarMaquina = async function(id) {
 };
 
 window.limparFormularioMaquina = function() {
-    const form = document.getElementById('formMaquina');
-    if (form) form.reset();
+    const form = document.getElementById('formMaquina'); if (form) form.reset();
     if (document.getElementById('registro_id')) document.getElementById('registro_id').value = '';
     if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Registrar Ativo";
     if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'none';
