@@ -1,8 +1,9 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE PROCESSOS
-# APP PYTHON - PARTE 1 DE 2: CONFIGURAÇÃO DE BLUEPRINT E SALVAMENTO
+# APP PYTHON - PARTE 1 DE 2: CONFIGURAÇÃO DE ROTAS VISUAIS E JS
 # ==========================================================================
 
+import os
 from flask import Blueprint, request, render_template_string, session, jsonify
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -10,6 +11,7 @@ from psycopg2.extras import RealDictCursor
 processos_blueprint = Blueprint('processos_blueprint', __name__)
 
 def obter_conexao_master():
+    # Puxa dinamicamente a string do Supabase unificada no app_master
     from app_master import URL_SUPABASE
     return psycopg2.connect(URL_SUPABASE)
 
@@ -19,6 +21,16 @@ def pagina_processos():
         html = f.read()
     return render_template_string(html)
 
+@processos_blueprint.route('/processos/processos.js', methods=['GET'])
+def rota_processos_js():
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_js = os.path.join(diretorio_atual, 'processos.js')
+    try:
+        with open(caminho_js, 'r', encoding='utf-8') as f: js_conteudo = f.read()
+        return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+    except FileNotFoundError: 
+        return "console.error('Script offline.');", 404
+
 @processos_blueprint.route('/api/processos/salvar', methods=['POST'])
 def api_salvar_processo():
     if not session.get('logado'):
@@ -27,36 +39,38 @@ def api_salvar_processo():
     dados = request.json or {}
     id_reg = dados.get('id')
     id_equipe = session.get('id_equipe', 'equipe_alfa')
+    produto_base = dados.get('produto_base', 'Insumo Geral')
     
     conexao = obter_conexao_master()
     cursor = conexao.cursor()
     
-    # Inicia a tabela de engenharia de processos com a coluna sanitizada
+    # Inicia e força a sincronia da tabela de engenharia de processos com a nova coluna didática
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS engenharia_processos (
-            id SERIAL PRIMARY KEY, equipe_id TEXT, nome_operacao TEXT, 
+            id SERIAL PRIMARY KEY, equipe_id TEXT, produto_base TEXT, nome_operacao TEXT, 
             maquina_id INTEGER, maquina_nome_suporte TEXT, tempo_setup REAL, 
             tempo_operacao REAL, custo_ref_maquina REAL, sequencia_op INTEGER, 
             custo_total_operacao REAL
         )
     ''')
+    conexao.commit()
 
     if id_reg:
         cursor.execute('''
-            UPDATE engenharia_processos SET nome_operacao=%s, maquina_id=%s, 
+            UPDATE engenharia_processos SET produto_base=%s, nome_operacao=%s, maquina_id=%s, 
             maquina_nome_suporte=%s, tempo_setup=%s, tempo_operacao=%s, 
             custo_ref_maquina=%s, sequencia_op=%s, custo_total_operacao=%s 
             WHERE id=%s AND equipe_id=%s
-        ''', (dados.get('nome_operacao'), dados.get('maquina_id'), dados.get('maquina_nome_suporte'), 
+        ''', (produto_base, dados.get('nome_operacao'), dados.get('maquina_id'), dados.get('maquina_nome_suporte'), 
               dados.get('tempo_setup'), dados.get('tempo_operacao'), dados.get('custo_ref_maquina'), 
               dados.get('sequencia_op'), dados.get('custo_total_operacao'), id_reg, id_equipe))
     else:
         cursor.execute('''
-            INSERT INTO engenharia_processos (equipe_id, nome_operacao, maquina_id, 
+            INSERT INTO engenharia_processos (equipe_id, produto_base, nome_operacao, maquina_id, 
             maquina_nome_suporte, tempo_setup, tempo_operacao, custo_ref_maquina, 
             sequencia_op, custo_total_operacao)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (id_equipe, dados.get('nome_operacao'), dados.get('maquina_id'), dados.get('maquina_nome_suporte'), 
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ''', (id_equipe, produto_base, dados.get('nome_operacao'), dados.get('maquina_id'), dados.get('maquina_nome_suporte'), 
               dados.get('tempo_setup'), dados.get('tempo_operacao'), dados.get('custo_ref_maquina'), 
               dados.get('sequencia_op'), dados.get('custo_total_operacao')))
         
@@ -66,7 +80,7 @@ def api_salvar_processo():
     return jsonify({'status': 'sucesso'}), 200
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE PROCESSOS
-# APP PYTHON - PARTE 2 DE 2: ROTAS DE CONSULTA, BUSCA E DELEÇÃO
+# APP PYTHON - PARTE 2 DE 2: ENDPOINTS DE CONSULTA E DELEÇÃO DO PARQUE
 # ==========================================================================
 
 @processos_blueprint.route('/api/processos/listar', methods=['GET'])
@@ -78,7 +92,10 @@ def api_listar_processos():
     cursor = conexao.cursor(cursor_factory=RealDictCursor)
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     
-    # Ordena sequencialmente pelas fases operacionais da cronoanálise didática
+    # Adiciona salvaguarda estrutural síncrona na listagem
+    cursor.execute("ALTER TABLE engenharia_processos ADD COLUMN IF NOT EXISTS produto_base TEXT;")
+    conexao.commit()
+    
     cursor.execute('SELECT * FROM engenharia_processos WHERE equipe_id = %s ORDER BY sequencia_op ASC', (id_equipe,))
     linhas = cursor.fetchall()
     
@@ -110,7 +127,7 @@ def api_deletar_processo(id_reg):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     conexao = obter_conexao_master()
-    cursor = conn_cursor = conexao.cursor()
+    cursor = conexao.cursor()
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     
     cursor.execute('DELETE FROM engenharia_processos WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
