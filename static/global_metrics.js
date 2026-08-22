@@ -1,5 +1,7 @@
-// erppadrao - static/global_metrics.js
-// Script global responsável pelo sincronismo em tempo real dos cards financeiros do topo
+/* ==========================================================================
+   TERADMAS ERP v2.6 - SCRIPT MASTER DE INDICAÇÃO ECONÔMICA GLOBAL
+   PARTE 1 DE 2 - CAPTURA DE ENDPOINT E SINCRONISMO DINÂMICO DO CAIXA
+   ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", function() {
     atualizarBarrasDeMetricasGlobais();
@@ -7,10 +9,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
 async function atualizarBarrasDeMetricasGlobais() {
     try {
-        // Detecta automaticamente qual o módulo/departamento atual através da URL da página
+        // Detecta o módulo através da URL (Ex: /processos, /materiais, /maquinas)
         const path = window.location.pathname.replace('/', '') || 'dashboard';
         
-        // Faz a requisição unificada ao backend master para extrair o balanço do Supabase
+        // Faz a requisição AJAX unificada ao backend master do ecossistema
         const resposta = await fetch(`/api/financeiro/metricas?dept=${path}`);
         
         if (!resposta.ok) {
@@ -20,41 +22,45 @@ async function atualizarBarrasDeMetricasGlobais() {
         
         const metricas = await resposta.json();
         
-        // 1. Sincroniza o Caixa de Giro Geral Disponível (Visível em quase todas as telas)
-        const txtGiroGlobal = document.getElementById('top_giro_global');
+        // 1. Sincroniza Giro Geral / Orçamento Setorial Disponível
+        // Suporta tanto o ID genérico quanto o sufixo específico '_val' do Módulo 07
+        const txtGiroGlobal = document.getElementById('top_giro_global') || document.getElementById('top_disponivel_setor_val');
         if (txtGiroGlobal && metricas.capital_disponivel_total !== undefined) {
             txtGiroGlobal.innerText = `R$ ${metricas.capital_disponivel_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
         }
         
-        // 2. Sincroniza o Capital Social Total Integralizado na Fundação (Fase 2)
-        const txtCapitalTotal = document.getElementById('top_capital_total');
+        // 2. Sincroniza o Capital Social Total Integralizado da Empresa (R$ 5.000.000,00)
+        const txtCapitalTotal = document.getElementById('top_capital_total') || document.getElementById('top_capital_total_val');
         if (txtCapitalTotal && metricas.capital_total !== undefined) {
             txtCapitalTotal.innerText = `R$ ${metricas.capital_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
         }
-        
-        // 3. Sincroniza o Custo Fixo Mensal Acumulado da Empresa (Contratos, Aluguel, MOD Fixa)
-        const txtCustoFixo = document.getElementById('top_custo_fixo');
+/* ==========================================================================
+   TERADMAS ERP v2.6 - SCRIPT MASTER DE INDICAÇÃO ECONÔMICA GLOBAL
+   PARTE 2 DE 2 - ATUALIZAÇÃO DE CUSTOS ACUMULADOS E VERBAS DE SUPRIMENTOS
+   ========================================================================== */
+
+        // 3. Sincroniza o Custo Fixo Mensal Acumulado da Planta Operacional
+        const txtCustoFixo = document.getElementById('top_custo_fixo') || document.getElementById('top_custo_fixo_val');
         if (txtCustoFixo && metricas.custo_fixo_total !== undefined) {
-            // Verifica se a tela pede formatação por mês ou padrão
-            if (txtCustoFixo.innerText.includes('/mês')) {
+            if (txtCustoFixo.innerText.includes('/mês') || txtCustoFixo.id === 'top_custo_fixo_val') {
                 txtCustoFixo.innerHTML = `R$ ${metricas.custo_fixo_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
             } else {
                 txtCustoFixo.innerText = `R$ ${metricas.custo_fixo_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
             }
         }
         
-        // 4. Sincroniza os Orçamentos Reais e Porcentagens Setoriais (40% Eng, 30% RH, 30% Almoxarifado)
-        const txtVerbaReais = document.getElementById('top_verba_reais');
+        // 4. Sincroniza a Verba Reservada/Sustentada do Departamento Corrente
+        const txtVerbaReais = document.getElementById('top_verba_reais') || document.getElementById('top_verba_reais_val');
         if (txtVerbaReais && metricas.capital_disponivel_departamento !== undefined) {
             txtVerbaReais.innerText = `R$ ${metricas.capital_disponivel_departamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
         }
         
-        const txtVerbaPct = document.getElementById('top_verba_porcentagem');
+        // 5. Calcula e renderiza o percentual do orçamento consumido/disponível
+        const txtVerbaPct = document.getElementById('top_verba_porcentagem') || document.getElementById('txt_porcentagem_budget');
         if (txtVerbaPct && metricas.capital_total > 0 && metricas.capital_disponivel_departamento !== undefined) {
-            const pctCalculada = ((metricas.capital_disponivel_departamento / metricas.capital_total) * 100).toFixed(2);
-            // Preserva labels específicos de telas de CRM/Vendas se houver
+            const pctCalculada = ((metricas.capital_disponivel_departamento / metricas.capital_total) * 100).toFixed(1);
             if (!txtVerbaPct.innerText.includes("Canal") && !txtVerbaPct.innerText.includes("Destravado")) {
-                txtVerbaPct.innerText = `${pctCalculada}% do Capital`;
+                txtVerbaPct.innerText = txtVerbaPct.id === 'txt_porcentagem_budget' ? `${pctCalculada}% do teto consumido` : `${pctCalculada}% do Capital`;
             }
         }
 
@@ -63,5 +69,5 @@ async function atualizarBarrasDeMetricasGlobais() {
     }
 }
 
-// Expõe a função globalmente para permitir que os scripts individuais forcem a atualização após submits
+// Vincula a execução ao escopo global do navegador
 window.forcarAtualizacaoMetricasTopboard = atualizarBarrasDeMetricasGlobais;
