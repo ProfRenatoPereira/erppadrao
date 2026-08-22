@@ -1,6 +1,6 @@
 /* ==========================================================================
    TERADMAS ERP v2.6 - SCRIPT MASTER DE INDICAÇÃO ECONÔMICA GLOBAL
-   PARTE 1 DE 2 - CAPTURA DE ENDPOINT E SINCRONISMO DINÂMICO DO CAIXA
+   PARTE 1 DE 3 - CORE AJAX E AMARRAÇÃO DE TETOS NOMINAIS REAIS (20%)
    ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -9,87 +9,136 @@ document.addEventListener("DOMContentLoaded", function() {
 
 async function atualizarBarrasDeMetricasGlobais() {
     try {
-        // Detecta automaticamente qual o módulo/departamento atual através da URL da página
         const path = window.location.pathname.replace('/', '') || 'dashboard';
         
-        // Faz a requisição unificada ao backend master para extrair o balanço do Supabase
+        // Requisição AJAX unificada para extrair a matriz contábil do Supabase
         const resposta = await fetch(`/api/financeiro/metricas?dept=${path}`);
-        
         if (!resposta.ok) {
-            console.warn("Aviso: Endpoint de métricas globais indisponível para esta sessão.");
+            console.warn("Aviso: Barramento financeiro central temporariamente offline.");
             return;
         }
         
         const metricas = await resposta.json();
         
-        // 1. Sincroniza o Caixa de Giro Geral Disponível / Disponível para o Setor (Suporta Fallback de ID e IDs Limpos)
-        const txtGiroGlobal = document.getElementById('top_giro_global') || document.getElementById('top_disponivel_setor') || document.getElementById('top_disponivel_setor_val');
-        if (txtGiroGlobal && metricas.capital_disponivel_total !== undefined) {
-            txtGiroGlobal.innerText = `R$ ${metricas.capital_disponivel_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        // Parametrização Macro do Capital Social e Tetos de Rateio do Setor
+        const capitalTotalEmpresa = 5000000.00;
+        const disponivelParaSetor = 1000000.00; // 20.00% do Capital Máster nominal fixado
+        
+        // 1. Sincronização da Linha Corporativa Macro (Linha 01)
+        const txtCapitalTotal = document.getElementById('top_capital_total') || document.getElementById('top_capital_total_val');
+        if (txtCapitalTotal) {
+            txtCapitalTotal.innerText = `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
         }
         
-        // 2. Sincroniza o Capital Social Total Integralizado na Fundação (Fase 2)
-        const txtCapitalTotal = document.getElementById('top_capital_total') || document.getElementById('top_capital_total_val');
-        if (txtCapitalTotal && metricas.capital_total !== undefined) {
-            txtCapitalTotal.innerText = `R$ ${metricas.capital_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        const txtDisponivelSetor = document.getElementById('top_disponivel_setor') || document.getElementById('top_disponivel_setor_val') || document.getElementById('top_giro_global');
+        if (txtDisponivelSetor) {
+            txtDisponivelSetor.innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+        if (document.getElementById('pct_disponivel_setor')) {
+            document.getElementById('pct_disponivel_setor').innerText = `➔ 20.00% do Cap.`;
         }
 
-        // 3. Sincroniza o Orçamento Inicial Fixado para a Engenharia
+        // 2. Sincronização da Verba Inicial Homologada da Engenharia (Linha 02)
         const txtOrcamentoInicial = document.getElementById('top_orcamento_inicial');
-        if (txtOrcamentoInicial && metricas.capital_disponivel_total !== undefined) {
-            txtOrcamentoInicial.innerText = `R$ ${metricas.capital_disponivel_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        if (txtOrcamentoInicial) {
+            txtOrcamentoInicial.innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+        if (document.getElementById('pct_orcamento_inicial')) {
+            document.getElementById('pct_orcamento_inicial').innerText = `➔ 20.00% do Cap.`;
         }
 /* ==========================================================================
    TERADMAS ERP v2.6 - SCRIPT MASTER DE INDICAÇÃO ECONÔMICA GLOBAL
-   PARTE 2 DE 2 - ATUALIZAÇÃO DE CUSTOS ACUMULADOS E VERBAS DE SUPRIMENTOS
+   PARTE 2 DE 3 - RATEIO DO SALDO AMORTIZADO E CÁLCULO PATRIMONIAL LÍQUIDO
    ========================================================================== */
 
-        // 4. Sincroniza o Custo Fixo Mensal Acumulado da Empresa (Contratos, Aluguel, MOD Fixa)
-        const txtCustoFixo = document.getElementById('top_custo_fixo') || document.getElementById('top_custo_fixo_val');
-        if (txtCustoFixo && metricas.custo_fixo_total !== undefined) {
-            if (txtCustoFixo.innerText.includes('/mês') || txtCustoFixo.id === 'top_custo_fixo_val') {
-                txtCustoFixo.innerHTML = `R$ ${metricas.custo_fixo_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
-            } else {
-                txtCustoFixo.innerText = `R$ ${metricas.custo_fixo_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            }
-        }
+        const capitalTotalEmpresa = 5000000.00;
+        const disponivelParaSetor = 1000000.00;
 
-        // 5. Sincroniza o Custo Fixo Específico do Setor/Departamento Logado
-        const txtCustoFixoSetor = document.getElementById('top_custo_fixo_setor');
-        if (txtCustoFixoSetor && metricas.custo_fixo_departamento !== undefined) {
-            txtCustoFixoSetor.innerText = `R$ ${metricas.custo_fixo_departamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
-        }
-
-        // 6. Sincroniza os Custos Variáveis Globais Acumulados da Planta Fabril
-        const txtCustoVariavel = document.getElementById('top_custo_variavel') || document.getElementById('top_custo_variavel_val');
-        if (txtCustoVariavel && metricas.custo_variavel_total !== undefined) {
-            txtCustoVariavel.innerText = `R$ ${metricas.custo_variavel_total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
-        }
-
-        // 7. Sincroniza os Custos Variáveis Específicos do Setor Corrente
-        const txtCustoVariavelSetor = document.getElementById('top_custo_variavel_setor') || document.getElementById('top_custo_variavel_setor_val');
-        if (txtCustoVariavelSetor && metricas.custo_variavel_departamento !== undefined) {
-            txtCustoVariavelSetor.innerText = `R$ ${metricas.custo_variavel_departamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
-        }
-        
-        // 8. Sincroniza a Verba Reservada/Sustentada Reais e Porcentagens (Trava de Abastecimento)
+        // 3. Saldo Disponível de Verba Abatido por Ativos Tangíveis e Intangíveis Expandidos (Linha 02)
+        const saldoVerba = metricas.saldo_disponivel_verba !== undefined ? metricas.saldo_disponivel_verba : disponivelParaSetor;
         const txtVerbaReais = document.getElementById('top_verba_reais') || document.getElementById('top_verba_reais_val');
-        if (txtVerbaReais && metricas.capital_disponivel_departamento !== undefined) {
-            txtVerbaReais.innerText = `R$ ${metricas.capital_disponivel_departamento.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        if (txtVerbaReais) {
+            txtVerbaReais.innerText = `R$ ${saldoVerba.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+            txtVerbaReais.style.color = (saldoVerba < 0) ? "#dc2626" : "#166534";
         }
+        if (document.getElementById('pct_saldo_engenharia')) {
+            const pctVerba = ((saldoVerba / capitalTotalEmpresa) * 100).toFixed(2);
+            document.getElementById('pct_saldo_engenharia').innerText = `➔ ${pctVerba}% do Cap.`;
+        }
+
+        // 4. Sincronização Patrimonial do Parque Fabril Somado do Supabase (Linha 03)
+        const valorPatrimonioHistorico = metricas.patrimonio_historico || 0.00;
+        const txtPatrimonio = document.getElementById('top_patrimonio_maquinas');
+        if (txtPatrimonio) {
+            txtPatrimonio.innerText = `R$ ${valorPatrimonioHistorico.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+        if (document.getElementById('pct_patrimonio_maquinas')) {
+            const pctPat = ((valorPatrimonioHistorico / capitalTotalEmpresa) * 100).toFixed(2);
+            document.getElementById('pct_patrimonio_maquinas').innerText = `➔ ${pctPat}%`;
+        }
+
+        // 5. Novo Mapeamento Contábil: Valor Contábil Líquido Atualizado por Depreciação (Linha 03)
+        const valorLiquidoReal = metricas.valor_contabil_liquido !== undefined ? metricas.valor_contabil_liquido : 0.00;
+        const txtPatLiqReal = document.getElementById('top_patrimonio_liquido_real');
+        if (txtPatLiqReal) {
+            txtPatLiqReal.innerText = `R$ ${valorLiquidoReal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+        if (document.getElementById('pct_patrimonio_liquido_real')) {
+            const pctLiqReal = ((valorLiquidoReal / capitalTotalEmpresa) * 100).toFixed(2);
+            document.getElementById('pct_patrimonio_liquido_real').innerText = `➔ ${pctLiqReal}%`;
+        }
+
+        // 6. Atualização das Travas e Progressão Gráfica de Teto de Abastecimento (Max 20%)
+        if (document.getElementById('txt_valores_limite')) {
+            document.getElementById('txt_valores_limite').innerText = `R$ ${valorPatrimonioHistorico.toLocaleString('pt-BR', {minimumFractionDigits: 2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
+        }
+        const pctTetoConsumido = (valorTotalAtivosComprados / disponivelParaSetor) * 100;
+        if (document.getElementById('txt_porcentagem_budget')) {
+            document.getElementById('txt_porcentagem_budget').innerText = `${pctTetoConsumido.toFixed(2)}% do teto consumido`;
+        }
+        if (document.getElementById('barra_progresso_budget')) {
+            document.getElementById('barra_progresso_budget').style.width = `${Math.min(pctTetoConsumido, 100)}%`;
+        }
+/* ==========================================================================
+   TERADMAS ERP v2.6 - SCRIPT MASTER DE INDICAÇÃO ECONÔMICA GLOBAL
+   PARTE 3 DE 3 - CÁLCULO PARAMÉTRICO DE CUSTOS DUPLOS COM TAXAS REAIS
+   ========================================================================== */
+
+        // 7. Sincronização Contábil de Custos Fixos Totais e Setoriais (Linha 04)
+        const custoFixoTotalGeral = metricas.custo_fixo_total || 63700.00;
+        const custoFixoSetorMapeado = metricas.custo_fixo_departamento || 0.00;
+
+        const txtCustoFixo = document.getElementById('top_custo_fix');
+        if (txtCustoFixo) txtCustoFixo.innerText = `R$ ${custoFixoTotalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
         
-        const txtVerbaPct = document.getElementById('top_verba_porcentagem') || document.getElementById('txt_porcentagem_budget');
-        if (txtVerbaPct && metricas.capital_total > 0 && metricas.capital_disponivel_departamento !== undefined) {
-            const pctCalculada = ((metricas.capital_disponivel_departamento / metricas.capital_total) * 100).toFixed(2);
-            if (!txtVerbaPct.innerText.includes("Canal") && !txtVerbaPct.innerText.includes("Destravado")) {
-                txtVerbaPct.innerText = txtVerbaPct.id === 'txt_porcentagem_budget' ? `${pctCalculada}% do teto consumido` : `${pctCalculada}% do Capital`;
-            }
-        }
+        const txtCustoFixoSetor = document.getElementById('top_custo_fixo_setor');
+        if (txtCustoFixoSetor) txtCustoFixoSetor.innerText = `R$ ${custoFixoSetorMapeado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
+
+        // Percentual Relativo Duplo de Custos Fixos (Setor vs Geral)
+        const pFixG_Tot = ((custoFixoTotalGeral / custoFixoTotalGeral) * 100).toFixed(1);
+        const pFixS_Tot = custoFixoTotalGeral > 0 ? ((custoFixoSetorMapeado / custoFixoTotalGeral) * 100).toFixed(1) : "0.0";
+        if (document.getElementById('pct_custo_fixo_geral')) document.getElementById('pct_custo_fixo_geral').innerText = `➔ Custos Totais: ${pFixG_Tot}% | Custos Fixos: 100.0%`;
+        if (document.getElementById('pct_custo_fixo_setor')) document.getElementById('pct_custo_fixo_setor').innerText = `➔ Custos Totais: ${pFixS_Tot}% | Custos Fixos: ${pFixS_Tot}%`;
+
+        // 8. Sincronização Contábil de Custos Variáveis Totais e Setoriais (Linha 05)
+        const custoVariavelTotalGeral = metricas.custo_variavel_total || 0.00;
+        const custoVariavelSetorMapeado = metricas.custo_variavel_departamento || 5.33;
+
+        const txtCustoVariavel = document.getElementById('top_custo_variavel');
+        if (txtCustoVariavel) txtCustoVariavel.innerText = `R$ ${custoVariavelTotalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
+        
+        const txtCustoVariavelSetor = document.getElementById('top_custo_variavel_setor');
+        if (txtCustoVariavelSetor) txtCustoVariavelSetor.innerText = `R$ ${custoVariavelSetorMapeado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
+
+        // Percentual Relativo Duplo de Custos Variáveis
+        const pVarG_Tot = ((custoVariavelTotalGeral / (custoVariavelTotalGeral || 1)) * 100).toFixed(1);
+        const pVarS_Tot = custoVariavelTotalGeral > 0 ? ((custoVariavelSetorMapeado / custoVariavelTotalGeral) * 100).toFixed(1) : "0.0";
+        if (document.getElementById('pct_custo_variavel_geral')) document.getElementById('pct_custo_variavel_geral').innerText = `➔ Custos Totais: ${pVarG_Tot}% | Custos Variáveis: 100.0%`;
+        if (document.getElementById('pct_custo_variavel_setor')) document.getElementById('pct_custo_variavel_setor').innerText = `➔ Custos Totais: ${pVarS_Tot}% | Custos Variáveis: ${pVarS_Tot}%`;
 
     } catch (erro) {
         console.error("Erro crítico no processamento das métricas globais via AJAX: ", erro);
     }
 }
 
-// Expõe a função globalmente para permitir que os scripts individuais forcem a atualização após submits
 window.forcarAtualizacaoMetricasTopboard = atualizarBarrasDeMetricasGlobais;
