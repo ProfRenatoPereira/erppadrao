@@ -1,4 +1,8 @@
-# erppadrao - materiais/app_materiais.py - PARTE 1 DE 3
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 08: ENGENHARIA DE MATERIAIS
+# APP PYTHON - PARTE 1 DE 3: BLUEPRINT E ESTRUTURA VISUAL
+# ==========================================================================
+
 import os
 from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
@@ -29,7 +33,10 @@ def rota_materiais_js():
         with open(caminho_js, 'r', encoding='utf-8') as f: js_conteudo = f.read()
         return js_conteudo, 200, {'Content-Type': 'application/javascript'}
     except FileNotFoundError: return "console.error('Script offline.');", 404
-# erppadrao - materiais/app_materiais.py - PARTE 2 DE 3 (MIGRATION SÍNCRONA DE UPGRADE)
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 08: ENGENHARIA DE MATERIAIS
+# APP PYTHON - PARTE 2 DE 3: LISTAGEM E MIGRATION SÍNCRONA SUPABASE
+# ==========================================================================
 
 @materiais_blueprint.route('/api/materiais/listar', methods=['GET'])
 def api_listar_materiais():
@@ -75,8 +82,10 @@ def api_listar_materiais():
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-
-# erppadrao - materiais/app_materiais.py - PARTE 3 DE 3
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 08: ENGENHARIA DE MATERIAIS
+# APP PYTHON - PARTE 3 DE 3: PERSISTÊNCIA CRUD E DELETAR (SANITIZADO)
+# ==========================================================================
 
 @materiais_blueprint.route('/api/materiais/salvar', methods=['POST'])
 def api_salvar_material():
@@ -102,16 +111,15 @@ def api_salvar_material():
         refugo_pad = float(str(dados.get('coeficiente_refugo', 0)).replace(',', '.').strip())
         l_time = int(dados.get('lead_time_entrega', 0))
 
-        # Atributos geométricos sanitizados para balanço de massa volumétrica
         dim_diametro = dados.get('dim_diametro', '0')
         dim_espessura = dados.get('dim_espessura', '0')
         dim_comprimento = float(str(dados.get('dim_comprimento', 0)).replace(',', '.').strip())
         custo_total_integrado = float(str(dados.get('custo_total_integrado', 0)).replace(',', '.').strip())
 
-        if not nome_mat: return "Erro: Nome do material é obrigatório.", 400
+        if not nome_mat: 
+            return jsonify({'status': 'erro', 'message': 'Nome do material é obrigatório.'}), 400
 
         if id_reg:
-            # UPDATE: 14 campos na cláusula SET + 2 no WHERE = 16 marcadores %s
             cursor.execute('''
                 UPDATE erp_materiais SET 
                     nome_material=%s, codigo_sku=%s, categoria=%s, unidade_medida=%s, preco_unitario=%s,
@@ -121,7 +129,6 @@ def api_salvar_material():
                 WHERE id=%s AND equipe_id=%s
             ''', (nome_mat, cod_sku, cat_mat, un_medida, preco_un, estoque_seg, l_time, forn_padrao, refugo_pad, espec, dim_diametro, dim_espessura, dim_comprimento, custo_total_integrado, id_reg, id_equipe))
         else:
-            # INSERT: Exatamente 15 colunas nomeadas e exatamente 15 marcadores %s (CORRIGIDO)
             cursor.execute('''
                 INSERT INTO erp_materiais (
                     equipe_id, nome_material, codigo_sku, categoria, unidade_medida, 
