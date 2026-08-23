@@ -1,13 +1,13 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - CENTRAL DE CONSOLIDAÇÃO FINANCEIRA INTER-DEPARTAMENTAL
-# APP PYTHON - PARTE 1 DE 2: POOL DE INVENTÁRIO E GESTÃO DE CUSTOS FIXOS
+# APP PYTHON - PARTE 1 DE 2: CONFIGURAÇÃO DE AMBIENTE E POOL PATRIMONIAL
 # ==========================================================================
 
 import os
 import sys
-from flask import Flask, Blueprint, request, session, jsonify
+from flask import Flask, Blueprint, request, session, jsonify, redirect
 
-# CORREÇÃO CRÍTICA DE PATH: Força o Python a enxergar as subpastas do repositório como pacotes
+# Força o interpretador do Python a indexar e mapear a raiz do repositório físico no Render
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 app = Flask(__name__)
@@ -75,7 +75,7 @@ def api_metricas_financeiras_globais():
         custo_fixo_total_empresa = custo_fixo_geral_aluguel_planta + custo_fixo_setor
 # ==========================================================================
 # TERADMAS ERP v2.6 - CENTRAL DE CONSOLIDAÇÃO FINANCEIRA INTER-DEPARTAMENTAL
-# APP PYTHON - PARTE 2 DE 2: ROTEAMENTO ABSOLUTO E INICIALIZAÇÃO GUNICORN
+# APP PYTHON - PARTE 2 DE 2: ABORDAGEM MULTI-BLUEPRINT E PORT BINDING
 # ==========================================================================
 
         # 3. MÁSCARA ZERO PROGRESSIVA: Varre os custos variáveis de todas as tabelas
@@ -118,27 +118,50 @@ def api_metricas_financeiras_globais():
         if conexao: conexao.close()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# CORREÇÃO CRÍTICA DE REGISTRO: Importações absolutas baseadas na árvore física do repositório
+# CORREÇÃO CRÍTICA DE INTERCEPTAÇÃO: Fallback dinâmico para a rota de login didática contra Erro 404
+@app.route('/login', methods=['GET', 'POST'])
+def rota_login_didatica_fallback():
+    if request.method == 'POST':
+        session['logado'] = True
+        session['id_equipe'] = 'equipe_alfa'
+        session['empresa_inicializada'] = True
+        return redirect('/processos')
+    return render_template_string('''
+        <div style="font-family:sans-serif; text-align:center; padding:100px; background:#f3f4f6; height:100vh;">
+            <div style="background:white; padding:40px; border-radius:12px; display:inline-block; box-shadow:0 4px 6px rgba(0,0,0,0.05); border-top:4px solid #2563eb;">
+                <h2 style="color:#1e3a8a; margin-top:0;">TERADMAS ERP v2.6</h2>
+                <p style="color:#64748b; font-size:13px;">Sessão Homologada para Curso Técnico em Administração</p>
+                <form method="post"><button type="submit" style="background:#2563eb; color:white; border:none; padding:12px 24px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:10px;">INICIAR TURNO OPERACIONAL</button></form>
+            </div>
+        </div>
+    ''')
+
+# CORREÇÃO CRÍTICA DE BLUEPRINTS: Mapeamento duplo para suportar ambas as nomenclaturas do seu projeto
 try:
-    from processos.app_processos import processos_blueprint
-    app.register_blueprint(processos_blueprint)
-    print("[TERADMAS BLUEPRINT] Módulo de Processos acoplado e online.")
-except Exception as e:
-    print(f"[TERADMAS ERROR] Erro crítico ao registrar Blueprint de Processos: {e}")
+    from processos.app_processos import materiais_blueprint as processos_blueprint_fallback
+    app.register_blueprint(processos_blueprint_fallback)
+    print("[TERADMAS BLUEPRINT] Módulo de Processos vinculado com sucesso via materiais_blueprint.")
+except Exception:
+    try:
+        from processos.app_processos import processos_blueprint
+        app.register_blueprint(processos_blueprint)
+        print("[TERADMAS BLUEPRINT] Módulo de Processos vinculado com sucesso via processos_blueprint.")
+    except Exception as e:
+        print(f"[TERADMAS ERROR] Falha severa ao acoplar Processos: {e}")
 
 try:
     from maquinas.app_maquinas import maquinas_blueprint
     app.register_blueprint(maquinas_blueprint)
     print("[TERADMAS BLUEPRINT] Módulo de Máquinas acoplado e online.")
 except Exception as e:
-    print(f"[TERADMAS ERROR] Erro crítico ao registrar Blueprint de Máquinas: {e}")
+    print(f"[TERADMAS ERROR] Falha ao registrar Máquinas: {e}")
 
 try:
     from estrutura.app_estrutura import estrutura_blueprint
     app.register_blueprint(estrutura_blueprint)
     print("[TERADMAS BLUEPRINT] Módulo de Estrutura acoplado e online.")
 except Exception as e:
-    print(f"[TERADMAS ERROR] Erro crítico ao registrar Blueprint de Estrutura: {e}")
+    print(f"[TERADMAS ERROR] Falha ao registrar Estrutura: {e}")
 
 if __name__ == '__main__':
     porta = int(os.environ.get("PORT", 10000))
