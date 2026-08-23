@@ -1,12 +1,14 @@
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 1 DE 5 - DIRETRIZES DE ACESSIBILIDADE WCAG E COMPORTAMENTO DO TEMA
+// PARTE 1 DE 4 - CONFIGURAÇÃO DE ACESSIBILIDADE WCAG E GATILHOS DE ENTRADA
 // ==========================================================================
+
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 
 document.addEventListener("DOMContentLoaded", function() {
     carregarDadosIniciais();
+    
     document.getElementById('cidade')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('bairro')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('area_util')?.addEventListener('input', calcularPrecoMercadoRefletido);
@@ -17,8 +19,11 @@ function mudarFonte(dir) {
     tamanhoFonteAtual += dir;
     tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
     document.documentElement.style.fontSize = tamanhoFonteAtual + 'px';
+    
     const elementos = document.querySelectorAll("p, label, input, select, th, td, h1, h2, h3, h4, span, button, a");
-    elementos.forEach(el => { el.style.setProperty('font-size', (tamanhoFonteAtual - 3) + 'px', 'important'); });
+    elementos.forEach(el => {
+        el.style.setProperty('font-size', (tamanhoFonteAtual - 3) + 'px', 'important');
+    });
 }
 
 function alternarModoEscuro() { 
@@ -42,14 +47,16 @@ function alternarLeitorAudio() {
     }
     if (leitorAtivo) {
         window.speechSynthesis.cancel();
-        const ut = new SpeechSynthesisUtterance("Módulo imobiliário aberto. Gerencie os custos fixos.");
-        ut.lang = 'pt-BR';
-        window.speechSynthesis.speak(ut);
-    } else { window.speechSynthesis.cancel(); }
+        const utterance = new SpeechSynthesisUtterance("Módulo imobiliário aberto. Gerencie contratos de alocação.");
+        utterance.lang = 'pt-BR';
+        window.speechSynthesis.speak(utterance);
+    } else {
+        window.speechSynthesis.cancel();
+    }
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 2 DE 5 - MATRIZ DE EQUAÇÕES DA RMC, AMORTIZAÇÃO IGPM E PRÉVIAS
+// PARTE 2 DE 4 - ALGORITMO DE EQUAÇÕES DA RMC E INVESTIMENTOS IMOBILIÁRIOS
 // ==========================================================================
 
 function calcularPrecoMercadoRefletido() {
@@ -127,7 +134,7 @@ function calcularPreviaSalario() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 3 DE 5 - BARRAMENTO CONSOLIDADO DE ENCARGOS CORPORATIVOS GERAIS
+// PARTE 3 DE 4 - MATRIZ DE CONSOLIDAÇÃO DOS ENCARGOS OPERACIONAIS GERAIS
 // ==========================================================================
 
 async function carregarDadosIniciais() {
@@ -142,16 +149,16 @@ async function carregarDadosIniciais() {
         let custoAlugueisReal = 0;
         document.querySelectorAll('#tabela_imoveis tr').forEach(linha => {
             if (linha.cells.length > 3) {
-                const txt = linha.cells[3].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                custoAlugueisReal += parseFloat(txt) || 0;
+                const valor = parseFloat(linha.cells[3].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+                custoAlugueisReal += valor;
             }
         });
 
         let custoFolhaRHReal = 0;
         document.querySelectorAll('#tabela_colaboradores tr').forEach(linha => {
             if (linha.cells.length > 4) {
-                const txt = linha.cells[4].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                custoFolhaRHReal += parseFloat(txt) || 0;
+                const valor = parseFloat(linha.cells[4].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()) || 0;
+                custoFolhaRHReal += valor;
             }
         });
 
@@ -165,8 +172,12 @@ async function carregarDadosIniciais() {
         let porcFixo = custoFixoGeralEmpresaTotal > 0 ? (custoFixoSetorAtual / custoFixoGeralEmpresaTotal) * 100 : 0;
         let porcBudget = Math.min(100, (custoFixoSetorAtual / budgetMaximoSetor) * 100);
 
+        // ALIMENTAÇÃO DA MATRIZ HORIZONTAL SUPERIOR REPLICADA DE MÁQUINAS
         if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = capitalMaster.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        if(document.getElementById('top_budget_inicial')) document.getElementById('top_budget_inicial').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        if(document.getElementById('top_budget_saldo')) document.getElementById('top_budget_saldo').innerText = (budgetMaximoSetor - custoFixoSetorAtual).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        if(document.getElementById('top_patrimonio_setor')) document.getElementById('top_patrimonio_setor').innerText = custoAlugueisReal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_custo_fixo_setor_head')) document.getElementById('top_custo_fixo_setor_head').innerText = custoFixoSetorAtual.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
         
         if(document.getElementById('txt_porcentagem_setor_imob')) {
@@ -195,7 +206,7 @@ async function carregarDadosIniciais() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 4 DE 5 - REQUISIÇÕES ASSÍNCRONAS DE RENDERIZAÇÃO DE PLANILHAS (GET)
+// PARTE 4 DE 4 - INTERFACING ASSÍNCRONA E CONTROLE DE MUTABILIDADE (CRUD)
 // ==========================================================================
 
 async function carregarTabelaImoveis() {
@@ -250,10 +261,6 @@ async function carregarTabelaColaboradores() {
         `).join('');
     } catch (err) { console.error(err); }
 }
-// ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 5 DE 5 - COMANDOS DE PERSISTÊNCIA POST/DELETE E EDICAÇÃO INDIVIDUAL
-// ==========================================================================
 
 async function salvarImovel(e) {
     if(e && e.preventDefault) e.preventDefault();
