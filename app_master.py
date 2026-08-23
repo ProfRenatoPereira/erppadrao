@@ -1,28 +1,29 @@
 # ==========================================================================
-# TERADMAS ERP v2.6 - MÓDULO FINANCEIRO CENTRALIZADO (BACKEND MASTER)
-# APP PYTHON - PARTE 1 DE 2: POOL DE INVENTÁRIO E GESTÃO DE CUSTOS FIXOS
+# TERADMAS ERP v2.6 - CENTRAL DE CONTROLE PATRIMONIAL (BACKEND MASTER)
+# APP PYTHON - PARTE 1 DE 2: INICIALIZAÇÃO FLASK E POOL DE INVENTÁRIO
 # ==========================================================================
 
 import os
-from flask import Blueprint, request, session, jsonify
+from flask import Flask, Blueprint, request, session, jsonify
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Definição do Blueprint Master de Finanças (Ajuste o nome conforme seu arquivo principal)
-financeiro_master_blueprint = Blueprint('financeiro_master_blueprint', __name__)
+# CORREÇÃO CRÍTICA: Instanciação explícita do objeto 'app' exigida pelo Gunicorn
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'teradmas_secret_key_didatica_2026')
+
+# URL unificada do Supabase exposta como variável global do ecossistema
+URL_SUPABASE = os.environ.get('URL_SUPABASE')
 
 def obter_conexao_master():
-    # Puxa dinamicamente a string do Supabase unificada no app_master
-    from app_master import URL_SUPABASE
     return psycopg2.connect(URL_SUPABASE)
 
-@financeiro_master_blueprint.route('/api/financeiro/metricas', methods=['GET'])
+@app.route('/api/financeiro/metricas', methods=['GET'])
 def api_metricas_financeiras_globais():
     if not session.get('logado'): 
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     id_equipe = session.get('id_equipe', 'equipe_alfa')
-    dept = request.args.get('dept', 'dashboard')
     
     conexao = None
     try:
@@ -30,7 +31,6 @@ def api_metricas_financeiras_globais():
         cur = conexao.cursor(cursor_factory=RealDictCursor)
         
         # 1. VARREDURA PROGRESSIVA: Somatório de Ativos Reais Imobilizados do Parque (Módulo 07)
-        # Garante a existência da tabela antes de efetuar a agregação matemática
         cur.execute('''
             CREATE TABLE IF NOT EXISTS erp_maquinas (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, 
@@ -48,27 +48,25 @@ def api_metricas_financeiras_globais():
         patrimonio_historico = float(maq_data['hist'])
         depreciacao_acumulada = float(maq_data['depr']) * 12  # Ciclo didático padrão de 1 ano
         valor_contabil_liquido = max(0.0, patrimonio_historico - depreciacao_acumulada)
-        
-        # 2. AGREGAÇÃO DE CUSTOS FIXOS EXPANDIDOS (Administrativo, Softwares, Viagens e Colaboradores)
-        # Despesas operacionais didáticas e corporativas parametrizadas para o setor de engenharia
+# ==========================================================================
+# TERADMAS ERP v2.6 - CENTRAL DE CONTROLE PATRIMONIAL (BACKEND MASTER)
+# APP PYTHON - PARTE 2 DE 2: MATRIZ DE CUSTOS FIXOS/VARIÁVEIS E RATEIO DE TETO
+# ==========================================================================
+
+        # 2. AGREGAÇÃO DE CUSTOS FIXOS EXPANDIDOS (Administrativo, Softwares e Colaboradores)
         custo_folha_setor = 18500.00         # Desconto da Folha de Pagamento do Setor
         custo_programas_cadcam = 4200.00     # Licenciamento de Programas e Softwares de Máquinas
         custo_viagens_hospedagem = 3120.00   # Viagens, Hospedagens e Cursos de Atualização
         
-        # O Custo Fixo do Setor consolida os intangíveis adicionados mais a depreciação do período
+        # O Custo Fixo do Setor consolida os intangíveis adicionados mais a depreciação técnica do período
         custo_fixo_setor = custo_folha_setor + custo_programas_cadcam + custo_viagens_hospedagem + float(maq_data['depr'])
         custo_fixo_geral_aluguel = 21350.00
         custo_fixo_total = custo_fixo_geral_aluguel + custo_fixo_setor
-# ==========================================================================
-# TERADMAS ERP v2.6 - MÓDULO FINANCEIRO CENTRALIZADO (BACKEND MASTER)
-# APP PYTHON - PARTE 2 DE 2: MATRIZ PROGRESSIVA DE VARIÁVEIS E RATEIO DE TETO
-# ==========================================================================
 
-        # 3. MATRIZ PROGRESSIVA DOS PRÓXIMOS SETORES (Se retornarem zero, não interferem)
+        # 3. MATRIZ PROGRESSIVA DOS PRÓXIMOS SETORES (Mascara Zero Condicional)
         custo_variavel_total = 0.00
         custo_variavel_setor = 0.00
         
-        # Bloco condicional seguro: tenta ler a tabela do Módulo 09 (Processos), se não existir ignora
         try:
             cur.execute("""
                 SELECT COALESCE(SUM(custo_total_operacao), 0) as v_setor 
@@ -76,12 +74,9 @@ def api_metricas_financeiras_globais():
             """, (id_equipe,))
             proc_data = cur.fetchone()
             custo_variavel_setor = float(proc_data['v_setor'])
-            
-            # Agrega despesas de horas extras operacionais, alimentação e energia em horário de ponta
             custo_variavel_total = custo_variavel_setor + 5332.10
         except Exception:
-            # Caso a tabela engenharia_processos ainda não tenha sido criada, o sistema assume zero e prossegue
-            custo_variavel_setor = 5.33  # Valor didático inicial mapeado no seu card
+            custo_variavel_setor = 5.33  # Mantém fallback didático inicial do card se tabela inexistente
             custo_variavel_total = custo_variavel_setor
 
         # 4. RATIO E SALVAGUARDA DO SALDO AMORTIZADO (Teto nominal e imutável de 20%)
@@ -91,7 +86,6 @@ def api_metricas_financeiras_globais():
         cur.close()
         conexao.close()
         
-        # Retorno do Payload estruturado em JSON para alimentação síncrona do global_metrics.js
         return jsonify({
             "capital_total": 5000000.00,
             "teto_setor_ativos": teto_setor_ativos,
@@ -110,3 +104,15 @@ def api_metricas_financeiras_globais():
             conexao.close()
         print(f"[TERADMAS MASTER FINANCIAL ERROR] Falha na consolidação de balanço: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# Registro dos Blueprints dos módulos filhos (Importações dinâmicas protegidas)
+try:
+    from processos.app_processos import processos_blueprint
+    app.register_blueprint(processos_blueprint)
+except ImportError:
+    print("[TERADMAS MODULE WARN] Blueprint de processos pendente de vinculação local.")
+
+if __name__ == '__main__':
+    # Binding de porta dinâmico exigido para execução em nuvens como o Render
+    porta = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=porta)
