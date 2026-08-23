@@ -1,3 +1,7 @@
+<!-- ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 03: IMOBILIÁRIO E PREDIAL
+   PARTE 1 DE 5 - DICIONÁRIO EXPANDIDO DE OPERAÇÕES DIDÁTICAS PARA ADMINISTRAÇÃO
+   ========================================================================== -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -15,7 +19,7 @@
         .grid-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
         .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; }
         .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; font-weight: bold; }
-        .metric-card h3, .metric-card h4 { font-size: 14px; font-weight: 900; margin: 0; white-space: nowrap; }
+        .metric-card h3, .metric-card h4 { font-size: 13px; font-weight: 900; margin: 0; white-space: nowrap; }
         .bg-blue-metric { background-color: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
         .bg-emerald-metric { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
         .bg-slate-metric { background-color: #f8fafc; border-color: #cbd5e1; color: #334155; }
@@ -76,13 +80,11 @@
 </head>
 <body style="transition: all 0.2s ease;">
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
-        <div style="display: flex; align-items: center;">
-            <img src="/static/Logo.svg" alt="Logo Corporativo Vetorial" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
-        </div>
+        <div style="display: flex; align-items: center;"><img src="/static/Logo.svg" alt="Logo" style="height: 22px; width: auto;" onerror="this.style.display='none';"></div>
         <div style="display: flex; align-items: center; gap: 6px;">
             <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
-            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
+            <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
             <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
             <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
             <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
@@ -90,18 +92,17 @@
     </div>
     <header class="corporate-header">
         <div class="logo-area">
-            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
+            <img src="/static/logo.png" alt="Logo ERP" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
             <div style="display: flex; flex-direction: column; text-align: left;">
-                <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">TERADMAS ERP v2.6</span>
-                <span style="font-size: 10px; color: #94a3b8; font-weight: bold; line-height: 1.3; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</span>
+                <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase;">TERADMAS ERP v2.6</span>
+                <span style="font-size: 10px; color: #94a3b8; font-weight: bold; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</span>
             </div>
         </div>
         <input type="checkbox" id="menu-toggle">
         <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
         <nav>
             <ul class="nav-corporate-menu">
-                <li class="nav-item">
-                    <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
+                <li class="nav-item"><span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
                     <ul class="dropdown-menu">
                         <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
                         <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
@@ -111,8 +112,7 @@
                         <li><a href="/requisicoes">06. Requisições Internas</a></li>
                     </ul>
                 </li>
-                <li class="nav-item">
-                    <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
+                <li class="nav-item"><span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
                     <ul class="dropdown-menu">
                         <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
                         <li><a href="/materiais">08. Catálogo de Materiais</a></li>
@@ -122,8 +122,7 @@
                         <li><a href="/precificacao">12. Formação de Preço</a></li>
                     </ul>
                 </li>
-                <li class="nav-item">
-                    <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
+                <li class="nav-item"><span class="nav-link" tabindex="0">🏭 Produção ▾</span>
                     <ul class="dropdown-menu">
                         <li><a href="/compras_insumos">13. Compras de Insumos</a></li>
                         <li><a href="/pcp">14. Planejamento (PCP)</a></li>
@@ -132,8 +131,7 @@
                         <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
                     </ul>
                 </li>
-                <li class="nav-item">
-                    <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
+                <li class="nav-item"><span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
                     <ul class="dropdown-menu">
                         <li><a href="/clientes">18. Carteira de Clientes</a></li>
                         <li><a href="/vendas">19. Módulo de Vendas</a></li>
@@ -151,55 +149,40 @@
         <div class="grid-top" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; margin-top: 16px;">
             <div class="metric-card bg-blue-metric">
                 <p>💰 Capital Total</p>
-                <h3 style="font-size: 13px; font-weight: 900; margin: 0; white-space: nowrap;">
-                    CAPITAL TOTAL: <span id="top_capital_total">R$ 5.000.000,00</span> <span style="color: #3b82f6; font-size: 11px; font-weight: bold; margin-left: 2px;">➔ 100%</span>
-                </h3>
+                <h3>CAPITAL TOTAL: <span id="top_capital_total">R$ 5.000.000,00</span> <span style="color: #3b82f6; font-size: 11px; font-weight: bold; margin-left: 2px;">➔ 100%</span></h3>
             </div>
             <div class="metric-card bg-emerald-metric">
                 <p>🟩 Caixa de Giro</p>
-                <h3 style="font-size: 13px; font-weight: 900; margin: 0; white-space: nowrap;">
-                    DISPONÍVEL PARA O SETOR: <span id="top_giro_global">R$ 2.000.000,00</span> <span style="color: #10b981; font-size: 11px; font-weight: bold; margin-left: 2px;">➔ 40.00% do Cap.</span>
-                </h3>
+                <h3>DISPONÍVEL SETOR: <span id="top_giro_global">R$ 2.000.000,00</span> <span style="color: #10b981; font-size: 11px; font-weight: bold; margin-left: 2px;">➔ 40.00%</span></h3>
             </div>
             <div class="metric-card bg-slate-metric">
                 <p>🔒 Custo Fixo do Setor (Imobiliário + RH)</p>
-                <h4 style="font-size: 13px; font-weight: 900; margin: 0; white-space: nowrap; color: #4f46e5;">
-                    CUSTO FIXO DO SETOR: <span id="top_custo_fixo_setor">R$ 0,00/mês</span>
-                </h4>
+                <h4 style="color: #4f46e5;">CUSTO FIXO SETOR: <span id="top_custo_fixo_setor">R$ 0,00/mês</span></h4>
                 <span id="txt_porcentagem_setor_imob" style="font-size: 9px; font-weight: bold; color: #6366f1; display: block; margin-top: 2px;">➔ Custos Totais: 0.0% | Custos Fixos: 0.0%</span>
             </div>
             <div class="metric-card bg-amber-metric">
                 <p>📈 Custos Variáveis</p>
-                <h4 style="font-size: 13px; font-weight: 900; margin: 0; white-space: nowrap;">
-                    CUSTO VARIÁVEL DO SETOR: <span id="top_custo_variavel">R$ 0,00/mês</span>
-                </h4>
+                <h4>CUSTO VARIÁVEL SETOR: <span id="top_custo_variavel">R$ 0,00/mês</span></h4>
                 <span style="font-size: 9px; font-weight: bold; color: #b45309; display: block; margin-top: 2px;">➔ Custos Totais: 0.0% | Custos Variáveis: 0.0%</span>
             </div>
             <div class="metric-card" id="card_budget_limite" style="background-color: #f8fafc; border-color: #cbd5e1; color: #1e293b;">
                 <p>🎯 Limite do Setor (Max 40% Ativos)</p>
-                <h4 style="font-size: 11px; font-weight: 900; margin: 0; display: flex; justify-content: space-between;">
-                    <span>LIMITE SETOR:</span>
-                    <span id="top_budget_setor" style="color: #1e3a8a;">R$ 0,00 / R$ 2.000.000,00</span>
-                </h4>
+                <h4 style="font-size: 11px; display: flex; justify-content: space-between;"><span>LIMITE SETOR:</span><span id="top_budget_setor" style="color: #1e3a8a;">R$ 0,00 / R$ 2.000.000,00</span></h4>
                 <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; margin-top: 4px; overflow: hidden;">
                     <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
                 </div>
-                <div style="display: flex; justify-content: flex-end; margin-top: 2px;">
-                    <span id="txt_porcentagem_budget" style="font-size: 9px; font-weight: bold; color: #1e3a8a;">0% do teto consumido</span>
-                </div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 2px;"><span id="txt_porcentagem_budget" style="font-size: 9px; font-weight: bold; color: #1e3a8a;">0% do teto consumido</span></div>
             </div>
         </div>
 
         <div class="card mb-4" style="background-color: #fdf2f8; border-left: 5px solid #db2777; padding: 12px 20px; margin-bottom: 24px; border-radius: 8px;">
             <div style="display: flex; flex-direction: column; text-align: left;">
                 <span style="font-size: 11px; font-weight: bold; color: #9d174d; text-transform: uppercase;">🔒 Indicador Unificado de Despesa Operacional Corporativa</span>
-                <h3 style="font-size: 14px; font-weight: 900; color: #9d174d; margin: 4px 0 2px 0; white-space: nowrap;">
-                    CUSTO FIXO GERAL TOTAL (EMPRESA COMPLETA): <span id="top_custo_fixo_geral_empresa">R$ 21.350,00/mês</span>
-                </h3>
+                <h3 style="font-size: 14px; font-weight: 900; color: #9d174d; margin: 4px 0 2px 0;">CUSTO FIXO GERAL TOTAL (EMPRESA COMPLETA): <span id="top_custo_fixo_geral_empresa">R$ 21.350,00/mês</span></h3>
                 <span id="txt_proporcao_global_empresa" style="font-size: 10px; font-weight: bold; color: #db2777;">➔ Proporção deste Setor frente à Empresa: 100.00% do impacto fixo global</span>
             </div>
         </div>
-        <div class="page-header"><h2 class="page-title" id="txt_titulo_pagina">Módulo Imobiliário e Estrutura de Custos Fixos Industriais</h2></div>
+        <div class="page-header"><h2 class="page-title">Módulo Imobiliário e Estrutura de Custos Fixos Industriais</h2></div>
         <div class="grid-main">
             <div class="col-form" style="display: flex; flex-direction: column; gap: 20px;">
                 <div class="card">
@@ -207,7 +190,7 @@
                     <form id="formImobiliario" onsubmit="salvarImovel(event)">
                         <input type="hidden" id="imovel_id" value="">
                         <div class="flex-col-gap">
-                            <label class="label-form">Identificação da Empresa / Grupo:</label>
+                            <label class="label-form">Identificação do Grupo:</label>
                             <input type="text" id="nome_grupo_display" readonly class="input-form input-form-readonly">
                         </div>
                         <div class="flex-col-gap">
@@ -223,51 +206,64 @@
                                 <label class="label-form">Cidade / Municipio:</label>
                                 <select id="cidade" required class="select-form">
                                     <option value="Curitiba">Curitiba</option>
-                                    <option value="São José dos Pinhais">São José dos Pinhais (RMC)</option>
-                                    <option value="Araucária">Araucária (RMC)</option>
-                                    <option value="Pinhais">Pinhais (RMC)</option>
+                                    <option value="São José dos Pinhais">São José dos Pinhais</option>
+                                    <option value="Pinhais">Pinhais</option>
+                                    <option value="Araucária">Araucária</option>
+                                    <option value="Campo Largo">Campo Largo</option>
                                 </select>
                             </div>
                             <div class="flex-col-gap">
                                 <label class="label-form">Bairro / Polo:</label>
                                 <select id="bairro" required class="select-form">
                                     <option value="CIC">CIC (Cidade Industrial)</option>
-                                    <option value="Boqueirão">Boqueirão (Polo Comercial)</option>
+                                    <option value="Boqueirão">Boqueirão</option>
                                     <option value="Centro">Centro Urbano</option>
-                                    <option value="Distrito Logístico">Polo Industrial Metropolitano</option>
+                                    <option value="Distrito Logístico">Polo Industrial</option>
                                 </select>
                             </div>
                         </div>
                         <div class="grid-form-row">
-                            <div class="flex-col-gap">
-                                <label class="label-form">Área Útil (m²):</label>
-                                <input type="number" id="area_util" value="150" required min="10" class="input-form" style="font-weight: bold;">
-                            </div>
-                            <div class="flex-col-gap">
-                                <label class="label-form">Taxa Condomínio (R$):</label>
-                                <input type="number" id="valor_condominio" step="0.01" value="350.00" class="input-form">
-                            </div>
+                            <div class="flex-col-gap"><label class="label-form">Área Útil (m²):</label><input type="number" id="area_util" value="150" required min="10" class="input-form" style="font-weight: bold;"></div>
+                            <div class="flex-col-gap"><label class="label-form">Taxa Condomínio (R$):</label><input type="number" id="valor_condominio" step="0.01" value="350.00" class="input-form"></div>
                         </div>
                         <div class="grid-form-row">
-                            <div class="flex-col-gap">
-                                <label class="label-form" style="color: #1e3a8a;">Aluguel Calculado (R$):</label>
-                                <input type="number" id="valor_aluguel" readonly class="input-form input-form-readonly" style="color: #1e3a8a; font-size: 13px;">
+                            <div class="flex-col-gap"><label class="label-form" style="color: #1e3a8a;">Aluguel Calculado (R$):</label><input type="number" id="valor_aluguel" readonly class="input-form input-form-readonly" style="color: #1e3a8a; font-size: 13px;"></div>
+                            <div class="flex-col-gap"><label class="label-form" style="color: #b45309;">Taxa Anual (R$):</label><input type="number" id="taxa_anual" readonly class="input-form input-form-readonly" style="color: #b45309; font-size: 13px;"></div>
+                        </div>
+
+                        <!-- 🌟 TRÊS NOVOS CARDS DE ENGENHARIA ECONÔMICA PATRIMONIAL -->
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 12px; border-top: 2px dashed #cbd5e1; padding-top: 12px;">
+                            <div style="background-color: #f0fdfa; border: 1px solid #99f6e4; padding: 10px; border-radius: 8px;">
+                                <label class="label-form" style="color: #0d9488;">🏢 Provisão Imóvel Próprio (Estudante Edita)</label>
+                                <input type="number" id="reserva_propria" step="0.01" class="input-form" style="font-weight: bold; color: #0f766e; border-color: #2dd4bf;" oninput="calcularEngenhariaPatrimonial()">
+                                <span style="font-size: 9px; color: #14b8a6; font-weight: bold; display: block; margin-top: 2px;">➔ Projeção de Correção Anual (IGPM Corrigido): <strong id="txt_igpm_correcao">R$ 0,00</strong></span>
                             </div>
-                            <div class="flex-col-gap">
-                                <label class="label-form" style="color: #b45309;">Taxa Anual (R$):</label>
-                                <input type="number" id="taxa_anual" readonly class="input-form input-form-readonly" style="color: #b45309; font-size: 13px;">
+                            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 10px; border-radius: 8px;">
+                                <label class="label-form" style="color: #2563eb;">📍 Tempo Estudo para Aquisição Legal</label>
+                                <div style="font-size: 12px; font-weight: 900; color: #1e40af; margin-top: 2px;">Valor Real de Mercado: <span id="txt_valor_mercado_real">R$ 0,00</span></div>
+                                <span style="font-size: 10px; color: #3b82f6; font-weight: bold; display: block;">➔ Tempo necessário acumulando provisão: <strong id="txt_tempo_meses">0 meses</strong></span>
+                            </div>
+                            <div style="background-color: #fff7ed; border: 1px solid #fed7aa; padding: 10px; border-radius: 8px;">
+                                <label class="label-form" style="color: #ea580c;">📈 Taxa de Aluguel sobre Ativo (Reajuste Mensal)</label>
+                                <div style="font-size: 12px; font-weight: 900; color: #9a3412; margin-top: 2px;">Taxa de Capitalização de Aluguel: <span id="txt_taxa_capitalizacao">0.00% a.m.</span></div>
+                                <span style="font-size: 9px; color: #f97316; font-weight: bold; display: block;">➔ Percentual do aluguel frente ao custo de compra de mercado do polo.</span>
                             </div>
                         </div>
+
                         <div class="flex-btn-group">
                             <button type="submit" id="btn_salvar" class="btn-submit">💾 Firmar Contrato</button>
                             <button type="button" id="btn_cancelar" onclick="limparFormularioImobiliario()" class="btn-cancel" style="display: none; margin-top: 8px;">Cancelar</button>
                         </div>
                     </form>
                 </div>
-
                 <div class="card">
-                    <h3 class="card-title" style="color: #0f172a; border-bottom-color: #cbd5e1;">👥 Contratação de Apoio Predial</h3>
+                    <h3 class="card-title">👥 Contratação de Apoio Predial</h3>
                     <form id="formContratacaoPredial" onsubmit="adicionarColaborador(event)">
+                        <input type="hidden" id="rh_id" value="">
+                        <div class="flex-col-gap">
+                            <label class="label-form">Nome do Colaborador (Fictício / Humanizado):</label>
+                            <input type="text" id="rh_nome" required class="input-form" placeholder="Ex: Carlos Silva, Ana Souza...">
+                        </div>
                         <div class="flex-col-gap">
                             <label class="label-form">Cargo Operacional (Mão de Obra Fixa):</label>
                             <select id="cargo_suporte" required class="select-form" onchange="calcularPreviaSalario()">
@@ -280,73 +276,37 @@
                             </select>
                         </div>
                         <div class="grid-form-row">
-                            <div class="flex-col-gap">
-                                <label class="label-form">Quantidade:</label>
-                                <input type="number" id="qtd_colaboradores" min="1" value="1" required class="input-form" style="font-weight: bold;" oninput="calcularPreviaSalario()">
-                            </div>
-                            <div class="flex-col-gap">
-                                <label class="label-form" style="color: #64748b;">Prévias da Folha:</label>
-                                <input type="text" id="previa_salario" readonly class="input-form input-form-readonly" value="R$ 0,00" style="color: #475569;">
-                            </div>
+                            <div class="flex-col-gap"><label class="label-form">Quantidade:</label><input type="number" id="qtd_colaboradores" min="1" value="1" required class="input-form" style="font-weight: bold;" oninput="calcularPreviaSalario()"></div>
+                            <div class="flex-col-gap"><label class="label-form" style="color: #64748b;">Prévias da Folha:</label><input type="text" id="previa_salario" readonly class="input-form input-form-readonly" value="R$ 0,00"></div>
                         </div>
-                        <button type="submit" id="btn_contratar" class="btn-submit" style="background-color: #1e3a8a;">👥 Contratar Colaborador</button>
+                        <button type="submit" id="btn_contratar" class="btn-submit" style="background-color: #1e3a8a;">👥 Confirmar Registro</button>
                     </form>
                 </div>
             </div>
+
             <div class="col-table" style="display: flex; flex-direction: column; gap: 20px;">
                 <div class="table-container">
                     <div class="table-header-dark">Contratos Imobiliários Firmados no Supabase</div>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr><th>Turma/Grupo</th><th>Estrutura / Região</th><th>Área</th><th>Aluguel</th><th style="text-align: center;">Ações</th></tr>
-                            </thead>
-                            <tbody id="tabela_imoveis"></tbody>
-                        </table>
-                    </div>
+                    <div class="table-responsive"><table><thead><tr><th>Turma/Grupo</th><th>Estrutura / Região</th><th>Área</th><th>Aluguel</th><th style="text-align: center;">Ações</th></tr></thead><tbody id="tabela_imoveis"></tbody></table></div>
                 </div>
 
                 <div class="table-container">
                     <div class="table-header-dark" style="background-color: #334155;">Quadro de Colaboradores e Suporte Alocados</div>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr><th>Cargo</th><th>Salário Base</th><th style="text-align: center;">Qtd</th><th>Subtotal</th><th style="text-align: center;">Ação</th></tr>
-                            </thead>
-                            <tbody id="tabela_colaboradores"></tbody>
-                        </table>
-                    </div>
+                    <div class="table-responsive"><table><thead><tr><th>Nome</th><th>Cargo</th><th>Salário Base</th><th style="text-align: center;">Qtd</th><th>Subtotal</th><th style="text-align: center;">Ações</th></tr></thead><tbody id="tabela_colaboradores"></tbody></table></div>
                 </div>
 
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; text-align: left;">
-                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;">
-                            <span style="font-size: 11px; font-weight: bold; color: #475569; text-transform: uppercase;">💼 CUSTO FIXO DO SETOR (IMOBILIÁRIO/MOD ESPECÍFICO):</span>
-                            <span id="custo_fixo_setor_valor" style="font-size: 14px; font-weight: 900; color: #4338ca;">R$ 0,00/mês</span>
-                        </div>
-                        <div id="custo_fixo_setor_detalhes" style="font-size: 10px; font-weight: bold; color: #64748b;">
-                            → Custos Totais: 0.0% | Custos Fixos: 0.0% | Impacto da Infraestrutura Imobiliária: 0.0%
-                        </div>
+                    <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;"><span style="font-size: 11px; font-weight: bold; color: #475569; text-transform: uppercase;">💼 CUSTO FIXO DO SETOR (IMOBILIÁRIO/MOD ESPECÍFICO):</span><span id="custo_fixo_setor_valor" style="font-size: 14px; font-weight: 900; color: #4338ca;">R$ 0,00/mês</span></div>
+                        <div id="custo_fixo_setor_detalhes" style="font-size: 10px; font-weight: bold; color: #64748b;">→ Custos Totais: 0.0% | Custos Fixos: 0.0%</div>
                     </div>
-                    <div style="background-color: #fff5f5; border: 1px solid #fee2e2; border-radius: 8px; padding: 12px; text-align: left;">
-                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;">
-                            <span style="font-size: 11px; font-weight: bold; color: #991b1b; text-transform: uppercase;">🔒 CUSTO FIXO GERAL TOTAL (CONSOLIDADO CORPORATIVO):</span>
-                            <span id="custo_fixo_geral_total_valor" style="font-size: 14px; font-weight: 900; color: #b91c1c;">R$ 0,00/mês</span>
-                        </div>
-                        <div id="custo_fixo_geral_total_detalhes" style="font-size: 10px; font-weight: bold; color: #dc2626;">
-                            → Proporção Global: O Setor representa 0.0% de toda a Folha e Infraestrutura Corporativa Fixa.
-                        </div>
+                    <div style="background-color: #fff5f5; border: 1px solid #fee2e2; border-radius: 8px; padding: 12px;">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;"><span style="font-size: 11px; font-weight: bold; color: #991b1b; text-transform: uppercase;">🔒 CUSTO FIXO GERAL TOTAL (CONSOLIDADO CORPORATIVO):</span><span id="custo_fixo_geral_total_valor" style="font-size: 14px; font-weight: 900; color: #b91c1c;">R$ 0,00/mês</span></div>
+                        <div id="custo_fixo_geral_total_detalhes" style="font-size: 10px; font-weight: bold; color: #dc2626;">→ Proporção Global: O Setor representa 0.0% da despesa fixa.</div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
-            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
-            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
-            <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
-            <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
-        </footer>
     </div>
     <script src="/estrutura/estrutura.js" defer></script>
 </body>
