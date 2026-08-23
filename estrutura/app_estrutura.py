@@ -138,7 +138,6 @@ def api_imoveis_salvar():
             ''', (id_equipe, dados.get('tipo_imovel'), dados.get('regiao'), area_util, valor_aluguel, 
                   valor_condominio, dados.get('obs_contrato'), nome_empresa))
                   
-        # Atualiza a tabela global de configuração contábil unificando as despesas fixas locatícias
         cursor.execute('''
             UPDATE config_simulacao 
             SET valor_aluguel = (SELECT COALESCE(SUM(valor_aluguel + valor_condominio), 0) FROM imoveis_simulacao WHERE equipe_id = %s)
@@ -191,7 +190,6 @@ def api_rh_salvar():
         if conexao: conexao.close()
 
 
-@blueprint_ou_rota = '/api/estrutura/imoveis/<int:id_reg>' # Rota de Ações Individuais Locatícias
 @estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_imovel(id_reg):
     if not session.get('logado'):
