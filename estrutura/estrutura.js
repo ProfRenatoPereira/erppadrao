@@ -1,16 +1,14 @@
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 1 DE 4 - DIRETRIZES DE ACESSIBILIDADE WCAG E GATILHOS DE ENTRADA NATIVOS
+// PARTE 1 DE 4 - CONFIGURAÇÃO DE ACESSIBILIDADE WCAG E GATILHOS DE ENTRADA
 // ==========================================================================
 
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Inicializa a malha transacional do banco de dados imediatamente
     carregarDadosIniciais();
     
-    // Disparadores operacionais vinculados estritamente aos inputs do formulário
     document.getElementById('cidade')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('bairro')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('area_util')?.addEventListener('input', calcularPrecoMercadoRefletido);
@@ -49,9 +47,9 @@ function alternarLeitorAudio() {
     }
     if (leitorAtivo) {
         window.speechSynthesis.cancel();
-        const ut = new SpeechSynthesisUtterance("Módulo imobiliário aberto. Gerencie contratos de alocação.");
-        ut.lang = 'pt-BR';
-        window.speechSynthesis.speak(ut);
+        const utterance = new SpeechSynthesisUtterance("Módulo imobiliário aberto. Gerencie contratos de alocação.");
+        utterance.lang = 'pt-BR';
+        window.speechSynthesis.speak(utterance);
     } else {
         window.speechSynthesis.cancel();
     }
@@ -174,7 +172,7 @@ async function carregarDadosIniciais() {
         let porcFixo = custoFixoGeralEmpresaTotal > 0 ? (custoFixoSetorAtual / custoFixoGeralEmpresaTotal) * 100 : 0;
         let porcBudget = Math.min(100, (custoFixoSetorAtual / budgetMaximoSetor) * 100);
 
-        // Alimentação estrita das tags superiores (Linhas 1 a 5 da matriz)
+        // ALIMENTAÇÃO DA MATRIZ HORIZONTAL SUPERIOR REPLICADA DE MÁQUINAS
         if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = capitalMaster.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_budget_inicial')) document.getElementById('top_budget_inicial').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
@@ -196,9 +194,11 @@ async function carregarDadosIniciais() {
 
         if(document.getElementById('top_custo_fixo_geral_empresa')) document.getElementById('top_custo_fixo_geral_empresa').innerText = custoFixoGeralEmpresaTotal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
         if(document.getElementById('custo_fixo_geral_total_valor')) document.getElementById('custo_fixo_geral_total_valor').innerText = custoFixoGeralEmpresaTotal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
+        if(document.getElementById('custo_fixo_setor_valor')) document.getElementById('custo_fixo_setor_valor').innerText = custoFixoSetorAtual.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
         
         if(document.getElementById('txt_proporcao_global_empresa')) document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}%`;
-        if(document.getElementById('custo_fixo_geral_total_detalhes')) document.getElementById('custo_fixo_geral_total_detalhes').innerText = `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}% do impacto fixo global`;
+        if(document.getElementById('custo_fixo_geral_total_detalhes')) document.getElementById('custo_fixo_geral_total_detalhes').innerText = `→ Proporção Global: O Setor representa ${porcFixo.toFixed(2)}% de toda a Folha Corporativa Fixa.`;
+        if(document.getElementById('custo_fixo_setor_detalhes')) document.getElementById('custo_fixo_setor_detalhes').innerText = `→ Custos Totais: ${porcCapital.toFixed(3)}% | Custos Fixos Setoriais: ${porcFixo.toFixed(2)}%`;
         
         const inputGrupo = document.getElementById('nome_grupo_display');
         if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
@@ -322,13 +322,7 @@ async function editarImovel(id) {
         document.getElementById('tipo_imovel').value = i.tipo_imovel;
         document.getElementById('area_util').value = i.area_util;
         document.getElementById('valor_condominio').value = i.valor_condominio;
-        if (i.regiao && i.regiao.includes(" - ")) {
-            const partes = i.regiao.split(" - ");
-            if (document.getElementById('cidade')) document.getElementById('cidade').value = partes[0].trim();
-            if (document.getElementById('bairro')) document.getElementById('bairro').value = partes[1].trim();
-        }
         if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato";
-        calcularPrecoMercadoRefletido();
     } catch (err) { console.error(err); }
 }
 
