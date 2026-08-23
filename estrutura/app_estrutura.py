@@ -11,7 +11,6 @@ from psycopg2.extras import RealDictCursor
 estrutura_blueprint = Blueprint('estrutura_blueprint', __name__)
 
 def obter_conexao_master():
-    # Puxa dinamicamente a string do Supabase unificada no app_master
     from app_master import URL_SUPABASE
     return psycopg2.connect(URL_SUPABASE)
 
@@ -20,7 +19,6 @@ def pagina_estrutura():
     if not session.get('logado'):
         return redirect('/login')
         
-    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta para o arquivo HTML
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
     caminho_html = os.path.join(diretorio_atual, 'estrutura.html')
     
@@ -33,7 +31,6 @@ def pagina_estrutura():
 
 @estrutura_blueprint.route('/estrutura/estrutura.js', methods=['GET'])
 def rota_estrutura_js():
-    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta para o arquivo JS
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
     caminho_js = os.path.join(diretorio_atual, 'estrutura.js')
     
@@ -45,7 +42,7 @@ def rota_estrutura_js():
         return "console.error('Erro Crítico: Arquivo estrutura.js não encontrado.');", 404
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-# PARTE 2 DE 3 - ENDPOINTS DE CONSULTA E CRIE TABELAS SE NÃO EXISTIREM NATIVAS
+# PARTE 2 DE 3 - ENDPOINTS DE CONSULTA COM VARIÁVEIS DIRETAS SINCRONIZADAS
 # ==========================================================================
 
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
@@ -59,7 +56,6 @@ def api_imoveis_listar():
     
     try:
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        # Garante a existência da tabela parametrizada com a coluna estável nome_empresa
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS imoveis_simulacao (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, tipo_imovel TEXT, regiao TEXT, 
@@ -70,7 +66,9 @@ def api_imoveis_listar():
         
         cursor.execute('SELECT * FROM imoveis_simulacao WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        return jsonify([dict(linha) for linha in lines])
+        
+        # 🛠️ CORREÇÃO OPERACIONAL: Alinhado síncronamente com a variável do Supabase
+        return jsonify([dict(linha) for linha in linhas])
         
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
@@ -92,7 +90,6 @@ def api_rh_listar():
     
     try:
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        # Inicializa a tabela de RH de infraestrutura adicionando a coluna de Nome Humanizado
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS estrutura_rh (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, nome TEXT, cargo TEXT, 
@@ -103,7 +100,9 @@ def api_rh_listar():
         
         cursor.execute('SELECT * FROM estrutura_rh WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        return jsonify([dict(linha) for linha in lines])
+        
+        # 🛠️ CORREÇÃO OPERACIONAL: Alinhado síncronamente com a variável do Supabase
+        return jsonify([dict(linha) for line in linhas])
         
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
