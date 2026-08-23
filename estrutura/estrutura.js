@@ -1,4 +1,3 @@
-// erppadrao - estrutura/estrutura.js - PARTE 1 DE 2
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 
@@ -13,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('valor_condominio')?.addEventListener('input', calcularPrecoMercadoRefletido);
 });
 
-// 📐 NOVO MOTOR DE REDIMENSIONAMENTO FORÇADO (CORRIGE O TRAVAMENTO)
+// 📐 MOTOR DE REDIMENSIONAMENTO FORÇADO (CORRIGE O TRAVAMENTO)
 function mudarFonte(dir) {
     tamanhoFonteAtual += dir;
     tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
@@ -86,7 +85,7 @@ function calcularPrecoMercadoRefletido() {
     } else if (cidade === "São José dos Pinhais" || cidade === "Araucária" || cidade === "Pinhais") {
         precoM2 = 21.00; 
     }
-    
+
     const valorAluguelMensal = area * precoM2;
     const taxaAnualEstimada = area * 4.50; 
     
@@ -96,41 +95,81 @@ function calcularPrecoMercadoRefletido() {
     if (inputAluguel) inputAluguel.value = valorAluguelMensal.toFixed(2);
     if (inputTaxaAnual) inputTaxaAnual.value = taxaAnualEstimada.toFixed(2);
 }
-// erppadrao - estrutura/estrutura.js - PARTE 2 DE 2
 
+function calcularPreviaSalario() {
+    const select = document.getElementById('cargo_suporte');
+    const qtdInput = document.getElementById('qtd_colaboradores');
+    const inputPrevia = document.getElementById('previa_salario');
+    
+    if (!select || !qtdInput || !inputPrevia) return;
+    
+    const option = select.options[select.selectedIndex];
+    if (!select.value || !option) {
+        inputPrevia.value = "R$ 0,00";
+        return;
+    }
+    
+    const salario = parseFloat(option.getAttribute('data-salario')) || 0;
+    const qtd = parseInt(qtdInput.value) || 0;
+    
+    if (qtd <= 0) {
+        inputPrevia.value = "R$ 0,00";
+        return;
+    }
+    
+    inputPrevia.value = (salario * qtd).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 async function carregarDadosIniciais() {
     try {
         const resMetricas = await fetch('/api/financeiro/metricas?dept=estrutura');
         if (!resMetricas.ok) throw new Error("Falha na comunicação.");
         const metricas = await resMetricas.json();
         
-        if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = `R$ ${(metricas.capital_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = `R$ ${(metricas.capital_disponivel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${(metricas.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${(metricas.custo_valiavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        const capitalInicial = 5000000.00;
+        const budgetMaximoSetor = capitalInicial * 0.40; 
+        const gastoSetor = metricas.custo_fixo_total || 0; 
+        const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 21350.00;
+        
+        if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = capitalInicial.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        if(document.getElementById('top_custo_fixo_setor')) document.getElementById('top_custo_fixo_setor').innerText = `${gastoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ 0,00/mês`;
+        if(document.getElementById('top_custo_fixo_geral_empresa')) document.getElementById('top_custo_fixo_geral_empresa').innerText = custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
+        if(document.getElementById('custo_fixo_geral_total_valor')) document.getElementById('custo_fixo_geral_total_valor').innerText = custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
+        if(document.getElementById('custo_fixo_setor_valor')) document.getElementById('custo_fixo_setor_valor').innerText = gastoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
         
         const inputGrupo = document.getElementById('nome_grupo_display');
         if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
 
-        // 🧠 MOTOR DE GOVERNANÇA ORÇAMENTÁRIA DO SETOR (40% Máximo do Capital Inicial)
-        const capitalInicial = metricas.capital_total || 0;
-        const budgetMaximoSetor = capitalInicial * 0.40; 
-        const gastoAtualSetor = metricas.custo_fixo_total || 0; 
-        
-        let porcentagemConsumida = budgetMaximoSetor > 0 ? (gastoAtualSetor / budgetMaximoSetor) * 100 : 0;
-        porcentagemConsumida = Math.min(100, Math.max(0, porcentagemConsumida)); 
+        let porcCapital = (gastoSetor / capitalInicial) * 100;
+        let porcFixo = custoFixoGeralEmpresa > 0 ? (gastoSetor / custoFixoGeralEmpresa) * 100 : 0;
+        let porcBudget = budgetMaximoSetor > 0 ? (gastoSetor / budgetMaximoSetor) * 100 : 0;
+        porcBudget = Math.min(100, Math.max(0, porcBudget));
+
+        if(document.getElementById('txt_porcentagem_setor_imob')) {
+            document.getElementById('txt_porcentagem_setor_imob').innerText = `➔ Custos Totais: ${porcCapital.toFixed(2)}% | Custos Fixos: ${porcFixo.toFixed(1)}%`;
+        }
+        if(document.getElementById('txt_proporcao_global_empresa')) {
+            document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}% do impacto fixo global`;
+        }
+        if(document.getElementById('custo_fixo_geral_total_detalhes')) {
+            document.getElementById('custo_fixo_geral_total_detalhes').innerText = `→ Proporção Global: O Setor representa ${porcFixo.toFixed(2)}% de toda a Folha e Infraestrutura Corporativa Fixa.`;
+        }
+        if(document.getElementById('custo_fixo_setor_detalhes')) {
+            document.getElementById('custo_fixo_setor_detalhes').innerText = `→ Custos Totais: ${porcCapital.toFixed(3)}% | Custos Fixos Fixados: ${porcFixo.toFixed(2)}%`;
+        }
         
         const txtBudget = document.getElementById('top_budget_setor');
         const barraProgresso = document.getElementById('barra_progresso_budget');
         const txtPorcentagem = document.getElementById('txt_porcentagem_budget');
         const cardBudget = document.getElementById('card_budget_limite');
         
-        if (txtBudget) txtBudget.innerText = `R$ ${gastoAtualSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${budgetMaximoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if (barraProgresso) barraProgresso.style.width = `${porcentagemConsumida}%`;
-        if (txtPorcentagem) txtPorcentagem.innerText = `${porcentagemConsumida.toFixed(1)}% do teto consumido`;
+        if (txtBudget) txtBudget.innerText = `R$ ${gastoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${budgetMaximoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if (barraProgresso) barraProgresso.style.width = `${porcBudget}%`;
+        if (txtPorcentagem) txtPorcentagem.innerText = `${porcBudget.toFixed(1)}% do teto consumido`;
         
         if (cardBudget && barraProgresso) {
-            if (gastoAtualSetor > budgetMaximoSetor) {
+            if (gastoSetor > budgetMaximoSetor) {
                 cardBudget.style.backgroundColor = "#fef2f2";
                 cardBudget.style.borderColor = "#fca5a5";
                 barraProgresso.style.backgroundColor = "#ef4444"; 
@@ -141,6 +180,12 @@ async function carregarDadosIniciais() {
             }
         }
 
+        await carregarTabelaImoveis();
+        await carregarTabelaColaboradores();
+    } catch (err) { console.error(err); }
+}
+async function carregarTabelaImoveis() {
+    try {
         const resImoveis = await fetch('/api/estrutura/imoveis');
         const imoveis = await resImoveis.json();
         const tbody = document.getElementById('tabela_imoveis');
@@ -165,7 +210,34 @@ async function carregarDadosIniciais() {
         `).join('');
         
         calcularPrecoMercadoRefletido();
-        mudarFonte(0); // Sincroniza e aplica a escala de fonte correta WCAG
+        mudarFonte(0);
+    } catch (err) { console.error(err); }
+}
+
+async function carregarTabelaColaboradores() {
+    try {
+        const res = await fetch('/api/estrutura/rh');
+        const colaboradores = await res.json();
+        const tbody = document.getElementById('tabela_colaboradores');
+        if (!tbody) return;
+        
+        if (!colaboradores || colaboradores.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">MÁSCARA ZERO: Nenhum colaborador alocado neste setor.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = colaboradores.map(c => `
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+                <td style="font-weight: 700;">👷 ${c.cargo}</td>
+                <td>R$ ${(c.salario_base || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                <td style="text-align: center; font-weight: bold;">${c.quantidade}</td>
+                <td style="color: #4338ca; font-weight: bold;">R$ ${(c.subtotal || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                <td style="text-align: center;">
+                    <button type="button" onclick="deletarColaborador(${c.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2; font-size:10px;">Demitir</button>
+                </td>
+            </tr>
+        `).join('');
+        mudarFonte(0);
     } catch (err) { console.error(err); }
 }
 
@@ -191,6 +263,32 @@ async function salvarImovel(e) {
             limparFormularioImobiliario();
             carregarDadosIniciais();
             alert("🎯 Contrato de alocação processado e salvo!");
+        }
+    } catch (err) { console.error(err); }
+}
+
+async function adicionarColaborador(e) {
+    if(e && e.preventDefault) e.preventDefault();
+    const select = document.getElementById('cargo_suporte');
+    const option = select.options[select.selectedIndex];
+    
+    const dados = {
+        cargo: select.value,
+        salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
+        quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 0
+    };
+
+    try {
+        const res = await fetch('/api/estrutura/rh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        if (res.ok) {
+            document.getElementById('formContratacaoPredial').reset();
+            document.getElementById('previa_salario').value = "R$ 0,00";
+            carregarDadosIniciais();
+            alert("🎯 Colaborador adicionado à folha fixa do setor!");
         }
     } catch (err) { console.error(err); }
 }
@@ -229,12 +327,21 @@ async function deletarImovel(id) {
     } catch (err) { console.error(err); }
 }
 
+async function deletarColaborador(id) {
+    if (!confirm('Confirmar a demissão do colaborador do suporte predial?')) return;
+    try {
+        const res = await fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            carregarDadosIniciais();
+            alert("🎯 Colaborador desligado da folha fixa.");
+        }
+    } catch (err) { console.error(err); }
+}
+
 function limparFormularioImobiliario() {
     const form = document.getElementById('formImobiliario');
     if (form) form.reset();
     if (document.getElementById('imovel_id')) document.getElementById('imovel_id').value = '';
     if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
     if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'none';
-    calcularPrecoMercadoRefletido();
-    mudarFonte(0);
 }
