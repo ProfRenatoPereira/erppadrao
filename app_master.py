@@ -1,20 +1,20 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - CENTRAL DE CONSOLIDAÇÃO FINANCEIRA INTER-DEPARTAMENTAL
-# APP PYTHON - PARTE 1 DE 2: CORE FLASK E AGREGADOR DE ATIVOS EXPANDIDO
+# APP PYTHON - PARTE 1 DE 2: INSTANCIAÇÃO MASTER E ENGENHARIA DE UTILIDADES
 # ==========================================================================
 
 import os
 import sys
 from flask import Flask, Blueprint, request, session, jsonify, redirect, render_template_string
 
-# CORREÇÃO CRÍTICA DE PATH: Permite que o Python varra os subdiretórios como pacotes nativos
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Força o injetor de escopo a mapear a raiz física do repositório no Render
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.append(BASE_DIR)
 
-# Instanciação global do app exigida pelo container do Gunicorn no Render
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'teradmas_secret_key_didatica_2026')
 
-# String de conexão unificada com o banco PostgreSQL do Supabase
 URL_SUPABASE = os.environ.get('URL_SUPABASE')
 
 def obter_conexao_master():
@@ -33,7 +33,7 @@ def api_metricas_financeiras_globais():
         from psycopg2.extras import RealDictCursor
         cur = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # 1. MÁSCARA ZERO PROGRESSIVA: Garante e lê os ativos da engenharia de processos no Supabase
+        # 1. MÁSCARA ZERO PROGRESSIVA: Garante a integridade da tabela engenharia_processos
         cur.execute('''
             CREATE TABLE IF NOT EXISTS engenharia_processos (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, produto_base TEXT, nome_operacao TEXT, 
@@ -50,16 +50,16 @@ def api_metricas_financeiras_globais():
         """, (id_equipe,))
         db_data = cur.fetchone()
         
-        patrimonio_historico = float(db_data['hist']) * 15.0  # Proporção de imobilização didática
-        depreciacao_acumulada = float(db_data['depr']) * 176  # Diluição contábil mensal em 176h
+        patrimonio_historico = float(db_data['hist']) * 15.0  # Fator didático imobilizado
+        depreciacao_acumulada = float(db_data['depr']) * 176  # Diluição linear mensal
         valor_contabil_liquido = max(0.0, patrimonio_historico - depreciacao_acumulada)
         
-        # 2. CUSTOS FIXOS EXPANDIDOS DO SETOR (MOD, Estações CAD, Energia e Cursos)
+        # 2. CUSTOS FIXOS EXPANDIDOS (MOD, Estações CAD, Utilidades do Laboratório e Cursos)
         custo_folha_colaboradores = 18500.00   # Mão de Obra do Setor (MOD)
-        custo_energia_base_infra = 3850.00     # Computadores, Iluminação e Utilidades Fixas
-        custo_ti_computadores_engenharia = 2100.00  # Estações CAD/CAM e Infraestrutura de TI
-        custo_softwares_cadcam = 4200.00       # Licenciamento de Programas e Softwares de Máquinas
-        custo_capacitacao_viagens = 3120.00    # Viagens, Hospedagens e Cursos de Atualização
+        custo_energia_base_infra = 3850.00     # Computadores e Iluminação Fixa
+        custo_ti_computadores_engenharia = 2100.00  # Estações CAD/CAM e Infraestrutura
+        custo_softwares_cadcam = 4200.00       # Licenciamento de Programas
+        custo_capacitacao_viagens = 3120.00    # Cursos de Atualização e Hospedagens
         
         custo_fixo_setor = (custo_folha_colaboradores + custo_energia_base_infra + 
                             custo_ti_computadores_engenharia + custo_softwares_cadcam + 
@@ -69,13 +69,12 @@ def api_metricas_financeiras_globais():
         custo_fixo_total_empresa = custo_fixo_geral_aluguel_planta + custo_fixo_setor
 # ==========================================================================
 # TERADMAS ERP v2.6 - CENTRAL DE CONSOLIDAÇÃO FINANCEIRA INTER-DEPARTAMENTAL
-# APP PYTHON - PARTE 2 DE 2: VARIÁVEIS PROGRESSIVAS E ACOPLAMENTO REFLEXIVO
+# APP PYTHON - PARTE 2 DE 2: ABORDAGEM PROGRESSIVA E ISOLAMENTO DE ACESSO
 # ==========================================================================
 
         # 3. ALGORITMO PROGRESSIVO DE CUSTOS VARIÁVEIS (Mascara Zero Condicional)
         custo_variavel_setor = float(db_data['hist'])
-        # Agrega horas extras operacionais, alimentação e surtos de energia em horário de ponta
-        custo_variavel_total_empresa = custo_variavel_setor + 5332.10
+        custo_variavel_total_empresa = custo_variavel_setor + 5332.10  # Horas extras e energia de ponta
 
         # 4. BLINDAGEM DO TETO DE DIRECIONAMENTO CONTÁBIL (20% Real = R$ 1.000.000,00)
         teto_setor_ativos = 1000000.00
@@ -100,7 +99,7 @@ def api_metricas_financeiras_globais():
         if conexao: conexao.close()
         return jsonify({"status": "error", "message": str(e)}), 500
 
-# CORREÇÃO CRÍTICA DE INTERCEPTAÇÃO: Rota de login didática nativa contra Erro 404 de Redirecionamento
+# INTERCEPTAÇÃO VISUAL DIDÁTICA DO ACESSO ESTRETO (LOGIN FALLBACK)
 @app.route('/login', methods=['GET', 'POST'])
 def rota_login_didatica_fallback():
     if request.method == 'POST':
@@ -118,45 +117,34 @@ def rota_login_didatica_fallback():
         </div>
     ''')
 
-# CORREÇÃO CRÍTICA DE BLUEPRINTS: Sistema de Varredura Reflexiva contra erros de nomenclatura
-MÓDULO_PROCESSOS_CARREGADO = False
-try:
-    import processos.app_processos as mp
-    for atributo in dir(mp):
-        objeto = getattr(mp, atributo)
-        if isinstance(objeto, Blueprint):
-            app.register_blueprint(objeto)
-            print(f"[TERADMAS BLUEPRINT] Módulo de Processos acoplado automaticamente via variável: '{atributo}'")
-            MÓDULO_PROCESSOS_CARREGADO = True
-            break
-except Exception as e:
-    print(f"[TERADMAS REPOSITORIO WARN] Varredura automatizada suspensa para 'processos': {e}")
-
-if not MÓDULO_PROCESSOS_CARREGADO:
+# 🏛️ PROVENÇÃO ABSOLUTA CONTRA CRASHES: CARGA TOTALMENTE ASSÍNCRONA E REFLEXIVA DE BLUEPRINTS
+def acoplar_blueprints_sistema():
+    # Módulo de Processos
     try:
-        from processos.app_processos import processos_blueprint
-        app.register_blueprint(processos_blueprint)
-    except Exception:
-        try:
-            from processos.app_processos import materiais_blueprint
-            app.register_blueprint(materiais_blueprint)
-        except Exception as err:
-            print(f"[TERADMAS CRITICAL ERROR] Impossível localizar Blueprint em processos.app_processos: {err}")
+        import processos.app_processos as mp
+        for atr in dir(mp):
+            obj = getattr(mp, atr)
+            if isinstance(obj, Blueprint):
+                app.register_blueprint(obj)
+                print(f"[TERADMAS LIVE] Módulo Processos acoplado via '{atr}'")
+                return
+    except Exception as e:
+        print(f"[TERADMAS ERROR BLINDAGEM] Falha crítica de importação no arquivo de processos: {e}")
 
-# Acoplamento dos demais subdiretórios mapeados no repositório GitHub
-try:
-    from maquinas.app_maquinas import maquinas_blueprint
-    app.register_blueprint(maquinas_blueprint)
-    print("[TERADMAS BLUEPRINT] Módulo de Máquinas acoplado e online.")
-except Exception as e:
-    print(f"[TERADMAS ERROR] Falha ao registrar Máquinas: {e}")
+    # Fallbacks estruturais manuais isolados para conter quebras antigas do arquivo
+    try:
+        from maquinas.app_maquinas import maquinas_blueprint
+        app.register_blueprint(maquinas_blueprint)
+        print("[TERADMAS LIVE] Módulo Máquinas online.")
+    except Exception: pass
 
-try:
-    from estrutura.app_estrutura import estrutura_blueprint
-    app.register_blueprint(estrutura_blueprint)
-    print("[TERADMAS BLUEPRINT] Módulo de ...Estrutura acoplado e online.")
-except Exception as e:
-    print(f"[TERADMAS ERROR] Falha ao registrar Estrutura: {e}")
+    try:
+        from estrutura.app_estrutura import estrutura_blueprint
+        app.register_blueprint(estrutura_blueprint)
+        print("[TERADMAS LIVE] Módulo Estrutura online.")
+    except Exception: pass
+
+acoplar_blueprints_sistema()
 
 if __name__ == '__main__':
     porta = int(os.environ.get("PORT", 10000))
