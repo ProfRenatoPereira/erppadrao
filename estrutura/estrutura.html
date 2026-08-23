@@ -78,6 +78,161 @@
             </div>
         </div>
     </header>
+
+
+<!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
+    <header class="corporate-header">
+        <div class="logo-area">
+            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
+            <div style="display: flex; flex-direction: column; text-align: left;">
+                <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">TERADMAS ERP v2.6</span>
+                <span style="font-size: 10px; color: #94a3b8; font-weight: bold; line-height: 1.3; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</span>
+            </div>
+        </div>
+        <input type="checkbox" id="menu-toggle">
+        <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
+        <nav>
+            <ul class="nav-corporate-menu">
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
+                        <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
+                        <li><a href="/orcamentos">03. Limites Orçamentários</a></li>
+                        <li><a href="/rh">04. Organograma e RH</a></li>
+                        <li><a href="/folha_pagamento">05. Folha de Pagamento</a></li>
+                        <li><a href="/requisicoes">06. Requisições Internas</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
+                        <li><a href="/materiais">08. Catálogo de Materiais</a></li>
+                        <li><a href="/processos">09. Fluxos de Processos</a></li>
+                        <li><a href="/produtos">10. Fichas Técnicas (BOM)</a></li>
+                        <li><a href="/manutencao">11. Plano de Manutenção</a></li>
+                        <li><a href="/precificacao">12. Formação de Preço</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/compras_insumos">13. Compras de Insumos</a></li>
+                        <li><a href="/pcp">14. Planejamento (PCP)</a></li>
+                        <li><a href="/engenharia_producao">15. Execução de Fábrica</a></li>
+                        <li><a href="/estoque">16. Almoxarifado Central</a></li>
+                        <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/clientes">18. Carteira de Clientes</a></li>
+                        <li><a href="/vendas">19. Módulo de Vendas</a></li>
+                        <li><a href="/financeiro">20. Fluxo de Caixa Geral</a></li>
+                        <li><a href="/roi">21. Retorno sobre Investimento</a></li>
+                        <li><a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a></li>
+                        <li><a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </header>
+<!-- erppadrao - maquinas/maquinas.html - PARTE 4 DE 6 -->
+    <div class="container">
+        <!-- 📊 PAINEL ESTRUTURADO DE CUSTOS, ATIVOS E LIMITES HORIZONTAIS DINÂMICOS -->
+        <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px; font-family: sans-serif;">
+            
+            <!-- LINHA 01: ESCOPO CORPORATIVO (MACRO EMPRESA) -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">💰 Capital Total:</span>
+                    <strong id="top_capital_total" style="font-size: 15px; font-weight: 900; color: #1e3a8a;">R$ 5.000.000,00</strong>
+                    <span style="font-size: 11px; font-weight: bold; color: #3b82f6; margin-left: 4px;">➔ 100%</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #111827; text-transform: uppercase;">💰 Disponível para o Setor:</span>
+                    <strong id="top_disponivel_setor" style="font-size: 15px; font-weight: 900; color: #111827;">R$ 2.000.000,00</strong>
+                    <span id="pct_disponivel_setor" style="font-size: 11px; font-weight: bold; color: #10b981; margin-left: 4px;">➔ 40.00% do Cap.</span>
+                </div>
+            </div>
+
+            <!-- LINHA 02: OPERAÇÃO INTERNA E CONSUMO DA ENGENHARIA -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #581c87; text-transform: uppercase;">🏢 Orçamento Inicial Engenharia:</span>
+                    <strong id="top_orcamento_inicial" style="font-size: 15px; font-weight: 900; color: #581c87;">R$ 2.000.000,00</strong>
+                    <span id="pct_orcamento_inicial" style="font-size: 11px; font-weight: bold; color: #a855f7; margin-left: 4px;">➔ 40.00% do Cap.</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; background-color: #f0fdf4; padding: 4px 8px; border-radius: 6px; border: 1px dashed #bbf7d0;">
+                    <span style="font-size: 11px; font-weight: bold; color: #166534; text-transform: uppercase;">🏢 Saldo de Orçamento Engenharia:</span>
+                    <strong id="top_verba_reais" style="font-size: 15px; font-weight: 900; color: #166534;">R$ 0,00</strong>
+                    <span id="pct_saldo_engenharia" style="font-size: 11px; font-weight: bold; color: #15803d; margin-left: 4px;">➔ 0.00% do Cap.</span>
+                </div>
+            </div>
+
+            <!-- LINHA 03: GESTÃO PATRIMONIAL E TRAVA DE TETO (MÁQUINAS) -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px;">
+                    <span style="font-size: 11px; font-weight: bold; color: #9a3412; text-transform: uppercase;">🏛️ Patrimônio Máquinas:</span>
+                    <strong id="top_patrimonio_maquinas" style="font-size: 15px; font-weight: 900; color: #9a3412;">R$ 0,00</strong>
+                    <span id="pct_patrimonio_maquinas" style="font-size: 11px; font-weight: bold; color: #ea580c; margin-left: 4px;">➔ 0.00% do Cap.</span>
+                </div>
+                <div id="card_budget_limite" style="display: flex; flex-direction: column; gap: 4px; min-width: 420px; flex-grow: 1; padding: 6px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size: 11px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">🎯 Limite Setor (Max 40% Ativos):</span>
+                        <span id="txt_valores_limite" style="font-size: 12px; font-weight: bold; color: #334155;">R$ 0,00 / R$ 2.000.000,00</span>
+                    </div>
+                    <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden; margin-top: 2px;">
+                        <div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%; transition: width 0.3s ease;"></div>
+                    </div>
+                    <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: 900; color: #2563eb; text-align: right; display: block; margin-top: 2px;">0.0% do teto consumido</span>
+                </div>
+            </div>
+
+            <!-- LINHA 04: RELATÓRIO DE CUSTOS FIXOS TOTAIS ACUMULADOS COM PORCENTAGEM RELATIVA DUPLA -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #6b21a8; text-transform: uppercase;">🔒 Custo Fixo Total (Aluguel + Setores 1 a n):</span>
+                        <strong id="top_custo_fixo" style="font-size: 14px; font-weight: 900; color: #6b21a8;">R$ 0,00/mês</strong>
+                    </div>
+                    <span id="pct_custo_fixo_geral" style="font-size: 10px; font-weight: bold; color: #8b5cf6;">➔ Custos Totais: 0.0% | Custos Fixos: 100.0%</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff; flex-grow: 1;">
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #7c3aed; text-transform: uppercase;">🔒 Custo Fixo do Setor (Mnt/MOD Específico):</span>
+                        <strong id="top_custo_fixo_setor" style="font-size: 14px; font-weight: 900; color: #7c3aed;">R$ 0,00/mês</strong>
+                    </div>
+                    <span id="pct_custo_fixo_setor" style="font-size: 10px; font-weight: bold; color: #6d28d9;">➔ Custos Totais: 0.0% | Custos Fixos: 0.0%</span>
+                </div>
+            </div>
+
+            <!-- LINHA 05: RELATÓRIO DE CUSTOS VARIÁVEIS TOTAIS ACUMULADOS COM PORCENTAGEM RELATIVA DUPLA -->
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px;">
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #c2410c; text-transform: uppercase;">📈 Custo Variável Total (Geral + Setores 1 a n):</span>
+                        <strong id="top_custo_variavel" style="font-size: 14px; font-weight: 900; color: #c2410c;">R$ 0,00/mês</strong>
+                    </div>
+                    <span id="pct_custo_variavel_geral" style="font-size: 10px; font-weight: bold; color: #f97316;">➔ Custos Totais: 0.0% | Custos Variáveis: 100.0%</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #ffedd5; flex-grow: 1;">
+                    <div>
+                        <span style="font-size: 11px; font-weight: bold; color: #ea580c; text-transform: uppercase;">📈 Custo Variável do Setor (Insumos Específicos):</span>
+                        <strong id="top_custo_variavel_setor" style="font-size: 14px; font-weight: 900; color: #ea580c;">R$ 0,00/mês</strong>
+                    </div>
+                    <span id="pct_custo_variavel_setor" style="font-size: 10px; font-weight: bold; color: #c2410c;">➔ Custos Totais: 0.0% | Custos Variáveis: 0.0%</span>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+   
     <div class="container">
         <!-- 📊 MATRIZ HORIZONTAL DE KPIs DE ENGENHARIA FINANCEIRA (PADRÃO EXATO IMAGEM) -->
         <div class="grid-top">
