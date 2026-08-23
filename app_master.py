@@ -1,12 +1,13 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - CENTRAL DE CONSOLIDAÇÃO FINANCEIRA INTER-DEPARTAMENTAL
-# APP PYTHON - PARTE 1 DE 2: INSTANCIAÇÃO MASTER E ENGENHARIA DE UTILIDADES
+# CORE UNIFICADO: INSTANCIAÇÃO, MATRIZ CONTÁBIL E ROTAS DE INTEGRAÇÃO
 # ==========================================================================
 
 import os
+import urllib.parse as urlparse
 from flask import Flask, Blueprint, request, session, jsonify, redirect, render_template_string
 
-# Instanciação direta e explícita do objeto 'app' que o Gunicorn busca no Render
+# Instanciação explícita para o Gunicorn no Render
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'teradmas_secret_key_didatica_2026')
 
@@ -14,7 +15,29 @@ URL_SUPABASE = os.environ.get('URL_SUPABASE')
 
 def obter_conexao_master():
     import psycopg2
-    return psycopg2.connect(URL_SUPABASE)
+    if not URL_SUPABASE:
+        raise ValueError("ERRO: A variável de ambiente URL_SUPABASE não está configurada.")
+    
+    try:
+        # Parsing explícito para forçar conexão TCP/IP e mitigar erros de Socket Unix local
+        url = urlparse.urlparse(URL_SUPABASE)
+        dbname = url.path[1:]
+        user = url.username
+        password = url.password
+        host = url.hostname
+        port = url.port or 5432
+        
+        return psycopg2.connect(
+            dbname=dbname,
+            user=user,
+            password=password,
+            host=host,
+            port=port,
+            sslmode="require"
+        )
+    except Exception:
+        # Fallback de segurança caso a string já esteja sanitizada pelo provedor
+        return psycopg2.connect(URL_SUPABASE)
 
 @app.route('/api/financeiro/metricas', methods=['GET'])
 def api_metricas_financeiras_globais():
@@ -28,12 +51,19 @@ def api_metricas_financeiras_globais():
         from psycopg2.extras import RealDictCursor
         cur = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # 1. MÁSCARA ZERO PROGRESSIVA: Garante a integridade da tabela física real do seu Supabase
+        # 1. MÁSCARA ZERO PROGRESSIVA: Garante a estrutura física no banco real do Supabase
         cur.execute('''
             CREATE TABLE IF NOT EXISTS engenharia_processos (
-                id SERIAL PRIMARY KEY, equipe_id TEXT, produto_base TEXT, nome_operacao TEXT, 
-                maquina_id INTEGER, maquina_nome_suporte TEXT, tempo_setup REAL, 
-                tempo_operacao REAL, custo_ref_maquina REAL, sequencia_op INTEGER, 
+                id SERIAL PRIMARY KEY, 
+                equipe_id TEXT, 
+                produto_base TEXT, 
+                nome_operacao TEXT, 
+                maquina_id INTEGER, 
+                maquina_nome_suporte TEXT, 
+                tempo_setup REAL, 
+                tempo_operacao REAL, 
+                custo_ref_maquina REAL, 
+                sequencia_op INTEGER, 
                 custo_total_operacao REAL
             )
         ''')
@@ -45,6 +75,7 @@ def api_metricas_financeiras_globais():
         """, (id_equipe,))
         db_data = cur.fetchone()
         
+        # Engenharia de custos baseada nas regras de 176h lineares e fator didático 15x
         patrimonio_historico = float(db_data['hist']) * 15.0  
         depreciacao_acumulada = float(db_data['depr']) * 176  
         valor_contabil_liquido = max(0.0, patrimonio_historico - depreciacao_acumulada)
@@ -62,18 +93,14 @@ def api_metricas_financeiras_globais():
         
         custo_fixo_geral_aluguel_planta = 21350.00
         custo_fixo_total_empresa = custo_fixo_geral_aluguel_planta + custo_fixo_setor
-# ==========================================================================
-# TERADMAS ERP v2.6 - CENTRAL DE CONSOLIDAÇÃO FINANCEIRA INTER-DEPARTAMENTAL
-# APP PYTHON - PARTE 2 DE 2: ABORDAGEM PROGRESSIVA E REGISTRO CLÁSSICO DE ROTAS
-# ==========================================================================
 
-        # 3. ALGORITMO PROGRESSIVO DE CUSTOS VARIÁVEIS (Mascara Zero Condicional)
+        # 3. ALGORITMO PROGRESSIVO DE CUSTOS VARIÁVEIS (Máscara Zero Condicional)
         custo_variavel_setor = float(db_data['hist'])
         custo_variavel_total_empresa = custo_variavel_setor + 5332.10  
 
         # 4. BLINDAGEM DO TETO DE DIRECIONAMENTO CONTÁBIL (20% Real = R$ 1.000.000,00)
         teto_setor_ativos = 1000000.00
-        saldo_disponivel_verba = teto_setor_ativos - patrimonio_historico - custo_fixo_setor
+        saldo_disponivel_verba = max(0.0, teto_setor_ativos - patrimonio_historico - custo_fixo_setor)
         
         cur.close()
         conexao.close()
@@ -112,7 +139,7 @@ def rota_login_didatica_fallback():
         </div>
     ''')
 
-# REGISTRO DIRETO, CLÁSSICO E RÍGIDO DE BLUEPRINTS CONFORME SUA ESTRUTURA ORIGINAL
+# REGISTRO CLÁSSICO E PROTEGIDO DE BLUEPRINTS
 try:
     from processos.app_processos import processos_blueprint
     app.register_blueprint(processos_blueprint)
@@ -129,13 +156,15 @@ try:
     from maquinas.app_maquinas import maquinas_blueprint
     app.register_blueprint(maquinas_blueprint)
     print("[TERADMAS LIVE] Módulo Máquinas online.")
-except Exception: pass
+except Exception: 
+    print("[TERADMAS BYPASS] Módulo Máquinas offline ou ausente.")
 
 try:
     from estrutura.app_estrutura import estrutura_blueprint
     app.register_blueprint(estrutura_blueprint)
     print("[TERADMAS LIVE] Módulo Estrutura online.")
-except Exception: pass
+except Exception: 
+    print("[TERADMAS BYPASS] Módulo Estrutura offline ou ausente.")
 
 if __name__ == '__main__':
     porta = int(os.environ.get("PORT", 10000))
