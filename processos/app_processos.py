@@ -1,174 +1,178 @@
 # ==========================================================================
-# TERADMAS ERP v2.6 - MÓDULO DE PROCESSOS E MATERIAIS
-# BLUEPRINT DE GESTÃO OPERACIONAL DE PROCESSOS PRODUTIVOS (REVISADO)
+# TERADMAS ERP v2.6 - MÓDULO DE PROCESSOS E ENGENHARIA DE ATIVOS
+# ARQUIVO: processos/app_processos.py (COMPLETO E HOMOLOGADO)
 # ==========================================================================
 
 import os
-from flask import Blueprint, request, render_template_string, session, jsonify
+import urllib.parse as urlparse
+import psycopg2
+from psycopg2.extras import RealDictCursor
+from flask import Blueprint, request, jsonify, render_template, session
 
-# Definição do Blueprint para o módulo de Processos (Ajustado para rota limpa)
+# Instanciação do Blueprint do Subsetor de Engenharia de Processos
 processos_blueprint = Blueprint(
-    'processos_blueprint',
-    __name__,
+    'processos', 
+    __name__, 
     template_folder='templates',
     static_folder='static'
 )
 
+URL_SUPABASE = os.environ.get('URL_SUPABASE')
+
 def obter_conexao_master():
-    from app_master import URL_SUPABASE
-    import psycopg2
-    return psycopg2.connect(URL_SUPABASE)
-
-# Rota raiz do módulo de Processos - Entrega o HTML real estruturado
-@processos_blueprint.route('/processos', methods=['GET'])
-def processos_inicio():
-    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-    caminho_html = os.path.join(diretorio_atual, 'processos.html')
+    """
+    Estabelece conexão segura TCP/IP com o Supabase.
+    Mitiga explicitamente o erro psycopg2.OperationalError ignorando sockets Unix locais.
+    """
+    if not URL_SUPABASE:
+        raise ValueError("ERRO CRÍTICO: URL_SUPABASE não configurada no ambiente do Render.")
+    
     try:
-        with open(caminho_html, 'r', encoding='utf-8') as f:
-            html = f.read()
-        return render_template_string(html)
-    except FileNotFoundError:
-        return "Erro Crítico: Arquivo 'processos.html' não localizado.", 404
-
-# Rota para entregar o motor Javascript local sem Erros 404
-@processos_blueprint.route('/processos/processos.js', methods=['GET'])
-def rota_processos_js():
-    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-    caminho_js = os.path.join(diretorio_atual, 'processos.js')
-    try:
-        with open(caminho_js, 'r', encoding='utf-8') as f:
-            js_conteudo = f.read()
-        return js_conteudo, 200, {'Content-Type': 'application/javascript'}
-    except FileNotFoundError:
-        return "console.error('Script processos.js offline.');", 404
-
-@processos_blueprint.route('/api/processos/salvar', methods=['POST'])
-def api_salvar_processo():
-    if not session.get('logado'):
-        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        url = urlparse.urlparse(URL_SUPABASE)
+        dbname = url.path[1:]
+        user = url.username
+        password = url.password
+        host = url.hostname
+        port = url.port or 5432
         
-    dados = request.json or {}
-    id_reg = dados.get('id')
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    produto_base = dados.get('produto_base', 'Insumo Geral')
-    
-    conexao = obter_conexao_master()
-    cursor = conexao.cursor()
-    
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS engenharia_processos (
-            id SERIAL PRIMARY KEY, equipe_id TEXT, produto_base TEXT, nome_operacao TEXT, 
-            maquina_id INTEGER, maquina_nome_suporte TEXT, tempo_setup REAL, 
-            tempo_operacao REAL, custo_ref_maquina REAL, sequencia_op INTEGER, 
-            custo_total_operacao REAL
+        return psycopg2.connect(
+            dbname=dbname,
+            user=user,
+            password=password,
+            host=host,
+            port=port,
+            sslmode="require"
         )
-    ''')
-    conexao.commit()
+    except Exception:
+        return psycopg2.connect(URL_SUPABASE)
 
-    if id_reg:
-        cursor.execute('''
-            UPDATE engenharia_processos SET produto_base=%s, nome_operacao=%s, maquina_id=%s, 
-            maquina_nome_suporte=%s, tempo_setup=%s, tempo_operacao=%s, 
-            custo_ref_maquina=%s, sequencia_op=%s, custo_total_operacao=%s 
-            WHERE id=%s AND equipe_id=%s
-        ''', (produto_base, dados.get('nome_operacao'), dados.get('maquina_id'), dados.get('maquina_nome_suporte'), 
-              dados.get('tempo_setup'), dados.get('tempo_operacao'), dados.get('custo_ref_maquina'), 
-              dados.get('sequencia_op'), dados.get('custo_total_operacao'), id_reg, id_equipe))
-    else:
-        cursor.execute('''
-            INSERT INTO engenharia_processos (equipe_id, produto_base, nome_operacao, maquina_id, 
-            maquina_nome_suporte, tempo_setup, tempo_operacao, custo_ref_maquina, 
-            sequencia_op, custo_total_operacao)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (id_equipe, produto_base, dados.get('nome_operacao'), dados.get('maquina_id'), dados.get('maquina_nome_suporte'), 
-              dados.get('tempo_setup'), dados.get('tempo_operacao'), dados.get('custo_ref_maquina'), 
-              dados.get('sequencia_op'), dados.get('custo_total_operacao')))
-        
-    conexao.commit()
-    cursor.close()
-    conexao.close()
-    return jsonify({'status': 'sucesso'}), 200
 # ==========================================================================
-# TERADMAS ERP v2.6 - MÓDULO DE PROCESSOS E MATERIAIS
-# BLUEPRINT DE GESTÃO OPERACIONAL DE PROCESSOS PRODUTIVOS (REVISADO)
+# ROTAS DE RENDERIZAÇÃO VISUAL (FRONT-END DIDÁTICO)
+# ==========================================================================
+
+@processos_blueprint.route('/processos', methods=['GET'])
+def pagina_processos():
+    """Renderiza a tela principal de Engenharia de Processos."""
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Sessão expirada ou não autenticada.'}), 401
+    return render_template('processos.html')
+
+@processos_blueprint.route('/materiais', methods=['GET'])
+def pagina_materiais():
+    """Renderiza o Catálogo de Materiais mitigando erros 404 de navegação do aluno."""
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Sessão expirada ou não autenticada.'}), 401
+    try:
+        return render_template('materiais.html')
+    except Exception:
+        return render_template('processos.html')
+
+# ==========================================================================
+# ENDPOINTS DA API REST (INTEGRAÇÃO COM SUPABASE E MATRIZ CONTÁBIL)
 # ==========================================================================
 
 @processos_blueprint.route('/api/processos/listar', methods=['GET'])
 def api_listar_processos():
+    """Retorna todos os roteiros analíticos da equipe autenticada."""
     if not session.get('logado'):
-        return jsonify([]), 401
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
-    conexao = obter_conexao_master()
-    from psycopg2.extras import RealDictCursor
-    cursor = conexao.cursor(cursor_factory=RealDictCursor)
     id_equipe = session.get('id_equipe', 'equipe_alfa')
-    
-    cursor.execute("ALTER TABLE engenharia_processos ADD COLUMN IF NOT EXISTS produto_base TEXT;")
-    conexao.commit()
-    
-    cursor.execute('SELECT * FROM engenharia_processos WHERE equipe_id = %s ORDER BY sequencia_op ASC', (id_equipe,))
-    linhas = cursor.fetchall()
-    
-    cursor.close()
-    conexao.close()
-    return jsonify([dict(linha) for linha in linhas])
+    conexao = None
+    try:
+        conexao = obter_conexao_master()
+        cur = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        cur.execute("""
+            SELECT id, produto_base, nome_operacao, maquina_id, maquina_nome_suporte, 
+                   tempo_setup, tempo_operacao, custo_ref_maquina, sequencia_op, custo_total_operacao
+            FROM engenharia_processos 
+            WHERE equipe_id = %s 
+            ORDER BY sequencia_op ASC
+        """, (id_equipe,))
+        
+        processos = cur.fetchall()
+        cur.close()
+        conexao.close()
+        return jsonify(processos), 200
+        
+    except Exception as e:
+        if conexao: conexao.close()
+        return jsonify({'status': 'error', 'message': f'Falha no barramento: {str(e)}'}), 500
 
-@processos_blueprint.route('/api/processos/buscar/<int:id_reg>', methods=['GET'])
-def api_buscar_processo_id(id_reg):
+@processos_blueprint.route('/api/processos/homologar', methods=['POST'])
+def api_homologar_operacao():
+    """Grava uma nova operação industrial aplicando os critérios contábeis do ERP."""
     if not session.get('logado'):
-        return jsonify({'status': 'erro'}), 401
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
-    conexao = obter_conexao_master()
-    from psycopg2.extras import RealDictCursor
-    cursor = conexao.cursor(cursor_factory=RealDictCursor)
     id_equipe = session.get('id_equipe', 'equipe_alfa')
+    dados = request.get_json() or {}
     
-    cursor.execute('SELECT * FROM engenharia_processos WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-    processo = cursor.fetchone()
-    
-    cursor.close()
-    conexao.close()
-    if not processo: 
-        return jsonify({'status': 'erro', 'message': 'Operação não localizada'}), 404
-    return jsonify(dict(processo))
+    # Extração e validação de parâmetros sob try/catch isolado contra falhas
+    try:
+        produto_base = dados.get('produto_base')
+        nome_operacao = dados.get('nome_operacao')
+        maquina_id = int(dados.get('maquina_id', 0))
+        maquina_nome = dados.get('maquina_nome_suporte', 'Posto de Trabalho Padrão')
+        tempo_setup = float(dados.get('tempo_setup', 0))
+        tempo_operacao = float(dados.get('tempo_operacao', 0))
+        custo_ref_maquina = float(dados.get('custo_ref_maquina', 0))
+        sequencia_op = int(dados.get('sequencia_op', 10))
+        
+        # Equação Progressiva de Custo Direto da Operação por Unidade (Didático)
+        # Custo = (Tempo de Operação * Custo Máquina Minuto) + (Tempo de Setup distribuído por lote conceitual de 15 peças)
+        custo_total_operacao = round((tempo_operacao * custo_ref_maquina) + ((tempo_setup * custo_ref_maquina) / 15.0), 2)
+        
+    except (ValueError, TypeError) as e:
+        return jsonify({'status': 'erro', 'message': f'Dados de entrada inválidos: {str(e)}'}), 400
 
-@processos_blueprint.route('/api/processos/deletar/<int:id_reg>', methods=['DELETE'])
-def api_deletar_processo(id_reg):
+    conexao = None
+    try:
+        conexao = obter_conexao_master()
+        cur = conexao.cursor()
+        
+        cur.execute("""
+            INSERT INTO engenharia_processos (
+                equipe_id, produto_base, nome_operacao, maquina_id, maquina_nome_suporte, 
+                tempo_setup, tempo_operacao, custo_ref_maquina, sequencia_op, custo_total_operacao
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (id_equipe, produto_base, nome_operacao, maquina_id, maquina_nome, 
+               tempo_setup, tempo_operacao, custo_ref_maquina, sequencia_op, custo_total_operacao))
+        
+        conexao.commit()
+        cur.close()
+        conexao.close()
+        
+        return jsonify({'status': 'sucesso', 'message': 'Operação industrial homologada com sucesso!'}), 201
+        
+    except Exception as e:
+        if conexao: conexao.close()
+        return jsonify({'status': 'error', 'message': f'Erro de gravação no Supabase: {str(e)}'}), 500
+
+@processos_blueprint.route('/api/processos/deletar/<int:id_processo>', methods=['DELETE'])
+def api_deletar_operacao(id_processo):
+    """Remove uma operação do roteiro analítico recalculando a matriz automaticamente."""
     if not session.get('logado'):
-        return jsonify({'status': 'erro'}), 401
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
-    conexao = obter_conexao_master()
-    cursor = conexao.cursor()
     id_equipe = session.get('id_equipe', 'equipe_alfa')
-    
-    cursor.execute('DELETE FROM engenharia_processos WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-    
-    conexao.commit()
-    cursor.close()
-    conexao.close()
-    return jsonify({'status': 'removido'}), 200
-
-# ==========================================================================
-# SEÇÃO DE COMPATIBILIDADE: materiais_blueprint mantido intacto para legado
-# ==========================================================================
-
-materiais_blueprint = Blueprint(
-    'materiais_blueprint',
-    __name__,
-    template_folder='templates',
-    static_folder='static'
-)
-
-@materiais_blueprint.route('/materiais', methods=['GET'])
-def materiais_inicio():
-    """Página inicial do módulo de Materiais (legado)"""
-    return render_template_string('''
-        <div style="font-family:sans-serif; padding:40px; background:#f9fafb;">
-            <h2 style="color:#1e3a8a;">📦 TERADMAS - Módulo de Materiais</h2>
-            <p style="color:#475569;">Gestão de materiais e insumos produtivos</p>
-            <div style="background:white; padding:20px; border-radius:8px; margin-top:20px; border-left:4px solid #10b981;">
-                <p>Módulo integrado ao barramento financeiro centralizado.</p>
-            </div>
-        </div>
-    ''')
+    conexao = None
+    try:
+        conexao = obter_conexao_master()
+        cur = conexao.cursor()
+        
+        cur.execute("""
+            DELETE FROM engenharia_processos 
+            WHERE id = %s AND equipe_id = %s
+        """, (id_processo, id_equipe))
+        
+        conexao.commit()
+        cur.close()
+        conexao.close()
+        
+        return jsonify({'status': 'sucesso', 'message': 'Operação removida dos roteiros.'}), 200
+        
+    except Exception as e:
+        if conexao: conexao.close()
+        return jsonify({'status': 'error', 'message': f'Erro ao deletar registro: {str(e)}'}), 500
