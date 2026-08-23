@@ -1,3 +1,8 @@
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
+# PARTE 1 DE 3 - AMBIENTE DE BLUEPRINT E INJEÇÃO NATIVA DE INTERFACE
+# ==========================================================================
+
 import os
 from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
@@ -38,6 +43,11 @@ def rota_estrutura_js():
         return js_conteudo, 200, {'Content-Type': 'application/javascript'}
     except FileNotFoundError:
         return "console.error('Erro Crítico: Arquivo estrutura.js não encontrado.');", 404
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
+# PARTE 2 DE 3 - ENDPOINTS DE CONSULTA E CRIE TABELAS SE NÃO EXISTIREM NATIVAS
+# ==========================================================================
+
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
 def api_imoveis_listar():
     if not session.get('logado'):
@@ -60,7 +70,7 @@ def api_imoveis_listar():
         
         cursor.execute('SELECT * FROM imoveis_simulacao WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        return jsonify([dict(linha) for linha in linhas])
+        return jsonify([dict(linha) for linha in lines])
         
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
@@ -82,10 +92,10 @@ def api_rh_listar():
     
     try:
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        # Inicializa a tabela de RH de infraestrutura / suporte predial com mascara zero embutida
+        # Inicializa a tabela de RH de infraestrutura adicionando a coluna de Nome Humanizado
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS estrutura_rh (
-                id SERIAL PRIMARY KEY, equipe_id TEXT, cargo TEXT, 
+                id SERIAL PRIMARY KEY, equipe_id TEXT, nome TEXT, cargo TEXT, 
                 salario_base REAL, quantidade INTEGER, subtotal REAL
             )
         ''')
@@ -93,7 +103,7 @@ def api_rh_listar():
         
         cursor.execute('SELECT * FROM estrutura_rh WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        return jsonify([dict(linha) for linha in linhas])
+        return jsonify([dict(linha) for linha in lines])
         
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
@@ -102,19 +112,22 @@ def api_rh_listar():
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
+# PARTE 3 DE 3 - PERSISTÊNCIA TRANSAÇÃO WRITE/UPDATE/DELETE COM ISOLAMENTO
+# ==========================================================================
+
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['POST'])
 def api_imoveis_salvar():
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     dados = request.json
-    if not dados:
-        return jsonify({'status': 'erro', 'message': 'Dados ausentes'}), 400
+    if not dados: return jsonify({'status': 'erro', 'message': 'Dados ausentes'}), 400
         
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     nome_empresa = session.get('nome_empresa', 'GRUPO DIDÁTICO').upper()
     id_reg = dados.get('id')
-    
     conexao = obter_conexao_master()
     cursor = None
     
@@ -122,7 +135,6 @@ def api_imoveis_salvar():
         valor_aluguel = float(str(dados.get('valor_aluguel', 0)).replace(',', '.').strip())
         valor_condominio = float(str(dados.get('valor_condominio', 0)).replace(',', '.').strip())
         area_util = float(str(dados.get('area_util', 0)).replace(',', '.').strip())
-        
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
         if id_reg:
@@ -143,17 +155,14 @@ def api_imoveis_salvar():
             SET valor_aluguel = (SELECT COALESCE(SUM(valor_aluguel + valor_condominio), 0) FROM imoveis_simulacao WHERE equipe_id = %s)
             WHERE equipe_id = %s
         ''', (id_equipe, id_equipe))
-            
         conexao.commit()
         return jsonify({'status': 'sucesso'})
     except (ValueError, TypeError, psycopg2.DatabaseError) as err:
         if conexao: conexao.rollback()
-        print(f"Erro transacional imobiliário: {err}")
         return jsonify({'status': 'erro', 'message': 'Falha interna ao processar persistência.'}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-
 
 @estrutura_blueprint.route('/api/estrutura/rh', methods=['POST'])
 def api_rh_salvar():
@@ -161,10 +170,10 @@ def api_rh_salvar():
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     dados = request.json
-    if not dados:
-        return jsonify({'status': 'erro', 'message': 'Dados ausentes'}), 400
+    if not dados: return jsonify({'status': 'erro', 'message': 'Dados ausentes'}), 400
         
     id_equipe = session.get('id_equipe', 'equipe_alfa')
+    id_rh = dados.get('id')
     conexao = obter_conexao_master()
     cursor = None
     
@@ -172,23 +181,27 @@ def api_rh_salvar():
         salario_base = float(str(dados.get('salario_base', 0)).replace(',', '.').strip())
         quantidade = int(dados.get('quantidade', 1))
         subtotal = salario_base * quantidade
-        
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('''
-            INSERT INTO estrutura_rh (equipe_id, cargo, salario_base, quantidade, subtotal)
-            VALUES (%s, %s, %s, %s, %s)
-        ''', (id_equipe, dados.get('cargo'), salario_base, quantidade, subtotal))
         
+        if id_rh:
+            cursor.execute('''
+                UPDATE estrutura_rh SET nome=%s, cargo=%s, salario_base=%s, quantidade=%s, subtotal=%s
+                WHERE id=%s AND equipe_id=%s
+            ''', (dados.get('nome'), dados.get('cargo'), salario_base, quantidade, subtotal, id_rh, id_equipe))
+        else:
+            cursor.execute('''
+                INSERT INTO estrutura_rh (equipe_id, nome, cargo, salario_base, quantidade, subtotal)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            ''', (id_equipe, dados.get('nome'), dados.get('cargo'), salario_base, quantidade, subtotal))
+            
         conexao.commit()
         return jsonify({'status': 'sucesso'})
     except (ValueError, TypeError, psycopg2.DatabaseError) as err:
         if conexao: conexao.rollback()
-        print(f"Erro transacional de contratação: {err}")
         return jsonify({'status': 'erro', 'message': 'Falha ao registrar colaborador.'}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-
 
 @estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_imovel(id_reg):
@@ -222,8 +235,7 @@ def api_individual_imovel(id_reg):
         if cursor: cursor.close()
         if conexao: conexao.close()
 
-
-@estrutura_blueprint.route('/api/estrutura/rh/<int:id_reg>', methods=['DELETE'])
+@estrutura_blueprint.route('/api/estrutura/rh/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_rh(id_reg):
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
@@ -233,13 +245,19 @@ def api_individual_rh(id_reg):
     cursor = None
     
     try:
-        cursor = conexao.cursor()
-        cursor.execute('DELETE FROM estrutura_rh WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-        conexao.commit()
-        return jsonify({'status': 'removido'})
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        if request.method == 'DELETE':
+            cursor.execute('DELETE FROM estrutura_rh WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            conexao.commit()
+            return jsonify({'status': 'removido'})
+        else:
+            cursor.execute('SELECT * FROM estrutura_rh WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            colaborador = cursor.fetchone()
+            if not colaborador: return jsonify({'status': 'erro', 'message': 'Colaborador não localizado.'}), 404
+            return jsonify(dict(colaborador))
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
-        return jsonify({'status': 'erro', 'message': 'Falha ao processar desligamento.'}), 500
+        return jsonify({'status': 'erro', 'message': 'Falha ao processar operação.'}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
