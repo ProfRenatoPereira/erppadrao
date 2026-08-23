@@ -1,6 +1,6 @@
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 1 DE 4 - CONFIGURAÇÃO DE ACESSIBILIDADE WCAG E GATILHOS DE ENTRADA
+// PARTE 1 DE 5 - CONFIGURAÇÃO DE ACESSIBILIDADE WCAG E GATILHOS DE ENTRADA
 // ==========================================================================
 
 let tamanhoFonteAtual = 16;
@@ -56,7 +56,7 @@ function alternarLeitorAudio() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 2 DE 4 - ALGORITMO DE EQUAÇÕES DA RMC E INVESTIMENTOS IMOBILIÁRIOS
+// PARTE 2 DE 5 - ALGORITMO DE EQUAÇÕES DA RMC E INVESTIMENTOS IMOBILIÁRIOS
 // ==========================================================================
 
 function calcularPrecoMercadoRefletido() {
@@ -134,7 +134,7 @@ function calcularPreviaSalario() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 3 DE 4 - MATRIZ DE CONSOLIDAÇÃO DOS ENCARGOS OPERACIONAIS GERAIS
+// PARTE 3 DE 5 - MATRIZ DE CONSOLIDAÇÃO DOS ENCARGOS OPERACIONAIS GERAIS
 // ==========================================================================
 
 async function carregarDadosIniciais() {
@@ -172,7 +172,6 @@ async function carregarDadosIniciais() {
         let porcFixo = custoFixoGeralEmpresaTotal > 0 ? (custoFixoSetorAtual / custoFixoGeralEmpresaTotal) * 100 : 0;
         let porcBudget = Math.min(100, (custoFixoSetorAtual / budgetMaximoSetor) * 100);
 
-        // ALIMENTAÇÃO DA MATRIZ HORIZONTAL SUPERIOR REPLICADA DE MÁQUINAS
         if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = capitalMaster.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_budget_inicial')) document.getElementById('top_budget_inicial').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
@@ -206,7 +205,7 @@ async function carregarDadosIniciais() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 4 DE 4 - INTERFACING ASSÍNCRONA E CONTROLE DE MUTABILIDADE (CRUD)
+// PARTE 4 DE 5 - REQUISIÇÕES ASSÍNCRONAS DE RENDERIZAÇÃO DE PLANILHAS (GET)
 // ==========================================================================
 
 async function carregarTabelaImoveis() {
@@ -261,6 +260,10 @@ async function carregarTabelaColaboradores() {
         `).join('');
     } catch (err) { console.error(err); }
 }
+// ==========================================================================
+// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
+// PARTE 5 DE 5 - COMANDOS DE PERSISTÊNCIA POST/DELETE E CORREÇÃO DE SELECTS
+// ==========================================================================
 
 async function salvarImovel(e) {
     if(e && e.preventDefault) e.preventDefault();
@@ -322,7 +325,13 @@ async function editarImovel(id) {
         document.getElementById('tipo_imovel').value = i.tipo_imovel;
         document.getElementById('area_util').value = i.area_util;
         document.getElementById('valor_condominio').value = i.valor_condominio;
+        if (i.regiao && i.regiao.includes(" - ")) {
+            const partes = i.regiao.split(" - ");
+            if (document.getElementById('cidade')) document.getElementById('cidade').value = partes[0].trim();
+            if (document.getElementById('bairro')) document.getElementById('bairro').value = partes[1].trim();
+        }
         if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato";
+        calcularPrecoMercadoRefletido();
     } catch (err) { console.error(err); }
 }
 
