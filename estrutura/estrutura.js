@@ -1,14 +1,16 @@
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 1 DE 5 - CONFIGURAÇÃO DE ACESSIBILIDADE WCAG E GATILHOS DE ENTRADA
+// PARTE 1 DE 4 - DIRETRIZES DE ACESSIBILIDADE WCAG E GATILHOS DE ENTRADA NATIVOS
 // ==========================================================================
 
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 
 document.addEventListener("DOMContentLoaded", function() {
+    // Inicializa a malha transacional do banco de dados imediatamente
     carregarDadosIniciais();
     
+    // Disparadores operacionais vinculados estritamente aos inputs do formulário
     document.getElementById('cidade')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('bairro')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('area_util')?.addEventListener('input', calcularPrecoMercadoRefletido);
@@ -47,16 +49,16 @@ function alternarLeitorAudio() {
     }
     if (leitorAtivo) {
         window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance("Módulo imobiliário aberto. Gerencie contratos de alocação.");
-        utterance.lang = 'pt-BR';
-        window.speechSynthesis.speak(utterance);
+        const ut = new SpeechSynthesisUtterance("Módulo imobiliário aberto. Gerencie contratos de alocação.");
+        ut.lang = 'pt-BR';
+        window.speechSynthesis.speak(ut);
     } else {
         window.speechSynthesis.cancel();
     }
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 2 DE 5 - ALGORITMO DE EQUAÇÕES DA RMC E INVESTIMENTOS IMOBILIÁRIOS
+// PARTE 2 DE 4 - ALGORITMO DE EQUAÇÕES DA RMC E INVESTIMENTOS IMOBILIÁRIOS
 // ==========================================================================
 
 function calcularPrecoMercadoRefletido() {
@@ -134,7 +136,7 @@ function calcularPreviaSalario() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 3 DE 5 - MATRIZ DE CONSOLIDAÇÃO DOS ENCARGOS OPERACIONAIS GERAIS
+// PARTE 3 DE 4 - MATRIZ DE CONSOLIDAÇÃO DOS ENCARGOS OPERACIONAIS GERAIS
 // ==========================================================================
 
 async function carregarDadosIniciais() {
@@ -172,6 +174,7 @@ async function carregarDadosIniciais() {
         let porcFixo = custoFixoGeralEmpresaTotal > 0 ? (custoFixoSetorAtual / custoFixoGeralEmpresaTotal) * 100 : 0;
         let porcBudget = Math.min(100, (custoFixoSetorAtual / budgetMaximoSetor) * 100);
 
+        // Alimentação estrita das tags superiores (Linhas 1 a 5 da matriz)
         if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = capitalMaster.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_budget_inicial')) document.getElementById('top_budget_inicial').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
@@ -193,11 +196,9 @@ async function carregarDadosIniciais() {
 
         if(document.getElementById('top_custo_fixo_geral_empresa')) document.getElementById('top_custo_fixo_geral_empresa').innerText = custoFixoGeralEmpresaTotal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
         if(document.getElementById('custo_fixo_geral_total_valor')) document.getElementById('custo_fixo_geral_total_valor').innerText = custoFixoGeralEmpresaTotal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
-        if(document.getElementById('custo_fixo_setor_valor')) document.getElementById('custo_fixo_setor_valor').innerText = custoFixoSetorAtual.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
         
         if(document.getElementById('txt_proporcao_global_empresa')) document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}%`;
-        if(document.getElementById('custo_fixo_geral_total_detalhes')) document.getElementById('custo_fixo_geral_total_detalhes').innerText = `→ Proporção Global: O Setor representa ${porcFixo.toFixed(2)}% de toda a Folha Corporativa Fixa.`;
-        if(document.getElementById('custo_fixo_setor_detalhes')) document.getElementById('custo_fixo_setor_detalhes').innerText = `→ Custos Totais: ${porcCapital.toFixed(3)}% | Custos Fixos Setoriais: ${porcFixo.toFixed(2)}%`;
+        if(document.getElementById('custo_fixo_geral_total_detalhes')) document.getElementById('custo_fixo_geral_total_detalhes').innerText = `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}% do impacto fixo global`;
         
         const inputGrupo = document.getElementById('nome_grupo_display');
         if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
@@ -205,7 +206,7 @@ async function carregarDadosIniciais() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 4 DE 5 - REQUISIÇÕES ASSÍNCRONAS DE RENDERIZAÇÃO DE PLANILHAS (GET)
+// PARTE 4 DE 4 - INTERFACING ASSÍNCRONA E CONTROLE DE MUTABILIDADE (CRUD)
 // ==========================================================================
 
 async function carregarTabelaImoveis() {
@@ -260,10 +261,6 @@ async function carregarTabelaColaboradores() {
         `).join('');
     } catch (err) { console.error(err); }
 }
-// ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 5 DE 5 - COMANDOS DE PERSISTÊNCIA POST/DELETE E CORREÇÃO DE SELECTS
-// ==========================================================================
 
 async function salvarImovel(e) {
     if(e && e.preventDefault) e.preventDefault();
