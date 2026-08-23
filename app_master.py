@@ -1,171 +1,130 @@
-# ==========================================================================
-# TERADMAS ERP v2.6 - CENTRAL DE CONSOLIDAÇÃO FINANCEIRA INTER-DEPARTAMENTAL
-# CORE UNIFICADO: INSTANCIAÇÃO, MATRIZ CONTÁBIL E ROTAS DE INTEGRAÇÃO
-# ==========================================================================
-
+# erppadrao - app_master.py - PARTE 1 DE 3
 import os
-import urllib.parse as urlparse
-from flask import Flask, Blueprint, request, session, jsonify, redirect, render_template_string
+from flask import Flask, session, jsonify, request, redirect, render_template_string
+from datetime import timedelta
+from whitenoise import WhiteNoise
 
-# Instanciação explícita para o Gunicorn no Render
-app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'teradmas_secret_key_didatica_2026')
+URL_SUPABASE = os.environ.get(
+    "DATABASE_URL", 
+    "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
+)
 
-URL_SUPABASE = os.environ.get('URL_SUPABASE')
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-def obter_conexao_master():
-    import psycopg2
-    if not URL_SUPABASE:
-        raise ValueError("ERRO: A variável de ambiente URL_SUPABASE não está configurada.")
+# Acoplamento estrutural do WhiteNoise para servir os assets estáticos WCAG
+app.wsgi_app = WhiteNoise(app.wsgi_app, root=os.path.join(os.path.dirname(__file__), 'static'), prefix='static/')
+
+app.secret_key = "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
+app.permanent_session_lifetime = timedelta(days=7)
+
+# Importação nativa do gerenciador de métricas e livro caixa unificado
+import GerenciadorCaixa
+# erppadrao - app_master.py - PARTE 2 DE 3
+from login.app_login import login_blueprint
+from configuracao.app_configuracao import configuracao_blueprint
+from estrutura.app_estrutura import estrutura_blueprint
+from maquinas.app_maquinas import maquinas_blueprint
+from materiais.app_materiais import materiais_blueprint
+from processos.app_processos import processos_blueprint
+from produtos.app_produtos import produtos_blueprint
+from precificacao.app_precificacao import precificacao_blueprint
+from clientes.app_clientes import clientes_blueprint
+from vendas.app_vendas import vendas_blueprint
+from estoque.app_estoque import estoque_blueprint
+from financeiro.app_financeiro import financeiro_blueprint
+from nota_fiscal.app_nota_fiscal import nota_fiscal_blueprint
+from rh.app_rh import rh_blueprint
+from pcp.app_pcp import pcp_blueprint
+from orcamentos.app_orcamentos import orcamentos_blueprint
+from compras_insumos.app_compras import compras_blueprint
+from engenharia_producao.app_producao import producao_blueprint
+from folha_pagamento.app_folha import folha_blueprint
+from manutencao.app_manutencao import manutencao_blueprint
+from requisicoes.app_requisicoes import requisicoes_blueprint
+from roi.app_roi import roi_blueprint
+
+# Amarração dos barramentos modulares ao servidor do Render
+app.register_blueprint(login_blueprint)
+app.register_blueprint(configuracao_blueprint)
+app.register_blueprint(estrutura_blueprint)
+app.register_blueprint(maquinas_blueprint)
+app.register_blueprint(materiais_blueprint)
+app.register_blueprint(processos_blueprint)
+app.register_blueprint(produtos_blueprint)
+app.register_blueprint(precificacao_blueprint)
+app.register_blueprint(clientes_blueprint)
+app.register_blueprint(vendas_blueprint)
+app.register_blueprint(estoque_blueprint)
+app.register_blueprint(financeiro_blueprint)
+app.register_blueprint(nota_fiscal_blueprint)
+app.register_blueprint(rh_blueprint)
+app.register_blueprint(pcp_blueprint)
+app.register_blueprint(orcamentos_blueprint)
+app.register_blueprint(compras_blueprint)
+app.register_blueprint(producao_blueprint)
+app.register_blueprint(folha_blueprint)
+app.register_blueprint(manutencao_blueprint)
+app.register_blueprint(requisicoes_blueprint)
+app.register_blueprint(roi_blueprint)
+# erppadrao - app_master.py - PARTE 3 DE 3
+
+@app.before_request
+def verificar_fluxo_de_aula():
+    # Libera de forma irrestrita os arquivos estáticos e fluxos de autenticação
+    if request.path.startswith('/static') or request.path.startswith('/login') or request.path == '/logout':
+        return
+
+    # Validação 1: Barramento de login ativo na sessão do Flask
+    if not session.get('logado'):
+        if request.is_json:
+            return jsonify({'status': 'erro', 'message': 'Sessão encerrada por inatividade.'}), 401
+        return redirect('/login')
+
+    # Ignora travas lineares para a conta administrativa do docente
+    if session.get('professor_master'):
+        return
+
+    # Validação 2: Impede o avanço para qualquer módulo caso a empresa não tenha fundado o capital
+    if not session.get('empresa_inicializada') and request.endpoint != 'configuracao_blueprint.api_inicializar_empresa':
+        if not request.path.startswith('/configuracao'):
+            if request.is_json:
+                return jsonify({'status': 'erro', 'message': 'A empresa precisa ser inicializada primeiro.'}), 400
+            return redirect('/configuracao/inicializacao')
+
+
+@app.route('/')
+def rota_raiz_direta():
+    if not session.get('logado'):
+        return redirect('/login')
     
-    try:
-        # Parsing explícito para forçar conexão TCP/IP e mitigar erros de Socket Unix local
-        url = urlparse.urlparse(URL_SUPABASE)
-        dbname = url.path[1:]
-        user = url.username
-        password = url.password
-        host = url.hostname
-        port = url.port or 5432
-        
-        return psycopg2.connect(
-            dbname=dbname,
-            user=user,
-            password=password,
-            host=host,
-            port=port,
-            sslmode="require"
-        )
-    except Exception:
-        # Fallback de segurança caso a string já esteja sanitizada pelo provedor
-        return psycopg2.connect(URL_SUPABASE)
+    # Redirecionamento linear baseado no estado contábil real do grupo
+    if session.get('empresa_inicializada'):
+        return redirect('/estrutura')
+    else:
+        return redirect('/configuracao/inicializacao')
+
+
+@app.route('/grid')
+def rota_contingencia_grid():
+    # 🎯 CONTINGÊNCIA DE ROTAS: Captura links residuais do front-end e desvia com segurança para Estrutura
+    if not session.get('logado'):
+        return redirect('/login')
+    return redirect('/estrutura')
+
 
 @app.route('/api/financeiro/metricas', methods=['GET'])
-def api_metricas_financeiras_globais():
-    if not session.get('logado'): 
-        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+def api_global_metricas_calculadas():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Acesso negado'}), 401
         
     id_equipe = session.get('id_equipe', 'equipe_alfa')
-    conexao = None
-    try:
-        conexao = obter_conexao_master()
-        from psycopg2.extras import RealDictCursor
-        cur = conexao.cursor(cursor_factory=RealDictCursor)
-        
-        # 1. MÁSCARA ZERO PROGRESSIVA: Garante a estrutura física no banco real do Supabase
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS engenharia_processos (
-                id SERIAL PRIMARY KEY, 
-                equipe_id TEXT, 
-                produto_base TEXT, 
-                nome_operacao TEXT, 
-                maquina_id INTEGER, 
-                maquina_nome_suporte TEXT, 
-                tempo_setup REAL, 
-                tempo_operacao REAL, 
-                custo_ref_maquina REAL, 
-                sequencia_op INTEGER, 
-                custo_total_operacao REAL
-            )
-        ''')
-        conexao.commit()
-        
-        cur.execute("""
-            SELECT COALESCE(SUM(custo_total_operacao), 0) as hist, COALESCE(SUM(custo_ref_maquina), 0) as depr 
-            FROM engenharia_processos WHERE equipe_id = %s
-        """, (id_equipe,))
-        db_data = cur.fetchone()
-        
-        # Engenharia de custos baseada nas regras de 176h lineares e fator didático 15x
-        patrimonio_historico = float(db_data['hist']) * 15.0  
-        depreciacao_acumulada = float(db_data['depr']) * 176  
-        valor_contabil_liquido = max(0.0, patrimonio_historico - depreciacao_acumulada)
-        
-        # 2. CUSTOS FIXOS EXPANDIDOS (MOD, Computadores, Utilidades do Laboratório, Softwares e Cursos)
-        custo_folha_colaboradores = 18500.00   
-        custo_energia_base_infra = 3850.00     
-        custo_ti_computadores_engenharia = 2100.00  
-        custo_softwares_cadcam = 4200.00       
-        custo_capacitacao_viagens = 3120.00    
-        
-        custo_fixo_setor = (custo_folha_colaboradores + custo_energia_base_infra + 
-                            custo_ti_computadores_engenharia + custo_softwares_cadcam + 
-                            custo_capacitacao_viagens + depreciacao_acumulada)
-        
-        custo_fixo_geral_aluguel_planta = 21350.00
-        custo_fixo_total_empresa = custo_fixo_geral_aluguel_planta + custo_fixo_setor
+    departamento = request.args.get('dept', '')
+    
+    # Executa a query síncrona lendo a tabela config_simulacao e o livro de fluxo_caixa
+    metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, departamento)
+    return jsonify(metricas)
 
-        # 3. ALGORITMO PROGRESSIVO DE CUSTOS VARIÁVEIS (Máscara Zero Condicional)
-        custo_variavel_setor = float(db_data['hist'])
-        custo_variavel_total_empresa = custo_variavel_setor + 5332.10  
-
-        # 4. BLINDAGEM DO TETO DE DIRECIONAMENTO CONTÁBIL (20% Real = R$ 1.000.000,00)
-        teto_setor_ativos = 1000000.00
-        saldo_disponivel_verba = max(0.0, teto_setor_ativos - patrimonio_historico - custo_fixo_setor)
-        
-        cur.close()
-        conexao.close()
-        
-        return jsonify({
-            "capital_total": 5000000.00,
-            "teto_setor_ativos": teto_setor_ativos,
-            "saldo_disponivel_verba": saldo_disponivel_verba,
-            "patrimonio_historico": patrimonio_historico,
-            "valor_contabil_liquido": valor_contabil_liquido,
-            "custo_fixo_total": custo_fixo_total_empresa,
-            "custo_fixo_departamento": custo_fixo_setor,
-            "custo_variavel_total": custo_variavel_total_empresa,
-            "custo_variavel_departamento": custo_variavel_setor
-        }), 200
-        
-    except Exception as e:
-        if conexao: conexao.close()
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-# INTERCEPTAÇÃO VISUAL DIDÁTICA DO ACESSO ESTRETO (LOGIN FALLBACK)
-@app.route('/login', methods=['GET', 'POST'])
-def rota_login_didatica_fallback():
-    if request.method == 'POST':
-        session['logado'] = True
-        session['id_equipe'] = 'equipe_alfa'
-        session['empresa_inicializada'] = True
-        return redirect('/processos')
-    return render_template_string('''
-        <div style="font-family:sans-serif; text-align:center; padding:100px; background:#f3f4f6; height:100vh;">
-            <div style="background:white; padding:40px; border-radius:12px; display:inline-block; box-shadow:0 4px 6px rgba(0,0,0,0.05); border-top:4px solid #2563eb;">
-                <h2 style="color:#1e3a8a; margin-top:0;">TERADMAS ERP v2.6</h2>
-                <p style="color:#64748b; font-size:13px;">Sessão Homologada para Curso Técnico em Administração</p>
-                <form method="post"><button type="submit" style="background:#2563eb; color:white; border:none; padding:12px 24px; border-radius:6px; font-weight:bold; cursor:pointer; margin-top:10px;">INICIAR TURNO OPERACIONAL</button></form>
-            </div>
-        </div>
-    ''')
-
-# REGISTRO CLÁSSICO E PROTEGIDO DE BLUEPRINTS
-try:
-    from processos.app_processos import processos_blueprint
-    app.register_blueprint(processos_blueprint)
-    print("[TERADMAS LIVE] Módulo de Processos acoplado e online.")
-except ImportError:
-    try:
-        from processos.app_processos import materiais_blueprint
-        app.register_blueprint(materiais_blueprint)
-        print("[TERADMAS LIVE] Módulo de Processos acoplado via materiais_blueprint legado.")
-    except Exception as e:
-        print(f"[TERADMAS ERROR] Erro na vinculação local de processos: {e}")
-
-try:
-    from maquinas.app_maquinas import maquinas_blueprint
-    app.register_blueprint(maquinas_blueprint)
-    print("[TERADMAS LIVE] Módulo Máquinas online.")
-except Exception: 
-    print("[TERADMAS BYPASS] Módulo Máquinas offline ou ausente.")
-
-try:
-    from estrutura.app_estrutura import estrutura_blueprint
-    app.register_blueprint(estrutura_blueprint)
-    print("[TERADMAS LIVE] Módulo Estrutura online.")
-except Exception: 
-    print("[TERADMAS BYPASS] Módulo Estrutura offline ou ausente.")
 
 if __name__ == '__main__':
-    porta = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=porta)
+    porta = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=porta, debug=True)
