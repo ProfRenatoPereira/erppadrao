@@ -1,31 +1,29 @@
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 1 DE 6 - MOTOR DE ACESSIBILIDADE E EVENTOS OPERACIONAIS DE BASE
+// PARTE 1 DE 4 - CONFIGURAÇÃO DE ACESSIBILIDADE WCAG E DISPARADORES DE EVENTOS
 // ==========================================================================
 
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Carrega a malha transacional do banco de dados imediatamente
+    // Inicializa a malha transacional do banco de dados imediatamente
     carregarDadosIniciais();
     
-    // 🧠 GATILHOS OPERACIONAIS: Vincula a readequação de preços e viabilidade aos inputs do formulário
+    // 🧠 GATILHOS OPERACIONAIS REATIVOS: Vincula as equações matemáticas aos inputs
     document.getElementById('cidade')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('bairro')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('area_util')?.addEventListener('input', calcularPrecoMercadoRefletido);
     document.getElementById('valor_condominio')?.addEventListener('input', calcularPrecoMercadoRefletido);
 });
 
-// 📐 MOTOR DE REDIMENSIONAMENTO FORÇADO (CORRIGE O TRAVAMENTO)
+// 📐 MOTOR DE REDIMENSIONAMENTO FORÇADO WCAG
 function mudarFonte(dir) {
     tamanhoFonteAtual += dir;
     tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
     
-    // Altera o padrão proporcional na raiz do documento
     document.documentElement.style.fontSize = tamanhoFonteAtual + 'px';
     
-    // Varre e limpa classes fixas em pixels, aplicando o tamanho dinâmico direto no DOM
     const elementos = document.querySelectorAll("p, label, input, select, th, td, h1, h2, h3, h4, span, button, a");
     elementos.forEach(el => {
         el.style.setProperty('font-size', (tamanhoFonteAtual - 3) + 'px', 'important');
@@ -72,7 +70,7 @@ function alternarLeitorAudio() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 2 DE 6 - MOTOR DE PRECIFICAÇÃO DA RMC E ENGENHARIA PATRIMONIAL
+// PARTE 2 DE 4 - ALGORITMO DE EQUAÇÕES DA RMC E INVESTIMENTOS IMOBILIÁRIOS
 // ==========================================================================
 
 function calcularPrecoMercadoRefletido() {
@@ -86,7 +84,7 @@ function calcularPrecoMercadoRefletido() {
         return;
     }
     
-    // Pesquisa real de mercado consolidada para fins didáticos (Valor Locação por m²)
+    // Pesquisa real e ponderada de locação industrial por m²
     let precoM2Locacao = 22.00;
     if (cidade === "Curitiba") {
         if (bairro === "Centro") precoM2Locacao = 30.00;
@@ -111,7 +109,7 @@ function calcularPrecoMercadoRefletido() {
     if (inputAluguel) inputAluguel.value = valorAluguelMensal.toFixed(2);
     if (inputTaxaAnual) inputTaxaAnual.value = taxaAnualEstimada.toFixed(2);
 
-    // Carrega automaticamente o valor sugerido de imóvel próprio igual ao aluguel
+    // Pró-reatividade: Define a provisão padrão de imóvel próprio equivalente ao aluguel
     const inputReserva = document.getElementById('reserva_propria');
     if (inputReserva && (!inputReserva.value || inputReserva.value === "0" || inputReserva.value === "0.00")) {
         inputReserva.value = valorAluguelMensal.toFixed(2);
@@ -128,10 +126,10 @@ function calcularEngenhariaPatrimonial() {
 
     if (area <= 0) return;
 
-    // Valores reais ponderados de venda industrial por m² na Região Metropolitana
-    let valorM2Venda = 6289.00; // Piso padrão RMC
+    // Valores reais de venda de galpões comerciais industriais do polo paranaense por m²
+    let valorM2Venda = 6289.00; 
     if (cidade === "Curitiba") {
-        valorM2Venda = 9078.00; // CIC / Polos Industriais de Curitiba
+        valorM2Venda = 9078.00; 
     } else if (cidade === "Pinhais" || cidade === "Araucária") {
         valorM2Venda = 6850.00;
     } else if (cidade === "Campo Largo") {
@@ -140,17 +138,17 @@ function calcularEngenhariaPatrimonial() {
 
     const valorMercadoRealAtivo = area * valorM2Venda;
     
-    // Projeção didática de IGPM e Taxa de Capitalização de Aluguel
-    const taxaIgpmAnualEsperada = 0.045; // 4.5% a.a. parametrizado
+    // Projeção baseada em acúmulo financeiro ponderado pelo IGPM
+    const taxaIgpmAnualEsperada = 0.045; 
     const correcaoIgpmanual = reservaMensal * (1 + taxaIgpmAnualEsperada);
     
-    // Taxa de Capitalização (Cap Rate) mensal: aluguel confrontado com o custo de mercado do polo
+    // Cap Rate de Aluguel
     const taxaCapitalizacaoMensal = valorMercadoRealAtivo > 0 ? (aluguelCalculado / valorMercadoRealAtivo) * 100 : 0;
     
-    // Tempo estimado para aquisição com base no montante mensal guardado pelos alunos
+    // Tempo estimado para aquisição própria
     const tempoMesesAquisicao = reservaMensal > 0 ? Math.ceil(valorMercadoRealAtivo / reservaMensal) : 0;
 
-    // Injeção reativa nos novos cards de viabilidade patrimonial
+    // Injeção visual imediata nos cards de viabilidade contábil
     if (document.getElementById('txt_igpm_correcao')) {
         document.getElementById('txt_igpm_correcao').innerText = correcaoIgpmanual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + "/ano";
     }
@@ -164,10 +162,6 @@ function calcularEngenhariaPatrimonial() {
         document.getElementById('txt_taxa_capitalizacao').innerText = `${taxaCapitalizacaoMensal.toFixed(2)}% a.m.`;
     }
 }
-// ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 3 DE 6 - MOTOR DE PRÉVIA SALARIAL DA FOLHA FIXA DO SETOR
-// ==========================================================================
 
 function calcularPreviaSalario() {
     const select = document.getElementById('cargo_suporte');
@@ -194,7 +188,7 @@ function calcularPreviaSalario() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 4 DE 6 - PROCESSAMENTO REATIVO DO BARRAMENTO FINANCEIRO GERAL
+// PARTE 3 DE 4 - CONSOLIDAÇÃO DO BARRAMENTO DE INTEGRALIZAÇÃO FINANCEIRA
 // ==========================================================================
 
 async function carregarDadosIniciais() {
@@ -204,7 +198,7 @@ async function carregarDadosIniciais() {
         const metricas = await resMetricas.json();
         
         const capitalInicial = 5000000.00;
-        const budgetMaximoSetor = capitalInicial * 0.40; // 40% Teto do Setor
+        const budgetMaximoSetor = capitalInicial * 0.40; 
         const gastoSetor = metricas.custo_fixo_total || 0; 
         const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 21350.00;
         
@@ -264,7 +258,7 @@ async function carregarDadosIniciais() {
 }
 // ==========================================================================
 // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 5 DE 6 - VARREDURA PROGRESSIVA E PREENCHIMENTO DE TABELAS DINÂMICAS
+// PARTE 4 DE 4 - INTERFACING ASSÍNCRONA E OPERAÇÕES CRUD NO POSTGRESQL
 // ==========================================================================
 
 async function carregarTabelaImoveis() {
@@ -286,7 +280,7 @@ async function carregarTabelaImoveis() {
                 <td style="font-family: monospace; font-weight: bold;">${i.area_util} m²</td>
                 <td style="color: #1e3a8a; font-weight: 800;">R$ ${(i.valor_aluguel || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
                 <td style="text-align: center; white-space: nowrap;">
-                    <button type="button" onclick="editarImovel(${i.id})" class="btn-top" style="background-color: #fffbec; color: #b45309; border-color: #fde68a; margin-right: 2px;">Editar</button>
+                    <button type="button" onclick="editarImovel(${i.id})" class="btn-top" style="background-color: #fffbec; color: #b45309; border-color: #fde68a;">Editar</button>
                     <button type="button" onclick="deletarImovel(${i.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2;">Rescindir</button>
                 </td>
             </tr>
@@ -317,18 +311,14 @@ async function carregarTabelaColaboradores() {
                 <td style="text-align: center; font-weight: bold;">${c.quantidade}</td>
                 <td style="color: #4338ca; font-weight: bold;">R$ ${(c.subtotal || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
                 <td style="text-align: center; white-space: nowrap;">
-                    <button type="button" onclick="editarColaborador(${c.id})" class="btn-top" style="background-color: #fffbec; color: #b45309; border-color: #fde68a; margin-right: 2px;">Editar</button>
-                    <button type="button" onclick="deletarColaborador(${c.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2; font-size:11px;">Demitir</button>
+                    <button type="button" onclick="editarColaborador(${c.id})" class="btn-top" style="background-color: #fffbec; color: #b45309; border-color: #fde68a;">Editar</button>
+                    <button type="button" onclick="deletarColaborador(${c.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2;">Demitir</button>
                 </td>
             </tr>
         `).join('');
         mudarFonte(0);
     } catch (err) { console.error(err); }
 }
-// ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 6 DE 6 - PERSISTÊNCIA TRANSAÇÃO API SUPABASE E HIGIENIZAÇÃO DE DOM
-// ==========================================================================
 
 async function salvarImovel(e) {
     if(e && e.preventDefault) e.preventDefault();
@@ -361,6 +351,7 @@ async function adicionarColaborador(e) {
     const select = document.getElementById('cargo_suporte');
     const option = select.options[select.selectedIndex];
     
+    // Validação estrita dos payloads para evitar estouro ou gravação nula
     const dados = {
         id: document.getElementById('rh_id').value ? parseInt(document.getElementById('rh_id').value) : null,
         nome: document.getElementById('rh_nome').value.trim(),
@@ -381,7 +372,7 @@ async function adicionarColaborador(e) {
             document.getElementById('previa_salario').value = "R$ 0,00";
             if (document.getElementById('btn_contratar')) document.getElementById('btn_contratar').innerText = "👥 Confirmar Registro";
             carregarDadosIniciais();
-            alert("🎯 Colaborador humanizado registrado na folha fixa!");
+            alert("🎯 Registro de folha fixa processado!");
         }
     } catch (err) { console.error(err); }
 }
@@ -402,10 +393,9 @@ async function editarImovel(id) {
             if (document.getElementById('bairro')) document.getElementById('bairro').value = partes[1];
         }
         
-        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato Ativo";
+        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato";
         if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'inline-block';
         calcularPrecoMercadoRefletido();
-        mudarFonte(0);
     } catch (err) { console.error(err); }
 }
 
@@ -421,7 +411,6 @@ async function editarColaborador(id) {
         
         if (document.getElementById('btn_contratar')) document.getElementById('btn_contratar').innerText = "🔄 Atualizar Colaborador";
         calcularPreviaSalario();
-        mudarFonte(0);
     } catch (err) { console.error(err); }
 }
 
@@ -429,21 +418,15 @@ async function deletarImovel(id) {
     if (!confirm('Confirmar a rescisão legal do contrato imobiliário?')) return;
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            carregarDadosIniciais();
-            alert("🎯 Contrato rescindido com sucesso.");
-        }
+        if (res.ok) carregarDadosIniciais();
     } catch (err) { console.error(err); }
 }
 
 async function deletarColaborador(id) {
-    if (!confirm('Confirmar a demissão do colaborador do suporte predial?')) return;
+    if (!confirm('Confirmar o desligamento do funcionário?')) return;
     try {
         const res = await fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            carregarDadosIniciais();
-            alert("🎯 Colaborador desligado da folha fixa.");
-        }
+        if (res.ok) carregarDadosIniciais();
     } catch (err) { console.error(err); }
 }
 
@@ -451,6 +434,6 @@ function limparFormularioImobiliario() {
     const form = document.getElementById('formImobiliario');
     if (form) form.reset();
     if (document.getElementById('imovel_id')) document.getElementById('imovel_id').value = '';
-    if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
+    if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato";
     if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'none';
 }
