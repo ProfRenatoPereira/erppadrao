@@ -1,368 +1,115 @@
 /* ==========================================================================
-   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-   PARTE 1 DE 4 - DIRETRIZES DE ACESSIBILIDADE WCAG E COMPORTAMENTO OPERACIONAL
+   TERADMAS ERP v2.6 - REESCRITA DO SCRIPT CLIENT (`estrutura.js`)
+   PARTE 1 DE 2 - MATRIZ DE PRECIFICAÇÃO E CAPTURA DE SESSÃO ANTICRASH
    ========================================================================== */
 
-let tamanhoFonteAtual = 16;
-let leitorAtivo = false;
+const CONFIG_RMC_IMOBILIARIO = {
+    "Curitiba": { valor_m2: 32.50, condominio_base: 350.00, cap_rate: 0.0055, igpm: 0.0425 },
+    "São José dos Pinhais": { valor_m2: 24.00, condominio_base: 280.00, cap_rate: 0.0048, igpm: 0.0425 },
+    "Pinhais": { valor_m2: 26.50, condominio_base: 300.00, cap_rate: 0.0052, igpm: 0.0425 },
+    "Araucária": { valor_m2: 22.00, condominio_base: 250.00, cap_rate: 0.0045, igpm: 0.0425 },
+    "Campo Largo": { valor_m2: 19.50, condominio_base: 220.00, cap_rate: 0.0042, igpm: 0.0425 }
+};
+
+const TABELA_CUSTOS_RH_PREDIAL = {
+    "Gerente de Infraestrutura": 8500.00,
+    "Supervisor Predial": 5200.00,
+    "Técnico de Manutenção Industrial": 3800.00,
+    "Operador de Utilidades": 2900.00,
+    "Auxiliar de Serviços Gerais / Portaria": 2100.00
+};
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Inicializa a malha transacional do banco de dados imediatamente
-    carregarDadosIniciais();
+    console.log("Inicializando Reescrita do Módulo Imobiliário v2.6...");
     
-    // Configuração dos ouvintes reativos de entrada nos seletores de cálculo
-    document.getElementById('cidade')?.addEventListener('change', calcularPrecoMercadoRefletido);
-    document.getElementById('bairro')?.addEventListener('change', calcularPrecoMercadoRefletido);
-    document.getElementById('area_util')?.addEventListener('input', calcularPrecoMercadoRefletido);
-    document.getElementById('valor_condominio')?.addEventListener('input', calcularPrecoMercadoRefletido);
+    // Força a liberação dos elementos de layout ocultados por falha de script anterior
+    garantirVisibilidadeLayout();
+
+    // Vincula os escutadores de forma segura (Defensiva)
+    vincularEventosDefensivos('txt_area_util', ['input', 'change'], calcularLocacaoPatrimonial);
+    vincularEventosDefensivos('sel_cidade_municipio', ['change'], calcularLocacaoPatrimonial);
+    vincularEventosDefensivos('txt_taxa_condominio', ['input'], calcularLocacaoPatrimonial);
+    
+    vincularEventosDefensivos('sel_cargo_operacional', ['change'], calcularFolhaApoio);
+    vincularEventosDefensivos('txt_quantidade_vagas', ['input'], calcularFolhaApoio);
+
+    // Executa primeira rodada de cálculos para tirar os campos do estado zerado
+    calcularLocacaoPatrimonial();
+    calcularFolhaApoio();
 });
 
-function mudarFonte(dir) {
-    tamanhoFonteAtual += dir;
-    tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
-    document.documentElement.style.fontSize = tamanhoFonteAtual + 'px';
-    
-    const elementos = document.querySelectorAll("p, label, input, select, th, td, h1, h2, h3, h4, span, button, a");
-    elementos.forEach(el => {
-        el.style.setProperty('font-size', (tamanhoFonteAtual - 3) + 'px', 'important');
+function vincularEventosDefensivos(idElemento, eventos, funcao) {
+    const el = document.getElementById(idElemento);
+    if (el) {
+        eventos.forEach(evt => el.addEventListener(evt, funcao));
+    }
+}
+
+function garantirVisibilidadeLayout() {
+    // Força desbloqueio total de inputs e elementos da árvore DOM
+    document.querySelectorAll('input, select, button').forEach(el => {
+        el.removeAttribute('disabled');
+        el.style.opacity = "1";
     });
 }
+/* ==========================================================================
+   TERADMAS ERP v2.6 - REESCRITA DO SCRIPT CLIENT (`estrutura.js`)
+   PARTE 2 DE 2 - ENGENHARIA REATIVA FINANCEIRA E VALIDAÇÃO DE INPUTS
+   ========================================================================== */
 
-function alternarModoEscuro() { 
-    document.body.classList.remove('alto-contraste');
-    document.body.classList.toggle('dark-mode');
-    const btn = document.getElementById('btn_tema');
-    if (btn) btn.innerText = document.body.classList.contains('dark-mode') ? "☀️ Modo Claro" : "🌙 Modo Escuro";
-}
+function calcularLocacaoPatrimonial() {
+    try {
+        const areaUtil = parseFloat(document.getElementById('txt_area_util')?.value) || 0;
+        const cidade = document.getElementById('sel_cidade_municipio')?.value || "Curitiba";
+        const dadosCidade = CONFIG_RMC_IMOBILIARIO[cidade] || CONFIG_RMC_IMOBILIARIO["Curitiba"];
 
-function alternarAltoContraste() { 
-    document.body.classList.remove('dark-mode');
-    document.body.classList.toggle('alto-contraste');
-}
+        // 1. Cálculos de Locação Base
+        const aluguelCalculado = areaUtil * dadosCidade.valor_m2;
+        const condominioFixo = parseFloat(document.getElementById('txt_taxa_condominio')?.value) || dadosCidade.condominio_base;
+        const taxaAnual = (aluguelCalculado * 12) + (condominioFixo * 12);
 
-function alternarLeitorAudio() {
-    leitorAtivo = !leitorAtivo;
-    const btn = document.getElementById('btn-leitor-audio');
-    if (btn) {
-        btn.innerText = leitorAtivo ? "🔇 Desativar Leitor" : "🔊 Ativar Leitor";
-        btn.style.backgroundColor = leitorAtivo ? "#ef4444" : "#0284c7";
+        // Atualização dos inputs calculados na UI
+        definirValorInput('txt_aluguel_calculado', aluguelCalculado);
+        definirValorInput('txt_taxa_anual', taxaAnual);
+
+        // 2. Projeções dos Cards Auxiliares
+        const projecaoIgpm = aluguelCalculado * 12 * dadosCidade.igpm;
+        const valorMercado = dadosCidade.cap_rate > 0 ? (aluguelCalculado * 12) / (dadosCidade.cap_rate * 12) : 0;
+        const mesesAmortizacao = aluguelCalculado > 0 ? Math.ceil(valorMercado / aluguelCalculado) : 0;
+
+        // Injeção de texto segura nos elementos internos dos cards coloridos
+        definirTextoHTML('lbl_provisao_igpm', `Projeção IGP-M Anual: R$ ${projecaoIgpm.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+        definirTextoHTML('lbl_amortizacao_valor', `Valor de Mercado: R$ ${valorMercado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+        definirTextoHTML('lbl_amortizacao_tempo', `Tempo necessário: ${mesesAmortizacao} meses`);
+        definirTextoHTML('lbl_rentabilidade_taxa', `Taxa Capitalização: ${(dadosCidade.cap_rate * 100).toFixed(2)}% a.m.`);
+
+    } catch (err) {
+        console.error("Falha no cálculo patrimonial (Isolado para evitar travamento):", err);
     }
-    if (leitorAtivo) {
-        window.speechSynthesis.cancel();
-        const ut = new SpeechSynthesisUtterance("Módulo imobiliário aberto. Gerencie contratos de alocação.");
-        ut.lang = 'pt-BR';
-        window.speechSynthesis.speak(ut);
-    } else {
-        window.speechSynthesis.cancel();
+}
+
+function calcularFolhaApoio() {
+    try {
+        const cargo = document.getElementById('sel_cargo_operacional')?.value || "";
+        const qtd = parseInt(document.getElementById('txt_quantidade_vagas')?.value) || 1;
+        const salarioBase = TABELA_CUSTOS_RH_PREDIAL[cargo] || 0;
+        
+        // Encargo patronal indexado em 68% do ecossistema TERADMAS
+        const custoTotalFolha = salarioBase * qtd * 1.68;
+        definirValorInput('txt_previa_folha', custoTotalFolha);
+    } catch (err) {
+        console.error("Falha no cálculo de folha:", err);
     }
 }
-// ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 2 DE 4 - ALGORITMO DE EQUAÇÕES DA RMC E INVESTIMENTOS IMOBILIÁRIOS
-// ==========================================================================
 
-function calcularPrecoMercadoRefletido() {
-    const cidade = document.getElementById('cidade')?.value;
-    const bairro = document.getElementById('bairro')?.value;
-    const area = parseFloat(document.getElementById('area_util')?.value) || 0;
-    
-    if (area <= 0) {
-        if (document.getElementById('valor_aluguel')) document.getElementById('valor_aluguel').value = "0.00";
-        if (document.getElementById('taxa_anual')) document.getElementById('taxa_anual').value = "0.00";
-        return;
+function definirValorInput(id, valor) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.value = valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
     }
-    
-    let precoM2Locacao = 22.00;
-    if (cidade === "Curitiba") {
-        if (bairro === "Centro") precoM2Locacao = 30.00;
-        else if (bairro === "Boqueirão") precoM2Locacao = 25.00;
-        else if (bairro === "CIC") precoM2Locacao = 23.50;
-    } else if (cidade === "São José dos Pinhais") precoM2Locacao = 21.00;
-    else if (cidade === "Pinhais") precoM2Locacao = 21.50;
-    else if (cidade === "Araucária") precoM2Locacao = 20.00;
-    else if (cidade === "Campo Largo") precoM2Locacao = 19.50;
-
-    const valorAluguelMensal = area * precoM2Locacao;
-    const taxaAnualEstimada = area * 4.50; 
-    
-    if (document.getElementById('valor_aluguel')) document.getElementById('valor_aluguel').value = valorAluguelMensal.toFixed(2);
-    if (document.getElementById('taxa_anual')) document.getElementById('taxa_anual').value = taxaAnualEstimada.toFixed(2);
-
-    const inputReserva = document.getElementById('reserva_propria');
-    if (inputReserva && (!inputReserva.value || inputReserva.value === "0" || inputReserva.value === "0.00")) {
-        inputReserva.value = valorAluguelMensal.toFixed(2);
-    }
-    calcularEngenhariaPatrimonial();
 }
 
-function calcularEngenhariaPatrimonial() {
-    const cidade = document.getElementById('cidade')?.value;
-    const area = parseFloat(document.getElementById('area_util')?.value) || 0;
-    const aluguelCalculado = parseFloat(document.getElementById('valor_aluguel')?.value) || 0;
-    const reservaMensal = parseFloat(document.getElementById('reserva_propria')?.value) || 0;
-
-    if (area <= 0) return;
-
-    let valorM2Venda = 6289.00; 
-    if (cidade === "Curitiba") valorM2Venda = 9078.00; 
-    else if (cidade === "Pinhais" || cidade === "Araucária") valorM2Venda = 6850.00;
-    else if (cidade === "Campo Largo") valorM2Venda = 5900.00;
-
-    const valorMercadoRealAtivo = area * valorM2Venda;
-    const correcaoIgpmanual = reservaMensal * (1 + 0.045);
-    const taxaCapitalizacaoMensal = valorMercadoRealAtivo > 0 ? (aluguelCalculado / valorMercadoRealAtivo) * 100 : 0;
-    const tempoMesesAquisicao = reservaMensal > 0 ? Math.ceil(valorMercadoRealAtivo / reservaMensal) : 0;
-
-    if (document.getElementById('txt_igpm_correcao')) document.getElementById('txt_igpm_correcao').innerText = correcaoIgpmanual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) + "/ano";
-    if (document.getElementById('txt_valor_mercado_real')) document.getElementById('txt_valor_mercado_real').innerText = valorMercadoRealAtivo.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    if (document.getElementById('txt_tempo_meses')) document.getElementById('txt_tempo_meses').innerText = `${tempoMesesAquisicao} meses`;
-    if (document.getElementById('txt_taxa_capitalizacao')) document.getElementById('txt_taxa_capitalizacao').innerText = `${taxaCapitalizacaoMensal.toFixed(2)}% a.m.`;
-}
-
-function calcularPreviaSalario() {
-    const select = document.getElementById('cargo_suporte');
-    const qtdInput = document.getElementById('qtd_colaboradores');
-    const inputPrevia = document.getElementById('previa_salario');
-    
-    if (!select || !qtdInput || !inputPrevia) return;
-    const option = select.options[select.selectedIndex];
-    if (!select.value || !option) {
-        inputPrevia.value = "R$ 0,00";
-        return;
-    }
-    const salario = parseFloat(option.getAttribute('data-salario')) || 0;
-    const qtd = parseInt(qtdInput.value) || 0;
-    inputPrevia.value = (qtd <= 0) ? "R$ 0,00" : (salario * qtd).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-// ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 3 DE 4 - MATRIZ DE CONSOLIDAÇÃO DOS ENCARGOS OPERACIONAIS GERAIS
-// ==========================================================================
-
-async function carregarDadosIniciais() {
-    try {
-        const resMetricas = await fetch('/api/financeiro/metricas?dept=estrutura');
-        if (!resMetricas.ok) throw new Error("Falha na comunicação.");
-        const metricas = await resMetricas.json();
-        
-        await carregarTabelaImoveis();
-        await carregarTabelaColaboradores();
-        
-        let custoAlugueisReal = 0;
-        document.querySelectorAll('#tabela_imoveis tr').forEach(linha => {
-            if (linha.cells.length > 3) {
-                const txt = linha.cells[3].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                custoAlugueisReal += parseFloat(txt) || 0;
-            }
-        });
-
-        let custoFolhaRHReal = 0;
-        document.querySelectorAll('#tabela_colaboradores tr').forEach(linha => {
-            if (linha.cells.length > 4) {
-                const txt = linha.cells[4].innerText.replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                custoFolhaRHReal += parseFloat(txt) || 0;
-            }
-        });
-
-        const capitalMaster = 5000000.00;
-        const budgetMaximoSetor = capitalMaster * 0.40;
-        const custoFixoSetorAtual = custoAlugueisReal + custoFolhaRHReal; 
-        const custosFixosOutrosSetores = metricas.custos_fixos_outros_setores || 0;
-        const custoFixoGeralEmpresaTotal = custosFixosOutrosSetores + custoFixoSetorAtual;
-
-        let porcCapital = (custoFixoSetorAtual / capitalMaster) * 100;
-        let porcFixo = custoFixoGeralEmpresaTotal > 0 ? (custoFixoSetorAtual / custoFixoGeralEmpresaTotal) * 100 : 0;
-        let porcBudget = Math.min(100, (custoFixoSetorAtual / budgetMaximoSetor) * 100);
-
-        if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = capitalMaster.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        if(document.getElementById('top_budget_inicial')) document.getElementById('top_budget_inicial').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        if(document.getElementById('top_budget_saldo')) document.getElementById('top_budget_saldo').innerText = (budgetMaximoSetor - custoFixoSetorAtual).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        if(document.getElementById('top_patrimonio_setor')) document.getElementById('top_patrimonio_setor').innerText = custoAlugueisReal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        if(document.getElementById('top_custo_fixo_setor_head')) document.getElementById('top_custo_fixo_setor_head').innerText = custoFixoSetorAtual.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
-        
-        if(document.getElementById('txt_porcentagem_setor_imob')) {
-            document.getElementById('txt_porcentagem_setor_imob').innerText = `➔ Custos Totais: ${porcCapital.toFixed(2)}% | Custos Fixos: ${porcFixo.toFixed(1)}%`;
-        }
-
-        const txtBudget = document.getElementById('top_budget_setor');
-        const barraProgresso = document.getElementById('barra_progresso_budget');
-        const txtPorcentagem = document.getElementById('txt_porcentagem_budget');
-        
-        if (txtBudget) txtBudget.innerText = `${custoFixoSetorAtual.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})} / ${budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'})}`;
-        if (barraProgresso) barraProgresso.style.width = `${porcBudget}%`;
-        if (txtPorcentagem) txtPorcentagem.innerText = `${porcBudget.toFixed(1)}% do teto consumido`;
-
-        if(document.getElementById('top_custo_fixo_geral_empresa')) document.getElementById('top_custo_fixo_geral_empresa').innerText = custoFixoGeralEmpresaTotal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
-        if(document.getElementById('custo_fixo_geral_total_valor')) document.getElementById('custo_fixo_geral_total_valor').innerText = custoFixoGeralEmpresaTotal.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
-        
-        if(document.getElementById('txt_proporcao_global_empresa')) document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}%`;
-        if(document.getElementById('custo_fixo_geral_total_detalhes')) document.getElementById('custo_fixo_geral_total_detalhes').innerText = `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}% do impacto fixo global`;
-        
-        const inputGrupo = document.getElementById('nome_grupo_display');
-        if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
-    } catch (err) { console.error(err); }
-}
-// ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
-// PARTE 4 DE 4 - INTERFACING ASSÍNCRONA E CONTROLE DE MUTABILIDADE (CRUD)
-// ==========================================================================
-
-async function carregarTabelaImoveis() {
-    try {
-        const res = await fetch('/api/estrutura/imoveis');
-        const imoveis = await res.json();
-        const tbody = document.getElementById('tabela_imoveis');
-        if (!tbody) return;
-        
-        if (!imoveis || imoveis.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="padding:16px; text-align:center; color:#94a3b8; font-weight:bold;">Nenhum espaço alocado no Supabase para este grupo.</td></tr>`;
-            return;
-        }
-        tbody.innerHTML = imoveis.map(i => `
-            <tr>
-                <td style="font-weight:900; color:#1e3a8a;">${i.nome_empresa}</td>
-                <td><strong>${i.tipo_imovel}</strong><br><span style="font-size:11px; color:#94a3b8;">${i.regiao}</span></td>
-                <td style="font-family:monospace; font-weight:bold;">${i.area_util} m²</td>
-                <td style="color:#1e3a8a; font-weight:800;">R$ ${(i.valor_aluguel || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                <td style="text-align:center; white-space:nowrap;">
-                    <button type="button" class="btn-top" style="background-color:#fffbec; color:#b45309;" onclick="editarImovel(${i.id})">Editar</button>
-                    <button type="button" class="btn-top" style="background-color:#fef2f2; color:#dc2626;" onclick="deletarImovel(${i.id})">Rescindir</button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (err) { console.error(err); }
-}
-
-async function carregarTabelaColaboradores() {
-    try {
-        const res = await fetch('/api/estrutura/rh');
-        const colaboradores = await res.json();
-        const tbody = document.getElementById('tabela_colaboradores');
-        if (!tbody) return;
-        
-        if (!colaboradores || colaboradores.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="padding:16px; text-align:center; color:#94a3b8; font-weight:bold;">MÁSCARA ZERO: Nenhum colaborador alocado neste setor.</td></tr>`;
-            return;
-        }
-        tbody.innerHTML = colaboradores.map(c => `
-            <tr>
-                <td style="font-weight:800; color:#334155;">👤 ${c.nome}</td>
-                <td style="font-weight:700;">👷 ${c.cargo}</td>
-                <td>R$ ${(c.salario_base || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                <td style="text-align:center; font-weight:bold;">${c.quantidade}</td>
-                <td style="color:#4338ca; font-weight:bold;">R$ ${(c.subtotal || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                <td style="text-align:center; white-space:nowrap;">
-                    <button type="button" class="btn-top" style="background-color:#fffbec; color:#b45309;" onclick="editarColaborador(${c.id})">Editar</button>
-                    <button type="button" class="btn-top" style="background-color:#fef2f2; color:#dc2626;" onclick="deletarColaborador(${c.id})">Demitir</button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (err) { console.error(err); }
-}
-
-async function salvarImovel(e) {
-    if(e && e.preventDefault) e.preventDefault();
-    const dados = {
-        id: document.getElementById('imovel_id').value ? parseInt(document.getElementById('imovel_id').value) : null,
-        tipo_imovel: document.getElementById('tipo_imovel').value,
-        regiao: document.getElementById('cidade').value + " - " + document.getElementById('bairro').value,
-        area_util: parseFloat(document.getElementById('area_util').value) || 0,
-        valor_aluguel: parseFloat(document.getElementById('valor_aluguel').value) || 0,
-        valor_condominio: parseFloat(document.getElementById('valor_condominio').value) || 0,
-        obs_contrato: "Taxa Anual Prevista: R$ " + (document.getElementById('taxa_anual')?.value || "0.00")
-    };
-    try {
-        const res = await fetch('/api/estrutura/imoveis', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-        if (res.ok) {
-            limparFormularioImobiliario();
-            await carregarDadosIniciais();
-        }
-    } catch (err) { console.error(err); }
-}
-
-async function adicionarColaborador(e) {
-    if(e && e.preventDefault) e.preventDefault();
-    const select = document.getElementById('cargo_suporte');
-    const option = select.options[select.selectedIndex];
-    
-    const dados = {
-        id: document.getElementById('rh_id').value ? parseInt(document.getElementById('rh_id').value) : null,
-        nome: document.getElementById('rh_nome').value.trim(),
-        cargo: select.value,
-        salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
-        quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 1
-    };
-    try {
-        const res = await fetch('/api/estrutura/rh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-        if (res.ok) {
-            document.getElementById('formContratacaoPredial').reset();
-            document.getElementById('rh_id').value = '';
-            document.getElementById('previa_salario').value = "R$ 0,00";
-            if (document.getElementById('btn_contratar')) document.getElementById('btn_contratar').innerText = "👥 Confirmar Registro de Funcionário";
-            await carregarDadosIniciais();
-        }
-    } catch (err) { console.error(err); }
-}
-
-async function editarImovel(id) {
-    try {
-        const res = await fetch(`/api/estrutura/imoveis/${id}`);
-        const i = await res.json();
-        document.getElementById('imovel_id').value = i.id;
-        document.getElementById('tipo_imovel').value = i.tipo_imovel;
-        document.getElementById('area_util').value = i.area_util;
-        document.getElementById('valor_condominio').value = i.valor_condominio;
-        if (i.regiao && i.regiao.includes(" - ")) {
-            const partes = i.regiao.split(" - ");
-            if (document.getElementById('cidade')) document.getElementById('cidade').value = partes[0].trim();
-            if (document.getElementById('bairro')) document.getElementById('bairro').value = partes[1].trim();
-        }
-        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato";
-        calcularPrecoMercadoRefletido();
-    } catch (err) { console.error(err); }
-}
-
-async function editarColaborador(id) {
-    try {
-        const res = await fetch(`/api/estrutura/rh/${id}`);
-        const c = await res.json();
-        document.getElementById('rh_id').value = c.id;
-        document.getElementById('rh_nome').value = c.nome;
-        document.getElementById('cargo_suporte').value = c.cargo;
-        document.getElementById('qtd_colaboradores').value = c.quantidade;
-        if (document.getElementById('btn_contratar')) document.getElementById('btn_contratar').innerText = "🔄 Atualizar Colaborador";
-        calcularPreviaSalario();
-    } catch (err) { console.error(err); }
-}
-
-async function deletarImovel(id) {
-    if (!confirm('Confirmar a rescisão legal do contrato imobiliário?')) return;
-    try {
-        const res = await fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' });
-        if (res.ok) await carregarDadosIniciais();
-    } catch (err) { console.error(err); }
-}
-
-async function deletarColaborador(id) {
-    if (!confirm('Confirmar o desligamento do funcionário?')) return;
-    try {
-        const res = await fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' });
-        if (res.ok) await carregarDadosIniciais();
-    } catch (err) { console.error(err); }
-}
-
-function limparFormularioImobiliario() {
-    const form = document.getElementById('formImobiliario');
-    if (form) form.reset();
-    if (document.getElementById('imovel_id')) document.getElementById('imovel_id').value = '';
-    if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
+function definirTextoHTML(id, texto) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = texto;
 }
