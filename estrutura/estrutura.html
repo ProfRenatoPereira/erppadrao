@@ -1,154 +1,383 @@
 <!-- ==========================================================================
    TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-   PARTE 1 DE 3 - CONFIGURAÇÕES, MALHA DE ESTILOS E TOPO CORPORATIVO (DARK NAVY)
+   PARTE 1 DE 4 - CONFIGURAÇÕES SEMÂNTICAS E DROPDOWNS INTEGRADOS (01 AO 23)
    ========================================================================== -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TERADMAS v2.6 - Módulo 02: Estrutura Imobiliária</title>
-    <!-- Malha de Estilos Unificada -->
+    <title>Investimentos Imobiliários - Estrutura de Custos</title>
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <!-- Blindagem Visual - Malha Exclusiva Externa -->
     <link rel="stylesheet" href="/static/css/erppadrao_core.css">
 </head>
 <body>
 
-    <div class="app-wrapper">
-        
-        <!-- Navegação Sidebar -->
-        <aside class="app-sidebar">
-            <div class="sidebar-brand">TERADMAS v2.6</div>
-            <ul class="sidebar-menu">
-                <li class="sidebar-item active">
-                    <a href="#imobiliario">
-                        <span>🏢</span> Módulo 02 - Imobiliário
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    <a href="#maquinas">
-                        <span>🚜</span> Módulo 07 - Máquinas
-                    </a>
-                </li>
-            </ul>
-        </aside>
-
-        <!-- Topbar do Sistema -->
-        <header class="app-topbar">
-            <div class="topbar-context">
-                <span>Módulo 02</span>
-                <span class="text-muted">/</span>
-                <span>Gestão Imobiliária Ativa</span>
-            </div>
-            <div>
-                <span class="badge badge-info">Ambiente Estabilizado</span>
-            </div>
-        </header>
-
-        <!-- Área Principal de Conteúdo -->
-        <main class="app-main">
-            
-            <!-- Títulos Principais -->
-            <section>
-                <h1>Estrutura Imobiliária</h1>
-                <p class="text-muted">Controle patrimonial, locações e rateio de tetos operacionais.</p>
-            </section>
-
-            <!-- Engine de KPIs Horizontais Comparativos (Setor vs Global) -->
-            <div class="kpi-row-container">
-                
-                <!-- KPI 01: Custos de Locação -->
-                <div class="kpi-card-horizontal">
-                    <div class="kpi-card-title">Custos de Locação Ativa</div>
-                    <div class="kpi-comparison-grid">
-                        <div class="kpi-metric-block">
-                            <span class="kpi-metric-label">Setor Imobiliário</span>
-                            <span class="kpi-metric-value" id="kpi-custo-setor">R$ 0,00</span>
-                        </div>
-                        <div class="kpi-metric-block global-spec">
-                            <span class="kpi-metric-label">Global Empresa</span>
-                            <span class="kpi-metric-value" id="kpi-custo-global">R$ 0,00</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- KPI 02: Patrimônio Imobilizado -->
-                <div class="kpi-card-horizontal">
-                    <div class="kpi-card-title">Patrimônio Declarado</div>
-                    <div class="kpi-comparison-grid">
-                        <div class="kpi-metric-block">
-                            <span class="kpi-metric-label">Setor Imobiliário</span>
-                            <span class="kpi-metric-value" id="kpi-patrimonio-setor">R$ 0,00</span>
-                        </div>
-                        <div class="kpi-metric-block global-spec">
-                            <span class="kpi-metric-label">Global Empresa</span>
-                            <span class="kpi-metric-value" id="kpi-patrimonio-global">R$ 0,00</span>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Circuito de Medidores de Limites (Supabase) -->
-            <div class="limit-meter-container">
-                <div class="limit-meter-header">
-                    <span>Uso do Teto Orçamentário Real Estate</span>
-                    <span id="limit-percentage-label">0%</span>
-                </div>
-                <div class="limit-progress-bar">
-                    <!-- Controlado assintoticamente via global_metrics.js -->
-                    <div class="limit-progress-fill" id="limit-progress-element"></div>
-                </div>
-            </div>
-
-            <!-- Tabela Dinâmica de Ativos Cadastrados -->
-            <div class="data-table-container">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Identificador</th>
-                            <th>Tipo de Imóvel</th>
-                            <th>Status de Desconto</th>
-                            <th>Custo Mensal</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lista-imoveis-corpo">
-                        <!-- Polulado via engine JS -->
-                        <tr>
-                            <td>IMOB-001</td>
-                            <td>Galpão Logístico Alfa</td>
-                            <td><span class="badge badge-success">Ativo (Progressivo)</span></td>
-                            <td>R$ 12.500,00</td>
-                            <td>
-                                <button class="btn btn-secondary">Editar</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Painel de Cadastro e Ajustes -->
-            <div class="asset-card">
-                <h3>Novo Ativo Imobiliário</h3>
-                <form id="form-novo-imovel" onsubmit="event.preventDefault();">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="input-nome">Nome do Ativo</label>
-                            <input type="text" id="input-nome" class="form-control" placeholder="Ex: Escritório Central">
-                        </div>
-                        <div class="form-group">
-                            <label for="input-custo">Valor Locação</label>
-                            <input type="number" id="input-custo" class="form-control" placeholder="R$ 0,00">
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Registrar no Caixa Matricial</button>
-                </form>
-            </div>
-
-        </main>
+<header class="corporate-header">
+    <!-- Barra de Acessibilidade WCAG Síncrona -->
+    <div class="accessibility-bar">
+        <span style="color: #a0aec0;">♿ Acessibilidade:</span>
+        <button onclick="alterarFonte('+')">A+</button>
+        <button onclick="alterarFonte('-')">A-</button>
+        <button onclick="alternarAltoContraste()">⚫ Alto Contraste</button>
+        <button onclick="alternarModoEscuro()">✔️ Escuro</button>
+        <button id="btn-leitor">📢 Ativar Leitor</button>
     </div>
 
-    <!-- Scripts de Integração Assíncrona -->
-    <script src="/static/js/global_metrics.js" defer></script>
+    <!-- Identidade Visual Unificada Baseada no Módulo de Máquinas -->
+    <div class="header-main-row">
+        <div class="logo-area">
+            <div class="logo-badge">T4</div>
+            <div class="logo-text">
+                <h1>TERADMAS ERP v2.6</h1>
+                <small>Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</small>
+            </div>
+        </div>
+        
+        <!-- Mecanismo do Menu Hamburguer Responsivo -->
+        <input type="checkbox" id="menu-toggle" style="display: none;">
+        <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
+        
+        <nav aria-label="Menu Principal do Sistema">
+            <ul class="nav-corporate-menu">
+                
+                <!-- Módulos 01 a 06 -->
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
+                        <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
+                        <li><a href="/orcamentos">03. Limites Orçamentários</a></li>
+                        <li><a href="/rh">04. Organograma e RH</a></li>
+                        <li><a href="/folha_pagamento">05. Folha de Pagamento</a></li>
+                        <li><a href="/requisicoes">06. Requisições Internas</a></li>
+                    </ul>
+                </li>
+                
+                <!-- Módulos 07 a 12 -->
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
+                        <li><a href="/materiais">08. Catálogo de Materiais</a></li>
+                        <li><a href="/processos">09. Fluxos de Processos</a></li>
+                        <li><a href="/produtos">10. Fichas Técnicas (BOM)</a></li>
+                        <li><a href="/manutencao">11. Plano de Manutenção</a></li>
+                        <li><a href="/precificacao">12. Formação de Preço</a></li>
+                    </ul>
+                </li>
+                
+                <!-- Módulos 13 a 17 -->
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/compras_insumos">13. Compras de Insumos</a></li>
+                        <li><a href="/pcp">14. Planejamento (PCP)</a></li>
+                        <li><a href="/engenharia_producao">15. Execução de Fábrica</a></li>
+                        <li><a href="/estoque">16. Almoxarifado Central</a></li>
+                        <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
+                    </ul>
+                </li>
+                
+                <!-- Módulos 18 a 23 -->
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/clientes">18. Carteira de Clientes</a></li>
+                        <li><a href="/vendas">19. Módulo de Vendas</a></li>
+                        <li><a href="/financeiro">20. Fluxo de Caixa Geral</a></li>
+                        <li><a href="/roi">21. Retorno sobre Investimento</a></li>
+                        <li><a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a></li>
+                        <li><a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a></li>
+                    </ul>
+                </li>
+                
+            </ul>
+        </nav>
+    </div>
+</header>
+<!-- ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+   PARTE 2 DE 4 - MATRIZ DE KPIs E FORMULÁRIO DE MODELAGEM PATRIMONIAL
+   ========================================================================== -->
+<div class="container">
+    
+    <!-- 📊 MATRIZ SUPERIOR DE 5 NÍVEIS DE KPIs INTEGRADA -->
+    <div class="grid-top-linha">
+        <!-- NÍVEL 1: CAPITAL DE GIRO -->
+        <div class="metric-card bg-blue-metric">
+            <p>💰 CAPITAL TOTAL NOMINAL</p>
+            <h3 id="top_capital_total">R$ 5.000.000,00</h3>
+            <span class="metric-span" id="top_giro_global_label">Disponível Setor: R$ 2.000.000,00 (40%)</span>
+        </div>
+        <!-- NÍVEL 2: ORÇAMENTO INFRA -->
+        <div class="metric-card bg-purple-metric">
+            <p>📄 ORÇAMENTO ENGENHARIA IMOBILIÁRIA</p>
+            <h4 id="kpi-orcamento-inicial">Inicial: R$ 2.000.000,00</h4>
+            <span class="metric-span" id="kpi-saldo-infra">Saldo Elasticidade: R$ 2.000.000,00</span>
+        </div>
+        <!-- NÍVEL 3: PATRIMÔNIO ALOCADO COM BARRA ELÁSTICA -->
+        <div class="metric-card bg-amber-metric" id="card_budget_limite">
+            <p>🏢 PATRIMÔNIO IMOBILIÁRIO ATIVO</p>
+            <h4 id="kpi-patrimonio-total">R$ 0,00</h4>
+            <span class="metric-span" id="kpi-teto-ativos">Limite Máx 40%: R$ 2.000.000,00</span>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="barra-limite-setor"></div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:2px;"><span id="txt_porcentagem_budget" style="font-size:9px; font-weight:bold; color:#1e3a8a;">0.0% do teto consumido</span></div>
+        </div>
+        <!-- NÍVEL 4: CUSTO FIXO MENSAL -->
+        <div class="metric-card bg-slate-metric">
+            <p>🔒 CUSTOS FIXOS CORRENTES (MENSAL)</p>
+            <h4 id="kpi-custo-fixo-total">Total: R$ 24.350,00</h4>
+            <span class="metric-span" id="kpi-custo-fixo-setor">Do Setor: R$ 0,00/mês</span>
+        </div>
+        <!-- NÍVEL 5: CUSTO VARIÁVEL MENSAL -->
+        <div class="metric-card bg-emerald-metric">
+            <p>⚡ CUSTOS VARIÁVEIS CONSOLIDADOS</p>
+            <h4 id="kpi-custo-variavel-total">Total Global: R$ 0,00</h4>
+            <span class="metric-span" id="kpi-custo-variavel-setor">Do Setor: R$ 0,00/mês</span>
+        </div>
+    </div>
+
+    <!-- ELEMENTOS OCULTOS DE ANCORAGEM REATIVA PARA O MOTOR JS -->
+    <div style="display: none;">
+        <span id="top_giro_global">R$ 2.000.000,00</span>
+        <span id="top_budget_inicial">R$ 2.000.000,00</span>
+        <span id="top_budget_saldo">R$ 2.000.000,00</span>
+        <span id="top_patrimonio_setor">R$ 0,00</span>
+        <span id="top_budget_setor">R$ 0,00 / R$ 2.000.000,00</span>
+        <div id="barra_progresso_budget"></div>
+        <span id="top_custo_fixo_geral_empresa">R$ 21.350,00/mês</span>
+    </div>
+
+    <div class="page-header">
+        <h2 class="page-title">Área do Administrador: Modelagem Patrimonial</h2>
+    </div>
+
+    <div class="grid-main">
+        <!-- SEÇÃO DE MODELAGEM PATRIMONIAL DO PARQUE FABRIL -->
+        <div class="card">
+            <h3 class="card-title">Alocação de Espaço Físico</h3>
+            <form id="formImobiliario" onsubmit="salvarImovel(event)">
+                <input type="hidden" id="imovel_id" value="">
+                
+                <!-- FILA INTEGRADA EM 4 COLUNAS EM TELAS GRANDES -->
+                <div class="grid-form-row">
+                    <div class="flex-col-gap">
+                        <label class="label-form">Identificação do Grupo:</label>
+                        <input type="text" id="nome_grupo_display" readonly class="input-form input-form-readonly">
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form">Tipo de Estrutura:</label>
+                        <select id="tipo_imovel" required class="select-form">
+                            <option value="Barracão Industrial">Barracão Industrial / Galpão Fabril</option>
+                            <option value="Escritório Comercial">Escritório Administrativo Central</option>
+                        </select>
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form">Cidade / Município:</label>
+                        <select id="cidade" required class="select-form">
+                            <option value="Curitiba">Curitiba</option>
+                            <option value="São José dos Pinhais">São José dos Pinhais</option>
+                            <option value="Pinhais">Pinhais</option>
+                            <option value="Araucária">Araucária</option>
+                            <option value="Campo Largo">Campo Largo</option>
+                        </select>
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form">Bairro / Polo:</label>
+                        <select id="bairro" required class="select-form">
+                            <option value="CIC">CIC (Cidade Industrial)</option>
+                            <option value="Boqueirão">Boqueirão</option>
+                            <option value="Centro">Centro Urbano</option>
+                            <option value="Distrito Logístico">Polo Industrial</option>
+                        </select>
+                    </div>
+                </div>
+<!-- ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+   PARTE 3 DE 4 - EQUAÇÕES PATRIMONIAIS E PAINEL DE APOIO PREDIAL
+   ========================================================================== -->
+                <!-- SEGUNDA LINHA COMPACTADA DO FORMULÁRIO -->
+                <div class="grid-form-row">
+                    <div class="flex-col-gap">
+                        <label class="label-form">Área Útil (m²):</label>
+                        <input type="number" id="area_util" value="150" required min="10" class="input-form" style="font-weight:bold;">
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form">Taxa Condomínio (R$):</label>
+                        <input type="number" id="valor_condominio" step="0.01" value="350.00" class="input-form">
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form" style="color:#1e3a8a;">Aluguel Calculado (R$):</label>
+                        <input type="number" id="valor_aluguel" readonly class="input-form input-form-readonly" style="color:#1e3a8a;">
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form" style="color:#b45309;">Taxa Anual (R$):</label>
+                        <input type="number" id="taxa_anual" readonly class="input-form input-form-readonly" style="color:#b45309;">
+                    </div>
+                </div>
+
+                <!-- DISTRIBUIÇÃO DAS 3 EQUAÇÕES ECONÔMICAS LADO A LADO -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; border-top: 2px dashed #cbd5e1; padding-top: 12px;">
+                    <!-- EQUAÇÃO 1: INFLAÇÃO E PROVISÃO COM BASE EM CIDADES DA RMC -->
+                    <div style="background-color:#f0fdfa; border:1px solid #99f6e4; padding:10px; border-radius:8px;">
+                        <label class="label-form" style="color:#0d9488;">🏢 Provisão Imóvel Próprio</label>
+                        <input type="number" id="reserva_propria" step="0.01" class="input-form" style="font-weight:bold; color:#0f766e; border-color:#2dd4bf;" oninput="calcularEngenhariaPatrimonial()">
+                        <span style="font-size:9px; color:#14b8a6; font-weight:bold; display:block; margin-top:2px;">Projeção IGPM Anual: <strong id="txt_igpm_correcao">R$ 0,00</strong></span>
+                    </div>
+                    
+                    <!-- EQUAÇÃO 2: VALORIZAÇÃO E AMORTIZAÇÃO PATRIMONIAL -->
+                    <div style="background-color:#eff6ff; border:1px solid #bfdbfe; padding:10px; border-radius:8px;">
+                        <label class="label-form" style="color:#2563eb;">📍 Amortização Patrimonial Física</label>
+                        <div style="font-size:11px; font-weight:900; color:#1e40af; margin-top:2px;">Valor de Mercado: <span id="txt_valor_mercado_real">R$ 0,00</span></div>
+                        <span style="font-size:10px; color:#3b82f6; font-weight:bold; display:block;">Tempo necessário: <strong id="txt_tempo_meses">0 meses</strong></span>
+                    </div>
+                    
+                    <!-- EQUAÇÃO 3: RENTABILIDADE DE ATIVOS COM BASE NO CAP RATE REGIONAL -->
+                    <div style="background-color:#fff7ed; border:1px solid #fed7aa; padding:10px; border-radius:8px;">
+                        <label class="label-form" style="color:#ea580c;">📈 Rentabilidade de Ativo (Cap Rate)</label>
+                        <div style="font-size:11px; font-weight:900; color:#9a3412; margin-top:2px;">Taxa Capitalização: <span id="txt_taxa_capitalizacao">0.00% a.m.</span></div>
+                        <span style="font-size:9px; color:#f97316; font-weight:bold; display:block;">➔ Proporção locatícia regional.</span>
+                    </div>
+                </div>
+                
+                <button type="submit" id="btn_salvar" class="btn-submit">💾 Firmar Contrato de Locação</button>
+            </form>
+        </div>
+
+        <!-- CONTRATAÇÃO DE APOIO OPERACIONAL INDIRETO -->
+        <div class="card">
+            <h3 class="card-title">👥 Contratação de Apoio Predial</h3>
+            <form id="formContratacaoPredial" onsubmit="adicionarColaborador(event)">
+                <input type="hidden" id="rh_id" value="">
+                
+                <div class="grid-form-row">
+                    <div class="flex-col-gap">
+                        <label class="label-form">Nome do Colaborador (Fictício):</label>
+                        <input type="text" id="rh_nome" required class="input-form" placeholder="Nome Completo">
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form">Cargo Operacional:</label>
+                        <select id="cargo_suporte" required class="select-form" onchange="calcularPreviaSalario()">
+                            <option value="" disabled selected>Escolha uma função...</option>
+                            <option value="Zelador" data-salario="2017.32">Zelador — R$ 2.017,32</option>
+                            <option value="Porteiro" data-salario="2170.41">Porteiro — R$ 2.170,41</option>
+                            <option value="Recepcionista" data-salario="1957.06">Recepcionista — R$ 1.957,06</option>
+                            <option value="Cozinheira" data-salario="2250.00">Cozinheira — R$ 2.250,00</option>
+                            <option value="Ajudante de Cozinha" data-salario="1913.66">Ajudante de Cozinha — R$ 1.913,66</option>
+                        </select>
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form">Quantidade (Vagas):</label>
+                        <input type="number" id="qtd_colaboradores" min="1" value="1" required class="input-form" oninput="calcularPreviaSalario()">
+                    </div>
+                    <div class="flex-col-gap">
+                        <label class="label-form">Prévias da Folha:</label>
+                        <input type="text" id="previa_salario" readonly class="input-form input-form-readonly" value="R$ 0,00">
+                    </div>
+                </div>
+                <button type="submit" id="btn_contratar" class="btn-submit" style="background-color: #1e3a8a;">👥 Confirmar Registro de Funcionário</button>
+            </form>
+        </div>
+<!-- ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+   PARTE 4 DE 4 - QUADROS SUPABASE, CONSOLIDAÇÃO ROSADA E INTERFACE SHIELD
+   ========================================================================== -->
+        <!-- QUADRO VERTICAL DE TABELAS DINÂMICAS CONFORME MÁQUINAS -->
+        <div class="table-container">
+            <div class="table-header-dark">Contratos Imobiliários Firmados no Supabase</div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Turma/Grupo</th>
+                            <th>Estrutura / Região</th>
+                            <th>Área Útil</th>
+                            <th>Aluguel Mensal</th>
+                            <th style="text-align:center;">Ações Disponíveis</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela_imoveis"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="table-header-dark" style="background-color:#334155;">Quadro de Colaboradores e Suporte Alocados</div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome Funcional</th>
+                            <th>Cargo Operacional</th>
+                            <th>Salário Base</th>
+                            <th>Quantidade</th>
+                            <th>Subtotal Fixado</th>
+                            <th style="text-align:center;">Ações Operacionais</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela_colaboradores"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 🏆 SEXTO QUADRO UNIFICADO EXCLUSIVO DE CONSOLIDAÇÃO FINAL (ROSADO) -->
+        <div class="card" style="background-color: #fff0f5; border: 1px solid #ffd1dc; border-left: 5px solid #db2777; padding: 16px 20px; margin-top: 12px; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <div style="display: flex; flex-direction: column; text-align: left;">
+                <span style="font-size: 11px; font-weight: bold; color: #9d174d; text-transform: uppercase; letter-spacing: 0.5px;">🌸 Indicador Unificado de Despesa Operacional Corporativa</span>
+                <h3 style="font-size: 14px; font-weight: 900; color: #9d174d; margin: 6px 0 4px 0;">CUSTO FIXO GERAL TOTAL (EMPRESA COMPLETA): <span id="fechamento_custo_fixo_generico">R$ 21.350,00/mês</span></h3>
+                <span id="txt_proporcao_global_empresa" style="font-size: 11px; font-weight: bold; color: #db2777;">➔ Proporção deste Setor frente à Empresa: 100.00% do impacto fixo global</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- RODAPÉ INSTITUCIONAL WCAG OFICIAL PADRONIZADO DO DOCENTE -->
+    <footer style="margin-top: 40px; font-family: sans-serif; padding-bottom: 20px;">
+        <div style="text-align: justify; font-size: 11px; color: #718096; line-height: 1.6; max-width: 1200px; margin: 0 auto 20px auto; padding: 0 15px;">
+            <strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.
+        </div>
+
+        <div style="text-align: center; font-size: 12px; color: #4a5568;">
+            <p style="margin: 5px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p style="font-weight: bold; margin: 5px 0; color: #2d3748;">
+                © Copyright Física Renato Pereira ®ψΣ.
+            </p>
+            <small style="color: #a0aec0; font-size: 10px; display: block; margin-top: 5px;">
+                Ed. 00-10/2024. Rev. 01-05/2026.
+            </small>
+        </div>
+    </footer>
+</div>
+
+<!-- SCRIPT DE EMERGÊNCIA INDEPENDENTE (ANTI-TRAVAMENTO) -->
+<script>
+(function() {
+    console.log("⚠️ Executando protocolo de desbloqueio forçado...");
+    function destravarInterface() {
+        document.querySelectorAll('input, select, button, textarea').forEach(function(el) {
+            if (el.id !== 'valor_aluguel' && el.id !== 'taxa_anual' && el.id !== 'previa_salario' && el.id !== 'nome_grupo_display') {
+                el.removeAttribute('disabled');
+                el.removeAttribute('readonly');
+                el.style.opacity = "1";
+                el.style.pointerEvents = "auto";
+                el.style.cursor = "default";
+            }
+        });
+        document.querySelectorAll('nav, header, footer, .corporate-header').forEach(function(el) {
+            el.style.setProperty('display', 'block', 'important');
+            el.style.setProperty('visibility', 'visible', 'important');
+            el.style.setProperty('opacity', '1', 'important');
+        });
+    }
+    destravarInterface();
+    setTimeout(destravarInterface, 1000);
+    setTimeout(destravarInterface, 2000);
+})();
+</script>
+
+<script src="/estrutura/estrutura.js"></script>
 </body>
 </html>
