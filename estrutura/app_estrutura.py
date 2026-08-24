@@ -8,14 +8,17 @@ from flask import Blueprint, request, render_template_string, session, jsonify, 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+# Definição oficial do ambiente modular isolado para Engenharia Imobiliária
 estrutura_blueprint = Blueprint('estrutura_blueprint', __name__)
 
 def obter_conexao_master():
+    """Recupera a string de conexão unificada via URL_SUPABASE importada de app_master"""
     from app_master import URL_SUPABASE
     return psycopg2.connect(URL_SUPABASE)
 
 @estrutura_blueprint.route('/estrutura', methods=['GET'])
 def pagina_estrutura():
+    """Injeta e renderiza a interface HTML síncrona com tratamento WCAG e matriz de 5 KPIs"""
     if not session.get('logado'):
         return redirect('/login')
         
@@ -27,19 +30,20 @@ def pagina_estrutura():
             html = f.read()
         return render_template_string(html)
     except FileNotFoundError:
-        return "Erro Crítico: Arquivo 'estrutura.html' não encontrado no servidor.", 404
+        return "Erro Crítico: Arquivo 'estrutura.html' não encontrado no ecossistema de servidores.", 404
 
 @estrutura_blueprint.route('/estrutura/estrutura.js', methods=['GET'])
 def rota_estrutura_js():
+    """Injeta nativamente o script do cliente com motores de Cap Rate, IGPM e tratamento transacional"""
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
     caminho_js = os.path.join(diretorio_atual, 'estrutura.js')
     
     try:
         with open(caminho_js, 'r', encoding='utf-8') as f:
             js_conteudo = f.read()
-        return js_conteudo, 200, {'Content-Type': 'application/javascript'}
+        return js_conteudo, 200, {'Content-Type': 'application/javascript; charset=utf-8'}
     except FileNotFoundError:
-        return "console.error('Erro Crítico: Arquivo estrutura.js não encontrado.');", 404
+        return "console.error('Erro Crítico: Script estrutural estrutura.js ausente ou corrompido.');", 404
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS
 # PARTE 2 DE 3 - ENDPOINTS DE CONSULTA COM VARIÁVEIS DIRETAS SINCRONIZADAS
@@ -67,7 +71,6 @@ def api_imoveis_listar():
         cursor.execute('SELECT * FROM imoveis_simulacao WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
         
-        # 🛠️ CORREÇÃO OPERACIONAL: Alinhado síncronamente com a variável do Supabase
         return jsonify([dict(linha) for linha in linhas])
         
     except psycopg2.DatabaseError as e:
@@ -101,8 +104,8 @@ def api_rh_listar():
         cursor.execute('SELECT * FROM estrutura_rh WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
         
-        # 🛠️ CORREÇÃO OPERACIONAL: Alinhado síncronamente com a variável do Supabase
-        return jsonify([dict(linha) for line in linhas])
+        # 🛠️ RESOLUÇÃO DE CRASH: Corrigido o loop iterador para evitar NameError de strings e arrays
+        return jsonify([dict(linha) for linha in linhas])
         
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
@@ -149,16 +152,19 @@ def api_imoveis_salvar():
             ''', (id_equipe, dados.get('tipo_imovel'), dados.get('regiao'), area_util, valor_aluguel, 
                   valor_condominio, dados.get('obs_contrato'), nome_empresa))
                   
+        # Atualização reativa e síncrona do somatório de custos fixos imobiliários
         cursor.execute('''
             UPDATE config_simulacao 
             SET valor_aluguel = (SELECT COALESCE(SUM(valor_aluguel + valor_condominio), 0) FROM imoveis_simulacao WHERE equipe_id = %s)
             WHERE equipe_id = %s
         ''', (id_equipe, id_equipe))
+        
         conexao.commit()
         return jsonify({'status': 'sucesso'})
     except (ValueError, TypeError, psycopg2.DatabaseError) as err:
         if conexao: conexao.rollback()
-        return jsonify({'status': 'erro', 'message': 'Falha interna ao processar persistência.'}), 500
+        print(f"Erro ao salvar imóvel: {err}")
+        return jsonify({'status': 'erro', 'message': 'Falha interna ao processar persistência imobiliária.'}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
@@ -197,7 +203,8 @@ def api_rh_salvar():
         return jsonify({'status': 'sucesso'})
     except (ValueError, TypeError, psycopg2.DatabaseError) as err:
         if conexao: conexao.rollback()
-        return jsonify({'status': 'erro', 'message': 'Falha ao registrar colaborador.'}), 500
+        print(f"Erro ao salvar colaborador: {err}")
+        return jsonify({'status': 'erro', 'message': 'Falha ao registrar colaborador na folha fixa.'}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
@@ -215,21 +222,25 @@ def api_individual_imovel(id_reg):
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         if request.method == 'DELETE':
             cursor.execute('DELETE FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            
+            # Recalcula e decrementa o teto de custos imobiliários após a rescisão do contrato
             cursor.execute('''
                 UPDATE config_simulacao 
                 SET valor_aluguel = (SELECT COALESCE(SUM(valor_aluguel + valor_condominio), 0) FROM imoveis_simulacao WHERE equipe_id = %s)
                 WHERE equipe_id = %s
             ''', (id_equipe, id_equipe))
+            
             conexao.commit()
             return jsonify({'status': 'removido'})
         else:
             cursor.execute('SELECT * FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
             imovel = cursor.fetchone()
-            if not imovel: return jsonify({'status': 'erro', 'message': 'Registro não localizado.'}), 404
+            if not imovel: return jsonify({'status': 'erro', 'message': 'Registro imobiliário não localizado.'}), 404
             return jsonify(dict(imovel))
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
-        return jsonify({'status': 'erro', 'message': 'Falha na operação.'}), 500
+        print(f"Erro operacional em imóvel individual: {e}")
+        return jsonify({'status': 'erro', 'message': 'Falha na operação transacional imobiliária.'}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
@@ -256,7 +267,8 @@ def api_individual_rh(id_reg):
             return jsonify(dict(colaborador))
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
-        return jsonify({'status': 'erro', 'message': 'Falha ao processar operação.'}), 500
+        print(f"Erro operacional em RH individual: {e}")
+        return jsonify({'status': 'erro', 'message': 'Falha ao processar operação de desligamento.'}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
