@@ -1,179 +1,380 @@
 /* ==========================================================================
-   TERADMAS ERP v2.6 - MALHA DE ESTILOS UNIFICADA (erppadrao_core.css)
-   SANEAMENTO VISUAL E BLINDAGEM DE MEMÓRIA DO DOM
+   TERADMAS ERP v2.6 - SYSTEM CSS CORE
+   PARTE 1/4: DESIGN TOKENS, CORE RESETS & MAIN LAYOUT
    ========================================================================== */
 
-/* 📊 PAINEL ESTRUTURADO DE METRICAS HORIZONTAIS */
-.painel-orcamentario-horizontal {
+:root {
+    /* Color Palette - System UI */
+    --bg-primary: #f8f9fa;
+    --bg-secondary: #ffffff;
+    --bg-sidebar: #1e293b;
+    --text-main: #334155;
+    --text-muted: #64748b;
+    --text-light: #f1f5f9;
+    
+    /* Brand & Accent Colors */
+    --brand-primary: #0f172a;
+    --brand-accent: #3b82f6;
+    --brand-success: #10b981;
+    --brand-warning: #f59e0b;
+    --brand-danger: #ef4444;
+    
+    /* Layout Dimensions */
+    --sidebar-width: 260px;
+    --topbar-height: 60px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    
+    /* Transitions & Shadows */
+    --transition-fast: all 0.2s ease;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+/* Core Resets */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-primary);
+    color: var(--text-main);
+    line-height: 1.5;
+    overflow-x: hidden;
+}
+
+/* Main Grid Architecture */
+.app-wrapper {
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: var(--topbar-height) 1fr;
+    grid-template-areas: 
+        "sidebar topbar"
+        "sidebar main";
+    min-height: 100vh;
+}
+
+/* Navigation Sidebar */
+.app-sidebar {
+    grid-area: sidebar;
+    background-color: var(--bg-sidebar);
+    color: var(--text-light);
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    margin-bottom: 24px;
-    margin-top: 16px;
-    font-family: sans-serif;
+    padding: 1.5rem 1rem;
+    z-index: 100;
 }
 
-/* BLINGAGEM DE LINHAS COMPARATIVAS (SETOR VS EMPRESA) */
-.linha-macro-empresa {
+.sidebar-brand {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 2rem;
+    padding-left: 0.5rem;
+    color: #ffffff;
+}
+
+.sidebar-menu {
+    list-style: none;
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    background-color: #eff6ff;
-    border: 1px solid #bfdbfe;
-    padding: 12px;
-    border-radius: 12px;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar-item a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: var(--transition-fast);
+}
+
+.sidebar-item.active a,
+.sidebar-item a:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+/* System Topbar */
+.app-topbar {
+    grid-area: topbar;
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 0 2rem;
+    z-index: 90;
 }
 
-.linha-operacao-interna {
+.topbar-context {
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 500;
+}
+/* ==========================================================================
+   TERADMAS ERP v2.6 - SYSTEM CSS CORE
+   PARTE 2/4: MAIN CONTENT, TYPOGRAPHY & HORIZONTAL KPI ENGINE
+   ========================================================================== */
+
+/* Main Viewport Container */
+.app-main {
+    grid-area: main;
+    padding: 2rem;
+    max-width: 1600px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Typography Hierarchy */
+h1, h2, h3, h4 {
+    font-weight: 600;
+    color: var(--brand-primary);
+    margin-bottom: 0.5rem;
+}
+
+h1 { font-size: 1.75rem; letter-spacing: -0.5px; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+h4 { font-size: 1rem; }
+
+.text-muted { color: var(--text-muted); }
+.text-success { color: var(--brand-success); }
+.text-danger { color: var(--brand-danger); }
+.text-warning { color: var(--brand-warning); }
+
+/* Horizontal KPI Comparative Engine (Sector vs Global) */
+.kpi-row-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.kpi-card-horizontal {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid #e2e8f0;
+    padding: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.kpi-card-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+.kpi-comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 0.75rem;
+}
+
+.kpi-metric-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-metric-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.kpi-metric-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--brand-primary);
+    margin-top: 0.25rem;
+}
+
+.kpi-metric-block.global-spec .kpi-metric-value {
+    color: var(--brand-accent);
+}
+/* ==========================================================================
+   TERADMAS ERP v2.6 - SYSTEM CSS CORE
+   PARTE 3/4: DATA TABLES, UI COMPONENTS & FORM ARCHITECTURE
+   ========================================================================== */
+
+/* Data Tables UI */
+.data-table-container {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid #e2e8f0;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.data-table th {
     background-color: #f8fafc;
-    border: 1px solid #cbd5e1;
-    padding: 12px;
-    border-radius: 12px;
-    align-items: center;
-    justify-content: space-between;
+    color: var(--text-main);
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    border-bottom: 1px solid #e2e8f0;
 }
 
-.linha-gestao-patrimonial {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    background-color: #fffdec;
-    border: 1px solid #fde68a;
-    padding: 12px;
-    border-radius: 12px;
-    align-items: center;
-    justify-content: space-between;
+.data-table td {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: var(--text-main);
 }
 
-.linha-custos-fixos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    background-color: #faf5ff;
-    border: 1px solid #e9d5ff;
-    padding: 12px;
-    border-radius: 12px;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.linha-custos-variaveis {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    background-color: #fff7ed;
-    border: 1px solid #ffedd5;
-    padding: 12px;
-    border-radius: 12px;
-    align-items: center;
-    justify-content: space-between;
-}
-
-/* BLOCOS INTERNOS E SUB-CONTAINERES DE COMPARAÇÃO */
-.bloco-macro-indicador {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 320px;
-}
-
-.bloco-sub-indicador {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 360px;
-}
-
-.bloco-saldo-positivo {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 360px;
-    background-color: #f0fdf4;
-    padding: 4px 8px;
-    border-radius: 6px;
-    border: 1px dashed #bbf7d0;
-}
-
-.bloco-duplo-relatorio {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 340px;
-}
-
-.bloco-duplo-setor-card {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 440px;
-    background-color: #ffffff;
-    padding: 6px 12px;
-    border-radius: 8px;
-    flex-grow: 1;
-}
-
-.card-limite-critico {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 420px;
-    flex-grow: 1;
-    padding: 6px 12px;
-    background-color: #ffffff;
-    border-radius: 8px;
-    border: 1px solid #cbd5e1;
-}
-
-/* MARCADORES E COMPONENTES AUXILIARES */
-.marcador-subtotal-minuto {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    align-items: center;
-    margin-top: 6px;
+.data-table tbody tr:hover {
     background-color: #f8fafc;
-    padding: 10px;
-    border-radius: 8px;
+}
+
+/* Forms UI */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.9rem;
+    background-color: var(--bg-secondary);
     border: 1px solid #cbd5e1;
+    border-radius: var(--radius-md);
+    color: var(--text-main);
+    transition: var(--transition-fast);
 }
 
-.bloco-minuto-maquina-resultado {
-    display: flex;
+.form-control:focus {
+    outline: none;
+    border-color: var(--brand-accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Buttons UI */
+.btn {
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 360px;
-    background-color: #eff6ff;
-    padding: 6px 12px;
-    border: 1px dashed #bfdbfe;
-    border-radius: 6px;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: var(--transition-fast);
 }
 
-.alinhamento-botoes-fim {
+.btn-primary { background-color: var(--brand-accent); color: #ffffff; }
+.btn-primary:hover { background-color: #2563eb; }
+.btn-secondary { background-color: #e2e8f0; color: var(--text-main); }
+.btn-secondary:hover { background-color: #cbd5e1; }
+/* ==========================================================================
+   TERADMAS ERP v2.6 - SYSTEM CSS CORE
+   PARTE 4/4: MODULE SPECIFIC TARGETS & LIMIT METERS (SUPABASE)
+   ========================================================================== */
+
+/* Module 02 (Real Estate) & Module 07 (Machinery) Visual Cards */
+.asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.asset-card {
+    background-color: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-fast);
+}
+
+.asset-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Supabase Async Limit Meters (global_metrics.js) */
+.limit-meter-container {
+    background-color: #f8fafc;
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    margin-top: 1rem;
+}
+
+.limit-meter-header {
     display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-    margin-top: 4px;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
 }
 
-.label-titulo-macro {
-    font-size: 11px;
-    font-weight: bold;
+.limit-progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #e2e8f0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    position: relative;
+}
+
+.limit-progress-fill {
+    height: 100%;
+    width: 0%; /* Populated asynchronously via global_metrics.js (0% to 100%) */
+    background-color: var(--brand-accent);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dynamic State Thresholds for Limits */
+.limit-progress-fill.warning { background-color: var(--brand-warning); }
+.limit-progress-fill.danger { background-color: var(--brand-danger); }
+
+/* System Badge Elements */
+.badge {
+    display: inline-flex;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
     text-transform: uppercase;
 }
 
-.valor-negrito-macro {
-    font-size: 15px;
-    font-weight: 900;
-}
-
-.sub-porcentagem-label {
-    font-size: 10px;
-    font-weight: bold;
-}
+.badge-success { background-color: #d1fae5; color: #065f46; }
+.badge-danger { background-color: #fee2e2; color: #991b1b; }
+.badge-info { background-color: #e0f2fe; color: #0369a1; }
