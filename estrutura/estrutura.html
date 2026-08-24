@@ -230,9 +230,50 @@
                 </div>
             </div>
         </div>
-        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: center;">
-            <p>© Copyright Física Renato Pereira ®ψΣ. Edição Didática Paraná 2026.</p>
+        <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
+        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
+            <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
         </footer>
     </div>
+   <!-- ==========================================================================
+     TERADMAS ERP v2.6 - SCRIPT DE EMERGÊNCIA INDEPENDENTE (ANTI-TRAVAMENTO)
+     ========================================================================== -->
+<script>
+(function() {
+    console.log("⚠️ Executando protocolo de desbloqueio forçado...");
+    
+    function destravarInterface() {
+        // 1. Remove o atributo 'disabled' e 'readonly' de absolutamente tudo
+        document.querySelectorAll('input, select, button, textarea').forEach(function(el) {
+            // Preserva apenas a leitura dos campos calculados
+            if (el.id !== 'txt_aluguel_calculado' && el.id !== 'txt_taxa_anual' && el.id !== 'txt_previa_folha') {
+                el.removeAttribute('disabled');
+                el.removeAttribute('readonly');
+                el.style.opacity = "1";
+                el.style.pointerEvents = "auto";
+                el.style.cursor = "default";
+            }
+        });
+
+        // 2. Força a exibição de cabeçalhos, menus e rodapés que sumiram
+        document.querySelectorAll('nav, header, footer, .navbar, #sidebar').forEach(function(el) {
+            el.style.setProperty('display', 'block', 'important');
+            el.style.setProperty('visibility', 'visible', 'important');
+            el.style.setProperty('opacity', '1', 'important');
+        });
+        
+        console.log("✅ Interface destravada com sucesso.");
+    }
+
+    // Executa imediatamente e repete após 1 e 2 segundos para garantir o bypass do crash
+    destravarInterface();
+    setTimeout(destravarInterface, 1000);
+    setTimeout(destravarInterface, 2000);
+})();
+</script>
+
 </body>
 </html>
