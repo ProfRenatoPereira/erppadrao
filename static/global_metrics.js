@@ -1,175 +1,164 @@
 /* ==========================================================================
-   TERADMAS ERP v2.6 - SCRIPT MASTER DE INDICAÇÃO ECONÔMICA GLOBAL
-   PARTE 1 DE 3 - CORE AJAX E AMARRAÇÃO DE TETOS NOMINAIS REAIS (20% / 40%)
+   TERADMAS ERP v2.6 - SCRIPT CLIENT INDIVIDUAL (IMOBILIÁRIO & CUSTOS)
+   PARTE 1 DE 3 - MAPEAMENTO DA RMC, DICIONÁRIOS E BINDING DE GATILHOS
    ========================================================================== */
+
+const MATRIZ_LOCACAO_RMC = {
+    "Curitiba": { valor_m2: 32.50, condominio_base: 350.00, cap_rate: 0.0055, igpm: 0.0425 },
+    "São José dos Pinhais": { valor_m2: 24.00, condominio_base: 280.00, cap_rate: 0.0048, igpm: 0.0425 },
+    "Pinhais": { valor_m2: 26.50, condominio_base: 300.00, cap_rate: 0.0052, igpm: 0.0425 },
+    "Araucária": { valor_m2: 22.00, condominio_base: 250.00, cap_rate: 0.0045, igpm: 0.0425 },
+    "Campo Largo": { valor_m2: 19.50, condominio_base: 220.00, cap_rate: 0.0042, igpm: 0.0425 }
+};
+
+const TABELA_SALARIOS_AQUECIMENTO = {
+    "Gerente de Infraestrutura": 8500.00,
+    "Supervisor Predial": 5200.00,
+    "Técnico de Manutenção Industrial": 3800.00,
+    "Operador de Utilidades": 2900.00,
+    "Auxiliar de Serviços Gerais / Portaria": 2100.00
+};
 
 document.addEventListener("DOMContentLoaded", function() {
-    atualizarBarrasDeMetricasGlobais();
+    configurarGatilhosImobiliarios();
+    configurarGatilhosApoioPredial();
+    
+    // Varredura inicial padrão
+    executarCalculoLocacaoReativa();
+    executarCalculoFolhaReativa();
 });
 
-async function atualizarBarrasDeMetricasGlobais() {
+function configurarGatilhosImobiliarios() {
+    const inputs = ['txt_area_util', 'sel_cidade_municipio', 'txt_taxa_condominio'];
+    inputs.forEach(id => {
+        const elemento = document.getElementById(id);
+        if (elemento) {
+            elemento.addEventListener('input', executarCalculoLocacaoReativa);
+            elemento.addEventListener('change', executarCalculoLocacaoReativa);
+        }
+    });
+}
+
+function configurarGatilhosApoioPredial() {
+    const inputs = ['sel_cargo_operacional', 'txt_quantidade_vagas'];
+    inputs.forEach(id => {
+        const elemento = document.getElementById(id);
+        if (elemento) {
+            elemento.addEventListener('input', executarCalculoFolhaReativa);
+            elemento.addEventListener('change', executarCalculoFolhaReativa);
+        }
+    });
+}
+/* ==========================================================================
+   TERADMAS ERP v2.6 - SCRIPT CLIENT INDIVIDUAL (IMOBILIÁRIO & CUSTOS)
+   PARTE 2 DE 3 - MOTORES DE CÁLCULO E MATRIZES DE ATUALIZAÇÃO DA UI
+   ========================================================================== */
+
+function executarCalculoLocacaoReativa() {
     try {
-        const path = window.location.pathname.replace('/', '') || 'dashboard';
+        const areaUtil = parseFloat(document.getElementById('txt_area_util')?.value) || 0;
+        const cidade = document.getElementById('sel_cidade_municipio')?.value || "Curitiba";
+        const paramCidade = MATRIZ_LOCACAO_RMC[cidade] || MATRIZ_LOCACAO_RMC["Curitiba"];
         
-        // Requisição AJAX unificada para extrair a matriz contábil do Supabase
-        const resposta = await fetch(`/api/financeiro/metricas?dept=${path}`);
-        if (!resposta.ok) {
-            console.warn("Aviso: Barramento financeiro central temporariamente offline.");
-            return;
-        }
+        // 1. Cálculo Base do Aluguel e Taxas
+        const aluguelCalculado = areaUtil * paramCidade.valor_m2;
+        const condominioInformado = parseFloat(document.getElementById('txt_taxa_condominio')?.value) || paramCidade.condominio_base;
+        const taxaAnualCalculada = (aluguelCalculado * 12) + (condominioInformado * 12);
         
-        const metricas = await resposta.json();
+        // Sincronização dos Inputs Calculados
+        redirecionarValorInput('txt_aluguel_calculado', aluguelCalculado);
+        redirecionarValorInput('txt_taxa_anual', taxaAnualCalculada);
         
-        // Parametrização Macro do Capital Social e Tetos de Rateio por Módulo (Regra de Ouro)
-        const capitalTotalEmpresa = 5000000.00;
-        
-        // 🚨 COMPORTAMENTO ELÁSTICO: Se estiver no Imobiliário/Estrutura o limite é 40%, senão é 20%
-        let fatorRateio = 0.20;
-        let nomeSetorExibicao = "DO SETOR";
-        let nomeSetorAbreviado = "SETOR";
-        
-        if (path === "estrutura") {
-            fatorRateio = 0.40;
-            nomeSetorExibicao = "PARA O SETOR";
-            nomeSetorAbreviado = "INFRA";
-        }
-        
-        const disponivelParaSetor = capitalTotalEmpresa * fatorRateio; 
-        const stringPercentualFator = (fatorRateio * 100).toFixed(2);
-        
-        // 1. Sincronização da Linha Corporativa Macro (Linha 01)
-        const txtCapitalTotal = document.getElementById('top_capital_total') || document.getElementById('top_capital_total_val');
-        if (txtCapitalTotal) {
-            txtCapitalTotal.innerText = `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        }
-        
-        const txtDisponivelSetor = document.getElementById('top_disponivel_setor') || document.getElementById('top_disponivel_setor_val') || document.getElementById('top_giro_global');
-        if (txtDisponivelSetor) {
-            // Se for o card completo de texto corrido imobiliário
-            if (txtDisponivelSetor.id === 'top_giro_global' && path === "estrutura") {
-                txtDisponivelSetor.innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            } else {
-                txtDisponivelSetor.innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-            }
-        }
-        if (document.getElementById('pct_disponivel_setor')) {
-            document.getElementById('pct_disponivel_setor').innerText = `➔ ${stringPercentualFator}% do Cap.`;
-        }
+        // 2. Cálculos Financeiros Avancados (Cards de Provisão e Ativos)
+        const projecaoIgpmAnual = aluguelCalculado * 12 * paramCidade.igpm;
+        const valorMercadoEstimado = paramCidade.cap_rate > 0 ? (aluguelCalculado * 12) / (paramCidade.cap_rate * 12) : 0;
+        const tempoAmortizacaoMeses = aluguelCalculado > 0 ? Math.ceil(valorMercadoEstimado / aluguelCalculado) : 0;
+        const capRateMensalPercentual = paramCidade.cap_rate * 100;
 
-        // 2. Sincronização da Verba Inicial Homologada da Engenharia (Linha 02)
-        const txtOrcamentoInicial = document.getElementById('top_orcamento_inicial') || document.getElementById('top_budget_inicial');
-        if (txtOrcamentoInicial) {
-            txtOrcamentoInicial.innerText = `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        }
-        if (document.getElementById('pct_orcamento_inicial')) {
-            document.getElementById('pct_orcamento_inicial').innerText = `➔ ${stringPercentualFator}% do Cap.`;
-        }
-/* ==========================================================================
-   TERADMAS ERP v2.6 - SCRIPT MASTER DE INDICAÇÃO ECONÔMICA GLOBAL
-   PARTE 2 DE 3 - CONTRATAÇÃO DE ATIVOS, SALDOS DE INVESTIMENTOS E PROGRESS BAR
-   ========================================================================== */
-
-        // 3. Sincronização do Saldo de Orçamento Restante (Linha 02 - Card Direto)
-        const gastoAtualAtivosSetor = metricas.patrimonio_setor || metricas.custo_fixo_total || 0.00;
-        const saldoOrçamentoRestante = disponivelParaSetor - gastoAtualAtivosSetor;
-        
-        const txtBudgetSaldo = document.getElementById('top_budget_saldo') || document.getElementById('top_orcamento_saldo');
-        if (txtBudgetSaldo) {
-            txtBudgetSaldo.innerText = `R$ ${saldoOrçamentoRestante.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        }
-
-        // 4. Sincronização de Ativos Imobilizados / Máquinas Fixadas (Linha 03)
-        const txtPatrimonioSetor = document.getElementById('top_patrimonio_setor') || document.getElementById('top_ativos_setor');
-        if (txtPatrimonioSetor) {
-            txtPatrimonioSetor.innerText = `R$ ${gastoAtualAtivosSetor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        }
-        
-        const pAtivos_Cap = ((gastoAtualAtivosSetor / capitalTotalEmpresa) * 100).toFixed(2);
-        const txtPctPatrimonio = document.getElementById('pct_patrimonio_setor');
-        if (txtPctPatrimonio) {
-            txtPctPatrimonio.innerText = `➔ ${pAtivos_Cap}% do Cap.`;
-        }
-
-        // 5. Motor de Controle do Teto Orçamentário e Alerta de Ultrapassagem (Linha 03 - Direita)
-        let porcentagemConsumidaTeto = disponivelParaSetor > 0 ? (gastoAtualAtivosSetor / disponivelParaSetor) * 100 : 0;
-        porcentagemConsumidaTeto = Math.min(100, Math.max(0, porcentagemConsumidaTeto));
-        
-        const txtBudgetSetor = document.getElementById('top_budget_setor');
-        if (txtBudgetSetor) {
-            txtBudgetSetor.innerText = `R$ ${gastoAtualAtivosSetor.toLocaleString('pt-BR', {minimumFractionDigits: 2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
-        }
-        
-        const barraProgresso = document.getElementById('barra_progresso_budget');
-        if (barraProgresso) {
-            barraProgresso.style.width = `${porcentagemConsumidaTeto}%`;
-        }
-        
-        const txtPorcentagemBudget = document.getElementById('txt_porcentagem_budget');
-        if (txtPorcentagemBudget) {
-            txtPorcentagemBudget.innerText = `${porcentagemConsumidaTeto.toFixed(1)}% do teto consumido`;
-        }
-        
-        // 6. Alerta de Sobrecarga Visual WCAG (Muda a cor do Card se estourar o limite de 40%)
-        const cardBudgetLimite = document.getElementById('card_budget_limite');
-        if (cardBudgetLimite && barraProgresso) {
-            if (gastoAtualAtivosSetor > disponivelParaSetor) {
-                cardBudgetLimite.style.backgroundColor = "#fef2f2";
-                cardBudgetLimite.style.borderColor = "#fca5a5";
-                barraProgresso.style.backgroundColor = "#ef4444";
-            } else {
-                cardBudgetLimite.style.backgroundColor = "#f8fafc";
-                cardBudgetLimite.style.borderColor = "#cbd5e1";
-                barraProgresso.style.backgroundColor = "#3b82f6";
-            }
-        }
-/* ==========================================================================
-   TERADMAS ERP v2.6 - SCRIPT MASTER DE INDICAÇÃO ECONÔMICA GLOBAL
-   PARTE 3 DE 3 - CÁLCULO PARAMÉTRICO DE CUSTOS DUPLOS COM TAXAS REAIS
-   ========================================================================== */
-
-        // 7. Sincronização Contábil de Custos Fixos Totais e Setoriais (Linha 04)
-        const custoFixoTotalGeral = metricas.custo_fixo_geral_empresa || metricas.custo_fixo_total || 21350.00;
-        const custoFixoSetorMapeado = metricas.custo_fixo_departamento || (path === 'estrutura' ? custoFixoTotalGeral : 0.00);
-
-        const txtCustoFixo = document.getElementById('top_custo_fix') || document.getElementById('top_custo_fixo_geral_empresa');
-        if (txtCustoFixo) txtCustoFixo.innerText = `R$ ${custoFixoTotalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
-        
-        const txtCustoFixoSetor = document.getElementById('top_custo_fixo_setor') || document.getElementById('top_custo_fixo_setor_head');
-        if (txtCustoFixoSetor) txtCustoFixoSetor.innerText = `R$ ${custoFixoSetorMapeado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
-
-        // Percentual Relativo Duplo de Custos Fixos (Setor vs Geral)
-        const pFixG_Tot = ((custoFixoTotalGeral / capitalTotalEmpresa) * 100).toFixed(2);
-        const pFixS_Tot = custoFixoTotalGeral > 0 ? ((custoFixoSetorMapeado / custoFixoTotalGeral) * 100).toFixed(1) : "0.0";
-        const pFixS_Cap = ((custoFixoSetorMapeado / capitalTotalEmpresa) * 100).toFixed(2);
-        
-        if (document.getElementById('pct_custo_fixo_geral')) document.getElementById('pct_custo_fixo_geral').innerText = `➔ Custos Totais: ${pFixG_Tot}% | Custos Fixos: 100.0%`;
-        if (document.getElementById('txt_porcentagem_setor_imob')) document.getElementById('txt_porcentagem_setor_imob').innerText = `➔ Custos Totais: ${pFixS_Cap}% | Custos Fixos: ${pFixS_Tot}%`;
-
-        // 8. Sincronização Contábil de Custos Variáveis Totais e Setoriais (Linha 05)
-        const custoVariavelTotalGeral = metricas.custo_variavel_total || 0.00;
-        const custoVariavelSetorMapeado = metricas.custo_variavel_departamento || 0.00;
-
-        const txtCustoVariavel = document.getElementById('top_custo_variavel') || document.getElementById('top_custo_variavel_geral');
-        if (txtCustoVariavel) txtCustoVariavel.innerText = `R$ ${custoVariavelTotalGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
-        
-        const txtCustoVariavelSetor = document.getElementById('top_custo_variavel_setor');
-        if (txtCustoVariavelSetor) txtCustoVariavelSetor.innerText = `R$ ${custoVariavelSetorMapeado.toLocaleString('pt-BR', {minimumFractionDigits: 2})}/mês`;
-
-        // Percentual Relativo Duplo de Custos Variáveis
-        const pVarG_Tot = ((custoVariavelTotalGeral / capitalTotalEmpresa) * 100).toFixed(2);
-        const pVarS_Tot = custoVariavelTotalGeral > 0 ? ((custoVariavelSetorMapeado / custoVariavelTotalGeral) * 100).toFixed(1) : "0.0";
-        
-        if (document.getElementById('pct_custo_variavel_geral')) document.getElementById('pct_custo_variavel_geral').innerText = `➔ Custos Totais: ${pVarG_Tot}% | Custos Variáveis: 100.0%`;
-        if (document.getElementById('pct_custo_variavel_setor')) document.getElementById('pct_custo_variavel_setor').innerText = `➔ Custos Totais: 0.0% | Custos Variáveis: ${pVarS_Tot}%`;
-
-        // Executa a varredura progressiva local caso a folha de estrutura predial necessite sincronizar
-        if (typeof calcularEngenhariaPatrimonial === 'function') {
-            calcularEngenhariaPatrimonial();
-        }
+        // Atualização Dinâmica de Textos Internos nos Quadros da Interface
+        atualizarTextoElemento('lbl_provisao_igpm', `Projeção IGP-M Anual: R$ ${projecaoIgpmAnual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+        atualizarTextoElemento('lbl_amortizacao_valor', `Valor de Mercado: R$ ${valorMercadoEstimado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+        atualizarTextoElemento('lbl_amortizacao_tempo', `Tempo necessário: ${tempoAmortizacaoMeses} meses`);
+        atualizarTextoElemento('lbl_rentabilidade_taxa', `Taxa Capitalização: ${capRateMensalPercentual.toFixed(2)}% a.m.`);
+        atualizarTextoElemento('lbl_rentabilidade_proporcao', `➔ Proporção locatícia regional para ${cidade}.`);
 
     } catch (erro) {
-        console.error("Erro crítico no processamento das métricas globais via AJAX: ", erro);
+        console.error("Erro no processamento matemático patrimonial: ", erro);
     }
 }
 
-window.forcarAtualizacaoMetricasTopboard = atualizarBarrasDeMetricasGlobais;
+function executarCalculoFolhaReativa() {
+    try {
+        const cargo = document.getElementById('sel_cargo_operacional')?.value || "";
+        const quantidade = parseInt(document.getElementById('txt_quantidade_vagas')?.value) || 1;
+        const salarioBase = TABELA_SALARIOS_AQUECIMENTO[cargo] || 0.00;
+        
+        // Encargo patronal fixado em 68% (Previdenciário + Trabalhista + FGTS)
+        const fatorEncargos = 1.68;
+        const custoPreviaFolha = salarioBase * quantidade * fatorEncargos;
+        
+        redirecionarValorInput('txt_previa_folha', custoPreviaFolha);
+    } catch (erro) {
+        console.error("Erro no motor de folha predial: ", erro);
+    }
+}
+
+function redirecionarValorInput(id, valor) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.value = valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    }
+}
+
+function atualizarTextoElemento(id, texto) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = texto;
+}
+
+// Vinculação com o escopo global do global_metrics.js
+window.calcularEngineeringPatrimonial = executarCalculoLocacaoReativa;
+/* ==========================================================================
+   TERADMAS ERP v2.6 - SCRIPT CLIENT INDIVIDUAL (IMOBILIÁRIO & CUSTOS)
+   PARTE 3 DE 3 - PERSISTÊNCIA ASSÍNCRONA VIA API ENDPOINTS (SUBMIT CRUD)
+   ========================================================================== */
+
+async function submeterContratoImobiliario() {
+    const btn = document.getElementById('btn_firmar_contrato');
+    if (btn) btn.disabled = true;
+
+    try {
+        const payload = {
+            identificacao: document.getElementById('txt_identificacao_grupo')?.value || "G-PROD",
+            tipo_estrutura: document.getElementById('sel_tipo_estrutura')?.value,
+            cidade: document.getElementById('sel_cidade_municipio')?.value,
+            bairro: document.getElementById('sel_bairro_polo')?.value,
+            area_util: parseFloat(document.getElementById('txt_area_util')?.value) || 0,
+            condominio: parseFloat(document.getElementById('txt_taxa_condominio')?.value) || 0,
+            aluguel: parseFloat(document.getElementById('txt_aluguel_calculado')?.value.replace(/\./g, '').replace(',', '.')) || 0
+        };
+
+        const response = await fetch('/api/imobiliario/contrato', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert("Contrato imobiliário firmado e persistido com sucesso no Supabase!");
+            if (typeof window.forcarAtualizacaoMetricasTopboard === 'function') {
+                window.forcarAtualizacaoMetricasTopboard();
+            }
+            window.location.reload();
+        } else {
+            const erroData = await response.json();
+            alert(`Erro na gravação: ${erroData.message || 'Verifique os tetos orçamentários.'}`);
+        }
+    } catch (err) {
+        console.error("Falha de rede na persistência imobiliária:", err);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+// Vinculação explícita nos botões principais do formulário se não houver inline onclick
+document.getElementById('btn_firmar_contrato')?.addEventListener('click', submeterContratoImobiliario);
