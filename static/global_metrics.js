@@ -1,164 +1,93 @@
 /* ==========================================================================
-   TERADMAS ERP v2.6 - SCRIPT CLIENT INDIVIDUAL (IMOBILIÁRIO & CUSTOS)
-   PARTE 1 DE 3 - MAPEAMENTO DA RMC, DICIONÁRIOS E BINDING DE GATILHOS
+   TERADMAS ERP v2.6 - JS MASTER (global_metrics.js)
+   PARTE 1 DE 2 - CONTROLE DE DIRETRIZES OPERACIONAIS E DIRETÓRIO DE TETOS ELÁSTICOS
    ========================================================================== */
 
-const MATRIZ_LOCACAO_RMC = {
-    "Curitiba": { valor_m2: 32.50, condominio_base: 350.00, cap_rate: 0.0055, igpm: 0.0425 },
-    "São José dos Pinhais": { valor_m2: 24.00, condominio_base: 280.00, cap_rate: 0.0048, igpm: 0.0425 },
-    "Pinhais": { valor_m2: 26.50, condominio_base: 300.00, cap_rate: 0.0052, igpm: 0.0425 },
-    "Araucária": { valor_m2: 22.00, condominio_base: 250.00, cap_rate: 0.0045, igpm: 0.0425 },
-    "Campo Largo": { valor_m2: 19.50, condominio_base: 220.00, cap_rate: 0.0042, igpm: 0.0425 }
+/**
+ * Motor central de governança financeira global da simulação.
+ * Analisa as regras de negócio de margens limites e elasticidade de verba.
+ */
+const CONFIG_GLOBAL_EMPRESA = {
+    capitalSocial: 5000000.00,
+    tetoPadraoSetorPercentual: 0.20,   // 20% padrão para a maioria dos setores
+    tetoElasticoSetorPercentual: 0.40, // 40% elástico exclusivo para Ativos Imobiliários e Máquinas
+    classeAlertaEstouro: "estouro-teto-critico"
 };
 
-const TABELA_SALARIOS_AQUECIMENTO = {
-    "Gerente de Infraestrutura": 8500.00,
-    "Supervisor Predial": 5200.00,
-    "Técnico de Manutenção Industrial": 3800.00,
-    "Operador de Utilidades": 2900.00,
-    "Auxiliar de Serviços Gerais / Portaria": 2100.00
-};
-
-document.addEventListener("DOMContentLoaded", function() {
-    configurarGatilhosImobiliarios();
-    configurarGatilhosApoioPredial();
+/**
+ * Avalia dinamicamente o path/caminho atual da URL para determinar se o teto
+ * deve ser expandido de forma elástica de 20% para 40% (Teto: R$ 2.000.000,00).
+ * @returns {number} O percentual máximo permitido para o setor atual
+ */
+function obterLimiteElasticidadeSetor() {
+    const urlAtual = window.location.pathname;
     
-    // Varredura inicial padrão
-    executarCalculoLocacaoReativa();
-    executarCalculoFolhaReativa();
-});
-
-function configurarGatilhosImobiliarios() {
-    const inputs = ['txt_area_util', 'sel_cidade_municipio', 'txt_taxa_condominio'];
-    inputs.forEach(id => {
-        const elemento = document.getElementById(id);
-        if (elemento) {
-            elemento.addEventListener('input', executarCalculoLocacaoReativa);
-            elemento.addEventListener('change', executarCalculoLocacaoReativa);
-        }
-    });
+    // Inspeciona se a rota do ecossistema pertence ao Módulo 02 (Imobiliário) ou Máquinas
+    if (urlAtual.includes('estrutura') || urlAtual.includes('maquinas')) {
+        console.log("⚙️ [MASTER LÓGICA]: Módulo de Alta Imobilização de Capital detectado. Chaveando verba limite elástica para 40%.");
+        return CONFIG_GLOBAL_EMPRESA.tetoElasticoSetorPercentual;
+    }
+    
+    return CONFIG_GLOBAL_EMPRESA.tetoPadraoSetorPercentual;
 }
 
-function configurarGatilhosApoioPredial() {
-    const inputs = ['sel_cargo_operacional', 'txt_quantidade_vagas'];
-    inputs.forEach(id => {
-        const elemento = document.getElementById(id);
-        if (elemento) {
-            elemento.addEventListener('input', executarCalculoFolhaReativa);
-            elemento.addEventListener('change', executarCalculoFolhaReativa);
-        }
-    });
+/**
+ * Retorna o valor nominal em Reais do teto financeiro calculado.
+ * @returns {number} Limite máximo nominal (R$)
+ */
+function calcularValorMaximoSetor() {
+    const percentualTeto = obterLimiteElasticidadeSetor();
+    return CONFIG_GLOBAL_EMPRESA.capitalSocial * percentualTeto;
 }
 /* ==========================================================================
-   TERADMAS ERP v2.6 - SCRIPT CLIENT INDIVIDUAL (IMOBILIÁRIO & CUSTOS)
-   PARTE 2 DE 3 - MOTORES DE CÁLCULO E MATRIZES DE ATUALIZAÇÃO DA UI
+   TERADMAS ERP v2.6 - JS MASTER (global_metrics.js)
+   PARTE 2 DE 2 - INTERCEPTOR DE CONTROLE ORÇAMENTÁRIO E VINCULAÇÃO GLOBAL
    ========================================================================== */
 
-function executarCalculoLocacaoReativa() {
-    try {
-        const areaUtil = parseFloat(document.getElementById('txt_area_util')?.value) || 0;
-        const cidade = document.getElementById('sel_cidade_municipio')?.value || "Curitiba";
-        const paramCidade = MATRIZ_LOCACAO_RMC[cidade] || MATRIZ_LOCACAO_RMC["Curitiba"];
-        
-        // 1. Cálculo Base do Aluguel e Taxas
-        const aluguelCalculado = areaUtil * paramCidade.valor_m2;
-        const condominioInformado = parseFloat(document.getElementById('txt_taxa_condominio')?.value) || paramCidade.condominio_base;
-        const taxaAnualCalculada = (aluguelCalculado * 12) + (condominioInformado * 12);
-        
-        // Sincronização dos Inputs Calculados
-        redirecionarValorInput('txt_aluguel_calculado', aluguelCalculado);
-        redirecionarValorInput('txt_taxa_anual', taxaAnualCalculada);
-        
-        // 2. Cálculos Financeiros Avancados (Cards de Provisão e Ativos)
-        const projecaoIgpmAnual = aluguelCalculado * 12 * paramCidade.igpm;
-        const valorMercadoEstimado = paramCidade.cap_rate > 0 ? (aluguelCalculado * 12) / (paramCidade.cap_rate * 12) : 0;
-        const tempoAmortizacaoMeses = aluguelCalculado > 0 ? Math.ceil(valorMercadoEstimado / aluguelCalculado) : 0;
-        const capRateMensalPercentual = paramCidade.cap_rate * 100;
+/**
+ * Audita e valida as operações de compra ou alocação antes do envio ao Supabase.
+ * Previne estouros ilegais na interface que violem as travas pedagógicas do sistema.
+ * @param {number} custoAtualSetor Somatório atualizado dos custos do departamento
+ * @param {number} novoCustoPretendido O valor da nova operação que se deseja realizar
+ * @returns {object} Objeto contendo o status de validação e a margem de segurança
+ */
+function auditarMargemSegurancaSetor(custoAtualSetor, novoCustoPretendido = 0) {
+    const limiteNominalMaximo = calcularValorMaximoSetor();
+    const impactoProjetado = custoAtualSetor + novoCustoPretendido;
+    const aderenciaConsumidaPercentual = (impactoProjetado / limiteNominalMaximo) * 100;
+    
+    const operacaoAutorizada = impactoProjetado <= limiteNominalMaximo;
+    const saldoDisponivelElasticidade = limiteNominalMaximo - impactoProjetado;
 
-        // Atualização Dinâmica de Textos Internos nos Quadros da Interface
-        atualizarTextoElemento('lbl_provisao_igpm', `Projeção IGP-M Anual: R$ ${projecaoIgpmAnual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-        atualizarTextoElemento('lbl_amortizacao_valor', `Valor de Mercado: R$ ${valorMercadoEstimado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-        atualizarTextoElemento('lbl_amortizacao_tempo', `Tempo necessário: ${tempoAmortizacaoMeses} meses`);
-        atualizarTextoElemento('lbl_rentabilidade_taxa', `Taxa Capitalização: ${capRateMensalPercentual.toFixed(2)}% a.m.`);
-        atualizarTextoElemento('lbl_rentabilidade_proporcao', `➔ Proporção locatícia regional para ${cidade}.`);
+    return {
+        autorizado: operacaoAutorizada,
+        tetoMaximoSetor: limiteNominalMaximo,
+        custoProjetado: impactoProjetado,
+        saldoRestante: saldoDisponivelElasticidade,
+        porcentagemConsumo: Math.min(100, Math.max(0, aderenciaConsumidaPercentual))
+    };
+}
 
-    } catch (erro) {
-        console.error("Erro no processamento matemático patrimonial: ", erro);
+/**
+ * Força o recarregamento em cascata das métricas em painéis que compartilham o Topboard.
+ * Utilizado de forma assíncrona após mutações de inserção ou deleção de ativos.
+ */
+function forcarAtualizacaoMetricasTopboard() {
+    console.log("🔄 [MASTER EVENTO]: Disparando recálculo assíncrono síncrono nos painéis compartilhados...");
+    
+    // Gatilho de fallback para acionar a atualização nos arquivos locais do cliente
+    if (typeof window.carregarDadosIniciais === 'function') {
+        window.carregarDadosIniciais();
+    } else if (typeof window.executarCalculoLocacaoReativa === 'function') {
+        window.executarCalculoLocacaoReativa();
     }
 }
 
-function executarCalculoFolhaReativa() {
-    try {
-        const cargo = document.getElementById('sel_cargo_operacional')?.value || "";
-        const quantidade = parseInt(document.getElementById('txt_quantidade_vagas')?.value) || 1;
-        const salarioBase = TABELA_SALARIOS_AQUECIMENTO[cargo] || 0.00;
-        
-        // Encargo patronal fixado em 68% (Previdenciário + Trabalhista + FGTS)
-        const fatorEncargos = 1.68;
-        const custoPreviaFolha = salarioBase * quantidade * fatorEncargos;
-        
-        redirecionarValorInput('txt_previa_folha', custoPreviaFolha);
-    } catch (erro) {
-        console.error("Erro no motor de folha predial: ", erro);
-    }
-}
+// Vinculação explícita à árvore window global para acessibilidade irrestrita inter-módulos
+window.globalConfigEmpresa = CONFIG_GLOBAL_EMPRESA;
+window.obterLimiteElasticidadeSetor = obterLimiteElasticidadeSetor;
+window.calcularValorMaximoSetor = calcularValorMaximoSetor;
+window.auditarMargemSegurancaSetor = auditarMargemSegurancaSetor;
+window.forcarAtualizacaoMetricasTopboard = forcarAtualizacaoMetricasTopboard;
 
-function redirecionarValorInput(id, valor) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.value = valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-    }
-}
-
-function atualizarTextoElemento(id, texto) {
-    const el = document.getElementById(id);
-    if (el) el.innerText = texto;
-}
-
-// Vinculação com o escopo global do global_metrics.js
-window.calcularEngineeringPatrimonial = executarCalculoLocacaoReativa;
-/* ==========================================================================
-   TERADMAS ERP v2.6 - SCRIPT CLIENT INDIVIDUAL (IMOBILIÁRIO & CUSTOS)
-   PARTE 3 DE 3 - PERSISTÊNCIA ASSÍNCRONA VIA API ENDPOINTS (SUBMIT CRUD)
-   ========================================================================== */
-
-async function submeterContratoImobiliario() {
-    const btn = document.getElementById('btn_firmar_contrato');
-    if (btn) btn.disabled = true;
-
-    try {
-        const payload = {
-            identificacao: document.getElementById('txt_identificacao_grupo')?.value || "G-PROD",
-            tipo_estrutura: document.getElementById('sel_tipo_estrutura')?.value,
-            cidade: document.getElementById('sel_cidade_municipio')?.value,
-            bairro: document.getElementById('sel_bairro_polo')?.value,
-            area_util: parseFloat(document.getElementById('txt_area_util')?.value) || 0,
-            condominio: parseFloat(document.getElementById('txt_taxa_condominio')?.value) || 0,
-            aluguel: parseFloat(document.getElementById('txt_aluguel_calculado')?.value.replace(/\./g, '').replace(',', '.')) || 0
-        };
-
-        const response = await fetch('/api/imobiliario/contrato', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (response.ok) {
-            alert("Contrato imobiliário firmado e persistido com sucesso no Supabase!");
-            if (typeof window.forcarAtualizacaoMetricasTopboard === 'function') {
-                window.forcarAtualizacaoMetricasTopboard();
-            }
-            window.location.reload();
-        } else {
-            const erroData = await response.json();
-            alert(`Erro na gravação: ${erroData.message || 'Verifique os tetos orçamentários.'}`);
-        }
-    } catch (err) {
-        console.error("Falha de rede na persistência imobiliária:", err);
-    } finally {
-        if (btn) btn.disabled = false;
-    }
-}
-
-// Vinculação explícita nos botões principais do formulário se não houver inline onclick
-document.getElementById('btn_firmar_contrato')?.addEventListener('click', submeterContratoImobiliario);
+console.log("✅ [TERADMAS MASTER JS]: global_metrics.js carregado e barramento transacional operacional.");
