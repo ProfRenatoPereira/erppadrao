@@ -1,55 +1,85 @@
 /* ==========================================================================
    TERADMAS ERP v2.6 - JS MASTER (global_metrics.js)
-   PARTE 1 DE 2 - CONTROLE DE DIRETRIZES OPERACIONAIS E DIRETÓRIO DE TETOS ELÁSTICOS
+   PARTE 1 DE 2 - CONTROLE DINÂMICO DE DIRETRIZES SEM RETRABALHO
    ========================================================================== */
 
 /**
- * Motor central de governança financeira global da simulação.
- * Analisa as regras de negócio de margens limites e elasticidade de verba.
+ * Parâmetros padrão e fallbacks locais do ecossistema de simulação.
+ * Protege a renderização da interface caso a comunicação assíncrona sofra atrasos.
  */
 const CONFIG_GLOBAL_EMPRESA = {
     capitalSocial: 5000000.00,
-    tetoPadraoSetorPercentual: 0.20,   // 20% padrão para a maioria dos setores
-    tetoElasticoSetorPercentual: 0.40, // 40% elástico exclusivo para Ativos Imobiliários e Máquinas
-    classeAlertaEstouro: "estouro-teto-critico"
+    limitesDinamicos: {
+        "estrutura": 40.0, // Fallback elástico de 40% para Engenharia Imobiliária
+        "maquinas": 40.0,  // Fallback elástico de 40% para Engenharia de Ativos
+        "materiais": 20.0, // Fallback padrão de 20% para Almoxarifado
+        "outros": 20.0
+    }
 };
 
 /**
- * Avalia dinamicamente o path/caminho atual da URL para determinar se o teto
- * deve ser expandido de forma elástica de 20% para 40% (Teto: R$ 2.000.000,00).
- * @returns {number} O percentual máximo permitido para o setor atual
+ * Sincroniza e puxa as porcentagens fixadas pela mesa de alta administração.
+ * Alimenta a memória em segundo plano de forma transparente para as rotas filhas.
  */
-function obterLimiteElasticidadeSetor() {
-    const urlAtual = window.location.pathname;
-    
-    // Inspeciona se a rota do ecossistema pertence ao Módulo 02 (Imobiliário) ou Máquinas
-    if (urlAtual.includes('estrutura') || urlAtual.includes('maquinas')) {
-        console.log("⚙️ [MASTER LÓGICA]: Módulo de Alta Imobilização de Capital detectado. Chaveando verba limite elástica para 40%.");
-        return CONFIG_GLOBAL_EMPRESA.tetoElasticoSetorPercentual;
+async function sincronizarLimitesAdministrativos() {
+    try {
+        const response = await fetch('/api/financeiro/limites/setor');
+        if (response.ok) {
+            const limitesBd = await response.json();
+            // Sobrescreve as chaves do dicionário com os tetos ajustados pelos estudantes
+            Object.assign(CONFIG_GLOBAL_EMPRESA.limitesDinamicos, limitesBd);
+            console.log("🎯 [MASTER CONFIG]: Tetos pedagógicos atualizados via painel financeiro.");
+        }
+    } catch (err) {
+        console.warn("Aviso: Falha de conexão. Mantendo diretrizes de teto padrões.", err);
     }
-    
-    return CONFIG_GLOBAL_EMPRESA.tetoPadraoSetorPercentual;
 }
 
 /**
- * Retorna o valor nominal em Reais do teto financeiro calculado.
- * @returns {number} Limite máximo nominal (R$)
+ * Inspeciona o caminho atual da rota do ecossistema para classificar o setor operante.
+ * @returns {number} O percentual máximo decimal autorizado para o departamento atual
+ */
+function obterLimiteElasticidadeSetor() {
+    const urlAtual = window.location.pathname;
+    let chaveSetor = "outros";
+    
+    // Identificação por comportamento de URL para manter compatibilidade absoluta com os módulos
+    if (urlAtual.includes('estrutura')) {
+        chaveSetor = "estrutura";
+    } else if (urlAtual.includes('maquinas')) {
+        chaveSetor = "maquinas";
+    } else if (urlAtual.includes('materiais')) {
+        chaveSetor = "materials";
+    }
+    
+    const porcentagemFracionada = CONFIG_GLOBAL_EMPRESA.limitesDinamicos[chaveSetor] || CONFIG_GLOBAL_EMPRESA.limitesDinamicos["outros"];
+    
+    // Converte de inteiro (ex: 40) para formato decimal multiplicador (ex: 0.40)
+    return porcentagemFracionada / 100;
+}
+
+/**
+ * Calcula o valor nominal do teto em Reais (R$) baseado no capital total da empresa.
+ * @returns {number} Limite monetário de segurança
  */
 function calcularValorMaximoSetor() {
     const percentualTeto = obterLimiteElasticidadeSetor();
     return CONFIG_GLOBAL_EMPRESA.capitalSocial * percentualTeto;
 }
+
+// Inicializa a sincronização imediata assim que a malha de script é acoplada
+sincronizarLimitesAdministrativos();
 /* ==========================================================================
    TERADMAS ERP v2.6 - JS MASTER (global_metrics.js)
-   PARTE 2 DE 2 - INTERCEPTOR DE CONTROLE ORÇAMENTÁRIO E VINCULAÇÃO GLOBAL
+   PARTE 2 DE 2 - INTERCEPTOR DE CONTROLE ORÇAMENTÁRIO E GATILHOS TOPBOARD
    ========================================================================== */
 
 /**
- * Audita e valida as operações de compra ou alocação antes do envio ao Supabase.
- * Previne estouros ilegais na interface que violem as travas pedagógicas do sistema.
- * @param {number} custoAtualSetor Somatório atualizado dos custos do departamento
- * @param {number} novoCustoPretendido O valor da nova operação que se deseja realizar
- * @returns {object} Objeto contendo o status de validação e a margem de segurança
+ * Intercepta e audita as solicitações de transações de compra antes do envio ao Supabase.
+ * Fornece métricas de conformidade pedagógica imediatas para o cliente.
+ * @param {number} custoAtualSetor Patrimônio ou despesa acumulada na tela atual
+ * @param {number} novoCustoPretendido O valor monetário da transação que se deseja executar
+ * @returns {object} Relatório de aderência aos limites administrativos de capital
  */
 function auditarMargemSegurancaSetor(custoAtualSetor, novoCustoPretendido = 0) {
     const limiteNominalMaximo = calcularValorMaximoSetor();
@@ -64,18 +94,18 @@ function auditarMargemSegurancaSetor(custoAtualSetor, novoCustoPretendido = 0) {
         tetoMaximoSetor: limiteNominalMaximo,
         custoProjetado: impactoProjetado,
         saldoRestante: saldoDisponivelElasticidade,
-        porcentagemConsumo: Math.min(100, Math.max(0, aderenciaConsumidaPercentual))
+        porcentagemConsumo: Math.min(100, Math.max(0, Gold = aderenciaConsumidaPercentual))
     };
 }
 
 /**
- * Força o recarregamento em cascata das métricas em painéis que compartilham o Topboard.
- * Utilizado de forma assíncrona após mutações de inserção ou deleção de ativos.
+ * Executa o recarregamento das métricas em cascata e força a reatividade dos cards em tela.
+ * Evita o crash do navegador eliminando a necessidade de dar refresh completo na página.
  */
 function forcarAtualizacaoMetricasTopboard() {
-    console.log("🔄 [MASTER EVENTO]: Disparando recálculo assíncrono síncrono nos painéis compartilhados...");
+    console.log("🔄 [MASTER EVENTO]: Atualizando barramentos de dados entre módulos...");
     
-    // Gatilho de fallback para acionar a atualização nos arquivos locais do cliente
+    // Varre e executa os fallbacks síncronos dos scripts locais ativos na sessão
     if (typeof window.carregarDadosIniciais === 'function') {
         window.carregarDadosIniciais();
     } else if (typeof window.executarCalculoLocacaoReativa === 'function') {
@@ -83,11 +113,11 @@ function forcarAtualizacaoMetricasTopboard() {
     }
 }
 
-// Vinculação explícita à árvore window global para acessibilidade irrestrita inter-módulos
+// Garante o binding global amarrando todas as rotinas operacionais à window do navegador
 window.globalConfigEmpresa = CONFIG_GLOBAL_EMPRESA;
 window.obterLimiteElasticidadeSetor = obterLimiteElasticidadeSetor;
 window.calcularValorMaximoSetor = calcularValorMaximoSetor;
 window.auditarMargemSegurancaSetor = auditarMargemSegurancaSetor;
 window.forcarAtualizacaoMetricasTopboard = forcarAtualizacaoMetricasTopboard;
 
-console.log("✅ [TERADMAS MASTER JS]: global_metrics.js carregado e barramento transacional operacional.");
+console.log("✅ [TERADMAS MASTER JS]: global_metrics.js unificado e sincronizado com a Alta Administração.");
