@@ -1,6 +1,6 @@
 <!-- ==========================================================================
    TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-   PARTE 1 DE 3 - CONFIGURAÇÕES SEMÂNTICAS, DROPDOWNS INTEGRADOS (01 AO 23)
+   PARTE 1 DE 3 - ARQUITETURA DE TOPO E SISTEMA DE MENUS COMPLETO (01 AO 23)
    ========================================================================== -->
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -83,7 +83,7 @@
 </header>
 <!-- ==========================================================================
    TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-   PARTE 2 DE 3 - MATRIZ DE KPIs HORIZONTAIS COMPARATIVOS E FORMULÁRIO BASE
+   PARTE 2 DE 3 - MATRIZ DE KPIs HORIZONTAIS COMPARATIVOS E REGRAS DE TETOS
    ========================================================================== -->
 <div class="container">
     
@@ -151,11 +151,11 @@
             <div class="kpi-comparison-grid">
                 <div class="kpi-metric-block">
                     <span class="kpi-metric-label">Fixo Deste Setor</span>
-                    <span class="kpi-metric-value" id="kpi-custo-fixo-setor" style="color: #5b21b6;">R$ 52.658,50/mês</span>
+                    <span class="kpi-metric-value" id="kpi-custo-fixo-setor" style="color: #5b21b6;">R$ 0,00/mês</span>
                 </div>
                 <div class="kpi-metric-block danger-spec">
                     <span class="kpi-metric-label">Total Global Empresa</span>
-                    <span class="kpi-metric-value" id="fechamento_custo_fixo_generico">R$ 52.658,50/mês</span>
+                    <span class="kpi-metric-value" id="fechamento_custo_fixo_generico">R$ 0,00/mês</span>
                     <span class="kpi-sub-label-progress" id="txt_proporcao_global_empresa" style="color: #db2777; font-weight: bold;">➔ Impacto do Setor: 100.00%</span>
                 </div>
             </div>
@@ -176,7 +176,7 @@
         </div>
     </div>
 
-    <!-- ELEMENTOS OCULTOS DE ANCORAGEM REATIVA PARA O MOTOR JS -->
+    <!-- ANCORAGEM REATIVA OCULTA DO DOM -->
     <div style="display: none;">
         <span id="top_giro_global">R$ 2.000.000,00</span>
         <span id="top_budget_inicial">R$ 2.000.000,00</span>
@@ -186,16 +186,21 @@
         <div id="barra_progresso_budget"></div>
         <span id="top_custo_fixo_geral_empresa">R$ 21.350,00/mês</span>
     </div>
-
+<!-- ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+   PARTE 3A - PAINÉIS DE CADASTRO E MODELAGEM DE ESPAÇO FÍSICO
+   ========================================================================== -->
     <div class="page-header">
         <h2 class="page-title">Área do Administrador: Modelagem Patrimonial</h2>
     </div>
 
     <div class="grid-main">
+        <!-- SEÇÃO: ALOCAÇÃO DE ESPAÇO FÍSICO -->
         <div class="card">
             <h3 class="card-title">Alocação de Espaço Físico</h3>
             <form id="formImobiliario" onsubmit="salvarImovel(event)">
                 <input type="hidden" id="imovel_id" value="">
+                
                 <div class="grid-form-row">
                     <div class="flex-col-gap">
                         <label class="label-form">Identificação do Grupo:</label>
@@ -228,10 +233,7 @@
                         </select>
                     </div>
                 </div>
-<!-- ==========================================================================
-   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-   PARTE 3 DE 3 - ELEMENTOS DE CADASTRO, TABELAS SUPABASE E FECHAMENTO
-   ========================================================================== -->
+
                 <div class="grid-form-row">
                     <div class="flex-col-gap">
                         <label class="label-form">Área Útil (m²):</label>
@@ -272,6 +274,7 @@
             </form>
         </div>
 
+        <!-- SEÇÃO: CONTRATAÇÃO DE APOIO PREDIAL -->
         <div class="card">
             <h3 class="card-title">👥 Contratação de Apoio Predial</h3>
             <form id="formContratacaoPredial" onsubmit="adicionarColaborador(event)">
@@ -304,14 +307,16 @@
                 <button type="submit" id="btn_contratar" class="btn-submit" style="background-color: #1e3a8a;">👥 Confirmar Registro de Funcionário</button>
             </form>
         </div>
-
+<!-- ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+   PARTE 3B - QUADROS DE DADOS, RODAPÉ INSTITUCIONAL E FECHAMENTO
+   ========================================================================== -->
+        <!-- QUADROS DE TABELAS DINÂMICAS -->
         <div class="table-container">
             <div class="table-header-dark">Contratos Imobiliários Firmados no Supabase</div>
             <div class="table-responsive">
                 <table>
-                    <thead>
-                        <tr><th>Turma/Grupo</th><th>Estrutura / Região</th><th>Área Útil</th><th>Aluguel Mensal</th><th style="text-align:center;">Ações Disponíveis</th></tr>
-                    </thead>
+                    <thead><tr><th>Turma/Grupo</th><th>Estrutura / Região</th><th>Área Útil</th><th>Aluguel Mensal</th><th style="text-align:center;">Ações Disponíveis</th></tr></thead>
                     <tbody id="tabela_imoveis"></tbody>
                 </table>
             </div>
@@ -321,15 +326,14 @@
             <div class="table-header-slate">Quadro de Colaboradores e Suporte Alocados</div>
             <div class="table-responsive">
                 <table>
-                    <thead>
-                        <tr><th>Nome Funcional</th><th>Cargo Operacional</th><th>Salário Base</th><th>Quantidade</th><th>Subtotal Fixado</th><th style="text-align:center;">Ações Operacionais</th></tr>
-                    </thead>
+                    <thead><tr><th>Nome Funcional</th><th>Cargo Operacional</th><th>Salário Base</th><th>Quantidade</th><th>Subtotal Fixado</th><th style="text-align:center;">Ações Operacionais</th></tr></thead>
                     <tbody id="tabela_colaboradores"></tbody>
                 </table>
             </div>
         </div>
-    </div>
+    </div> <!-- Fim do .grid-main -->
 
+    <!-- RODAPÉ INSTITUCIONAL WCAG OFICIAL -->
     <footer class="app-footer">
         <div class="footer-credits">
             <strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.
@@ -340,8 +344,9 @@
             <small class="footer-revision-small">Ed. 00-10/2024. Rev. 01-05/2026.</small>
         </div>
     </footer>
-</div>
+</div> <!-- Fim do .container -->
 
+<!-- SHIELD INDEPENDENTE ANTI-TRAVAMENTO INTERFACE -->
 <script>
 (function() {
     function destravarInterface() {
