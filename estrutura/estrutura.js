@@ -1,6 +1,6 @@
 /* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL
-   PARTE 1 DE 3: GERENCIADOR DE ESTADO LOCAL E SINCRO SUPABASE MOCK
+   TERADMAS ERP v2.6 - GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL (estrutura.js)
+   PARTE 1 DE 4: INICIALIZAÇÃO DE VARIÁVEIS E SYNC COM ENDPOINTS PYTHON
    ========================================================================== */
 
 let CONTEXTO_LOCAL_SETOR = {
@@ -11,17 +11,8 @@ let CONTEXTO_LOCAL_SETOR = {
     patrimonioSetor07: 1538500.00,
     custoFixoSetor07: 38798.82,
     custoVariavelSetor07: 11657.27,
-    
-    contratosImoveis: [
-        { id: "IMOB-9821", tipo: "Barracão Industrial", cidade: "Curitiba", bairro: "CIC (Cidade Industrial)", area: 150, condominio: 350.00, aluguel: 4875.00, taxaAnual: 62700.00 }
-    ],
-    quadroColaboradores: [
-        { id: "RH-001", nome: "Colaborador Fictício", cargo: "Ajudante de Cozinha", salario: 1913.66, qtd: 1 },
-        { id: "RH-002", nome: "Colaborador Fictício", cargo: "Cozinheira", salario: 2250.00, qtd: 1 },
-        { id: "RH-003", nome: "Colaborador Fictício", cargo: "Recepcionista", salario: 1957.06, qtd: 1 },
-        { id: "RH-004", nome: "Colaborador Fictício", cargo: "Porteiro", salario: 2170.41, qtd: 1 },
-        { id: "RH-005", nome: "Colaborador Fictício", cargo: "Zelador", salario: 2017.32, qtd: 1 }
-    ]
+    contratosImoveis: [],
+    quadroColaboradores: []
 };
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -29,21 +20,30 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('area_util').addEventListener('input', executarMotorDeCalculoPatrimonial);
     document.getElementById('valor_condominio').addEventListener('input', executarMotorDeCalculoPatrimonial);
     
-    carregarDadosPersistidosSupabase();
+    sincronizarComBackendPython();
 });
 
-async function carregarDadosPersistidosSupabase() {
+async function sincronizarComBackendPython() {
     try {
-        console.log("⚡ Sincronizando tabelas via Supabase API REST...");
-        // const { data: imoveis } = await supabase.from('contratos_imoveis').select('*');
-        // const { data: rh } = await supabase.from('quadro_colaboradores').select('*');
-        // if (imoveis) CONTEXTO_LOCAL_SETOR.contratosImoveis = imoveis;
-        // if (rh) CONTEXTO_LOCAL_SETOR.quadroColaboradores = rh;
+        console.log("⚡ Buscando dados consolidados via rotas Python do servidor...");
+        const response = await fetch('/api/estrutura/dados');
+        if (!response.ok) throw new Error("Erro na comunicação com o servidor.");
+        
+        const dadosServer = await response.json();
+        
+        if (dadosServer.contratosImoveis) CONTEXTO_LOCAL_SETOR.contratosImoveis = dadosServer.contratosImoveis;
+        if (dadosServer.quadroColaboradores) CONTEXTO_LOCAL_SETOR.quadroColaboradores = dadosServer.quadroColaboradores;
+        
+        console.log("✅ Dados da nuvem sincronizados no contexto do ERP.");
     } catch (err) {
-        console.warn("Utilizando cache estável:", err);
+        console.warn("Utilizando cache estável de contingência do sistema:", err.message);
     }
     renderuzarEAplicarAtualizacao();
 }
+/* ==========================================================================
+   TERADMAS ERP v2.6 - GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL (estrutura.js)
+   PARTE 2 DE 4: INJEÇÃO DINÂMICA DE TABELAS DE IMÓVEIS E PESSOAL DE APOIO
+   ========================================================================== */
 
 function renderizarTabelasEAtivos() {
     const corpoImoveis = document.getElementById('tabela_imoveis');
@@ -61,10 +61,6 @@ function renderizarTabelasEAtivos() {
                 </td>
             </tr>`;
     });
-/* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL
-   PARTE 2 DE 3: OPERAÇÕES DE ESCALONAMENTO, REGISTROS E EDICÕES ASSÍNCRONAS
-   ========================================================================== */
 
     const corpoRH = document.getElementById('tabela_colaboradores');
     corpoRH.innerHTML = "";
@@ -85,11 +81,20 @@ function renderizarTabelasEAtivos() {
     });
 }
 
+function renderuzarEAplicarAtualizacao() {
+    renderizarTabelasEAtivos();
+    executarMotorDeCalculoPatrimonial();
+}
+/* ==========================================================================
+   TERADMAS ERP v2.6 - GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL (estrutura.js)
+   PARTE 3 DE 4: CONTROLE DE SUBMISSÕES, ROTAS DE EXCLUSÃO E CARREGAMENTO
+   ========================================================================== */
+
 async function salvarImovel(event) {
     event.preventDefault();
     const id = document.getElementById('imovel_id').value;
     const novoImovel = {
-        id: id || "IMOB-" + Math.floor(Math.random() * 10000),
+        id: id || null,
         tipo: document.getElementById('tipo_imovel').value,
         cidade: document.getElementById('cidade').value,
         bairro: document.getElementById('bairro').value,
@@ -98,20 +103,18 @@ async function salvarImovel(event) {
         aluguel: parseFloat(document.getElementById('valor_aluguel').value) || 0,
         taxaAnual: parseFloat(document.getElementById('taxa_anual').value) || 0
     };
-
-    if (id) {
-        // await supabase.from('contratos_imoveis').update(novoImovel).eq('id', id);
-        let index = CONTEXTO_LOCAL_SETOR.contratosImoveis.findIndex(i => i.id === id);
-        if (index !== -1) CONTEXTO_LOCAL_SETOR.contratosImoveis[index] = novoImovel;
-    } else {
-        // await supabase.from('contratos_imoveis').insert([novoImovel]);
-        CONTEXTO_LOCAL_SETOR.contratosImoveis.push(novoImovel);
-    }
-
-    document.getElementById('formImobiliario').reset();
-    document.getElementById('imovel_id').value = "";
-    document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
-    renderuzarEAplicarAtualizacao();
+    try {
+        const response = await fetch('/api/estrutura/imovel/salvar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(novoImovel)
+        });
+        if (!response.ok) throw new Error("Falha ao salvar ativo imobiliário.");
+        document.getElementById('formImobiliario').reset();
+        document.getElementById('imovel_id').value = "";
+        document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
+        await sincronizarComBackendPython();
+    } catch (err) { console.error(err.message); }
 }
 
 function carregarImovelEdicao(id) {
@@ -133,33 +136,26 @@ async function adicionarColaborador(event) {
     const seletor = document.getElementById('cargo_suporte');
     const cargoText = seletor.options[seletor.selectedIndex].value;
     const salarioBase = parseFloat(seletor.options[seletor.selectedIndex].getAttribute('data-salario')) || 0;
-    
     const novoFunc = {
-        id: id || "RH-" + Math.floor(Math.random() * 1000),
+        id: id || null,
         nome: document.getElementById('rh_nome').value,
         cargo: cargoText,
         salario: salarioBase,
         qtd: parseInt(document.getElementById('qtd_colaboradores').value) || 1
     };
-
-    if (id) {
-        // await supabase.from('quadro_colaboradores').update(novoFunc).eq('id', id);
-        let index = CONTEXTO_LOCAL_SETOR.quadroColaboradores.findIndex(f => f.id === id);
-        if (index !== -1) CONTEXTO_LOCAL_SETOR.quadroColaboradores[index] = novoFunc;
-    } else {
-        // await supabase.from('quadro_colaboradores').insert([novoFunc]);
-        CONTEXTO_LOCAL_SETOR.quadroColaboradores.push(novoFunc);
-    }
-
-    document.getElementById('formContratacaoPredial').reset();
-    document.getElementById('rh_id').value = "";
-    document.getElementById('btn_contratar').innerText = "👥 Confirmar Registro de Funcionário";
-    renderuzarEAplicarAtualizacao();
+    try {
+        const response = await fetch('/api/estrutura/rh/salvar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(novoFunc)
+        });
+        if (!response.ok) throw new Error("Falha ao registrar pessoal indireto.");
+        document.getElementById('formContratacaoPredial').reset();
+        document.getElementById('rh_id').value = "";
+        document.getElementById('btn_contratar').innerText = "👥 Confirmar Registro de Funcionário";
+        await sincronizarComBackendPython();
+    } catch (err) { console.error(err.message); }
 }
-/* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL
-   PARTE 3 DE 3: EQUAÇÕES COMPARATIVAS DIRETAS (SETOR VS GLOBAL) E ACESSIBILIDADE
-   ========================================================================== */
 
 function carregarColaboradorEdicao(id) {
     const func = CONTEXTO_LOCAL_SETOR.quadroColaboradores.find(f => f.id === id);
@@ -173,19 +169,24 @@ function carregarColaboradorEdicao(id) {
 }
 
 async function removerImovel(id) {
-    CONTEXTO_LOCAL_SETOR.contratosImoveis = CONTEXTO_LOCAL_SETOR.contratosImoveis.filter(i => i.id !== id);
-    renderuzarEAplicarAtualizacao();
+    try {
+        const response = await fetch(`/api/estrutura/imovel/deletar/${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error("Erro na deleção do ativo.");
+        await sincronizarComBackendPython();
+    } catch (err) { console.error(err.message); }
 }
 
 async function removerColaborador(id) {
-    CONTEXTO_LOCAL_SETOR.quadroColaboradores = CONTEXTO_LOCAL_SETOR.quadroColaboradores.filter(f => f.id !== id);
-    renderuzarEAplicarAtualizacao();
+    try {
+        const response = await fetch(`/api/estrutura/rh/deletar/${id}`, { method: 'DELETE' });
+        if (!response.ok) throw new Error("Erro na deleção do registro.");
+        await sincronizarComBackendPython();
+    } catch (err) { console.error(err.message); }
 }
-
-function renderuzarEAplicarAtualizacao() {
-    renderizarTabelasEAtivos();
-    executarMotorDeCalculoPatrimonial();
-}
+/* ==========================================================================
+   TERADMAS ERP v2.6 - GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL (estrutura.js)
+   PARTE 4 DE 4: CÁLCULOS MATRICIAIS CRUZADOS (SETOR VS GLOBAL DA EMPRESA)
+   ========================================================================== */
 
 function executarMotorDeCalculoPatrimonial() {
     let area = parseFloat(document.getElementById('area_util').value) || 0;
@@ -201,7 +202,7 @@ function executarMotorDeCalculoPatrimonial() {
     document.getElementById('txt_tempo_meses').innerText = `182 meses`;
     document.getElementById('txt_taxa_capitalizacao').innerText = `0.55% a.m.`;
 
-    // 📊 REGRAS DE MATRIZ COMPARTILHADA (SETOR VS SOMATÓRIO TOTAL DA EMPRESA)
+    // 📊 REGRAS DE MATRIZ CUMULATIVA CRUZADA REAL (VALORES INDEPENDENTES OU ZERADOS)
     let patrimonioImobiliarioSetor = CONTEXTO_LOCAL_SETOR.contratosImoveis.reduce((acc, curr) => acc + curr.taxaAnual, 0);
     let patrimonioGeralGlobalEmpresa = patrimonioImobiliarioSetor + CONTEXTO_LOCAL_SETOR.patrimonioSetor07;
     
