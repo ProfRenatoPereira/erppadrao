@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Investimentos Imobiliários - Estrutura de Custos</title>
     <link rel="icon" type="image/png" href="/static/logo.png">
-    <!-- Blindagem Visual - Malha Exclusiva Externa -->
+    <!-- Blindagem Visual - Referência Única Externa -->
     <link rel="stylesheet" href="/static/css/erppadrao_core.css">
 </head>
 <body>
@@ -17,7 +17,7 @@
 <header class="corporate-header">
     <!-- Barra de Acessibilidade WCAG Síncrona -->
     <div class="accessibility-bar">
-        <span style="color: #a0aec0;">♿ Acessibilidade:</span>
+        <span>♿ Acessibilidade:</span>
         <button onclick="alterarFonte('+')">A+</button>
         <button onclick="alterarFonte('-')">A-</button>
         <button onclick="alternarAltoContraste()">⚫ Alto Contraste</button>
@@ -35,14 +35,9 @@
             </div>
         </div>
         
-        <!-- Mecanismo do Menu Hamburguer Responsivo -->
-        <input type="checkbox" id="menu-toggle" style="display: none;">
-        <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
-        
         <nav aria-label="Menu Principal do Sistema">
             <ul class="nav-corporate-menu">
-                
-                <!-- Módulos 01 a 06 -->
+                <!-- Dropdown Administrativo (Módulos 01 a 06) -->
                 <li class="nav-item">
                     <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
                     <ul class="dropdown-menu">
@@ -54,8 +49,7 @@
                         <li><a href="/requisicoes">06. Requisições Internas</a></li>
                     </ul>
                 </li>
-                
-                <!-- Módulos 07 a 12 -->
+                <!-- Dropdown Engenharia (Módulos 07 a 12) -->
                 <li class="nav-item">
                     <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
                     <ul class="dropdown-menu">
@@ -67,8 +61,7 @@
                         <li><a href="/precificacao">12. Formação de Preço</a></li>
                     </ul>
                 </li>
-                
-                <!-- Módulos 13 a 17 -->
+                <!-- Dropdown Produção (Módulos 13 a 17) -->
                 <li class="nav-item">
                     <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
                     <ul class="dropdown-menu">
@@ -79,8 +72,7 @@
                         <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
                     </ul>
                 </li>
-                
-                <!-- Módulos 18 a 23 -->
+                <!-- Dropdown Vendas & BI (Módulos 18 a 23) -->
                 <li class="nav-item">
                     <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
                     <ul class="dropdown-menu">
@@ -88,11 +80,10 @@
                         <li><a href="/vendas">19. Módulo de Vendas</a></li>
                         <li><a href="/financeiro">20. Fluxo de Caixa Geral</a></li>
                         <li><a href="/roi">21. Retorno sobre Investimento</a></li>
-                        <li><a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a></li>
-                        <li><a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a></li>
+                        <li><a href="/professor_painel_secreto" class="nav-link-prof">22. Painel do Professor</a></li>
+                        <li><a href="/logout" class="nav-link-logout">23. Encerrar Turno (Sair)</a></li>
                     </ul>
                 </li>
-                
             </ul>
         </nav>
     </div>
@@ -125,7 +116,9 @@
             <div class="progress-bar-container">
                 <div class="progress-bar-fill" id="barra-limite-setor"></div>
             </div>
-            <div style="display:flex; justify-content:flex-end; margin-top:2px;"><span id="txt_porcentagem_budget" style="font-size:9px; font-weight:bold; color:#1e3a8a;">0.0% do teto consumido</span></div>
+            <div class="progress-percentage-wrapper">
+                <span id="txt_porcentagem_budget" class="progress-percentage-text">0.0% do teto consumido</span>
+            </div>
         </div>
         <!-- NÍVEL 4: CUSTO FIXO MENSAL -->
         <div class="metric-card bg-slate-metric">
@@ -220,27 +213,27 @@
                     </div>
                 </div>
 
-                <!-- DISTRIBUIÇÃO DAS 3 EQUAÇÕES ECONÔMICAS LADO A LADO -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; border-top: 2px dashed #cbd5e1; padding-top: 12px;">
+                <!-- DISTRIBUIÇÃO DAS 3 EQUAÇÕES ECONÔMICAS LADO A LADO (MOSAICO) -->
+                <div class="equations-mosaico-grid">
                     <!-- EQUAÇÃO 1: INFLAÇÃO E PROVISÃO COM BASE EM CIDADES DA RMC -->
-                    <div style="background-color:#f0fdfa; border:1px solid #99f6e4; padding:10px; border-radius:8px;">
-                        <label class="label-form" style="color:#0d9488;">🏢 Provisão Imóvel Próprio</label>
-                        <input type="number" id="reserva_propria" step="0.01" class="input-form" style="font-weight:bold; color:#0f766e; border-color:#2dd4bf;" oninput="calcularEngenhariaPatrimonial()">
-                        <span style="font-size:9px; color:#14b8a6; font-weight:bold; display:block; margin-top:2px;">Projeção IGPM Anual: <strong id="txt_igpm_correcao">R$ 0,00</strong></span>
+                    <div class="eq-box-provisao">
+                        <label class="label-form">🏢 Provisão Imóvel Próprio</label>
+                        <input type="number" id="reserva_propria" step="0.01" class="input-form" oninput="calcularEngenhariaPatrimonial()">
+                        <span>Projeção IGPM Anual: <strong id="txt_igpm_correcao">R$ 0,00</strong></span>
                     </div>
                     
                     <!-- EQUAÇÃO 2: VALORIZAÇÃO E AMORTIZAÇÃO PATRIMONIAL -->
-                    <div style="background-color:#eff6ff; border:1px solid #bfdbfe; padding:10px; border-radius:8px;">
-                        <label class="label-form" style="color:#2563eb;">📍 Amortização Patrimonial Física</label>
-                        <div style="font-size:11px; font-weight:900; color:#1e40af; margin-top:2px;">Valor de Mercado: <span id="txt_valor_mercado_real">R$ 0,00</span></div>
-                        <span style="font-size:10px; color:#3b82f6; font-weight:bold; display:block;">Tempo necessário: <strong id="txt_tempo_meses">0 meses</strong></span>
+                    <div class="eq-box-amortizacao">
+                        <label class="label-form">📍 Amortização Patrimonial Física</label>
+                        <div>Valor de Mercado: <span id="txt_valor_mercado_real">R$ 0,00</span></div>
+                        <span>Tempo necessário: <strong id="txt_tempo_meses">0 meses</strong></span>
                     </div>
                     
                     <!-- EQUAÇÃO 3: RENTABILIDADE DE ATIVOS COM BASE NO CAP RATE REGIONAL -->
-                    <div style="background-color:#fff7ed; border:1px solid #fed7aa; padding:10px; border-radius:8px;">
-                        <label class="label-form" style="color:#ea580c;">📈 Rentabilidade de Ativo (Cap Rate)</label>
-                        <div style="font-size:11px; font-weight:900; color:#9a3412; margin-top:2px;">Taxa Capitalização: <span id="txt_taxa_capitalizacao">0.00% a.m.</span></div>
-                        <span style="font-size:9px; color:#f97316; font-weight:bold; display:block;">➔ Proporção locatícia regional.</span>
+                    <div class="eq-box-rentabilidade">
+                        <label class="label-form">📈 Rentabilidade de Ativo (Cap Rate)</label>
+                        <div>Taxa Capitalização: <span id="txt_taxa_capitalizacao">0.00% a.m.</span></div>
+                        <span>➔ Proporção locatícia regional.</span>
                     </div>
                 </div>
                 
@@ -306,7 +299,7 @@
         </div>
 
         <div class="table-container">
-            <div class="table-header-dark" style="background-color:#334155;">Quadro de Colaboradores e Suporte Alocados</div>
+            <div class="table-header-slate">Quadro de Colaboradores e Suporte Alocados</div>
             <div class="table-responsive">
                 <table>
                     <thead>
@@ -325,27 +318,27 @@
         </div>
 
         <!-- 🏆 SEXTO QUADRO UNIFICADO EXCLUSIVO DE CONSOLIDAÇÃO FINAL (ROSADO) -->
-        <div class="card" style="background-color: #fff0f5; border: 1px solid #ffd1dc; border-left: 5px solid #db2777; padding: 16px 20px; margin-top: 12px; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-            <div style="display: flex; flex-direction: column; text-align: left;">
-                <span style="font-size: 11px; font-weight: bold; color: #9d174d; text-transform: uppercase; letter-spacing: 0.5px;">🌸 Indicador Unificado de Despesa Operacional Corporativa</span>
-                <h3 style="font-size: 14px; font-weight: 900; color: #9d174d; margin: 6px 0 4px 0;">CUSTO FIXO GERAL TOTAL (EMPRESA COMPLETA): <span id="fechamento_custo_fixo_generico">R$ 21.350,00/mês</span></h3>
-                <span id="txt_proporcao_global_empresa" style="font-size: 11px; font-weight: bold; color: #db2777;">➔ Proporção deste Setor frente à Empresa: 100.00% do impacto fixo global</span>
+        <div class="card-consolidation-pink">
+            <div class="consolidation-flex">
+                <span class="consolidation-tag">🌸 Indicador Unificado de Despesa Operacional Corporativa</span>
+                <h3 class="consolidation-title">CUSTO FIXO GERAL TOTAL (EMPRESA COMPLETA): <span id="fechamento_custo_fixo_generico">R$ 21.350,00/mês</span></h3>
+                <span id="txt_proporcao_global_empresa" class="consolidation-span">➔ Proporção deste Setor frente à Empresa: 100.00% do impacto fixo global</span>
             </div>
         </div>
     </div>
 
     <!-- RODAPÉ INSTITUCIONAL WCAG OFICIAL PADRONIZADO DO DOCENTE -->
-    <footer style="margin-top: 40px; font-family: sans-serif; padding-bottom: 20px;">
-        <div style="text-align: justify; font-size: 11px; color: #718096; line-height: 1.6; max-width: 1200px; margin: 0 auto 20px auto; padding: 0 15px;">
+    <footer class="app-footer">
+        <div class="footer-credits">
             <strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.
         </div>
 
-        <div style="text-align: center; font-size: 12px; color: #4a5568;">
-            <p style="margin: 5px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
-            <p style="font-weight: bold; margin: 5px 0; color: #2d3748;">
+        <div class="footer-center-block">
+            <p class="footer-paragraph">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p class="footer-brand-title">
                 © Copyright Física Renato Pereira ®ψΣ.
             </p>
-            <small style="color: #a0aec0; font-size: 10px; display: block; margin-top: 5px;">
+            <small class="footer-revision-small">
                 Ed. 00-10/2024. Rev. 01-05/2026.
             </small>
         </div>
@@ -381,3 +374,4 @@
 <script src="/estrutura/estrutura.js"></script>
 </body>
 </html>
+
