@@ -1,19 +1,17 @@
 /* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CALCULO MATRICIAL INDEPENDENTE
-   PARTE 1 DE 4: INICIALIZAÇÃO DE VARIÁVEIS E SIMULADOR INTEGRADO SUPABASE
+   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL
+   PARTE 1 DE 3: GERENCIADOR DE ESTADO LOCAL E SINCRO SUPABASE MOCK
    ========================================================================== */
 
-const BANCO_SUPABASE_MOCK = {
+let CONTEXTO_LOCAL_SETOR = {
     nomeGrupo: "METALÚRGICA ALFA",
     capitalTotalNominal: 5000000.00,
-    limitePercentualSetor: 0.40, // Max 40%
+    limitePercentualSetor: 0.40,
     orcamentoInicialEngenharia: 2000000.00,
-    
-    // Simulação progressiva de estados paralelos (Módulo 07 Máquinas Ativas)
     patrimonioSetor07: 1538500.00,
     custoFixoSetor07: 38798.82,
     custoVariavelSetor07: 11657.27,
-
+    
     contratosImoveis: [
         { id: "IMOB-9821", tipo: "Barracão Industrial", cidade: "Curitiba", bairro: "CIC (Cidade Industrial)", area: 150, condominio: 350.00, aluguel: 4875.00, taxaAnual: 62700.00 }
     ],
@@ -27,28 +25,33 @@ const BANCO_SUPABASE_MOCK = {
 };
 
 document.addEventListener("DOMContentLoaded", function() {
-    inicializarMódulo02();
+    document.getElementById('nome_grupo_display').value = CONTEXTO_LOCAL_SETOR.nomeGrupo;
     document.getElementById('area_util').addEventListener('input', executarMotorDeCalculoPatrimonial);
     document.getElementById('valor_condominio').addEventListener('input', executarMotorDeCalculoPatrimonial);
+    
+    carregarDadosPersistidosSupabase();
 });
 
-function inicializarMódulo02() {
-    document.getElementById('nome_grupo_display').value = BANCO_SUPABASE_MOCK.nomeGrupo;
-    renderizarTabelasEAtivos();
-    executarMotorDeCalculoPatrimonial();
+async function carregarDadosPersistidosSupabase() {
+    try {
+        console.log("⚡ Sincronizando tabelas via Supabase API REST...");
+        // const { data: imoveis } = await supabase.from('contratos_imoveis').select('*');
+        // const { data: rh } = await supabase.from('quadro_colaboradores').select('*');
+        // if (imoveis) CONTEXTO_LOCAL_SETOR.contratosImoveis = imoveis;
+        // if (rh) CONTEXTO_LOCAL_SETOR.quadroColaboradores = rh;
+    } catch (err) {
+        console.warn("Utilizando cache estável:", err);
+    }
+    renderuzarEAplicarAtualizacao();
 }
-/* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CALCULO MATRICIAL INDEPENDENTE
-   PARTE 2 DE 4: RENDERIZAÇÃO DE TABELAS DINÂMICAS E OPERAÇÕES DO SUPABASE
-   ========================================================================== */
 
 function renderizarTabelasEAtivos() {
     const corpoImoveis = document.getElementById('tabela_imoveis');
     corpoImoveis.innerHTML = "";
-    BANCO_SUPABASE_MOCK.contratosImoveis.forEach(imovel => {
+    CONTEXTO_LOCAL_SETOR.contratosImoveis.forEach(imovel => {
         corpoImoveis.innerHTML += `
             <tr>
-                <td><strong>${BANCO_SUPABASE_MOCK.nomeGrupo}</strong></td>
+                <td><strong>${CONTEXTO_LOCAL_SETOR.nomeGrupo}</strong></td>
                 <td><strong>${imovel.tipo}</strong><br><small style="color:#6b7280;">${imovel.cidade} - ${imovel.bairro}</small></td>
                 <td>${imovel.area} m²</td>
                 <td style="color:#1e3a8a; font-weight:bold;">R$ ${imovel.aluguel.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
@@ -58,10 +61,14 @@ function renderizarTabelasEAtivos() {
                 </td>
             </tr>`;
     });
+/* ==========================================================================
+   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL
+   PARTE 2 DE 3: OPERAÇÕES DE ESCALONAMENTO, REGISTROS E EDICÕES ASSÍNCRONAS
+   ========================================================================== */
 
     const corpoRH = document.getElementById('tabela_colaboradores');
     corpoRH.innerHTML = "";
-    BANCO_SUPABASE_MOCK.quadroColaboradores.forEach(func => {
+    CONTEXTO_LOCAL_SETOR.quadroColaboradores.forEach(func => {
         let subtotal = func.salario * func.qtd;
         corpoRH.innerHTML += `
             <tr>
@@ -70,73 +77,145 @@ function renderizarTabelasEAtivos() {
                 <td>R$ ${func.salario.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
                 <td>${func.qtd}</td>
                 <td style="color:#1e3a8a; font-weight:600;">R$ ${subtotal.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                <td style="text-align:center;"><button class="btn-top" style="color:#dc2626; border-color:#fee2e2;" onclick="removerColaborador('${func.id}')">Demitir</button></td>
+                <td style="text-align:center;">
+                    <button class="btn-edit-rh" onclick="carregarColaboradorEdicao('${func.id}')">Editar</button>
+                    <button class="btn-top" style="color:#dc2626; border-color:#fee2e2;" onclick="removerColaborador('${func.id}')">Demitir</button>
+                </td>
             </tr>`;
     });
 }
 
-function removerImovel(id) {
-    BANCO_SUPABASE_MOCK.contratosImoveis = BANCO_SUPABASE_MOCK.contratosImoveis.filter(i => i.id !== id);
-    renderizarTabelasEAtivos();
-    executarMotorDeCalculoPatrimonial();
+async function salvarImovel(event) {
+    event.preventDefault();
+    const id = document.getElementById('imovel_id').value;
+    const novoImovel = {
+        id: id || "IMOB-" + Math.floor(Math.random() * 10000),
+        tipo: document.getElementById('tipo_imovel').value,
+        cidade: document.getElementById('cidade').value,
+        bairro: document.getElementById('bairro').value,
+        area: parseFloat(document.getElementById('area_util').value) || 0,
+        condominio: parseFloat(document.getElementById('valor_condominio').value) || 0,
+        aluguel: parseFloat(document.getElementById('valor_aluguel').value) || 0,
+        taxaAnual: parseFloat(document.getElementById('taxa_anual').value) || 0
+    };
+
+    if (id) {
+        // await supabase.from('contratos_imoveis').update(novoImovel).eq('id', id);
+        let index = CONTEXTO_LOCAL_SETOR.contratosImoveis.findIndex(i => i.id === id);
+        if (index !== -1) CONTEXTO_LOCAL_SETOR.contratosImoveis[index] = novoImovel;
+    } else {
+        // await supabase.from('contratos_imoveis').insert([novoImovel]);
+        CONTEXTO_LOCAL_SETOR.contratosImoveis.push(novoImovel);
+    }
+
+    document.getElementById('formImobiliario').reset();
+    document.getElementById('imovel_id').value = "";
+    document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
+    renderuzarEAplicarAtualizacao();
 }
 
-function removerColaborador(id) {
-    BANCO_SUPABASE_MOCK.quadroColaboradores = BANCO_SUPABASE_MOCK.quadroColaboradores.filter(f => f.id !== id);
+function carregarImovelEdicao(id) {
+    const imovel = CONTEXTO_LOCAL_SETOR.contratosImoveis.find(i => i.id === id);
+    if (!imovel) return;
+    document.getElementById('imovel_id').value = imovel.id;
+    document.getElementById('tipo_imovel').value = imovel.tipo;
+    document.getElementById('cidade').value = imovel.cidade;
+    document.getElementById('bairro').value = imovel.bairro;
+    document.getElementById('area_util').value = imovel.area;
+    document.getElementById('valor_condominio').value = imovel.condominio;
+    document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato de Locação";
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function adicionarColaborador(event) {
+    event.preventDefault();
+    const id = document.getElementById('rh_id').value;
+    const seletor = document.getElementById('cargo_suporte');
+    const cargoText = seletor.options[seletor.selectedIndex].value;
+    const salarioBase = parseFloat(seletor.options[seletor.selectedIndex].getAttribute('data-salario')) || 0;
+    
+    const novoFunc = {
+        id: id || "RH-" + Math.floor(Math.random() * 1000),
+        nome: document.getElementById('rh_nome').value,
+        cargo: cargoText,
+        salario: salarioBase,
+        qtd: parseInt(document.getElementById('qtd_colaboradores').value) || 1
+    };
+
+    if (id) {
+        // await supabase.from('quadro_colaboradores').update(novoFunc).eq('id', id);
+        let index = CONTEXTO_LOCAL_SETOR.quadroColaboradores.findIndex(f => f.id === id);
+        if (index !== -1) CONTEXTO_LOCAL_SETOR.quadroColaboradores[index] = novoFunc;
+    } else {
+        // await supabase.from('quadro_colaboradores').insert([novoFunc]);
+        CONTEXTO_LOCAL_SETOR.quadroColaboradores.push(novoFunc);
+    }
+
+    document.getElementById('formContratacaoPredial').reset();
+    document.getElementById('rh_id').value = "";
+    document.getElementById('btn_contratar').innerText = "👥 Confirmar Registro de Funcionário";
+    renderuzarEAplicarAtualizacao();
+}
+/* ==========================================================================
+   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CÁLCULO MATRICIAL
+   PARTE 3 DE 3: EQUAÇÕES COMPARATIVAS DIRETAS (SETOR VS GLOBAL) E ACESSIBILIDADE
+   ========================================================================== */
+
+function carregarColaboradorEdicao(id) {
+    const func = CONTEXTO_LOCAL_SETOR.quadroColaboradores.find(f => f.id === id);
+    if (!func) return;
+    document.getElementById('rh_id').value = func.id;
+    document.getElementById('rh_nome').value = func.nome;
+    document.getElementById('cargo_suporte').value = func.cargo;
+    document.getElementById('qtd_colaboradores').value = func.qtd;
+    document.getElementById('btn_contratar').innerText = "🔄 Atualizar Cadastro de Funcionário";
+    calcularPreviaSalario();
+}
+
+async function removerImovel(id) {
+    CONTEXTO_LOCAL_SETOR.contratosImoveis = CONTEXTO_LOCAL_SETOR.contratosImoveis.filter(i => i.id !== id);
+    renderuzarEAplicarAtualizacao();
+}
+
+async function removerColaborador(id) {
+    CONTEXTO_LOCAL_SETOR.quadroColaboradores = CONTEXTO_LOCAL_SETOR.quadroColaboradores.filter(f => f.id !== id);
+    renderuzarEAplicarAtualizacao();
+}
+
+function renderuzarEAplicarAtualizacao() {
     renderizarTabelasEAtivos();
     executarMotorDeCalculoPatrimonial();
 }
-/* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CALCULO MATRICIAL INDEPENDENTE
-   PARTE 3 DE 4: ENGENHARIA DE CÁLCULO PATRIMONIAL E PROGRESSÃO INTER-SETORIAL
-   ========================================================================== */
 
 function executarMotorDeCalculoPatrimonial() {
     let area = parseFloat(document.getElementById('area_util').value) || 0;
     let condominio = parseFloat(document.getElementById('valor_condominio').value) || 0;
-    
-    // Algoritmo Paramétrico de Aluguel Regional Base Curitiba/RMC
     let valorAluguelCalculado = area * 32.50; 
     let taxaAnualCalculada = (valorAluguelCalculado * 12) + condominio;
 
     document.getElementById('valor_aluguel').value = valorAluguelCalculado.toFixed(2);
     document.getElementById('taxa_anual').value = taxaAnualCalculada.toFixed(2);
 
-    // 🧬 EQUAÇÃO DE AMORTIZAÇÃO FISICA E MERCADO
     let valorMercadoEstimado = valorAluguelCalculado / 0.0055;
     document.getElementById('txt_valor_mercado_real').innerText = `R$ ${valorMercadoEstimado.toLocaleString('pt-BR', {maximumFractionDigits:2})}`;
     document.getElementById('txt_tempo_meses').innerText = `182 meses`;
     document.getElementById('txt_taxa_capitalizacao').innerText = `0.55% a.m.`;
 
-    consolidarMatrizUniversalCustos(valorAluguelCalculado);
-}
-
-function consolidarMatrizUniversalCustos(aluguelAtual) {
-    // Somatório cumulativo de Ativos do Setor Imobiliário
-    let patrimonioImobiliarioSetor = BANCO_SUPABASE_MOCK.contratosImoveis.reduce((acc, curr) => acc + curr.taxaAnual, 0);
+    // 📊 REGRAS DE MATRIZ COMPARTILHADA (SETOR VS SOMATÓRIO TOTAL DA EMPRESA)
+    let patrimonioImobiliarioSetor = CONTEXTO_LOCAL_SETOR.contratosImoveis.reduce((acc, curr) => acc + curr.taxaAnual, 0);
+    let patrimonioGeralGlobalEmpresa = patrimonioImobiliarioSetor + CONTEXTO_LOCAL_SETOR.patrimonioSetor07;
     
-    // 1. COMPARAÇÃO DO PATRIMÔNIO UNIVERSAL (SETOR VS EMPRESA GLOBAL)
-    let patrimonioGeralGlobalEmpresa = patrimonioImobiliarioSetor + BANCO_SUPABASE_MOCK.patrimonioSetor07;
     document.getElementById('kpi-patrimonio-total').innerText = `R$ ${patrimonioImobiliarioSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
     document.getElementById('kpi-teto-ativos').innerText = `Global: R$ ${patrimonioGeralGlobalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
     
-    // Régua de Limites do Supabase baseada no Teto de R$ 2.000.000,00 (40% do Capital)
-    let tetoMaximoAtivos = BANCO_SUPABASE_MOCK.capitalTotalNominal * BANCO_SUPABASE_MOCK.limitePercentualSetor;
+    let tetoMaximoAtivos = CONTEXTO_LOCAL_SETOR.capitalTotalNominal * CONTEXTO_LOCAL_SETOR.limitePercentualSetor;
     let percentualConsumoTeto = (patrimonioGeralGlobalEmpresa / tetoMaximoAtivos) * 100;
-    
     document.getElementById('barra-limite-setor').style.width = `${Math.min(percentualConsumoTeto, 100)}%`;
     document.getElementById('txt_porcentagem_budget').innerText = `${percentualConsumoTeto.toFixed(1)}% do teto consumido`;
-/* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E CALCULO MATRICIAL INDEPENDENTE
-   PARTE 4 DE 4: CONSOLIDAÇÃO DO CAIXA GLOBAL, CUSTOS FIXOS/VARIÁVEIS E WCAG
-   ========================================================================== */
 
-    // Somatório cumulativo de Folha Fictícia do Apoio Predial Ativo
-    let totalFolhaApoioFixo = BANCO_SUPABASE_MOCK.quadroColaboradores.reduce((acc, curr) => acc + (curr.salario * curr.qtd), 0);
-    let custoFixoTotalDesteSetor = aluguelAtual + totalFolhaApoioFixo;
-
-    // 2. COMPARAÇÃO DE CUSTOS FIXOS REAIS (SETOR VS SOMATÓRIO TOTAL DA EMPRESA)
-    let custoFixoGeralEmpresaCompleta = custoFixoTotalDesteSetor + BANCO_SUPABASE_MOCK.custoFixoSetor07;
+    let totalFolhaApoioFixo = CONTEXTO_LOCAL_SETOR.quadroColaboradores.reduce((acc, curr) => acc + (curr.salario * curr.qtd), 0);
+    let custoFixoTotalDesteSetor = valorAluguelCalculado + totalFolhaApoioFixo;
+    let custoFixoGeralEmpresaCompleta = custoFixoTotalDesteSetor + CONTEXTO_LOCAL_SETOR.custoFixoSetor07;
     
     document.getElementById('kpi-custo-fixo-setor').innerText = `R$ ${custoFixoTotalDesteSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
     document.getElementById('fechamento_custo_fixo_generico').innerText = `R$ ${custoFixoGeralEmpresaCompleta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
@@ -144,10 +223,8 @@ function consolidarMatrizUniversalCustos(aluguelAtual) {
     let proporcaoImpactoFixo = custoFixoGeralEmpresaCompleta > 0 ? (custoFixoTotalDesteSetor / custoFixoGeralEmpresaCompleta) * 100 : 0;
     document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Impacto do Setor: ${proporcaoImpactoFixo.toFixed(2)}% do global`;
 
-    // 3. COMPARAÇÃO DE CUSTOS VARIÁVEIS UNIVERSAIS (SETOR VS SOMATÓRIO GLOBAL)
-    let custoVariavelDesteSetor = 0.00; // Imobiliário opera puramente em carga fixa industrial
-    let custoVariavelGeralEmpresaCompleta = custoVariavelDesteSetor + BANCO_SUPABASE_MOCK.custoVariavelSetor07;
-
+    let custoVariavelDesteSetor = 0.00;
+    let custoVariavelGeralEmpresaCompleta = custoVariavelDesteSetor + CONTEXTO_LOCAL_SETOR.custoVariavelSetor07;
     document.getElementById('kpi-custo-variavel-setor').innerText = `R$ ${custoVariavelDesteSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
     document.getElementById('kpi-custo-variavel-total').innerText = `R$ ${custoVariavelGeralEmpresaCompleta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
 }
@@ -155,12 +232,12 @@ function consolidarMatrizUniversalCustos(aluguelAtual) {
 function calcularPreviaSalario() {
     const seletor = document.getElementById('cargo_suporte');
     const qtdInput = document.getElementById('qtd_colaboradores');
+    if(seletor.selectedIndex === 0 || seletor.selectedIndex === -1) return;
     let salarioBase = parseFloat(seletor.options[seletor.selectedIndex].getAttribute('data-salario')) || 0;
     let vagas = parseInt(qtdInput.value) || 1;
     document.getElementById('previa_salario').value = `R$ ${(salarioBase * vagas).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
 }
 
-/* ACESSIBILIDADE WCAG CONTROLS */
 function alterarFonte(op) {
     let html = document.documentElement;
     let size = parseFloat(window.getComputedStyle(html).fontSize);
