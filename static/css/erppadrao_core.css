@@ -104,11 +104,12 @@ body {
 
 .logo-badge { 
     background-color: #fff; 
-    color: var(--bg-primary); 
-    padding: 6px 12px; 
+    padding: 4px; 
     border-radius: 5px; 
-    font-weight: bold; 
-    font-size: 16px; 
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    display: block;
 }
 
 .logo-text h1 { 
