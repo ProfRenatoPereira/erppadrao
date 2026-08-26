@@ -43,15 +43,9 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
     custo_fixo_isolado_setor = 0.0
     custo_variavel_isolado_setor = 0.0
     
-    # Parâmetros Orçamentários e de Controle Administrativo originais
-    orcamento_liberado_setor = 2000000.00
+    # Parâmetros Orçamentários e de Controle Administrativo
+    orcamento_liberado_setor = 0.0
     gastos_especificos_setor = 0.0
-    
-    # Acumuladores reativos para redes técnicas de utilidades do setor 02
-    soma_potencia_watts = 0.0
-    soma_consumo_gas = 0.0
-    soma_consumo_agua = 0.0
-    soma_custo_minuto = 0.0
 
     try:
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
@@ -82,27 +76,20 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         # 🏢 EQUAÇÃO REVISADA 01: COMPUTAÇÃO E SOMA DO PATRIMÔNIO ATIVO TOTAL
         # ==================================================================
         
-        # A) Módulo Imobiliário e Suporte (Mapeamento real erp_maquinas para o Setor 02)
+        # A) Módulo Imobiliário (Tabela: imoveis_simulacao)
         try:
-            cursor.execute("SELECT preco_compra, departamento, potencia_watts, consumo_gas_m3, consumo_agua_m3, custo_minuto_maquina FROM erp_maquinas WHERE equipe_id = %s", (id_equipe,))
-            todas_maquinas = cursor.fetchall()
-            for maq in todas_maquinas:
-                valor_maq = float(maq['preco_compra'] or 0)
-                patrimonio_ativo_total += valor_maq
-                
-                # Se o ativo pertencer ao Módulo 02, computa e isola seu patrimônio e consumos
-                if maq['departmento'] == 'estrutura':
-                    patrimonio_isolado_setor += valor_maq
-                    soma_potencia_watts += float(maq['potencia_watts'] or 0)
-                    soma_consumo_gas += float(maq['consumo_gas_m3'] or 0)
-                    soma_consumo_agua += float(maq['consumo_agua_m3'] or 0)
-                    soma_custo_minuto += float(maq['custo_minuto_maquina'] or 0)
+            cursor.execute("SELECT SUM(valor_aluguel) as total FROM imoveis_simulacao WHERE equipe_id = %s", (id_equipe,))
+            res_imob = cursor.fetchone()
+            if res_imob and res_imob['total']:
+                patrimonio_ativo_total += float(res_imob['total'])
+                if departamento_atual == 'estrutura':
+                    patrimonio_isolado_setor += float(res_imob['total'])
         except Exception:
             if conexao: conexao.rollback()
 
-        # B) Módulo de Engenharia de Ativos / Máquinas Globais (Outros setores)
+        # B) Módulo de Engenharia de Ativos / Máquinas (Tabela: ativos_maquinas)
         try:
-            cursor.execute("SELECT SUM(preco_compra) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento != 'estrutura'", (id_equipe,))
+            cursor.execute("SELECT SUM(preco_compra) as total FROM ativos_maquinas WHERE equipe_id = %s", (id_equipe,))
             res_maq = cursor.fetchone()
             if res_maq and res_maq['total']:
                 patrimonio_ativo_total += float(res_maq['total'])
@@ -111,9 +98,9 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         except Exception:
             if conexao: conexao.rollback()
 
-        # C) Módulo de Almoxarifado / Materiais Estocados (Soma intersetorial real)
+        # C) Módulo de Almoxarifado / Materiais Estocados (Tabela: ativos_materials)
         try:
-            cursor.execute("SELECT SUM(quantidade_estoque * preco_unitario) as total FROM erp_materiais WHERE equipe_id = %s", (id_equipe,))
+            cursor.execute("SELECT SUM(quantidade_estoque * preco_unitario) as total FROM ativos_materials WHERE equipe_id = %s", (id_equipe,))
             res_mat = cursor.fetchone()
             if res_mat and res_mat['total']:
                 patrimonio_ativo_total += float(res_mat['total'])
@@ -121,39 +108,19 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
                     patrimonio_isolado_setor += float(res_mat['total'])
         except Exception:
             if conexao: conexao.rollback()
+# ==========================================================================
+# TERADMAS ERP v2.6 - MOTOR FINANCEIRO CENTRAL (GerenciadorCaixa.py)
+# PARTE 2 DE 2 - CUSTOS FIXOS, VARIÁVEIS CONSOLIDADOS E DICIONÁRIO DE SAÍDA
+# ==========================================================================
+
         # ==================================================================
         # 🔒 EQUAÇÃO REVISADA 02: CONSOLIDAÇÃO DE CUSTOS FIXOS (SOMA MATRICIAL)
         # ==================================================================
-        
-        # Puxa e equaciona os contratos de locação imobiliária do Supabase (Aluguel + Condomínio)
-        total_aluguel_com_condominio_setor = 0.0
-        total_provisao_igpm_setor = 0.0
-        try:
-            cursor.execute("SELECT valor_aluguel, valor_condominio, obs_contrato FROM imoveis_simulacao WHERE equipe_id = %s", (id_equipe,))
-            imoveis = cursor.fetchall()
-            for imovel in imoveis:
-                aluguel_real = float(imovel['valor_aluguel'] or 0)
-                condominio_real = float(imovel['valor_condominio'] or 0)
-                
-                # Consolida o aluguel bruto mensal somando o condomínio (Simulação real R$ 65.350,00)
-                bruto_mensal = aluguel_real + condominio_real
-                total_aluguel_com_condominio_setor += bruto_mensal
-                
-                # Resgata a Provisão do Imóvel Próprio armazenada reativamente na coluna obs_contrato
-                texto_igpm = imovel['obs_contrato'] or ""
-                try:
-                    valor_igpm_anual = float(texto_igpm.replace('R$', '').replace('.', '').replace(',', '.').strip())
-                except Exception:
-                    valor_igpm_anual = bruto_mensal * 1.072
-                total_provisao_igpm_setor += valor_igpm_anual
-        except Exception:
-            if conexao: conexao.rollback()
+        custo_fixo_total_global = valor_aluguel_global
+        if departamento_atual == 'estrutura':
+            custo_fixo_isolado_setor = valor_aluguel_global
 
-        # O Custo Fixo Isolado do Setor soma obrigatoriamente o Aluguel Bruto + Provisão Imóvel Próprio
-        custo_fixo_isolado_setor = total_aluguel_com_condominio_setor + total_provisao_igpm_setor
-        custo_fixo_total_global = custo_fixo_isolado_setor
-
-        # Varre e consolida a folha de funcionários CLT ativa de toda a empresa
+        # Varre e consolida a folha de funcionários CLT ativa (Tabela: folha_funcionarios)
         try:
             cursor.execute("SELECT SUM(salario_base) as total FROM folha_funcionarios WHERE equipe_id = %s", (id_equipe,))
             res_rh_global = cursor.fetchone()
@@ -162,40 +129,22 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         except Exception:
             if conexao: conexao.rollback()
 
-        # Varre o suporte predial específico e soma o Subtotal Fixado ao custo do setor e global
-        total_rh_suporte_fixado = 0.0
+        # Varre o suporte predial específico do setor imobiliário (Tabela: estrutura_rh)
         try:
             cursor.execute("SELECT SUM(subtotal) as total FROM estrutura_rh WHERE equipe_id = %s", (id_equipe,))
             res_rh_imob = cursor.fetchone()
             if res_rh_imob and res_rh_imob['total']:
-                total_rh_suporte_fixado = float(res_rh_imob['total'])
-                custo_fixo_total_global += total_rh_suporte_fixado
+                custo_fixo_total_global += float(res_rh_imob['total'])
                 if departamento_atual == 'estrutura':
-                    custo_fixo_isolado_setor += total_rh_suporte_fixado
-        except Exception:
-            if conexao: conexao.rollback()
-
-        # Integra a soma matricial de custos fixos gerados pelos demais 20 setores da simulação
-        try:
-            cursor.execute("SELECT SUM(orcamento_liberado) as total FROM departments_orcamento_fixo WHERE equipe_id = %s AND departamento != 'estrutura'", (id_equipe,))
-            res_outros_fixos = cursor.fetchone()
-            if res_outros_fixos and res_outros_fixos['total']:
-                custo_fixo_total_global += float(res_outros_fixos['total'])
+                    custo_fixo_isolado_setor += float(res_rh_imob['total'])
         except Exception:
             if conexao: conexao.rollback()
 
         # ==================================================================
         # ⚡ EQUAÇÃO REVISADA 03: CONSOLIDAÇÃO DE CUSTOS VARIÁVEIS GLOBAIS
         # ==================================================================
-        # Equaciona o consumo técnico do setor multiplicando a carga das máquinas por 220h operacionais
-        custo_energia_calculado = (soma_potencia_watts / 1000.0) * 220.0 * 0.72
-        custo_gas_calculado = soma_consumo_gas * 220.0 * 4.50
-        custo_agua_calculado = soma_consumo_agua * 220.0 * 6.80
-        
-        custo_variavel_isolado_setor = custo_energia_calculado + custo_gas_calculado + custo_agua_calculado
-        custo_variavel_total_global = custo_variavel_isolado_setor
-
         try:
+            # Varre encargos patronais e horas extras acumuladas (Tabela: livro_razonete_folha)
             cursor.execute("SELECT SUM(encargos_patronais + valor_horas_extras) as total FROM livro_razonete_folha WHERE equipe_id = %s", (id_equipe,))
             res_folha_var = cursor.fetchone()
             if res_folha_var and res_folha_var['total']:
@@ -208,20 +157,28 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         # ==================================================================
         # 🎛️ CIRCUITO DE TRAVAS OPERACIONAIS INDIVIDUAIS POR DEPARTAMENTO
         # ==================================================================
-        # Atualiza o Saldo descontando do Alocado a soma de Aluguel Bruto + Provisão Própria + Subtotal do RH Suporte
-        desconto_infraestrutura_total = total_aluguel_com_condominio_setor + total_provisao_igpm_setor + total_rh_suporte_fixado
-        capital_disponivel_departamento = orcamento_liberado_setor - desconto_infraestrutura_total
+        if departamento_atual:
+            try:
+                cursor.execute("SELECT orcamento_liberado FROM departamentos_orcamento WHERE equipe_id = %s AND departamento = %s", (id_equipe, departamento_atual))
+                dept_orc = cursor.fetchone()
+                if dept_orc:
+                    orcamento_liberado_setor = float(dept_orc['orcamento_liberado'] or 0)
+            except Exception:
+                if conexao: conexao.rollback()
+
+            try:
+                cursor.execute("SELECT SUM(valor) as total FROM fluxo_caixa WHERE equipe_id = %s AND departamento = %s", (id_equipe, departamento_atual))
+                res_gastos = cursor.fetchone()
+                if res_gastos and res_gastos['total']:
+                    gastos_especificos_setor = float(res_gastos['total'])
+            except Exception:
+                if conexao: conexao.rollback()
+
+        # Deduções reativas do fluxo de caixa de giro da empresa e saldo setorial
         capital_disponivel_total = capital_total - total_gasto_fluxo - valor_aluguel_global
+        capital_disponivel_departamento = orcamento_liberado_setor - gastos_especificos_setor
 
-        # Equacionamento dinâmico da Amortização Física e Cap Rate Real
-        cap_rate_regional = 0.0
-        tempo_meses_amortizacao = 0
-        if total_aluguel_com_condominio_setor > 0:
-            valor_mercado_real = total_aluguel_com_condominio_setor / 0.0055
-            cap_rate_regional = (total_aluguel_com_condominio_setor / valor_mercado_real) * 100
-            if total_provisao_igpm_setor > 0:
-                tempo_meses_amortizacao = round(valor_mercado_real / total_provisao_igpm_setor)
-
+        # Retorna o mapa de dados completo unificado para alimentar a matriz superior e rodapés
         return {
             'nome_empresa': nome_empresa.upper(),
             'capital_total': capital_total,
@@ -236,17 +193,8 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
             
             # Métricas Isoladas Específicas do Setor Requisitante
             'patrimonio_isolado_setor': patrimonio_isolado_setor,
-            'custo_fixo_isolado_setor': ... if departamento_atual != 'estrutura' else custo_fixo_isolado_setor,
-            'custo_fixo_real_setor_imob': custo_fixo_isolado_setor, 
-            'custo_variavel_isolado_setor': custo_variavel_isolado_setor,
-            
-            # Repasse de variáveis calculadas em tempo real para alimentação do DOM
-            'tempo_amortizacao_real': f"{tempo_meses_amortizacao} meses",
-            'cap_rate_calculado': f"{cap_rate_regional:.2f}% a.m.",
-            'watts_consumidos': soma_potencia_watts,
-            'gas_consumido': soma_consumo_gas,
-            'agua_consumida': soma_consumo_agua,
-            'custo_minuto_setor': soma_custo_minuto
+            'custo_fixo_isolado_setor': custo_fixo_isolado_setor,
+            'custo_variavel_isolado_setor': custo_variavel_isolado_setor
         }
 
     except Exception as e:
@@ -255,10 +203,12 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
             'nome_empresa': "MODO SEGURANÇA", 
             'capital_total': 5000000.00, 'capital_disponivel_total': 0.0, 'capital_disponivel_departamento': 0.0,
             'patrimonio_ativo_total': 0.0, 'custo_fixo_total': 21350.00, 'custo_variavel_total': 0.0,
-            'custo_fixo_geral_empresa': 21350.00, 'patrimonio_isolado_setor': 0.0, 'custo_fixo_isolado_setor': 0.0, 'custo_variavel_isolado_setor': 0.0,
-            'tempo_amortizacao_real': "0 meses", 'cap_rate_calculado': "0.00% a.m.", 'watts_consumidos': 0, 'gas_consumido': 0, 'agua_consumida': 0, 'custo_minuto_setor': 0
+            'custo_fixo_geral_empresa': 21350.00, 'patrimonio_isolado_setor': 0.0, 'custo_fixo_isolado_setor': 0.0, 'custo_variavel_isolado_setor': 0.0
         }
 
     finally:
-        if cursor: cursor.close()
-        if conexao: conexao.close()
+        # 🛡️ PROTEÇÃO DO POOL: Garante o fechamento total das comunicações abertas no Supabase
+        if cursor: 
+            cursor.close()
+        if conexao: 
+            conexao.close()
