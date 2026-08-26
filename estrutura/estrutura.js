@@ -1,7 +1,7 @@
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 1 DE 3 (INICIALIZAÇÃO, SESSÃO E VOZ)
+ * ARQUIVO: estrutura.js - PARTE 1 DE 3 (INICIALIZAÇÃO E SESSÃO DA EQUIPE)
  * ==========================================================================
  */
 
@@ -18,7 +18,8 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function sincronizarNomeGrupoSessao() {
-    fetch('/api/financeiro/metricas?dept=estrutura')
+    // Aponta para a rota local do módulo para evitar colisão transacional com o app_master
+    fetch('/api/estrutura/metricas')
         .then(res => {
             if (!res.ok) throw new Error("Status HTTP inválido");
             return res.json();
@@ -70,7 +71,7 @@ function inicializarMotorLeitorVoz() {
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTORES CONTÁBEIS E ACESSIBILIDADE)
+ * ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTORES REATIVOS E CONTROLES WCAG)
  * ==========================================================================
  */
 
@@ -138,12 +139,13 @@ function alternarModoEscuro() {
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 3A DE 4 (ATUALIZAÇÃO DE KPIS E RENDERS)
+ * ARQUIVO: estrutura.js - PARTE 3A DE 4 (ATUALIZAÇÃO DE KPIS E PAINÉIS)
  * ==========================================================================
  */
 
 function recargarEAtualizarPaineisTotais() {
-    fetch('/api/financeiro/metricas?dept=estrutura')
+    // Rota local do módulo configurada para blindagem contra colisões com app_master
+    fetch('/api/estrutura/metricas')
         .then(res => {
             if (!res.ok) throw new Error("Erro de comunicação financeira");
             return res.json();
@@ -153,7 +155,7 @@ function recargarEAtualizarPaineisTotais() {
             // 📄 Orçamento de Infraestrutura Engenharia
             document.getElementById('kpi-saldo-infra').innerText = `R$ ${(dados.saldo_infraestrutura_setor || 2000000).toLocaleString('pt-BR', {minimumFractionDigits:2})} ➔ ${(((dados.saldo_infraestrutura_setor || 2000000) / 2000000) * 100).toFixed(2)}% Disponível`;
             
-            // 🏢 Controle e Cobertura Patrimonial Ativa (Retorna estritamente o valor de equipamentos/máquinas)
+            // 🏢 Controle e Cobertura Patrimonial Ativa (Equipamentos/Máquinas)
             document.getElementById('kpi-patrimonio-total').innerText = `R$ ${(dados.patrimonio_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             document.getElementById('kpi-teto-ativos').innerText = `Global: R$ ${(dados.patrimonio_ativo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             
@@ -162,23 +164,23 @@ function recargarEAtualizarPaineisTotais() {
             document.getElementById('barra-limite-setor').style.width = `${Math.min(percentualConsumoTeto, 100)}%`;
             document.getElementById('txt_porcentagem_budget').innerText = `${percentualConsumoTeto.toFixed(1)}% do teto consumido`;
 
-            // 🔒 Consolidação de Custos Fixos Correntes (Mensal) com Provisões somadas no backend
+            // 🔒 Consolidação de Custos Fixos Correntes (Mensal) com Provisões
             document.getElementById('kpi-custo-fixo-setor').innerText = `R$ ${(dados.custo_fixo_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             document.getElementById('fechamento_custo_fixo_generico').innerText = `R$ ${(dados.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
             let impactoFixo = dados.custo_fixo_total > 0 ? (dados.custo_fixo_isolado_setor / dados.custo_fixo_total) * 100 : 0;
             document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Impacto do Setor: ${impactoFixo.toFixed(2)}% do global`;
 
-            // ⚡ Estruturação de Custos Variáveis Consolidados (Utilidades somadas reativamente)
+            // ⚡ Estruturação de Custos Variáveis Consolidados (Utilidades)
             document.getElementById('kpi-custo-variavel-setor').innerText = `R$ ${(dados.custo_variavel_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             document.getElementById('kpi-custo-variavel-total').innerText = `R$ ${(dados.custo_variavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
-            // 📍 Amortização, Cap Rate, Utilidades e Custo Minuto Máquina
+            // 📍 Amortização, Cap Rate, Utilidades Técnicas e Custo Minuto Máquina (CMM)
             document.getElementById('txt_tempo_meses').innerText = dados.tempo_amortizacao_real || "0 meses";
             document.getElementById('txt_taxa_capitalizacao').innerText = dados.cap_rate_calculado || "0.00% a.m.";
             document.getElementById('lbl_watts_consumidos').innerText = `${(dados.watts_consumidos || 0).toLocaleString('pt-BR')} W`;
             document.getElementById('lbl_gas_consumido').innerText = `${(dados.gas_consumido || 0).toLocaleString('pt-BR')} m³`;
-            document.getElementById('lbl_agua_consumida').innerText = `${(dados.agua_consumida || 0).toLocaleString('pt-BR')} m³`;
+            document.getElementById('lbl_agua_consumida').innerText = `${(dados.agua_consumido || 0).toLocaleString('pt-BR')} m³`;
             document.getElementById('kpi-custo-minuto-total').innerText = `R$ ${(dados.custo_minuto_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/min`;
         }).catch(err => console.error("Erro ao sincronizar barramentos dinâmicos:", err));
 }
@@ -256,7 +258,7 @@ function salvarMaquina(event) {
         depreciacao: parseFloat(opt.getAttribute('data-dep')) || 0,
         custo_minuto: parseFloat(opt.getAttribute('data-min')) || 0
     };
-    fetch('/api/financeiro/metricas?dept=estrutura').then(res => res.json()).then(m => {
+    fetch('/api/estrutura/metricas').then(res => res.json()).then(m => {
         if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).authorized) {
             alert("Erro Operacional: Esta aquisição excede as diretrizes administrativas de tetos (Max 40% dos ativos)!");
             return;
@@ -278,7 +280,7 @@ function carregarImovelEdicao(id) {
         document.getElementById('valor_aluguel').value = aluguelCalculado.toFixed(2);
         document.getElementById('taxa_anual').value = ((aluguelCalculado * 12) + parseFloat(imovel.valor_condominio)).toFixed(2);
         document.getElementById('reserva_propria').value = (aluguelCalculado + parseFloat(imovel.valor_condominio)).toFixed(2);
-        document.getElementById('txt_valor_mercado_real').innerText = `R$ ${(aluguelCalculado / 0.0055).toLocaleString('pt-BR', {maximumFractionDigits:2})}`;
+        document.getElementById('txt_valor_market_real').innerText = `R$ ${(aluguelCalculado / 0.0055).toLocaleString('pt-BR', {maximumFractionDigits:2})}`;
         document.getElementById('txt_igpm_correcao').innerText = imovel.obs_contrato || "R$ 0,00";
     });
 }
