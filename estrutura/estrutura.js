@@ -6,7 +6,7 @@
  */
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Escuta ativa de eventos de digitação para reatividade imediata
+    // Escuta ativa de eventos de digitação para reatividade imediata nos formulários
     document.getElementById('area_util').addEventListener('input', executarCalculoLocacaoReativa);
     document.getElementById('valor_condominio').addEventListener('input', executarCalculoLocacaoReativa);
     document.getElementById('reserva_propria').addEventListener('input', calcularProjecaoIgpmAnual);
@@ -45,11 +45,17 @@ function inicializarMotorLeitorVoz() {
 
         btnLeitor.addEventListener('click', () => {
             if (!lendo) {
-                let textoParaLer = document.body.innerText || document.body.textContent;
+                const painelConteudo = document.querySelector('.grid-main') || document.body;
+                let textoParaLer = painelConteudo.innerText || painelConteudo.textContent;
+                
                 textoParaLer = textoParaLer.replace(/♿|⚫|✔️|📢|📁|🛠️|🏭|📈|💰|📄|⚡|🔥|💧|⏱️|🏢|🔒|🚜|👥|💾|🔄|❌/g, '');
+                
                 utterance = new SpeechSynthesisUtterance(textoParaLer);
                 utterance.lang = 'pt-BR';
-                utterance.onend = () => { lendo = false; btnLeitor.innerText = "📢 Ativar Leitor"; };
+                utterance.onend = () => { 
+                    lendo = false; 
+                    btnLeitor.innerText = "📢 Ativar Leitor"; 
+                };
                 sintese.speak(utterance);
                 lendo = true;
                 btnLeitor.innerText = "🛑 Parar Leitor";
@@ -64,7 +70,7 @@ function inicializarMotorLeitorVoz() {
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTORES, KPIS E ACESSIBILIDADE WCAG)
+ * ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTORES CONTÁBEIS E ACESSIBILIDADE)
  * ==========================================================================
  */
 
@@ -72,15 +78,18 @@ function executarCalculoLocacaoReativa() {
     let area = parseFloat(document.getElementById('area_util').value) || 0;
     let condominio = parseFloat(document.getElementById('valor_condominio').value) || 0;
     
+    // Regra de negócio matemática estrita: R$ 32,50 fixos por m²
     let aluguelCalculado = area * 32.50; 
     let taxaAnualCalculada = (aluguelCalculado * 12) + condominio;
 
     document.getElementById('valor_aluguel').value = aluguelCalculado.toFixed(2);
     document.getElementById('taxa_anual').value = taxaAnualCalculada.toFixed(2);
 
+    // Alimenta a Provisão Imóvel Próprio de forma reativa com Aluguel + Condomínio
     let provisaoInicial = aluguelCalculado + condominio;
     document.getElementById('reserva_propria').value = provisaoInicial.toFixed(2);
 
+    // Avaliação trilinear de mercado baseada no Cap Rate padrão de 0.55% a.m.
     let valorMercadoEstimado = aluguelCalculado / 0.0055;
     document.getElementById('txt_valor_mercado_real').innerText = `R$ ${valorMercadoEstimado.toLocaleString('pt-BR', {maximumFractionDigits:2})}`;
 
@@ -89,6 +98,7 @@ function executarCalculoLocacaoReativa() {
 
 function calcularProjecaoIgpmAnual() {
     let reserva = parseFloat(document.getElementById('reserva_propria').value) || 0;
+    // Parâmetro de simulação didática fixa: 7.2% de reajuste estimado
     let taxaIgpmEstimada = 0.072;
     let valorCorrigidoProjecao = reserva * (1 + taxaIgpmEstimada);
 
@@ -104,6 +114,34 @@ function calcularPreviaSalario() {
     document.getElementById('previa_salario').value = `R$ ${(salarioBase * vagas).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
 }
 
+function alterarFonte(operacao) {
+    let htmlEl = document.documentElement;
+    let estiloAtual = window.getComputedStyle(htmlEl).fontSize;
+    let tamanhoNumerico = parseFloat(estiloAtual);
+    
+    if (operacao === '+') {
+        htmlEl.style.fontSize = (tamanhoNumerico + 1) + 'px';
+    } else if (operacao === '-') {
+        htmlEl.style.fontSize = (tamanhoNumerico - 1) + 'px';
+    }
+}
+
+function alternarAltoContraste() {
+    document.body.classList.remove('dark-mode');
+    document.body.classList.toggle('alto-contraste');
+}
+
+function alternarModoEscuro() {
+    document.body.classList.remove('alto-contraste');
+    document.body.classList.toggle('dark-mode');
+}
+/**
+ * ==========================================================================
+ * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
+ * ARQUIVO: estrutura.js - PARTE 3A DE 4 (ATUALIZAÇÃO DE KPIS E RENDERS)
+ * ==========================================================================
+ */
+
 function recargarEAtualizarPaineisTotais() {
     fetch('/api/financeiro/metricas?dept=estrutura')
         .then(res => {
@@ -112,7 +150,10 @@ function recargarEAtualizarPaineisTotais() {
         })
         .then(dados => {
             if (!dados) return;
+            // 📄 Orçamento de Infraestrutura Engenharia
             document.getElementById('kpi-saldo-infra').innerText = `R$ ${(dados.saldo_infraestrutura_setor || 2000000).toLocaleString('pt-BR', {minimumFractionDigits:2})} ➔ ${(((dados.saldo_infraestrutura_setor || 2000000) / 2000000) * 100).toFixed(2)}% Disponível`;
+            
+            // 🏢 Controle e Cobertura Patrimonial Ativa (Retorna estritamente o valor de equipamentos/máquinas)
             document.getElementById('kpi-patrimonio-total').innerText = `R$ ${(dados.patrimonio_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             document.getElementById('kpi-teto-ativos').innerText = `Global: R$ ${(dados.patrimonio_ativo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             
@@ -121,15 +162,18 @@ function recargarEAtualizarPaineisTotais() {
             document.getElementById('barra-limite-setor').style.width = `${Math.min(percentualConsumoTeto, 100)}%`;
             document.getElementById('txt_porcentagem_budget').innerText = `${percentualConsumoTeto.toFixed(1)}% do teto consumido`;
 
+            // 🔒 Consolidação de Custos Fixos Correntes (Mensal) com Provisões somadas no backend
             document.getElementById('kpi-custo-fixo-setor').innerText = `R$ ${(dados.custo_fixo_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             document.getElementById('fechamento_custo_fixo_generico').innerText = `R$ ${(dados.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
             let impactoFixo = dados.custo_fixo_total > 0 ? (dados.custo_fixo_isolado_setor / dados.custo_fixo_total) * 100 : 0;
             document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Impacto do Setor: ${impactoFixo.toFixed(2)}% do global`;
 
+            // ⚡ Estruturação de Custos Variáveis Consolidados (Utilidades somadas reativamente)
             document.getElementById('kpi-custo-variavel-setor').innerText = `R$ ${(dados.custo_variavel_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             document.getElementById('kpi-custo-variavel-total').innerText = `R$ ${(dados.custo_variavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
+            // 📍 Amortização, Cap Rate, Utilidades e Custo Minuto Máquina
             document.getElementById('txt_tempo_meses').innerText = dados.tempo_amortizacao_real || "0 meses";
             document.getElementById('txt_taxa_capitalizacao').innerText = dados.cap_rate_calculado || "0.00% a.m.";
             document.getElementById('lbl_watts_consumidos').innerText = `${(dados.watts_consumidos || 0).toLocaleString('pt-BR')} W`;
@@ -138,48 +182,6 @@ function recargarEAtualizarPaineisTotais() {
             document.getElementById('kpi-custo-minuto-total').innerText = `R$ ${(dados.custo_minuto_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/min`;
         }).catch(err => console.error("Erro ao sincronizar barramentos dinâmicos:", err));
 }
-
-function alterarFonte(operacao) {
-    const elementos = document.querySelectorAll('body, window, p, span, input, select, button, label, h1, h2, h3, table, td, th');
-    elementos.forEach(el => {
-        let estiloAtual = window.getComputedStyle(el).fontSize;
-        let tamanhoNumerico = parseFloat(estiloAtual);
-        if (operacao === '+') el.style.fontSize = (tamanhoNumerico + 1) + 'px';
-        else if (operacao === '-') el.style.fontSize = (tamanhoNumerico - 1) + 'px';
-    });
-}
-
-function alternarAltoContraste() {
-    document.body.classList.toggle('alto-contraste-ativo');
-    if (document.body.classList.contains('alto-contraste-ativo')) {
-        let estiloHc = document.getElementById('css-alto-contraste') || document.createElement('style');
-        estiloHc.id = 'css-alto-contraste';
-        estiloHc.innerHTML = `.alto-contraste-ativo, .alto-contraste-ativo * { background-color: #000 !important; color: #fff000 !important; border-color: #fff000 !important; }`;
-        document.head.appendChild(estiloHc);
-    } else {
-        const estiloHc = document.getElementById('css-alto-contraste');
-        if (estiloHc) estiloHc.remove();
-    }
-}
-
-function alternarModoEscuro() {
-    document.body.classList.toggle('modo-escuro-ativo');
-    if (document.body.classList.contains('modo-escuro-ativo')) {
-        let estiloDark = document.getElementById('css-modo-escuro') || document.createElement('style');
-        estiloDark.id = 'css-modo-escuro';
-        estiloDark.innerHTML = `.modo-escuro-ativo { background-color: #0f172a !important; color: #f8fafc !important; } .modo-escuro-ativo .card, .modo-escuro-ativo .kpi-card-horizontal { background-color: #1e293b !important; color: #f8fafc !important; border-color: #334155 !important; } .modo-escuro-ativo input, .modo-escuro-ativo select { background-color: #334155 !important; color: #fff !important; }`;
-        document.head.appendChild(estiloDark);
-    } else {
-        const estiloDark = document.getElementById('css-modo-escuro');
-        if (estiloDark) estiloDark.remove();
-    }
-}
-/**
- * ==========================================================================
- * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 3 DE 3 (OPERAÇÕES CRUD E PERSISTÊNCIA REAL)
- * ==========================================================================
- */
 
 function recarregarDadosDoServidor() {
     fetch('/api/estrutura/imoveis').then(res => res.json()).then(imoveis => {
@@ -214,6 +216,12 @@ function recarregarDadosDoServidor() {
     }).catch(err => console.error(err));
     recargarEAtualizarPaineisTotais();
 }
+/**
+ * ==========================================================================
+ * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
+ * ARQUIVO: estrutura.js - PARTE 3B DE 4 (PERSISTÊNCIA E OPERAÇÕES CRUD)
+ * ==========================================================================
+ */
 
 function salvarImovel(event) {
     event.preventDefault();
@@ -231,7 +239,7 @@ function salvarImovel(event) {
 }
 
 function auditarMargemSegurancaSetor(patrimonioTotal, precoNovo) {
-    return { autorizado: (patrimonioTotal + precoNovo) <= 2000000.00 };
+    return { authorized: (patrimonioTotal + precoNovo) <= 2000000.00 };
 }
 
 function salvarMaquina(event) {
@@ -249,7 +257,7 @@ function salvarMaquina(event) {
         custo_minuto: parseFloat(opt.getAttribute('data-min')) || 0
     };
     fetch('/api/financeiro/metricas?dept=estrutura').then(res => res.json()).then(m => {
-        if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).autorizado) {
+        if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).authorized) {
             alert("Erro Operacional: Esta aquisição excede as diretrizes administrativas de tetos (Max 40% dos ativos)!");
             return;
         }
