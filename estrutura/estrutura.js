@@ -1,7 +1,9 @@
-/* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E SINCRO REAL SUPABASE
-   PARTE 1 DE 4 - FLUXO DE INICIALIZAÇÃO, EVENTOS E TRATAMENTO DE SESSÃO
-   ========================================================================== */
+/**
+ * ==========================================================================
+ * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
+ * ARQUIVO: estrutura.js - PARTE 1 DE 3 (INICIALIZAÇÃO E SESSÃO)
+ * ==========================================================================
+ */
 
 document.addEventListener("DOMContentLoaded", function() {
     // Escuta ativa de eventos de digitação para reatividade imediata
@@ -32,10 +34,12 @@ function sincronizarNomeGrupoSessao() {
             document.getElementById('nome_grupo_display').value = "GRUPO DIDÁTICO (LOCAL)";
         });
 }
-/* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E SINCRO REAL SUPABASE
-   PARTE 2 DE 4 - MOTORE CONTÁBIL, REATIVIDADE IGP-M E PRÉVIAS SALARIAIS
-   ========================================================================== */
+/**
+ * ==========================================================================
+ * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
+ * ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTORES CONTÁBEIS E PAINÉIS DE KPI)
+ * ==========================================================================
+ */
 
 function executarCalculoLocacaoReativa() {
     let area = parseFloat(document.getElementById('area_util').value) || 0;
@@ -59,10 +63,23 @@ function executarCalculoLocacaoReativa() {
     calcularProjecaoIgpmAnual();
 }
 
-function calcularProjecaoIgpmAnual() {/* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E SINCRO REAL SUPABASE
-   PARTE 3 DE 4 - RECARGA DE CARDS HORIZONTAIS, UTILITÁRIOS E COMPARATIVO GLOBAL
-   ========================================================================== */
+function calcularProjecaoIgpmAnual() {
+    let reserva = parseFloat(document.getElementById('reserva_propria').value) || 0;
+    // Parâmetro de simulação didática fixa: 7.2% de reajuste estimado
+    let taxaIgpmEstimada = 0.072;
+    let valorCorrigidoProjecao = reserva * (1 + taxaIgpmEstimada);
+
+    document.getElementById('txt_igpm_correcao').innerText = `R$ ${valorCorrigidoProjecao.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+}
+
+function calcularPreviaSalario() {
+    const seletor = document.getElementById('cargo_suporte');
+    const qtdInput = document.getElementById('qtd_colaboradores');
+    if (!seletor || seletor.selectedIndex === -1) return;
+    let salarioBase = parseFloat(seletor.options[seletor.selectedIndex].getAttribute('data-salario')) || 0;
+    let vagas = parseInt(qtdInput.value) || 1;
+    document.getElementById('previa_salario').value = `R$ ${(salarioBase * vagas).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+}
 
 function recargarEAtualizarPaineisTotais() {
     fetch('/api/financeiro/metricas?dept=estrutura')
@@ -104,10 +121,12 @@ function recargarEAtualizarPaineisTotais() {
             document.getElementById('kpi-custo-minuto-total').innerText = `R$ ${(dados.custo_minuto_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/min`;
         }).catch(err => console.error("Erro ao sincronizar barramentos dinâmicos:", err));
 }
-/* ==========================================================================
-   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E SINCRO REAL SUPABASE
-   PARTE 4 DE 4 - CONSULTAS ASSÍNCRONAS REAIS, FORMULÁRIOS E PERSISTÊNCIA REAL
-   ========================================================================== */
+/**
+ * ==========================================================================
+ * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
+ * ARQUIVO: estrutura.js - PARTE 3 DE 3 (OPERAÇÕES CRUD E PERSISTÊNCIA REAL)
+ * ==========================================================================
+ */
 
 function recarregarDadosDoServidor() {
     fetch('/api/estrutura/imoveis').then(res => res.json()).then(imoveis => {
@@ -158,6 +177,11 @@ function salvarImovel(event) {
     fetch('/api/estrutura/imoveis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { document.getElementById('formImobiliario').reset(); document.getElementById('imovel_id').value = ""; recarregarDadosDoServidor(); });
 }
 
+function auditarMargemSegurancaSetor(patrimonioTotal, precoNovo) {
+    let limiteMaximo = 2000000.00;
+    return { autorizado: (patrimonioTotal + precoNovo) <= limiteMaximo };
+}
+
 function salvarMaquina(event) {
     event.preventDefault();
     const seletor = document.getElementById('seletor_equipamento');
@@ -173,7 +197,7 @@ function salvarMaquina(event) {
         custo_minuto: parseFloat(opt.getAttribute('data-min')) || 0
     };
     fetch('/api/financeiro/metricas?dept=estrutura').then(res => res.json()).then(m => {
-        if (!auditarMargemSegurancaSetor(m.patrimonio_ativo_total, dados.preco).autorizado) {
+        if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).autorizado) {
             alert("Erro Operacional: Esta aquisição excede as diretrizes administrativas de tetos (Max 40% dos ativos)!");
             return;
         }
@@ -227,20 +251,3 @@ function carregarColaboradorEdicao(id) {
 function deletarMaquina(id) { if(confirm("Deseja remover este ativo do setor?")) fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); }
 function removerImovel(id) { if(confirm("Deseja rescindir este contrato patrimonial?")) fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); }
 function removerColaborador(id) { if(confirm("Deseja demitir este colaborador?")) fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); }
-
-    let reserva = parseFloat(document.getElementById('reserva_propria').value) || 0;
-    // Parâmetro de simulação didática fixa: 7.2% de reajuste estimado
-    let taxaIgpmEstimada = 0.072;
-    let valorCorrigidoProjecao = reserva * (1 + taxaIgpmEstimada);
-
-    document.getElementById('txt_igpm_correcao').innerText = `R$ ${valorCorrigidoProjecao.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-}
-
-function calcularPreviaSalario() {
-    const seletor = document.getElementById('cargo_suporte');
-    const qtdInput = document.getElementById('qtd_colaboradores');
-    if (seletor.selectedIndex === 0 || seletor.selectedIndex === -1) return;
-    let salarioBase = parseFloat(seletor.options[seletor.selectedIndex].getAttribute('data-salario')) || 0;
-    let vagas = parseInt(qtdInput.value) || 1;
-    document.getElementById('previa_salario').value = `R$ ${(salarioBase * vagas).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-}
