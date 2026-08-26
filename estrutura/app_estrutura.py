@@ -1,9 +1,7 @@
-/**
- * ==========================================================================
- * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 1 DE 3 (INICIALIZAÇÃO E SESSÃO)
- * ==========================================================================
- */
+/* ==========================================================================
+    TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
+    ARQUIVO: estrutura.js - PARTE 1 DE 3 (INICIALIZAÇÃO E SESSÃO)
+   ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", function() {
     // Escuta ativa de eventos de digitação para reatividade imediata nos formulários
