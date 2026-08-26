@@ -1,17 +1,19 @@
-/**
- * ==========================================================================
- * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 1 DE 3 (INICIALIZAÇÃO E SESSÃO)
- * ==========================================================================
- */
+/* ==========================================================================
+     TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
+        ARQUIVO: estrutura.js - PARTE 1 DE 3 (INICIALIZAÇÃO E SESSÃO)
+   ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", function() {
-    // Escuta ativa de eventos de digitação para reatividade imediata
-    document.getElementById('area_util').addEventListener('input', executarCalculoLocacaoReativa);
-    document.getElementById('valor_condominio').addEventListener('input', executarCalculoLocacaoReativa);
-    document.getElementById('reserva_propria').addEventListener('input', calcularProjecaoIgpmAnual);
+    // Escuta ativa de eventos de digitação para reatividade imediata nos formulários
+    const areaUtil = document.getElementById('area_util');
+    const valorCondominio = document.getElementById('valor_condominio');
+    const reservaPropria = document.getElementById('reserva_propria');
+
+    if (areaUtil) areaUtil.addEventListener('input', executarCalculoLocacaoReativa);
+    if (valorCondominio) valorCondominio.addEventListener('input', executarCalculoLocacaoReativa);
+    if (reservaPropria) reservaPropria.addEventListener('input', calcularProjecaoIgpmAnual);
     
-    // Inicia os barramentos síncronos e a carga de dados do banco
+    // Inicia os barramentos síncronos e a carga de dados direto do banco master
     sincronizarNomeGrupoSessao();
     recarregarDadosDoServidor();
 });
@@ -37,7 +39,7 @@ function sincronizarNomeGrupoSessao() {
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTORES CONTÁBEIS E PAINÉIS DE KPI)
+ * ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTORES CONTÁBEIS E DASHBOARD)
  * ==========================================================================
  */
 
@@ -89,10 +91,11 @@ function recargarEAtualizarPaineisTotais() {
         })
         .then(dados => {
             if (!dados) return;
-            // 📄 Orçamento de Infraestrutura Engenharia
+            
+            // Orçamento de Infraestrutura Engenharia
             document.getElementById('kpi-saldo-infra').innerText = `R$ ${(dados.saldo_infraestrutura_setor || 2000000).toLocaleString('pt-BR', {minimumFractionDigits:2})} ➔ ${(((dados.saldo_infraestrutura_setor || 2000000) / 2000000) * 100).toFixed(2)}% Disponível`;
             
-            // 🏢 Controle e Cobertura Patrimonial Ativa (Retorna estritamente o valor de equipamentos/máquinas)
+            // Controle e Cobertura Patrimonial Ativa
             document.getElementById('kpi-patrimonio-total').innerText = `R$ ${(dados.patrimonio_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             document.getElementById('kpi-teto-ativos').innerText = `Global: R$ ${(dados.patrimonio_ativo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             
@@ -101,18 +104,18 @@ function recargarEAtualizarPaineisTotais() {
             document.getElementById('barra-limite-setor').style.width = `${Math.min(percentualConsumoTeto, 100)}%`;
             document.getElementById('txt_porcentagem_budget').innerText = `${percentualConsumoTeto.toFixed(1)}% do teto consumido`;
 
-            // 🔒 Consolidação de Custos Fixos Correntes (Mensal) com Provisões somadas no backend
+            // Consolidação de Custos Fixos Correntes (Mensal)
             document.getElementById('kpi-custo-fixo-setor').innerText = `R$ ${(dados.custo_fixo_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             document.getElementById('fechamento_custo_fixo_generico').innerText = `R$ ${(dados.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
             let impactoFixo = dados.custo_fixo_total > 0 ? (dados.custo_fixo_isolado_setor / dados.custo_fixo_total) * 100 : 0;
             document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Impacto do Setor: ${impactoFixo.toFixed(2)}% do global`;
 
-            // ⚡ Estruturação de Custos Variáveis Consolidados (Utilidades somadas reativamente)
+            // Estruturação de Custos Variáveis Consolidados
             document.getElementById('kpi-custo-variavel-setor').innerText = `R$ ${(dados.custo_variavel_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             document.getElementById('kpi-custo-variavel-total').innerText = `R$ ${(dados.custo_variavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
-            // 📍 Amortização, Cap Rate, Utilidades e Custo Minuto Máquina
+            // Amortização, Cap Rate, Utilidades e Custo Minuto Máquina
             document.getElementById('txt_tempo_meses').innerText = dados.tempo_amortizacao_real || "0 meses";
             document.getElementById('txt_taxa_capitalizacao').innerText = dados.cap_rate_calculado || "0.00% a.m.";
             document.getElementById('lbl_watts_consumidos').innerText = `${(dados.watts_consumidos || 0).toLocaleString('pt-BR')} W`;
@@ -124,7 +127,7 @@ function recargarEAtualizarPaineisTotais() {
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 3 DE 3 (OPERAÇÕES CRUD E PERSISTÊNCIA REAL)
+ * ARQUIVO: estrutura.js - PARTE 3 DE 3 (PERSISTÊNCIA E OPERAÇÕES CRUD)
  * ==========================================================================
  */
 
@@ -135,7 +138,7 @@ function recarregarDadosDoServidor() {
             corpo.innerHTML = "";
             imoveis.forEach(imovel => {
                 let aluguelComCondominio = parseFloat(imovel.valor_aluguel) + parseFloat(imovel.valor_condominio);
-                corpo.innerHTML += `<tr><td><strong>${imovel.nome_empresa || "EQUIPE"}</strong></td><td><strong>${imovel.tipo_imovel}</strong><br><small style="color:#6b7280;">${imovel.regiao}</small></td><td>${imovel.area_util} m²</td><td style="color:#1e3a8a; font-weight:bold;">R$ ${aluguelComCondominio.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="carregarImovelEdicao(${imovel.id})">Editar</button> <button onclick="removerImovel(${imovel.id})">Rescindir</button></td></tr>`;
+                corpo.innerHTML += `<tr><td><strong>${imovel.nome_empresa || "EQUIPE"}</strong></td><td><strong>${imovel.tipo_imovel}</strong><br><small style="color:#6b7280;">${imovel.regiao}</small></td><td>${imovel.area_util} m²</td><td style="color:#1e3a8a; font-weight:bold;">R$ ${aluguelComCondominio.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button class="btn-action" onclick="carregarImovelEdicao(${imovel.id})">Editar</button> <button class="btn-action-del" onclick="removerImovel(${imovel.id})">Rescindir</button></td></tr>`;
             });
         }
     }).catch(err => console.error(err));
@@ -145,7 +148,7 @@ function recarregarDadosDoServidor() {
         if (corpo) {
             corpo.innerHTML = "";
             maquinas.forEach(m => {
-                corpo.innerHTML += `<tr><td><strong>${m.nome_equipamento}</strong></td><td>R$ ${parseFloat(m.preco_compra).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td>${m.potencia_watts} W</td><td>${m.consumo_gas_m3} m³</td><td style="color:#1e3a8a; font-weight:600;">R$ ${parseFloat(m.custo_minuto_maquina).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="deletarMaquina(${m.id})">Remover</button></td></tr>`;
+                corpo.innerHTML += `<tr><td><strong>${m.nome_equipamento}</strong></td><td>R$ ${parseFloat(m.preco_compra).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td>${m.potencia_watts} W</td><td>${m.consumo_gas_m3} m³</td><td style="color:#1e3a8a; font-weight:600;">R$ ${parseFloat(m.custo_minuto_maquina).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button class="btn-action-del" onclick="deletarMaquina(${m.id})">Remover</button></td></tr>`;
             });
         }
     }).catch(err => console.error(err));
@@ -155,7 +158,7 @@ function recarregarDadosDoServidor() {
         if (corpo) {
             corpo.innerHTML = "";
             equipe.forEach(func => {
-                corpo.innerHTML += `<tr><td>👤 ${func.nome}</td><td>${func.cargo}</td><td>R$ ${parseFloat(func.salario_base).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td>${func.quantidade}</td><td style="color:#1e3a8a; font-weight:600;">R$ ${parseFloat(func.subtotal).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="carregarColaboradorEdicao(${func.id})">Editar</button> <button onclick="removerColaborador(${func.id})">Demitir</button></td></tr>`;
+                corpo.innerHTML += `<tr><td>👤 ${func.nome}</td><td>${func.cargo}</td><td>R$ ${parseFloat(func.salario_base).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td>${func.quantidade}</td><td style="color:#1e3a8a; font-weight:600;">R$ ${parseFloat(func.subtotal).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button class="btn-action" onclick="carregarColaboradorEdicao(${func.id})">Editar</button> <button class="btn-action-del" onclick="removerColaborador(${func.id})">Demitir</button></td></tr>`;
             });
         }
     }).catch(err => console.error(err));
@@ -174,7 +177,12 @@ function salvarImovel(event) {
         valor_aluguel: parseFloat(document.getElementById('valor_aluguel').value) || 0,
         obs_contrato: document.getElementById('txt_igpm_correcao').innerText
     };
-    fetch('/api/estrutura/imoveis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { document.getElementById('formImobiliario').reset(); document.getElementById('imovel_id').value = ""; recarregarDadosDoServidor(); });
+    fetch('/api/estrutura/imoveis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { 
+        document.getElementById('formImobiliario').reset(); 
+        document.getElementById('imovel_id').value = ""; 
+        document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
+        recarregarDadosDoServidor(); 
+    });
 }
 
 function auditarMargemSegurancaSetor(patrimonioTotal, precoNovo) {
@@ -197,11 +205,15 @@ function salvarMaquina(event) {
         custo_minuto: parseFloat(opt.getAttribute('data-min')) || 0
     };
     fetch('/api/financeiro/metricas?dept=estrutura').then(res => res.json()).then(m => {
-        if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).autorizado) {
+        let patrimonioAtual = m.patrimonio_ativo_total || 0;
+        if (!auditarMargemSegurancaSetor(patrimonioAtual, dados.preco).autorizado) {
             alert("Erro Operacional: Esta aquisição excede as diretrizes administrativas de tetos (Max 40% dos ativos)!");
             return;
         }
-        fetch('/api/estrutura/maquinas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { seletor.selectedIndex = 0; recarregarDadosDoServidor(); });
+        fetch('/api/estrutura/maquinas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { 
+            seletor.selectedIndex = 0; 
+            recarregarDadosDoServidor(); 
+        });
     });
 }
 
@@ -227,6 +239,7 @@ function adicionarColaborador(event) {
     event.preventDefault();
     const id = document.getElementById('rh_id').value;
     const seletor = document.getElementById('cargo_suporte');
+    if (!seletor || seletor.selectedIndex === -1) return;
     const dados = {
         id: id ? parseInt(id) : null,
         nome: document.getElementById('rh_nome').value,
@@ -234,7 +247,12 @@ function adicionarColaborador(event) {
         salario_base: parseFloat(seletor.options[seletor.selectedIndex].getAttribute('data-salario')) || 0,
         quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 1
     };
-    fetch('/api/estrutura/rh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { document.getElementById('formContratacaoPredial').reset(); document.getElementById('rh_id').value = ""; recarregarDadosDoServidor(); });
+    fetch('/api/estrutura/rh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { 
+        document.getElementById('formContratacaoPredial').reset(); 
+        document.getElementById('rh_id').value = ""; 
+        document.getElementById('btn_contratar').innerText = "👥 Confirmar Registro";
+        recarregarDadosDoServidor(); 
+    });
 }
 
 function carregarColaboradorEdicao(id) {
@@ -248,6 +266,20 @@ function carregarColaboradorEdicao(id) {
     });
 }
 
-function deletarMaquina(id) { if(confirm("Deseja remover este ativo do setor?")) fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); }
-function removerImovel(id) { if(confirm("Deseja rescindir este contrato patrimonial?")) fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); }
-function removerColaborador(id) { if(confirm("Deseja demitir este colaborador?")) fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); }
+function deletarMaquina(id) { 
+    if(confirm("Deseja remover este ativo do setor?")) {
+        fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); 
+    }
+}
+
+function removerImovel(id) { 
+    if(confirm("Deseja rescindir este contrato patrimonial?")) {
+        fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); 
+    }
+}
+
+function removerColaborador(id) { 
+    if(confirm("Deseja demitir este colaborador?")) {
+        fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); 
+    }
+}
