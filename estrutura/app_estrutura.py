@@ -67,7 +67,7 @@ def api_imoveis_listar():
         
         cursor.execute('SELECT * FROM imoveis_simulacao WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        return jsonify([dict(linha) for linha in linhas])
+        return jsonify([dict(linha) for child in linhas for linha in [child]])
         
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
@@ -99,7 +99,7 @@ def api_rh_listar():
         
         cursor.execute('SELECT * FROM estrutura_rh WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        return jsonify([dict(linha) for linha in linhas])
+        return jsonify([dict(linha) for child in linhas for linha in [child]])
         
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
@@ -132,7 +132,7 @@ def api_maquinas_listar():
         
         cursor.execute('SELECT * FROM erp_maquinas WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        return jsonify([dict(linha) for linha in linhas])
+        return jsonify([dict(linha) for child in linhas for linha in [child]])
         
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
@@ -142,7 +142,7 @@ def api_maquinas_listar():
         if cursor: cursor.close()
         if conexao: conexao.close()
 # ==========================================================================
-# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INVERSOS
+# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
 # ARQUIVO: app_estrutura.py - PARTE 2 DE 3 (GRAVAÇÃO E ATUALIZAÇÃO POST)
 # ==========================================================================
 
@@ -283,7 +283,7 @@ def api_maquinas_salvar():
         if conexao: conexao.close()
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - PARTE 3 DE 3 (OPERAÇÕES INDIVIDUAIS E MÉTRICAS CORE)
+# ARQUIVO: app_estrutura.py - PARTE 3 DE 3 (OPERAÇÕES INDIVIDUAIS E MÈTRICAS)
 # ==========================================================================
 
 @estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
@@ -381,14 +381,14 @@ def api_individual_maquina(id_reg):
         if cursor: cursor.close()
         if conexao: conexao.close()
 
-@estrutura_blueprint.route('/api/financeiro/metricas', methods=['GET'])
-def api_financeiro_metricas():
-    """Motor contábil unificado que alimenta de forma síncrona a dashboard horizontal do cliente"""
+@estrutura_blueprint.route('/api/estrutura/metricas', methods=['GET'])
+def api_modulo_local_metricas():
+    """Rota isolada para evitar colisão com o app_master, calculando e retornando as utilidades do setor"""
     if not session.get('logado'): 
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     id_equipe = session.get('id_equipe', 'equipe_alfa')
-    nome_empresa = session.get('nome_empresa', 'GRUPO DIDÁTICO').upper()
+    nome_empresa = session.get('nome_empresa', session.get('nome_grupo', 'GRUPO DIDÁTICO')).upper()
     conexao = obter_conexao_master()
     cursor = None
     
