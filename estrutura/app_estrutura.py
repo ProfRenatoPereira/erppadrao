@@ -1,7 +1,7 @@
-// ==========================================================================
-//    TERADMAS ERP REV II  MÓDULO II VII: ENGENHARIA IMOBILIÁRIA E ATIVOS
-//    ARQUIVO estrutura  PARTE I DE III  INICIALIZAÇÃO  SESSÃO.
-// ========================================================================== 
+/* ==========================================================================
+   TERADMAS ERP v2.6 - ENGINE DE GESTÃO PATRIMONIAL E SINCRO REAL SUPABASE
+   PARTE 1 DE 2 - GATILHOS DE EXECUÇÃO E TRATAMENTO SEGURO DE SESSÃO
+   ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", function() {
     // Escuta ativa de eventos de digitação para reatividade imediata nos formulários
