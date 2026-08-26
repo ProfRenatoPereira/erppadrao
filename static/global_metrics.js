@@ -12,7 +12,7 @@ const CONFIG_GLOBAL_EMPRESA = {
     limitesDinamicos: {
         "estrutura": 40.0, // Fallback elástico de 40% para Engenharia Imobiliária
         "maquinas": 40.0,  // Fallback elástico de 40% para Engenharia de Ativos
-        "materiais": 20.0, // Fallback padrão de 20% para Almoxarifado
+        "materiais": 20.0, // Ajustado com precisão para português evitando quebras de string
         "outros": 20.0
     }
 };
@@ -49,7 +49,7 @@ function obterLimiteElasticidadeSetor() {
     } else if (urlAtual.includes('maquinas')) {
         chaveSetor = "maquinas";
     } else if (urlAtual.includes('materiais')) {
-        chaveSetor = "materials";
+        chaveSetor = "materiais"; // Alinhamento cirúrgico para bater com o dicionário de chaves
     }
     
     const porcentagemFracionada = CONFIG_GLOBAL_EMPRESA.limitesDinamicos[chaveSetor] || CONFIG_GLOBAL_EMPRESA.limitesDinamicos["outros"];
@@ -94,7 +94,7 @@ function auditarMargemSegurancaSetor(custoAtualSetor, novoCustoPretendido = 0) {
         tetoMaximoSetor: limiteNominalMaximo,
         custoProjetado: impactoProjetado,
         saldoRestante: saldoDisponivelElasticidade,
-        porcentagemConsumo: Math.min(100, Math.max(0, Gold = aderenciaConsumidaPercentual))
+        porcentagemConsumo: Math.min(100, Math.max(0, aderenciaConsumidaPercentual)) // Removido o erro de sintaxe 'Gold ='
     };
 }
 
@@ -106,7 +106,9 @@ function forcarAtualizacaoMetricasTopboard() {
     console.log("🔄 [MASTER EVENTO]: Atualizando barramentos de dados entre módulos...");
     
     // Varre e executa os fallbacks síncronos dos scripts locais ativos na sessão
-    if (typeof window.carregarDadosIniciais === 'function') {
+    if (typeof window.recarregarDadosDoServidor === 'function') {
+        window.recarregarDadosDoServidor();
+    } else if (typeof window.carregarDadosIniciais === 'function') {
         window.carregarDadosIniciais();
     } else if (typeof window.executarCalculoLocacaoReativa === 'function') {
         window.executarCalculoLocacaoReativa();
