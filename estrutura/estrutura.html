@@ -120,7 +120,7 @@
         </div>
     </div>
 
-    <!-- 📊 NOVOS CARDS HORIZONTAIS DE REDES E UTILIDADES TÉCNICAS (CONTRATADO VS CONSUMIDO) -->
+    <!-- 📊 CARDS HORIZONTAIS DE REDES E UTILIDADES TÉCNICAS -->
     <div class="kpi-row-panel" style="margin-top: 10px;">
         <div class="kpi-card-horizontal">
             <div class="label-form" style="color: #b45309;">⚡ Rede Elétrica Industrial</div>
@@ -215,10 +215,14 @@
         <div id="barra_progresso_budget"></div>
         <span id="top_custo_fixo_geral_empresa">R$ 21.350,00/mês</span>
     </div>
+    
     <div class="page-header">
         <h2 class="page-title">Área do Administrador: Modelagem Patrimonial</h2>
     </div>
-
+<!-- ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+   PARTE 3 DE 3 - FORMULÁRIOS, TABELAS DO SUPABASE E INJEÇÃO SCRIPT BLUEPRINT
+   ========================================================================== -->
     <div class="grid-main">
         <!-- SEÇÃO: ALOCAÇÃO DE ESPAÇO FÍSICO -->
         <div class="card">
@@ -267,6 +271,7 @@
                 <button type="submit" class="btn-submit" style="background-color: #b45309; margin-top: 10px;">🚜 Adquirir Equipamento</button>
             </form>
         </div>
+
         <!-- SEÇÃO: CONTRATAÇÃO DE APOIO PREDIAL -->
         <div class="card">
             <h3 class="card-title">👥 Contratação de Apoio Predial</h3>
@@ -297,8 +302,17 @@
         </div>
     </div>
 
-    <footer class="app-footer"><p class="footer-brand-title">© Copyright Física Renato Pereira ®ψΣ. Rev. 2026.</p></footer>
+    <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
+        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
+            <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
+        </footer>
 </div>
+
+<!-- INJEÇÃO NATIVA DA ROTA DO BLUEPRINT DA FLASK ENGINE -->
+<script src="/estrutura/estrutura.js"></script>
 
 <script>
 (function() {
