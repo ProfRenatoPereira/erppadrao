@@ -142,7 +142,7 @@ def api_maquinas_listar():
         if cursor: cursor.close()
         if conexao: conexao.close()
 # ==========================================================================
-# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INVERSOS
 # ARQUIVO: app_estrutura.py - PARTE 2 DE 3 (GRAVAÇÃO E ATUALIZAÇÃO POST)
 # ==========================================================================
 
