@@ -83,282 +83,164 @@
 </header>
 <!-- ==========================================================================
    TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-   PARTE 2 DE 3 - MATRIZ DE KPIs HORIZONTAIS COMPARATIVOS E REGRAS DE TETOS
+   PARTE 2 DE 3 - MATRIZ DE INFRAESTRUTURA, UTILIDADES E COMPARAÇÕES GLOBAIS
    ========================================================================== -->
 <div class="container">
-    
-    <!-- 📊 MATRIZ SUPERIOR DE MÉTRICAS COMPACTAS EM LINHAS HORIZONTAIS COMPARATIVAS (SETOR VS EMPRESA GLOBAL) -->
     <div class="kpi-row-panel">
         <div class="kpi-card-horizontal">
-            <div class="label-form">💰 Fluxo de Capital Nominal</div>
-            <div class="kpi-comparison-grid">
-                <div class="kpi-metric-block">
-                    <span class="kpi-metric-label">Setor (Alocado)</span>
-                    <span class="kpi-metric-value" id="top_giro_global_label">R$ 2.000.000,00</span>
-                    <span class="kpi-sub-label-progress" style="color: #16a34a;">➔ 40.00% do Cap.</span>
-                </div>
-                <div class="kpi-metric-block global-spec">
-                    <span class="kpi-metric-label">Global Empresa</span>
-                    <span class="kpi-metric-value" id="top_capital_total">R$ 5.000.000,00</span>
-                    <span class="kpi-sub-label-progress" style="color: #3b82f6;">➔ 100% Nominal</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="kpi-card-horizontal">
-            <div class="label-form">📄 Orçamento de Infraestrutura Engenharia</div>
+            <div class="label-form">🏢 Orçamento de Infraestrutura Engenharia</div>
             <div class="kpi-comparison-grid">
                 <div class="kpi-metric-block">
                     <span class="kpi-metric-label">Saldo Setor Imobiliário</span>
-                    <span class="kpi-metric-value" id="kpi-saldo-infra" style="color: #16a34a;">R$ 1.947.341,50</span>
-                    <span class="kpi-sub-label-progress" style="color: #16a34a;">➔ 97.37% Disponível</span>
-                </div>
-                <div class="kpi-metric-block global-spec">
-                    <span class="kpi-metric-label">Inicial Global da Infra</span>
-                    <span class="kpi-metric-value" id="kpi-orcamento-inicial">R$ 2.000.000,00</span>
-                    <span class="kpi-sub-label-progress" style="color: #581c87;">➔ 40.00% do Cap.</span>
+                    <span class="kpi-metric-value" id="kpi-saldo-infra" style="color:#16a34a; font-weight:bold;">R$ 2.000.000,00</span>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="kpi-row-panel">
-        <div class="kpi-card-horizontal" id="card_budget_limite" style="grid-column: span 2;">
-            <div class="label-form" style="color: #78350f;">🏢 Controle e Cobertura Patrimonial Ativa</div>
+        <div class="kpi-card-horizontal">
+            <div class="label-form">🏢 Controle e Cobertura Patrimonial Ativa</div>
             <div class="kpi-comparison-grid">
                 <div class="kpi-metric-block">
-                    <span class="kpi-metric-label">Patrimônio Deste Setor</span>
-                    <span class="kpi-metric-value" id="kpi-patrimonio-total" style="color: #b45309;">R$ 52.658,50</span>
-                    <span class="kpi-sub-label-progress" style="color: #b45309;">➔ Consumo do Teto: 2.6%</span>
+                    <span class="kpi-metric-label">Patrimônio Deste Setor (Equipamentos)</span>
+                    <span class="kpi-metric-value" id="kpi-patrimonio-total" style="color:#b45309;">R$ 0,00</span>
                 </div>
                 <div class="kpi-metric-block">
                     <span class="kpi-metric-label">Limite Geral (Max 40% Ativos)</span>
-                    <span class="kpi-metric-value" id="kpi-teto-ativos" style="color: #3b82f6;">R$ 2.000.000,00</span>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" id="barra-limite-setor"></div>
+                    <span class="kpi-metric-value" id="kpi-teto-ativos">Global: R$ 0,00</span>
+                    <div class="progress-bar-container" style="background:#e2e8f0; height:8px; border-radius:4px; margin-top:2px;">
+                        <div class="progress-bar-fill" id="barra-limite-setor" style="background:#3b82f6; height:100%; width:0%; transition: width 0.3s;"></div>
                     </div>
-                    <div style="display:flex; justify-content:flex-end; margin-top:2px;">
-                        <span id="txt_porcentagem_budget" style="font-size:9px; font-weight:bold; color:#1e3a8a;">0.0% do teto consumido</span>
-                    </div>
+                    <span id="txt_porcentagem_budget" style="font-size:9px; font-weight:bold; color:#1e3a8a;">0% consumido</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="kpi-row-panel">
+    <!-- PAINÉIS DE ENERGIA, GÁS E ÁGUA REAL (CONTRATADO VS EQUACIONAMENTO CONSUMIDO) -->
+    <div class="kpi-row-panel" style="margin-top:10px;">
+        <div class="kpi-card-horizontal">
+            <div class="label-form">⚡ Malha de Energia Elétrica</div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:4px;">
+                <div>Contratada: <strong>50.000 W</strong></div>
+                <div>Consumida: <strong id="lbl_watts_consumidos" style="color:#d97706;">0 W</strong></div>
+            </div>
+        </div>
+        <div class="kpi-card-horizontal">
+            <div class="label-form">🔥 Rede de Gás Industrial</div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:4px;">
+                <div>Contratado: <strong>250 m³</strong></div>
+                <div>Consumido: <strong id="lbl_gas_consumido" style="color:#dc2626;">0 m³</strong></div>
+            </div>
+        </div>
+        <div class="kpi-card-horizontal">
+            <div class="label-form">💧 Abastecimento de Água Tratada</div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:4px;">
+                <div>Contratada: <strong>500 m³</strong></div>
+                <div>Consumida: <strong id="lbl_agua_consumida" style="color:#2563eb;">0 m³</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CARD HORIZONTAL DO CUSTO MINUTO MÁQUINA DO SETOR -->
+    <div class="kpi-row-panel" style="margin-top:10px;">
+        <div class="kpi-card-horizontal" style="grid-column: span 3; text-align: center; background: #fafafa; border: 1px solid #e2e8f0;">
+            <div class="label-form" style="color:#0f172a;">⏱️ Indicador de Custo Minuto Máquina do Setor</div>
+            <div class="kpi-metric-value" id="kpi-custo-minuto-total" style="color:#1e3a8a; font-size:22px; font-weight:700; margin-top:4px;">R$ 0,00/min</div>
+        </div>
+    </div>
+
+    <div class="kpi-row-panel" style="margin-top:10px;">
         <div class="kpi-card-horizontal">
             <div class="label-form">🔒 Consolidação de Custos Fixos Correntes (Mensal)</div>
-            <div class="kpi-comparison-grid">
-                <div class="kpi-metric-block">
-                    <span class="kpi-metric-label">Fixo Deste Setor</span>
-                    <span class="kpi-metric-value" id="kpi-custo-fixo-setor" style="color: #5b21b6;">R$ 0,00/mês</span>
-                </div>
-                <div class="kpi-metric-block danger-spec">
-                    <span class="kpi-metric-label">Total Global Empresa</span>
-                    <span class="kpi-metric-value" id="fechamento_custo_fixo_generico">R$ 0,00/mês</span>
-                    <span class="kpi-sub-label-progress" id="txt_proporcao_global_empresa" style="color: #db2777; font-weight: bold;">➔ Impacto do Setor: 100.00%</span>
-                </div>
-            </div>
+            <div style="font-size:12px; margin-top:4px;">Setor: <strong id="kpi-custo-fixo-setor" style="color:#5b21b6;">R$ 0,00</strong> | Global: <strong id="fechamento_custo_fixo_generico">R$ 0,00</strong></div>
+            <div id="txt_proporcao_global_empresa" style="font-size:10px; color:#dc2626; font-weight:bold; margin-top:2px;">➔ Impacto do Setor: 0.00% do global</div>
         </div>
-
         <div class="kpi-card-horizontal">
             <div class="label-form">⚡ Estruturação de Custos Variáveis Consolidados</div>
-            <div class="kpi-comparison-grid">
-                <div class="kpi-metric-block">
-                    <span class="kpi-metric-label">Variável Deste Setor</span>
-                    <span class="kpi-metric-value" id="kpi-custo-variavel-setor" style="color: #065f46;">R$ 0,00/mês</span>
-                </div>
-                <div class="kpi-metric-block global-spec">
-                    <span class="kpi-metric-label">Total Global Empresa</span>
-                    <span class="kpi-metric-value" id="kpi-custo-variavel-total">R$ 0,00/mês</span>
-                </div>
-            </div>
+            <div style="font-size:12px; margin-top:4px;">Setor: <strong id="kpi-custo-variavel-setor" style="color:#065f46;">R$ 0,00</strong> | Global Empresa: <strong id="kpi-custo-variavel-total">R$ 0,00</strong></div>
         </div>
-    </div>
-
-    <!-- ANCORAGEM REATIVA OCULTA DO DOM -->
-    <div style="display: none;">
-        <span id="top_giro_global">R$ 2.000.000,00</span>
-        <span id="top_budget_inicial">R$ 2.000.000,00</span>
-        <span id="top_budget_saldo">R$ 2.000.000,00</span>
-        <span id="top_patrimonio_setor">R$ 0,00</span>
-        <span id="top_budget_setor">R$ 0,00 / R$ 2.000.000,00</span>
-        <div id="barra_progresso_budget"></div>
-        <span id="top_custo_fixo_geral_empresa">R$ 21.350,00/mês</span>
     </div>
 <!-- ==========================================================================
    TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-   PARTE 3A - PAINÉIS DE CADASTRO E MODELAGEM DE ESPAÇO FÍSICO
+   PARTE 3 DE 3 - PAINÉIS DE MODELAGEM PATRIMONIAL E TABELAS DINÂMICAS DO BANCO
    ========================================================================== -->
     <div class="page-header">
         <h2 class="page-title">Área do Administrador: Modelagem Patrimonial</h2>
     </div>
 
-    <div class="grid-main">
-        <!-- SEÇÃO: ALOCAÇÃO DE ESPAÇO FÍSICO -->
+    <div class="grid-main" style="margin-top:15px;">
+        <!-- FORMULÁRIO ESPAÇO FÍSICO IMOBILIÁRIO -->
         <div class="card">
             <h3 class="card-title">Alocação de Espaço Físico</h3>
             <form id="formImobiliario" onsubmit="salvarImovel(event)">
                 <input type="hidden" id="imovel_id" value="">
-                
                 <div class="grid-form-row">
-                    <div class="flex-col-gap">
-                        <label class="label-form">Identificação do Grupo:</label>
-                        <input type="text" id="nome_grupo_display" readonly class="input-form input-form-readonly">
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Tipo de Estrutura:</label>
-                        <select id="tipo_imovel" required class="select-form">
-                            <option value="Barracão Industrial">Barracão Industrial / Galpão Fabril</option>
-                            <option value="Escritório Comercial">Escritório Administrativo Central</option>
-                        </select>
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Cidade / Município:</label>
-                        <select id="cidade" required class="select-form">
-                            <option value="Curitiba">Curitiba</option>
-                            <option value="São José dos Pinhais">São José dos Pinhais</option>
-                            <option value="Pinhais">Pinhais</option>
-                            <option value="Araucária">Araucária</option>
-                            <option value="Campo Largo">Campo Largo</option>
-                        </select>
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Bairro / Polo:</label>
-                        <select id="bairro" required class="select-form">
-                            <option value="CIC">CIC (Cidade Industrial)</option>
-                            <option value="Boqueirão">Boqueirão</option>
-                            <option value="Centro">Centro Urbano</option>
-                            <option value="Distrito Logístico">Polo Industrial</option>
-                        </select>
-                    </div>
+                    <div><label class="label-form">Grupo:</label><input type="text" id="nome_grupo_display" readonly class="input-form input-form-readonly"></div>
+                    <div><label class="label-form">Tipo de Estrutura:</label><select id="tipo_imovel" required class="select-form"><option value="Barracão Industrial">Barracão Industrial</option><option value="Escritório Comercial">Escritório Comercial</option></select></div>
+                    <div><label class="label-form">Cidade:</label><select id="cidade" class="select-form"><option value="Curitiba">Curitiba</option></select></div>
+                    <div><label class="label-form">Bairro:</label><select id="bairro" class="select-form"><option value="CIC">CIC</option></select></div>
                 </div>
-
                 <div class="grid-form-row">
-                    <div class="flex-col-gap">
-                        <label class="label-form">Área Útil (m²):</label>
-                        <input type="number" id="area_util" value="150" required min="10" class="input-form" style="font-weight:bold;">
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Taxa Condomínio (R$):</label>
-                        <input type="number" id="valor_condominio" step="0.01" value="350.00" class="input-form">
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form" style="color:#1e3a8a;">Aluguel Calculado (R$):</label>
-                        <input type="number" id="valor_aluguel" readonly class="input-form input-form-readonly" style="color:#1e3a8a;">
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form" style="color:#b45309;">Taxa Anual (R$):</label>
-                        <input type="number" id="taxa_anual" readonly class="input-form input-form-readonly" style="color:#b45309;">
-                    </div>
+                    <div><label class="label-form">Área Útil (m²):</label><input type="number" id="area_util" value="150" required class="input-form" style="font-weight:bold;"></div>
+                    <div><label class="label-form">Taxa Condomínio (R$):</label><input type="number" id="valor_condominio" value="350.00" class="input-form"></div>
+                    <div><label class="label-form" style="color:#1e3a8a;">Aluguel Calculado (R$):</label><input type="number" id="valor_aluguel" readonly class="input-form input-form-readonly"></div>
+                    <div><label class="label-form" style="color:#b45309;">Taxa Anual (R$):</label><input type="number" id="taxa_anual" readonly class="input-form input-form-readonly"></div>
                 </div>
-
                 <div class="equations-mosaico-grid">
-                    <div class="eq-box-provisao">
-                        <label class="label-form">🏢 Provisão Imóvel Próprio</label>
-                        <input type="number" id="reserva_propria" step="0.01" class="input-form" oninput="calcularEngenhariaPatrimonial()">
-                        <span>Projeção IGPM Anual: <strong id="txt_igpm_correcao">R$ 0,00</strong></span>
-                    </div>
-                    <div class="eq-box-amortizacao">
-                        <label class="label-form">📍 Amortização Patrimonial Física</label>
-                        <div>Valor de Mercado: <span id="txt_valor_mercado_real">R$ 0,00</span></div>
-                        <span>Tempo necessário: <strong id="txt_tempo_meses">0 meses</strong></span>
-                    </div>
-                    <div class="eq-box-rentabilidade">
-                        <label class="label-form">📈 Rentabilidade de Ativo (Cap Rate)</label>
-                        <div>Taxa Capitalização: <span id="txt_taxa_capitalizacao">0.00% a.m.</span></div>
-                        <span>➔ Proporção locatícia regional.</span>
-                    </div>
+                    <div class="eq-box-provisao"><label class="label-form">🏢 Provisão Imóvel Próprio</label><input type="number" id="reserva_propria" step="0.01" class="input-form"><span>Projeção IGPM Anual: <strong id="txt_igpm_correcao">R$ 0,00</strong></span></div>
+                    <div class="eq-box-amortizacao"><label class="label-form">📍 Amortização Física</label><div>Valor de Mercado: <span id="txt_valor_mercado_real">R$ 0,00</span></div><span>Tempo: <strong id="txt_tempo_meses">0 meses</strong></span></div>
+                    <div class="eq-box-rentabilidade"><label class="label-form">📈 Rentabilidade (Cap Rate)</label><div>Taxa Capitalização: <span id="txt_taxa_capitalizacao">0.00% a.m.</span></div></div>
                 </div>
                 <button type="submit" id="btn_salvar" class="btn-submit">💾 Firmar Contrato de Locação</button>
             </form>
         </div>
 
-        <!-- SEÇÃO: CONTRATAÇÃO DE APOIO PREDIAL -->
+        <!-- FORMULÁRIO DO QUADRO DE MÁQUINAS, REFEIÇÕES E EQUIPAMENTOS COMERCIAIS -->
+        <div class="card">
+            <h3 class="card-title">🚜 Alocação de Equipamentos e Utilidades de Suporte</h3>
+            <form id="formMaquinas" onsubmit="salvarMaquina(event)">
+                <div class="grid-form-row">
+                    <div style="grid-column: span 4;">
+                        <label class="label-form">Selecione o Item Comercial / Industrial para o Setor:</label>
+                        <select id="seletor_equipamento" required class="select-form">
+                            <option value="" disabled selected>Escolha um equipamento...</option>
+                            <option value="Fogão Industrial" data-preco="4500" data-watts="0" data-gas="1.2" data-agua="0" data-dep="10" data-min="0.15">Fogão Industrial P5 de Alta Pressão</option>
+                            <option value="Geladeira Comercial" data-preco="6800" data-watts="850" data-gas="0" data-agua="0" data-dep="10" data-min="0.22">Geladeira Duplex Inox Expositora</option>
+                            <option value="Freezer Horizontal" data-preco="5200" data-watts="1100" data-gas="0" data-agua="0" data-dep="10" data-min="0.18">Freezer Industrial F500 Horizontal</option>
+                            <option value="Forno Turbo Industrial" data-preco="12500" data-watts="1500" data-gas="2.5" data-agua="0.05" data-dep="12" data-min="0.45">Forno Turbo Convector Gás/Elétrico</option>
+                            <option value="Banho Maria Industrial" data-preco="3100" data-watts="2000" data-gas="0" data-agua="0.02" data-dep="10" data-min="0.12">Mesa Térmica Buffet Autocontrolada</option>
+                            <option value="Conjunto Computador Recepção" data-preco="3500" data-watts="350" data-gas="0" data-agua="0" data-dep="20" data-min="0.08">Desktop Administrativo + Telefone IP</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" style="background:#b45309;">🚜 Adquirir Equipamento e Ativar Linha Técnica</button>
+            </form>
+        </div>
+
+        <!-- FORMULÁRIO COLABORADORES SUPORTE -->
         <div class="card">
             <h3 class="card-title">👥 Contratação de Apoio Predial</h3>
             <form id="formContratacaoPredial" onsubmit="adicionarColaborador(event)">
                 <input type="hidden" id="rh_id" value="">
                 <div class="grid-form-row">
-                    <div class="flex-col-gap">
-                        <label class="label-form">Nome do Colaborador (Fictício):</label>
-                        <input type="text" id="rh_nome" required class="input-form" placeholder="Nome Completo">
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Cargo Operacional:</label>
-                        <select id="cargo_suporte" required class="select-form" onchange="calcularPreviaSalario()">
-                            <option value="" disabled selected>Escolha uma função...</option>
-                            <option value="Zelador" data-salario="2017.32">Zelador — R$ 2.017,32</option>
-                            <option value="Porteiro" data-salario="2170.41">Porteiro — R$ 2.170,41</option>
-                            <option value="Recepcionista" data-salario="1957.06">Recepcionista — R$ 1.957,06</option>
-                            <option value="Cozinheira" data-salario="2250.00">Cozinheira — R$ 2.250,00</option>
-                            <option value="Ajudante de Cozinha" data-salario="1913.66">Ajudante de Cozinha — R$ 1.913,66</option>
-                        </select>
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Quantidade (Vagas):</label>
-                        <input type="number" id="qtd_colaboradores" min="1" value="1" required class="input-form" oninput="calcularPreviaSalario()">
-                    </div>
-                    <div class="flex-col-gap">
-                        <label class="label-form">Prévias da Folha:</label>
-                        <input type="text" id="previa_salario" readonly class="input-form input-form-readonly" value="R$ 0,00">
-                    </div>
+                    <div><label class="label-form">Nome:</label><input type="text" id="rh_nome" required class="input-form"></div>
+                    <div><label class="label-form">Cargo:</label><select id="cargo_suporte" required class="select-form" onchange="calcularPreviaSalario()"><option value="Zelador" data-salario="2017.32">Zelador</option><option value="Porteiro" data-salario="2170.41">Porteiro</option><option value="Recepcionista" data-salario="1957.06">Recepcionista</option></select></div>
+                    <div><label class="label-form">Vagas:</label><input type="number" id="qtd_colaboradores" min="1" value="1" class="input-form" oninput="calcularPreviaSalario()"></div>
+                    <div><label class="label-form">Prévia:</label><input type="text" id="previa_salario" readonly class="input-form input-form-readonly" value="R$ 0,00"></div>
                 </div>
-                <button type="submit" id="btn_contratar" class="btn-submit" style="background-color: #1e3a8a;">👥 Confirmar Registro de Funcionário</button>
+                <button type="submit" id="btn_contratar" class="btn-submit" style="background-color: #1e3a8a;">👥 Confirmar Funcionário</button>
             </form>
         </div>
-<!-- ==========================================================================
-   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-   PARTE 3B - QUADROS DE DADOS, RODAPÉ INSTITUCIONAL E FECHAMENTO
-   ========================================================================== -->
+
         <!-- QUADROS DE TABELAS DINÂMICAS -->
-        <div class="table-container">
-            <div class="table-header-dark">Contratos Imobiliários Firmados no Supabase</div>
-            <div class="table-responsive">
-                <table>
-                    <thead><tr><th>Turma/Grupo</th><th>Estrutura / Região</th><th>Área Útil</th><th>Aluguel Mensal</th><th style="text-align:center;">Ações Disponíveis</th></tr></thead>
-                    <tbody id="tabela_imoveis"></tbody>
-                </table>
-            </div>
-        </div>
+        <div class="table-container"><div class="table-header-dark">Contratos Imobiliários Firmados no Supabase</div><table class="table-responsive"><thead><tr><th>Grupo</th><th>Estrutura / Região</th><th>Área</th><th>Aluguel Mensal (Bruto)</th><th>Ações</th></tr></thead><tbody id="tabela_imoveis"></tbody></table></div>
+        <div class="table-container"><div class="table-header-dark">Equipamentos e Máquinas Operantes no Setor</div><table class="table-responsive"><thead><tr><th>Item Equipamento</th><th>Preço Ativo</th><th>Consumo Watts</th><th>Consumo Gás</th><th>Custo/Min</th><th>Ações</th></tr></thead><tbody id="tabela_maquinas"></tbody></table></div>
+        <div class="table-container"><div class="table-header-slate">Quadro de Colaboradores e Suporte Alocados</div><table class="table-responsive"><thead><tr><th>Nome</th><th>Cargo Operacional</th><th>Salário Base</th><th>Qtd</th><th>Subtotal Fixado</th><th>Ações</th></tr></thead><tbody id="tabela_colaboradores"></tbody></table></div>
+    </div>
 
-        <div class="table-container">
-            <div class="table-header-slate">Quadro de Colaboradores e Suporte Alocados</div>
-            <div class="table-responsive">
-                <table>
-                    <thead><tr><th>Nome Funcional</th><th>Cargo Operacional</th><th>Salário Base</th><th>Quantidade</th><th>Subtotal Fixado</th><th style="text-align:center;">Ações Operacionais</th></tr></thead>
-                    <tbody id="tabela_colaboradores"></tbody>
-                </table>
-            </div>
-        </div>
-    </div> <!-- Fim do .grid-main -->
+    <footer class="app-footer"><p>© Copyright Física Renato Pereira ®ψΣ. Rev. 2026.</p></footer>
+</div>
 
-    <!-- RODAPÉ INSTITUCIONAL WCAG OFICIAL -->
-    <footer class="app-footer">
-        <div class="footer-credits">
-            <strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.
-        </div>
-        <div class="footer-center-block">
-            <p class="footer-paragraph">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
-            <p class="footer-brand-title">© Copyright Física Renato Pereira ®ψΣ.</p>
-            <small class="footer-revision-small">Ed. 00-10/2024. Rev. 01-05/2026.</small>
-        </div>
-    </footer>
-</div> <!-- Fim do .container -->
-
-<!-- SHIELD INDEPENDENTE ANTI-TRAVAMENTO INTERFACE -->
-<script>
-(function() {
-    function destravarInterface() {
-        document.querySelectorAll('input, select, button, textarea').forEach(function(el) {
-            if (!['valor_aluguel', 'taxa_anual', 'previa_salario', 'nome_grupo_display'].includes(el.id)) {
-                el.removeAttribute('disabled'); el.removeAttribute('readonly'); el.style.opacity = "1"; el.style.pointerEvents = "auto";
-            }
-        });
-    }
-    destravarInterface(); setTimeout(destravarInterface, 1000);
-})();
-</script>
+<script src="/static/js/global_metrics.js"></script>
 <script src="/estrutura/estrutura.js"></script>
 </body>
 </html>
