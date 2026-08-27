@@ -1,6 +1,6 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - PARTE 1 DE 4 (ARQUITETURA E ROTAS DE CONTEÚDO)
+# ARQUIVO: app_estrutura.py - PARTE 1 DE 4 (ARQUITETURA DE TOPO E VIEWS)
 # ==========================================================================
 
 import os
@@ -46,7 +46,7 @@ def rota_estrutura_js():
         return "console.error('Erro Crítico: Script estrutural estrutura.js ausente ou corrompido.');", 404
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - PARTE 2 DE 4 (ENDPOINTS DE LEITURA E LISTAGEM)
+# ARQUIVO: app_estrutura.py - PARTE 2 DE 4 (ENDPOINTS DE LEITURA E CONSULTA)
 # ==========================================================================
 
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
@@ -225,7 +225,7 @@ def api_maquinas_salvar():
         return jsonify({'status': 'erro', 'message': 'Falha interna ao processar persistência de ativos.'}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: cursor.close()
 
 @estrutura_blueprint.route('/api/estrutura/rh', methods=['POST'])
 def api_rh_salvar():
@@ -378,7 +378,7 @@ def api_modulo_local_metricas():
         ''', (id_equipe,))
         m_setor = cursor.fetchone()
         
-        # 4. Somatório de Patrimônios e CMM Globais (Todos os 20 setores da Empresa)
+        # 4. Somatório de Patrimônios e CMM Globais (Todos os setores da Empresa)
         cursor.execute("SELECT COALESCE(SUM(preco_compra), 0) as pat_global, COALESCE(SUM(custo_minuto_maquina), 0) as cmm_global FROM erp_maquinas WHERE equipe_id = %s", (id_equipe,))
         m_global = cursor.fetchone()
         
@@ -393,7 +393,7 @@ def api_modulo_local_metricas():
         c_provisao = c_aluguel + c_condo
         c_fixo_setor = c_aluguel + c_condo + c_rh + c_provisao
         
-        # Consolidação Global somando a provisão e as despesas residuais da fábrica (R$ 21.350,00)
+        # Consolidação Global somando os Custos Fixos acumulados + valor fixo simulado de suporte
         c_fixo_global_todos_setores = imob_global + rh_global + imob_global + 21350.00
         c_var_setor = (m_setor['w'] * 0.00075) + (m_setor['g'] * 4.50) + (m_setor['a'] * 8.20)
         
