@@ -1,300 +1,391 @@
-/**
- * ==========================================================================
- * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 1 DE 4 (INICIALIZAÇÃO E ESCOPO NATIVO)
- * ==========================================================================
- */
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+# ARQUIVO: app_estrutura.py - PARTE 1 DE 4 (ARQUITETURA DE TOPO E VIEWS)
+# ==========================================================================
 
-// Declarações explícitas de funções para evitar problemas de hoisting com listeners
-function inicializarMotorLeitorVoz() {
-    const btnLeitor = document.getElementById('btn-leitor');
-    if (btnLeitor) {
-        let lendo = false;
-        let sintese = window.speechSynthesis;
-        let utterance;
+import os
+from flask import Blueprint, request, render_template_string, session, jsonify, redirect
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-        btnLeitor.addEventListener('click', function() {
-            if (!lendo) {
-                const painelConteudo = document.querySelector('.grid-main') || document.body;
-                let textoParaLer = painelConteudo.innerText || painelConteudo.textContent;
-                textoParaLer = textoParaLer.replace(/♿|⚫|✔️|📢|📁|🛠️|🏭|📈|💰|📄|⚡|🔥|💧|⏱️|🏢|🔒|🚜|👥|💾|🔄|❌/g, '');
-                
-                utterance = new SpeechSynthesisUtterance(textoParaLer);
-                utterance.lang = 'pt-BR';
-                utterance.onend = function() { lendo = false; btnLeitor.innerText = "📢 Ativar Leitor"; };
-                sintese.speak(utterance);
-                lendo = true;
-                btnLeitor.innerText = "🛑 Parar Leitor";
-            } else {
-                sintese.cancel(); lendo = false; btnLeitor.innerText = "📢 Ativar Leitor";
-            }
-        });
-    }
-}
+# Definição oficial do ambiente modular isolado para Engenharia Imobiliária e Custos
+estrutura_blueprint = Blueprint('estrutura_blueprint', __name__)
 
-function sincronizarNomeGrupoSessao() {
-    fetch('/api/estrutura/metricas')
-        .then(function(res) {
-            if (!res.ok) throw new Error("Status HTTP inválido");
-            return res.json();
-        })
-        .then(function(dados) {
-            if (dados && dados.nome_empresa) {
-                document.getElementById('nome_grupo_display').value = dados.nome_empresa;
-            } else {
-                document.getElementById('nome_grupo_display').value = "GRUPO ACADÊMICO";
-            }
-        })
-        .catch(function(err) {
-            console.warn("Aviso: Utilizando cache estável para o grupo:", err);
-            document.getElementById('nome_grupo_display').value = "GRUPO DIDÁTICO (LOCAL)";
-        });
-}
+def obter_conexao_master():
+    """Recupera a string de conexão unificada via URL_SUPABASE importada de app_master"""
+    from app_master import URL_SUPABASE
+    return psycopg2.connect(URL_SUPABASE)
 
-document.addEventListener("DOMContentLoaded", function() {
-    // Configuração síncrona dos gatilhos de digitação
-    document.getElementById('area_util').addEventListener('input', executarCalculoLocacaoReativa);
-    document.getElementById('valor_condominio').addEventListener('input', executarCalculoLocacaoReativa);
-    document.getElementById('reserva_propria').addEventListener('input', calcularProjecaoIgpmAnual);
-    
-    // Processamento seguro das cargas iniciais
-    sincronizarNomeGrupoSessao();
-    recarregarDadosDoServidor();
-    inicializarMotorLeitorVoz();
-});
-/**
- * ==========================================================================
- * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 2 DE 4 (MOTORES DE CÁLCULO E ACESSIBILIDADE)
- * ==========================================================================
- */
-
-function executarCalculoLocacaoReativa() {
-    let area = parseFloat(document.getElementById('area_util').value) || 0;
-    let condominio = parseFloat(document.getElementById('valor_condominio').value) || 0;
-    
-    let aluguelCalculado = area * 32.50; 
-    let taxaAnualCalculada = (aluguelCalculado * 12) + condominio;
-
-    document.getElementById('valor_aluguel').value = aluguelCalculado.toFixed(2);
-    document.getElementById('taxa_anual').value = taxaAnualCalculada.toFixed(2);
-
-    let provisaoInicial = aluguelCalculado + condominio;
-    document.getElementById('reserva_propria').value = provisaoInicial.toFixed(2);
-
-    let valorMercadoEstimado = aluguelCalculado / 0.0055;
-    document.getElementById('txt_valor_mercado_real').innerText = `R$ ${valorMercadoEstimado.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-
-    let tempoMesesAmortizacao = valorMercadoEstimado / provisaoInicial;
-    document.getElementById('txt_tempo_meses').innerText = `${Math.ceil(tempoMesesAmortizacao)} meses`;
-
-    let capRateCalculado = (aluguelCalculado / valorMercadoEstimado) * 100;
-    document.getElementById('txt_taxa_capitalizacao').innerText = `${capRateCalculado.toFixed(2)}% a.m.`;
-
-    calcularProjecaoIgpmAnual();
-}
-
-function calcularProjecaoIgpmAnual() {
-    let reserva = parseFloat(document.getElementById('reserva_propria').value) || 0;
-    let taxaIgpmEstimada = 0.072;
-    let valorCorrigidoProjecao = reserva * (1 + taxaIgpmEstimada);
-    document.getElementById('txt_igpm_correcao').innerText = `R$ ${valorCorrigidoProjecao.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
-}
-
-function calcularPreviaSalario() {
-    const seletor = document.getElementById('cargo_suporte');
-    const qtdInput = document.getElementById('qtd_colaboradores');
-    if (!seletor || seletor.selectedIndex === -1) return;
-    let salarioBase = parseFloat(seletor.options[seletor.selectedIndex].getAttribute('data-salario')) || 0;
-    let vagas = parseInt(qtdInput.value) || 1;
-    document.getElementById('previa_salario').value = `R$ ${(salarioBase * vagas).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-}
-
-function alterarFonte(operacao) {
-    let htmlEl = document.documentElement;
-    let estiloAtual = window.getComputedStyle(htmlEl).fontSize;
-    let tamanhoNumerico = parseFloat(estiloAtual);
-    if (operacao === '+') htmlEl.style.fontSize = (tamanhoNumerico + 1) + 'px';
-    else if (operacao === '-') htmlEl.style.fontSize = (tamanhoNumerico - 1) + 'px';
-}
-
-function alternarAltoContraste() {
-    document.body.classList.remove('dark-mode');
-    document.body.classList.toggle('alto-contraste');
-}
-
-function alternarModoEscuro() {
-    document.body.classList.remove('alto-contraste');
-    document.body.classList.toggle('dark-mode');
-}
-/**
- * ==========================================================================
- * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 3 DE 4 (ATUALIZAÇÃO DE PAINÉIS DE KPI)
- * ==========================================================================
- */
-
-function recargarEAtualizarPaineisTotais() {
-    fetch('/api/estrutura/metricas')
-        .then(function(res) {
-            if (!res.ok) throw new Error("Erro de comunicação financeira");
-            return res.json();
-        })
-        .then(function(dados) {
-            if (!dados) return;
-            
-            let custoDescontoTotalSetor = dados.aluguel_bruto_setor + dados.provisao_setor + dados.subtotal_fixado_rh;
-            let saldoInfraestruturaCalculado = 2000000.00 - custoDescontoTotalSetor;
-            let percentualDisponivelInfra = (saldoInfraestruturaCalculado / 2000000.00) * 100;
-            
-            document.getElementById('kpi-saldo-infra').innerText = `R$ ${saldoInfraestruturaCalculado.toLocaleString('pt-BR', {minimumFractionDigits:2})} ➔ ${percentualDisponivelInfra.toFixed(2)}% Disponível`;
-            document.getElementById('kpi-patrimonio-total').innerText = `R$ ${dados.patrimonio_isolado_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-            
-            let tetoMaximoAtivosGlobal = 5000000.00 * 0.40; 
-            document.getElementById('kpi-teto-ativos').innerText = `Global: R$ ${tetoMaximoAtivosGlobal.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-            
-            let percentualConsumoTetoPatrimonio = tetoMaximoAtivosGlobal > 0 ? (dados.patrimonio_ativo_total / tetoMaximoAtivosGlobal) * 100 : 0;
-            document.getElementById('barra-limite-setor').style.width = `${Math.min(percentualConsumoTetoPatrimonio, 100)}%`;
-            document.getElementById('txt_porcentagem_budget').innerText = `${percentualConsumoTetoPatrimonio.toFixed(1)}% do teto consumido`;
-
-            document.getElementById('kpi-custo-fixo-setor').innerText = `R$ ${dados.custo_fixo_isolado_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-            document.getElementById('fechamento_custo_fixo_generico').innerText = `R$ ${dados.custo_fixo_total.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-            
-            let impactoFixo = dados.custo_fixo_total > 0 ? (dados.custo_fixo_isolado_setor / dados.custo_fixo_total) * 100 : 0;
-            document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Impacto do Setor: ${impactoFixo.toFixed(2)}% do global`;
-
-            document.getElementById('kpi-custo-variavel-setor').innerText = `R$ ${dados.custo_variavel_isolado_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-            document.getElementById('kpi-custo-variavel-total').innerText = `R$ ${dados.custo_variavel_total.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-            
-            document.getElementById('lbl_watts_consumidos').innerText = `${dados.watts_consumidos.toLocaleString('pt-BR')} W`;
-            document.getElementById('lbl_gas_consumido').innerText = `${dados.gas_consumido.toLocaleString('pt-BR')} m³`;
-            document.getElementById('lbl_agua_consumida').innerText = `${dados.agua_consumido.toLocaleString('pt-BR')} m³`;
-            document.getElementById('kpi-custo-minuto-total').innerText = `R$ ${dados.custo_minuto_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/min`;
-        })
-        .catch(function(err) { console.error("Erro ao sincronizar barramentos dinâmicos:", err); });
-}
-/**
- * ==========================================================================
- * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 4 DE 4 (PIPELINES E CHAMADAS REST CRUD)
- * ==========================================================================
- */
-
-function recargarDadosDoServidor() {
-    fetch('/api/estrutura/imoveis').then(function(res){ return res.json(); }).then(function(imoveis) {
-        const corpo = document.getElementById('tabela_imoveis');
-        if (corpo) {
-            corpo.innerHTML = "";
-            imoveis.forEach(function(imovel) {
-                let aluguelComCondominio = parseFloat(imovel.valor_aluguel) + parseFloat(imovel.valor_condominio);
-                corpo.innerHTML += `<tr><td><strong>${imovel.nome_empresa || "EQUIPE"}</strong></td><td><strong>${imovel.tipo_imovel}</strong><br><small style="color:#6b7280;">${imovel.regiao}</small></td><td>${imovel.area_util} m²</td><td style="color:#1e3a8a; font-weight:bold;">R$ ${aluguelComCondominio.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="carregarImovelEdicao(${imovel.id})">Editar</button> <button onclick="removerImovel(${imovel.id})">Rescindir</button></td></tr>`;
-            });
-        }
-    }).catch(function(err){ console.error(err); });
-
-    fetch('/api/estrutura/maquinas').then(function(res){ return res.json(); }).then(function(maquinas) {
-        const corpo = document.getElementById('tabela_maquinas');
-        if (corpo) {
-            corpo.innerHTML = "";
-            maquinas.forEach(function(m) {
-                corpo.innerHTML += `<tr><td><strong>${m.nome_equipamento}</strong></td><td>R$ ${parseFloat(m.preco_compra).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td>${m.potencia_watts} W</td><td>${m.consumo_gas_m3} m³</td><td style="color:#1e3a8a; font-weight:600;">R$ ${parseFloat(m.custo_minuto_maquina).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="deletarMaquina(${m.id})">Remover</button></td></tr>`;
-            });
-        }
-    }).catch(function(err){ console.error(err); });
-
-    fetch('/api/estrutura/rh').then(function(res){ return res.json(); }).then(function(equipe) {
-        const corpo = document.getElementById('tabela_colaboradores');
-        if (corpo) {
-            corpo.innerHTML = "";
-            equipe.forEach(function(func) {
-                corpo.innerHTML += `<tr><td>👤 ${func.nome}</td><td>${func.cargo}</td><td>R$ ${parseFloat(func.salario_base).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td>${func.quantidade}</td><td style="color:#1e3a8a; font-weight:600;">R$ ${parseFloat(func.subtotal).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="carregarColaboradorEdicao(${func.id})">Editar</button> <button onclick="removerColaborador(${func.id})">Demitir</button></td></tr>`;
-            });
-        }
-    }).catch(function(err){ console.error(err); });
-    recargarEAtualizarPaineisTotais();
-}
-
-function salvarImovel(event) {
-    event.preventDefault();
-    const id = document.getElementById('imovel_id').value;
-    const dados = {
-        id: id ? parseInt(id) : null,
-        tipo_imovel: document.getElementById('tipo_imovel').value,
-        regiao: document.getElementById('cidade').value + " - " + document.getElementById('bairro').value,
-        area_util: parseFloat(document.getElementById('area_util').value) || 0,
-        valor_condominio: parseFloat(document.getElementById('valor_condominio').value) || 0,
-        valor_aluguel: parseFloat(document.getElementById('valor_aluguel').value) || 0,
-        obs_contrato: document.getElementById('txt_igpm_correcao').innerText
-    };
-    fetch('/api/estrutura/imoveis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(function(){ document.getElementById('formImobiliario').reset(); document.getElementById('imovel_id').value = ""; recarregarDadosDoServidor(); });
-}
-
-function auditarMargemSegurancaSetor(patrimonioTotal, precoNovo) { return { authorized: (patrimonioTotal + precoNovo) <= 2000000.00 }; }
-
-function salvarMaquina(event) {
-    event.preventDefault();
-    const seletor = document.getElementById('seletor_equipamento');
-    if (seletor.selectedIndex === 0 || seletor.selectedIndex === -1) return;
-    const opt = seletor.options[seletor.selectedIndex];
-    const dados = {
-        nome: opt.value,
-        preco: parseFloat(opt.getAttribute('data-preco')) || 0,
-        potencia: parseFloat(opt.getAttribute('data-watts')) || 0,
-        gas: parseFloat(opt.getAttribute('data-gas')) || 0,
-        agua: parseFloat(opt.getAttribute('data-agua')) || 0,
-        depreciacao: parseFloat(opt.getAttribute('data-dep')) || 0,
-        custo_minuto: parseFloat(opt.getAttribute('data-min')) || 0
-    };
-    fetch('/api/estrutura/metricas').then(function(res){ return res.json(); }).then(function(m) {
-        if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).authorized) { alert("Erro Operacional: Esta aquisição excede as diretrizes administrativas de tetos!"); return; }
-        fetch('/api/estrutura/maquinas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(function(){ seletor.selectedIndex = 0; recarregarDadosDoServidor(); });
-    });
-}
-
-function carregarImovelEdicao(id) {
-    fetch(`/api/estrutura/imoveis/${id}`).then(function(res){ return res.json(); }).then(function(imovel) {
-        document.getElementById('imovel_id').value = imovel.id;
-        document.getElementById('tipo_imovel').value = imovel.tipo_imovel;
-        document.getElementById('area_util').value = imovel.area_util;
-        document.getElementById('valor_condominio').value = imovel.valor_condominio;
-        document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato de Locação";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+@estrutura_blueprint.route('/estrutura', methods=['GET'])
+def pagina_estrutura():
+    """Injeta e renderiza a interface HTML síncrona com tratamento WCAG e matriz de KPIs"""
+    if not session.get('logado'):
+        return redirect('/login')
         
-        let aluguelCalculado = parseFloat(imovel.area_util) * 32.50;
-        document.getElementById('valor_aluguel').value = aluguelCalculado.toFixed(2);
-        document.getElementById('taxa_anual').value = ((aluguelCalculado * 12) + parseFloat(imovel.valor_condominio)).toFixed(2);
-        document.getElementById('reserva_propria').value = (aluguelCalculado + parseFloat(imovel.valor_condominio)).toFixed(2);
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_html = os.path.join(diretorio_atual, 'estrutura.html')
+    
+    try:
+        with open(caminho_html, 'r', encoding='utf-8') as f:
+            html = f.read()
+        return render_template_string(html)
+    except FileNotFoundError:
+        return "Erro Crítico: Arquivo 'estrutura.html' não encontrado no ecossistema de servidores.", 404
+
+@estrutura_blueprint.route('/estrutura/estrutura.js', methods=['GET'])
+def rota_estrutura_js():
+    """Injeta nativamente o script do cliente com motores de Cap Rate, IGPM e tratamento transacional"""
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_js = os.path.join(diretorio_atual, 'estrutura.js')
+    
+    try:
+        with open(caminho_js, 'r', encoding='utf-8') as f:
+            js_conteudo = f.read()
+        return js_conteudo, 200, {'Content-Type': 'application/javascript; charset=utf-8'}
+    except FileNotFoundError:
+        return "console.error('Erro Crítico: Script estrutural estrutura.js ausente ou corrompido.');", 404
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+# ARQUIVO: app_estrutura.py - PARTE 2 DE 4 (ENDPOINTS DE LEITURA E CONSULTA)
+# ==========================================================================
+
+@estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
+def api_imoveis_listar():
+    """Lista todos os contratos imobiliários associados à equipe logada na sessão"""
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
-        document.getElementById('txt_valor_mercado_real').innerText = `R$ ${(aluguelCalculado / 0.0055).toLocaleString('pt-BR', {maximumFractionDigits:2})}`;
-        document.getElementById('txt_igpm_correcao').innerText = imovel.obs_contrato || "R$ 0,00";
-    });
-}
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    conexao = obter_conexao_master()
+    cursor = None
+    
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS imoveis_simulacao_v3 (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, tipo_imovel TEXT, regiao TEXT, 
+                area_util REAL, valor_aluguel REAL, valor_condominio REAL, obs_contrato TEXT, nome_empresa TEXT
+            )
+        ''')
+        conexao.commit()
+        
+        cursor.execute('SELECT * FROM imoveis_simulacao_v3 WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
+        return jsonify(cursor.fetchall())
+        
+    except psycopg2.DatabaseError as e:
+        if conexao: conexao.rollback()
+        print(f"Erro ao listar imóveis: {e}")
+        return jsonify({'status': 'erro', 'message': 'Erro interno ao processar dados no banco.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
 
-function adicionarColaborador(event) {
-    event.preventDefault();
-    const id = document.getElementById('rh_id').value;
-    const seletor = document.getElementById('cargo_suporte');
-    const dados = {
-        id: id ? parseInt(id) : null,
-        nome: document.getElementById('rh_nome').value,
-        cargo: seletor.value,
-        salario_base: parseFloat(seletor.options[seletor.selectedIndex].getAttribute('data-salario')) || 0,
-        quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 1
-    };
-    fetch('/api/estrutura/rh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(function(){ document.getElementById('formContratacaoPredial').reset(); document.getElementById('rh_id').value = ""; recarregarDadosDoServidor(); });
-}
+@estrutura_blueprint.route('/api/estrutura/maquinas', methods=['GET'])
+def api_maquinas_listar():
+    """Carrega o inventário de equipamentos alocados na tabela isolada de simulação"""
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    conexao = obter_conexao_master()
+    cursor = None
+    
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS maquinas_simulacao_v3 (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, departamento TEXT,
+                preco_compra REAL, potencia_watts REAL, consumo_gas_m3 REAL, consumo_agua_m3 REAL,
+                taxa_depreciacao REAL, custo_minuto_maquina REAL
+            )
+        ''')
+        conexao.commit()
+        
+        cursor.execute("SELECT * FROM maquinas_simulacao_v3 WHERE equipe_id = %s ORDER BY id DESC", (id_equipe,))
+        return jsonify(cursor.fetchall())
+        
+    except psycopg2.DatabaseError as e:
+        if conexao: conexao.rollback()
+        print(f"Erro ao listar máquinas: {e}")
+        return jsonify({'status': 'erro', 'message': 'Erro ao ler inventário de ativos.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
 
-function carregarColaboradorEdicao(id) {
-    fetch(`/api/estrutura/rh/${id}`).then(function(res){ return res.json(); }).then(function(func) {
-        document.getElementById('rh_id').value = func.id;
-        document.getElementById('rh_nome').value = func.nome;
-        document.getElementById('cargo_suporte').value = func.cargo;
-        document.getElementById('qtd_colaboradores').value = func.quantidade;
-        document.getElementById('btn_contratar').innerText = "🔄 Atualizar Cadastro de Funcionário";
-        calcularPreviaSalario();
-    });
-}
+@estrutura_blueprint.route('/api/estrutura/rh', methods=['GET'])
+def api_rh_listar():
+    """Recupera a folha fixa de colaboradores e suporte da tabela de simulação isolada"""
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    conexao = obter_conexao_master()
+    cursor = None
+    
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS rh_simulacao_v3 (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, nome TEXT, cargo TEXT, 
+                salario_base REAL, quantidade INTEGER, subtotal REAL
+            )
+        ''')
+        conexao.commit()
+        
+        cursor.execute('SELECT * FROM rh_simulacao_v3 WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
+        return jsonify(cursor.fetchall())
+        
+    except psycopg2.DatabaseError as e:
+        if conexao: conexao.rollback()
+        print(f"Erro ao listar colaboradores de suporte: {e}")
+        return jsonify({'status': 'erro', 'message': 'Erro ao ler quadro de funcionários.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+# ARQUIVO: app_estrutura.py - PARTE 3 DE 4 (PERSISTÊNCIA E OPERAÇÕES POST)
+# ==========================================================================
 
-function deletarMaquina(id) { if(confirm("Deseja remover este ativo do setor?")) fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' }).then(function(){ recarregarDadosDoServidor(); }); }
-function removerImovel(id) { if(confirm("Deseja rescindir este contrato patrimonial?")) fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' }).then(function(){ recarregarDadosDoServidor(); }); }
-function removerColaborador(id) { if(confirm("Deseja demitir este colaborador?")) fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' }).then(function(){ recarregarDadosDoServidor(); }); }
+@estrutura_blueprint.route('/api/estrutura/imoveis', methods=['POST'])
+def api_imoveis_salvar():
+    """Salva ou edita contratos imobiliários atualizando reativamente o teto orçamentário geral"""
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    dados = request.json or {}
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    nome_empresa = session.get('nome_empresa', 'GRUPO DIDÁTICO').upper()
+    id_reg = dados.get('id')
+    conexao = obter_conexao_master()
+    cursor = None
+    
+    try:
+        valor_aluguel = float(str(dados.get('valor_aluguel', 0)).replace(',', '.').strip())
+        valor_condominio = float(str(dados.get('valor_condominio', 0)).replace(',', '.').strip())
+        area_util = float(str(dados.get('area_util', 0)).replace(',', '.').strip())
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        if id_reg:
+            cursor.execute('''
+                UPDATE imoveis_simulacao_v3 SET tipo_imovel=%s, regiao=%s, area_util=%s, 
+                valor_aluguel=%s, valor_condominio=%s, obs_contrato=%s WHERE id=%s AND equipe_id=%s
+            ''', (dados.get('tipo_imovel'), dados.get('regiao'), area_util, valor_aluguel, 
+                  valor_condominio, dados.get('obs_contrato'), id_reg, id_equipe))
+        else:
+            cursor.execute('''
+                INSERT INTO imoveis_simulacao_v3 (equipe_id, tipo_imovel, regiao, area_util, valor_aluguel, valor_condominio, obs_contrato, nome_empresa)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (id_equipe, dados.get('tipo_imovel'), dados.get('regiao'), area_util, valor_aluguel, 
+                  valor_condominio, dados.get('obs_contrato'), nome_empresa))
+                  
+        conexao.commit()
+        return jsonify({'status': 'sucesso'})
+    except (ValueError, TypeError, psycopg2.DatabaseError) as err:
+        if conexao: conexao.rollback()
+        print(f"Erro ao salvar imóvel: {err}")
+        return jsonify({'status': 'erro', 'message': 'Falha interna ao processar persistência.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
+
+@estrutura_blueprint.route('/api/estrutura/maquinas', methods=['POST'])
+def api_maquinas_salvar():
+    """Registra novos maquinários industriais alocando o departamento estrito ESTRUTURA"""
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    dados = request.json or {}
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    conexao = obter_conexao_master()
+    cursor = None
+    
+    try:
+        preco_compra = float(str(dados.get('preco', 0)).replace(',', '.').strip())
+        potencia_watts = float(str(dados.get('potencia', 0)).replace(',', '.').strip())
+        consumo_gas_m3 = float(str(dados.get('gas', 0)).replace(',', '.').strip())
+        consumo_agua_m3 = float(str(dados.get('agua', 0)).replace(',', '.').strip())
+        taxa_depreciacao = float(str(dados.get('depreciacao', 0)).replace(',', '.').strip())
+        custo_minuto_maquina = float(str(dados.get('custo_minuto', 0)).replace(',', '.').strip())
+        
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        cursor.execute('''
+            INSERT INTO maquinas_simulacao_v3 (
+                equipe_id, nome_equipamento, departamento, preco_compra, 
+                potencia_watts, consumo_gas_m3, consumo_agua_m3, taxa_depreciacao, custo_minuto_maquina
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ''', (id_equipe, dados.get('nome'), 'ESTRUTURA', preco_compra, 
+              potencia_watts, consumo_gas_m3, consumo_agua_m3, taxa_depreciacao, custo_minuto_maquina))
+              
+        conexao.commit()
+        return jsonify({'status': 'sucesso'})
+    except (ValueError, TypeError, psycopg2.DatabaseError) as err:
+        if conexao: conexao.rollback()
+        print(f"Erro ao salvar maquina: {err}")
+        return jsonify({'status': 'erro', 'message': 'Falha interna ao processar persistência de ativos.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
+
+@estrutura_blueprint.route('/api/estrutura/rh', methods=['POST'])
+def api_rh_salvar():
+    """Grava e recalcula as provisões da folha de pagamento de pessoal do setor imobiliário"""
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    dados = request.json or {}
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    id_rh = dados.get('id')
+    conexao = obter_conexao_master()
+    cursor = None
+    
+    try:
+        salario_base = float(str(dados.get('salario_base', 0)).replace(',', '.').strip())
+        quantidade = int(dados.get('quantidade', 1))
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        if id_rh:
+            cursor.execute('''
+                UPDATE rh_simulacao_v3 SET nome=%s, cargo=%s, salario_base=%s, grandmother=%s WHERE id=%s AND equipe_id=%s
+            ''', (dados.get('nome'), dados.get('cargo'), salario_base, quantidade, (salario_base * quantidade), id_rh, id_equipe))
+        else:
+            cursor.execute('''
+                INSERT INTO rh_simulacao_v3 (equipe_id, nome, cargo, salario_base, quantidade, subtotal)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            ''', (id_equipe, dados.get('nome'), dados.get('cargo'), salario_base, quantidade, (salario_base * quantidade)))
+            
+        conexao.commit()
+        return jsonify({'status': 'sucesso'})
+    except (ValueError, TypeError, psycopg2.DatabaseError) as err:
+        if conexao: conexao.rollback()
+        print(f"Erro ao salvar colaborador: {err}")
+        return jsonify({'status': 'erro', 'message': 'Falha ao registrar colaborador na folha fixa.'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
+# ==========================================================================
+# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+# ARQUIVO: app_estrutura.py - PARTE 4 DE 4 (OPERAÇÕES CRUD E MOTOR DE TAXAS)
+# ==========================================================================
+
+@estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
+def api_individual_imovel(id_reg):
+    if not session.get('logado'): return jsonify({'status': 'erro'}), 401
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    conexao = obter_conexao_master()
+    cursor = None
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        if request.method == 'DELETE':
+            cursor.execute('DELETE FROM imoveis_simulacao_v3 WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            conexao.commit()
+            return jsonify({'status': 'removido'})
+        else:
+            cursor.execute('SELECT * FROM imoveis_simulacao_v3 WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            return jsonify(dict(cursor.fetchone()) or {})
+    except psycopg2.DatabaseError:
+        if conexao: conexao.rollback()
+        return jsonify({'status': 'erro'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
+
+@estrutura_blueprint.route('/api/estrutura/rh/<int:id_reg>', methods=['GET', 'DELETE'])
+def api_individual_rh(id_reg):
+    if not session.get('logado'): return jsonify({'status': 'erro'}), 401
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    conexao = obter_conexao_master()
+    cursor = None
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        if request.method == 'DELETE':
+            cursor.execute('DELETE FROM rh_simulacao_v3 WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            conexao.commit()
+            return jsonify({'status': 'removido'})
+        else:
+            cursor.execute('SELECT * FROM rh_simulacao_v3 WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            return jsonify(dict(cursor.fetchone()) or {})
+    except psycopg2.DatabaseError:
+        if conexao: conexao.rollback()
+        return jsonify({'status': 'erro'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
+
+@estrutura_blueprint.route('/api/estrutura/maquinas/<int:id_reg>', methods=['GET', 'DELETE'])
+def api_individual_maquina(id_reg):
+    if not session.get('logado'): return jsonify({'status': 'erro'}), 401
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    conexao = obter_conexao_master()
+    cursor = None
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        if request.method == 'DELETE':
+            cursor.execute('DELETE FROM maquinas_simulacao_v3 WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            conexao.commit()
+            return jsonify({'status': 'removido'})
+        else:
+            cursor.execute('SELECT * FROM maquinas_simulacao_v3 WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            return jsonify(dict(cursor.fetchone()) or {})
+    except psycopg2.DatabaseError:
+        if conexao: conexao.rollback()
+        return jsonify({'status': 'erro'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
+
+@estrutura_blueprint.route('/api/estrutura/metricas', methods=['GET'])
+def api_modulo_local_metricas():
+    if not session.get('logado'): return jsonify({'status': 'erro'}), 401
+    id_equipe = session.get('id_equipe', 'equipe_alfa')
+    nome_empresa = session.get('nome_empresa', session.get('nome_grupo', 'GRUPO DIDÁTICO')).upper()
+    conexao = obter_conexao_master()
+    cursor = None
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute('SELECT COALESCE(SUM(valor_aluguel), 0) as total_aluguel, COALESCE(SUM(valor_condominio), 0) as total_condo FROM imoveis_simulacao_v3 WHERE equipe_id = %s', (id_equipe,))
+        imob_dados = cursor.fetchone()
+        c_aluguel = imob_dados['total_aluguel']
+        c_condo = imob_dados['total_condo']
+        
+        cursor.execute('SELECT COALESCE(SUM(subtotal), 0) as total_rh FROM rh_simulacao_v3 WHERE equipe_id = %s', (id_equipe,))
+        c_rh = cursor.fetchone()['total_rh']
+        
+        cursor.execute('''
+            SELECT COALESCE(SUM(preco_compra), 0) as pat, COALESCE(SUM(potencia_watts), 0) as w, COALESCE(SUM(consumo_gas_m3), 0) as g,
+            COALESCE(SUM(consumo_agua_m3), 0) as a, COALESCE(SUM(custo_minuto_maquina), 0) as cmm FROM maquinas_simulacao_v3 WHERE equipe_id = %s
+        ''', (id_equipe,))
+        m_setor = cursor.fetchone()
+        
+        c_provisao = c_aluguel + c_condo
+        c_fixo_setor = c_aluguel + c_condo + c_rh + c_provisao
+        
+        c_fixo_global_todos_setores = c_fixo_setor + 21350.00
+        c_var_setor = (m_setor['w'] * 0.00075) + (m_setor['g'] * 4.50) + (m_setor['a'] * 8.20)
+        
+        return jsonify({
+            'nome_empresa': nome_empresa,
+            'capital_total': 5000000.00,
+            'aluguel_bruto_setor': c_aluguel,
+            'condominio_bruto_setor': c_condo,
+            'provisao_setor': c_provisao,
+            'subtotal_fixado_rh': c_rh,
+            'patrimonio_isolado_setor': m_setor['pat'],
+            'patrimonio_ativo_total': m_setor['pat'],
+            'custo_fixo_isolado_setor': c_fixo_setor,
+            'custo_fixo_total': c_fixo_global_todos_setores,
+            'custo_variavel_isolado_setor': c_var_setor,
+            'custo_variavel_total': c_var_setor + 500.00,
+            'watts_consumidos': int(m_setor['w']),
+            'gas_consumido': float(m_setor['g']),
+            'agua_consumido': float(m_setor['a']),
+            'custo_minuto_setor': float(m_setor['cmm']),
+            'custo_minuto_global': float(m_setor['cmm'])
+        })
+    except psycopg2.DatabaseError as e:
+        print(f"Erro no motor contábil local do servidor: {e}")
+        return jsonify({'status': 'erro'}), 500
+    finally:
+        if cursor: cursor.close()
+        if conexao: conexao.close()
