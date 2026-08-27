@@ -1,7 +1,7 @@
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 1 DE 3 (INICIALIZAÇÃO E SESSÃO DA EQUIPE)
+ * ARQUIVO: estrutura.js - PARTE 1 DE 4 (INICIALIZAÇÃO E GATILHOS)
  * ==========================================================================
  */
 
@@ -11,14 +11,14 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('valor_condominio').addEventListener('input', executarCalculoLocacaoReativa);
     document.getElementById('reserva_propria').addEventListener('input', calcularProjecaoIgpmAnual);
     
-    // Inicia os barramentos síncronos e a carga de dados do banco
+    // Inicia os barramentos síncronos e a carga de dados do banco master
     sincronizarNomeGrupoSessao();
     recarregarDadosDoServidor();
     inicializarMotorLeitorVoz();
 });
 
 function sincronizarNomeGrupoSessao() {
-    // Aponta para a rota local do módulo para evitar colisão transacional com o app_master
+    // Aponta de forma estrita para a nova rota local do módulo para contornar o app_master
     fetch('/api/estrutura/metricas')
         .then(res => {
             if (!res.ok) throw new Error("Status HTTP inválido");
@@ -49,21 +49,17 @@ function inicializarMotorLeitorVoz() {
                 const painelConteudo = document.querySelector('.grid-main') || document.body;
                 let textoParaLer = painelConteudo.innerText || painelConteudo.textContent;
                 
+                // Sanitização de strings removendo ícones gráficos para evitar quebra do áudio
                 textoParaLer = textoParaLer.replace(/♿|⚫|✔️|📢|📁|🛠️|🏭|📈|💰|📄|⚡|🔥|💧|⏱️|🏢|🔒|🚜|👥|💾|🔄|❌/g, '');
                 
                 utterance = new SpeechSynthesisUtterance(textoParaLer);
                 utterance.lang = 'pt-BR';
-                utterance.onend = () => { 
-                    lendo = false; 
-                    btnLeitor.innerText = "📢 Ativar Leitor"; 
-                };
+                utterance.onend = () => { lendo = false; btnLeitor.innerText = "📢 Ativar Leitor"; };
                 sintese.speak(utterance);
                 lendo = true;
                 btnLeitor.innerText = "🛑 Parar Leitor";
             } else {
-                sintese.cancel();
-                lendo = false;
-                btnLeitor.innerText = "📢 Ativar Leitor";
+                sintese.cancel(); lendo = false; btnLeitor.innerText = "📢 Ativar Leitor";
             }
         });
     }
@@ -71,7 +67,7 @@ function inicializarMotorLeitorVoz() {
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTORES REATIVOS E CONTROLES WCAG)
+ * ARQUIVO: estrutura.js - PARTE 2 DE 4 (EQUAÇÕES E CHAVEAMENTO VISUAL)
  * ==========================================================================
  */
 
@@ -79,7 +75,7 @@ function executarCalculoLocacaoReativa() {
     let area = parseFloat(document.getElementById('area_util').value) || 0;
     let condominio = parseFloat(document.getElementById('valor_condominio').value) || 0;
     
-    // Regra de negócio matemática estrita: R$ 32,50 fixos por m²
+    // Regra de negócio matemática estrita do ERP v2.6: R$ 32,50 fixos por m²
     let aluguelCalculado = area * 32.50; 
     let taxaAnualCalculada = (aluguelCalculado * 12) + condominio;
 
@@ -92,18 +88,22 @@ function executarCalculoLocacaoReativa() {
 
     // Avaliação trilinear de mercado baseada no Cap Rate padrão de 0.55% a.m.
     let valorMercadoEstimado = aluguelCalculado / 0.0055;
-    document.getElementById('txt_valor_mercado_real').innerText = `R$ ${valorMercadoEstimado.toLocaleString('pt-BR', {maximumFractionDigits:2})}`;
+    document.getElementById('txt_valor_mercado_real').innerText = `R$ ${valorMercadoEstimado.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+
+    let tempoMesesAmortizacao = valorMercadoEstimado / provisaoInicial;
+    document.getElementById('txt_tempo_meses').innerText = `${Math.ceil(tempoMesesAmortizacao)} meses`;
+
+    let capRateCalculado = (aluguelCalculado / valorMercadoEstimado) * 100;
+    document.getElementById('txt_taxa_capitalizacao').innerText = `${capRateCalculado.toFixed(2)}% a.m.`;
 
     calcularProjecaoIgpmAnual();
 }
 
 function calcularProjecaoIgpmAnual() {
     let reserva = parseFloat(document.getElementById('reserva_propria').value) || 0;
-    // Parâmetro de simulação didática fixa: 7.2% de reajuste estimado
     let taxaIgpmEstimada = 0.072;
     let valorCorrigidoProjecao = reserva * (1 + taxaIgpmEstimada);
-
-    document.getElementById('txt_igpm_correcao').innerText = `R$ ${valorCorrigidoProjecao.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+    document.getElementById('txt_igpm_correcao').innerText = `R$ ${valorCorrigidoProjecao.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 }
 
 function calcularPreviaSalario() {
@@ -119,12 +119,8 @@ function alterarFonte(operacao) {
     let htmlEl = document.documentElement;
     let estiloAtual = window.getComputedStyle(htmlEl).fontSize;
     let tamanhoNumerico = parseFloat(estiloAtual);
-    
-    if (operacao === '+') {
-        htmlEl.style.fontSize = (tamanhoNumerico + 1) + 'px';
-    } else if (operacao === '-') {
-        htmlEl.style.fontSize = (tamanhoNumerico - 1) + 'px';
-    }
+    if (operacao === '+') htmlEl.style.fontSize = (tamanhoNumerico + 1) + 'px';
+    else if (operacao === '-') htmlEl.style.fontSize = (tamanhoNumerico - 1) + 'px';
 }
 
 function alternarAltoContraste() {
@@ -139,12 +135,11 @@ function alternarModoEscuro() {
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 3A DE 4 (ATUALIZAÇÃO DE KPIS E PAINÉIS)
+ * ARQUIVO: estrutura.js - PARTE 3 DE 4 (SINCRO DE TETOS E ORÇAMENTOS)
  * ==========================================================================
  */
 
 function recargarEAtualizarPaineisTotais() {
-    // Rota local do módulo configurada para blindagem contra colisões com app_master
     fetch('/api/estrutura/metricas')
         .then(res => {
             if (!res.ok) throw new Error("Erro de comunicação financeira");
@@ -152,38 +147,49 @@ function recargarEAtualizarPaineisTotais() {
         })
         .then(dados => {
             if (!dados) return;
-            // 📄 Orçamento de Infraestrutura Engenharia
-            document.getElementById('kpi-saldo-infra').innerText = `R$ ${(dados.saldo_infraestrutura_setor || 2000000).toLocaleString('pt-BR', {minimumFractionDigits:2})} ➔ ${(((dados.saldo_infraestrutura_setor || 2000000) / 2000000) * 100).toFixed(2)}% Disponível`;
             
-            // 🏢 Controle e Cobertura Patrimonial Ativa (Equipamentos/Máquinas)
-            document.getElementById('kpi-patrimonio-total').innerText = `R$ ${(dados.patrimonio_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-            document.getElementById('kpi-teto-ativos').innerText = `Global: R$ ${(dados.patrimonio_ativo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+            // Orçamento de Infraestrutura Engenharia descontando Aluguel, Provisão e Subtotal RH Fixado
+            let custoDescontoTotalSetor = dados.aluguel_bruto_setor + dados.provisao_setor + dados.subtotal_fixado_rh;
+            let saldoInfraestruturaCalculado = 2000000.00 - custoDescontoTotalSetor;
+            let percentualDisponivelInfra = (saldoInfraestruturaCalculado / 2000000.00) * 100;
             
-            let tetoMaximoAtivos = (dados.capital_total || 5000000) * 0.40; 
-            let percentualConsumoTeto = tetoMaximoAtivos > 0 ? ((dados.patrimonio_ativo_total || 0) / tetoMaximoAtivos) * 100 : 0;
-            document.getElementById('barra-limite-setor').style.width = `${Math.min(percentualConsumoTeto, 100)}%`;
-            document.getElementById('txt_porcentagem_budget').innerText = `${percentualConsumoTeto.toFixed(1)}% do teto consumido`;
+            document.getElementById('kpi-saldo-infra').innerText = `R$ ${saldoInfraestruturaCalculado.toLocaleString('pt-BR', {minimumFractionDigits:2})} ➔ ${percentualDisponivelInfra.toFixed(2)}% Disponível`;
+            
+            // Controle e Cobertura Patrimonial Ativa retornando estritamente Equipamentos e Máquinas
+            document.getElementById('kpi-patrimonio-total').innerText = `R$ ${dados.patrimonio_isolado_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+            
+            // Limite Geral (Max 40% dos Ativos Globais da Empresa)
+            let tetoMaximoAtivosGlobal = 5000000.00 * 0.40; 
+            document.getElementById('kpi-teto-ativos').innerText = `Global: R$ ${tetoMaximoAtivosGlobal.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+            
+            let percentualConsumoTetoPatrimonio = tetoMaximoAtivosGlobal > 0 ? (dados.patrimonio_ativo_total / tetoMaximoAtivosGlobal) * 100 : 0;
+            document.getElementById('barra-limite-setor').style.width = `${Math.min(percentualConsumoTetoPatrimonio, 100)}%`;
+            document.getElementById('txt_porcentagem_budget').innerText = `${percentualConsumoTetoPatrimonio.toFixed(1)}% do teto consumido`;
 
-            // 🔒 Consolidação de Custos Fixos Correntes (Mensal) com Provisões
-            document.getElementById('kpi-custo-fixo-setor').innerText = `R$ ${(dados.custo_fixo_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-            document.getElementById('fechamento_custo_fixo_generico').innerText = `R$ ${(dados.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+            // Consolidação de Custos Fixos Correntes (Mensal)
+            document.getElementById('kpi-custo-fixo-setor').innerText = `R$ ${dados.custo_fixo_isolado_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+            document.getElementById('fechamento_custo_fixo_generico').innerText = `R$ ${dados.custo_fixo_total.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
             let impactoFixo = dados.custo_fixo_total > 0 ? (dados.custo_fixo_isolado_setor / dados.custo_fixo_total) * 100 : 0;
             document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Impacto do Setor: ${impactoFixo.toFixed(2)}% do global`;
 
-            // ⚡ Estruturação de Custos Variáveis Consolidados (Utilidades)
-            document.getElementById('kpi-custo-variavel-setor').innerText = `R$ ${(dados.custo_variavel_isolado_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-            document.getElementById('kpi-custo-variavel-total').innerText = `R$ ${(dados.custo_variavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+            // Custos Variáveis Consolidados
+            document.getElementById('kpi-custo-variavel-setor').innerText = `R$ ${dados.custo_variavel_isolado_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+            document.getElementById('kpi-custo-variavel-total').innerText = `R$ ${dados.custo_variavel_total.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
-            // 📍 Amortização, Cap Rate, Utilidades Técnicas e Custo Minuto Máquina (CMM)
-            document.getElementById('txt_tempo_meses').innerText = dados.tempo_amortizacao_real || "0 meses";
-            document.getElementById('txt_taxa_capitalizacao').innerText = dados.cap_rate_calculado || "0.00% a.m.";
-            document.getElementById('lbl_watts_consumidos').innerText = `${(dados.watts_consumidos || 0).toLocaleString('pt-BR')} W`;
-            document.getElementById('lbl_gas_consumido').innerText = `${(dados.gas_consumido || 0).toLocaleString('pt-BR')} m³`;
-            document.getElementById('lbl_agua_consumida').innerText = `${(dados.agua_consumido || 0).toLocaleString('pt-BR')} m³`;
-            document.getElementById('kpi-custo-minuto-total').innerText = `R$ ${(dados.custo_minuto_setor || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/min`;
+            // Medidores de Utilidades Técnicas e Custo Minuto Máquina (CMM) do Setor
+            document.getElementById('lbl_watts_consumidos').innerText = `${dados.watts_consumidos.toLocaleString('pt-BR')} W`;
+            document.getElementById('lbl_gas_consumido').innerText = `${dados.gas_consumido.toLocaleString('pt-BR')} m³`;
+            document.getElementById('lbl_agua_consumida').innerText = `${dados.agua_consumido.toLocaleString('pt-BR')} m³`;
+            document.getElementById('kpi-custo-minuto-total').innerText = `R$ ${dados.custo_minuto_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/min`;
         }).catch(err => console.error("Erro ao sincronizar barramentos dinâmicos:", err));
 }
+/**
+ * ==========================================================================
+ * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
+ * ARQUIVO: estrutura.js - PARTE 4 DE 4 (PERSISTÊNCIA E OPERAÇÕES CRUD)
+ * ==========================================================================
+ */
 
 function recarregarDadosDoServidor() {
     fetch('/api/estrutura/imoveis').then(res => res.json()).then(imoveis => {
@@ -191,6 +197,7 @@ function recarregarDadosDoServidor() {
         if (corpo) {
             corpo.innerHTML = "";
             imoveis.forEach(imovel => {
+                // Aluguel Bruto somado de forma real com o valor do condomínio conforme exigido
                 let aluguelComCondominio = parseFloat(imovel.valor_aluguel) + parseFloat(imovel.valor_condominio);
                 corpo.innerHTML += `<tr><td><strong>${imovel.nome_empresa || "EQUIPE"}</strong></td><td><strong>${imovel.tipo_imovel}</strong><br><small style="color:#6b7280;">${imovel.regiao}</small></td><td>${imovel.area_util} m²</td><td style="color:#1e3a8a; font-weight:bold;">R$ ${aluguelComCondominio.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="carregarImovelEdicao(${imovel.id})">Editar</button> <button onclick="removerImovel(${imovel.id})">Rescindir</button></td></tr>`;
             });
@@ -218,12 +225,6 @@ function recarregarDadosDoServidor() {
     }).catch(err => console.error(err));
     recargarEAtualizarPaineisTotais();
 }
-/**
- * ==========================================================================
- * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 3B DE 4 (PERSISTÊNCIA E OPERAÇÕES CRUD)
- * ==========================================================================
- */
 
 function salvarImovel(event) {
     event.preventDefault();
