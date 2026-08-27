@@ -5,7 +5,7 @@
  * ==========================================================================
  */
 
-// Declarações explícitas de funções core para mitigar a fragilidade do hoisting no DOM
+// Declarações explícitas de funções para evitar problemas de hoisting com listeners
 function inicializarMotorLeitorVoz() {
     const btnLeitor = document.getElementById('btn-leitor');
     if (btnLeitor) {
@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('valor_condominio').addEventListener('input', executarCalculoLocacaoReativa);
     document.getElementById('reserva_propria').addEventListener('input', calcularProjecaoIgpmAnual);
     
-    // Processamento linear e seguro das cargas de dados
+    // Processamento seguro das cargas iniciais
     sincronizarNomeGrupoSessao();
     recarregarDadosDoServidor();
     inicializarMotorLeitorVoz();
@@ -180,7 +180,7 @@ function recargarEAtualizarPaineisTotais() {
  * ==========================================================================
  */
 
-function recarregarDadosDoServidor() {
+function recargarDadosDoServidor() {
     fetch('/api/estrutura/imoveis').then(function(res){ return res.json(); }).then(function(imoveis) {
         const corpo = document.getElementById('tabela_imoveis');
         if (corpo) {
@@ -246,7 +246,7 @@ function salvarMaquina(event) {
         custo_minuto: parseFloat(opt.getAttribute('data-min')) || 0
     };
     fetch('/api/estrutura/metricas').then(function(res){ return res.json(); }).then(function(m) {
-        if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).authorized) { alert("Erro Operacional: Esta aquisição excede as diretrizes administrativas de tetos (Max 40% dos ativos)!"); return; }
+        if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).authorized) { alert("Erro Operacional: Esta aquisição excede as diretrizes administrativas de tetos!"); return; }
         fetch('/api/estrutura/maquinas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(function(){ seletor.selectedIndex = 0; recarregarDadosDoServidor(); });
     });
 }
@@ -265,7 +265,6 @@ function carregarImovelEdicao(id) {
         document.getElementById('taxa_anual').value = ((aluguelCalculado * 12) + parseFloat(imovel.valor_condominio)).toFixed(2);
         document.getElementById('reserva_propria').value = (aluguelCalculado + parseFloat(imovel.valor_condominio)).toFixed(2);
         
-        // 🎯 RETIFICAÇÃO CRÍTICA DO ID DE MERCADO: De txt_valor_market_real para txt_valor_mercado_real
         document.getElementById('txt_valor_mercado_real').innerText = `R$ ${(aluguelCalculado / 0.0055).toLocaleString('pt-BR', {maximumFractionDigits:2})}`;
         document.getElementById('txt_igpm_correcao').innerText = imovel.obs_contrato || "R$ 0,00";
     });
