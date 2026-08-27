@@ -1,42 +1,11 @@
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 1 DE 4 (INICIALIZAÇÃO E GATILHOS)
+ * ARQUIVO: estrutura.js - PARTE 1 DE 4 (INICIALIZAÇÃO E ESCOPO NATIVO)
  * ==========================================================================
  */
 
-document.addEventListener("DOMContentLoaded", function() {
-    // Escuta ativa de eventos de digitação para reatividade imediata nos formulários
-    document.getElementById('area_util').addEventListener('input', executarCalculoLocacaoReativa);
-    document.getElementById('valor_condominio').addEventListener('input', executarCalculoLocacaoReativa);
-    document.getElementById('reserva_propria').addEventListener('input', calcularProjecaoIgpmAnual);
-    
-    // Inicia os barramentos síncronos e a carga de dados do banco master
-    sincronizarNomeGrupoSessao();
-    recarregarDadosDoServidor();
-    inicializarMotorLeitorVoz();
-});
-
-function sincronizarNomeGrupoSessao() {
-    // Aponta de forma estrita para a nova rota local do módulo para contornar o app_master
-    fetch('/api/estrutura/metricas')
-        .then(res => {
-            if (!res.ok) throw new Error("Status HTTP inválido");
-            return res.json();
-        })
-        .then(dados => {
-            if (dados && dados.nome_empresa) {
-                document.getElementById('nome_grupo_display').value = dados.nome_empresa;
-            } else {
-                document.getElementById('nome_grupo_display').value = "GRUPO ACADÊMICO";
-            }
-        })
-        .catch(err => {
-            console.warn("Aviso: Utilizando cache estável para o grupo:", err);
-            document.getElementById('nome_grupo_display').value = "GRUPO DIDÁTICO (LOCAL)";
-        });
-}
-
+// Declarações explícitas de funções core para mitigar a fragilidade do hoisting no DOM
 function inicializarMotorLeitorVoz() {
     const btnLeitor = document.getElementById('btn-leitor');
     if (btnLeitor) {
@@ -44,17 +13,15 @@ function inicializarMotorLeitorVoz() {
         let sintese = window.speechSynthesis;
         let utterance;
 
-        btnLeitor.addEventListener('click', () => {
+        btnLeitor.addEventListener('click', function() {
             if (!lendo) {
                 const painelConteudo = document.querySelector('.grid-main') || document.body;
                 let textoParaLer = painelConteudo.innerText || painelConteudo.textContent;
-                
-                // Sanitização de strings removendo ícones gráficos para evitar quebra do áudio
                 textoParaLer = textoParaLer.replace(/♿|⚫|✔️|📢|📁|🛠️|🏭|📈|💰|📄|⚡|🔥|💧|⏱️|🏢|🔒|🚜|👥|💾|🔄|❌/g, '');
                 
                 utterance = new SpeechSynthesisUtterance(textoParaLer);
                 utterance.lang = 'pt-BR';
-                utterance.onend = () => { lendo = false; btnLeitor.innerText = "📢 Ativar Leitor"; };
+                utterance.onend = function() { lendo = false; btnLeitor.innerText = "📢 Ativar Leitor"; };
                 sintese.speak(utterance);
                 lendo = true;
                 btnLeitor.innerText = "🛑 Parar Leitor";
@@ -64,10 +31,41 @@ function inicializarMotorLeitorVoz() {
         });
     }
 }
+
+function sincronizarNomeGrupoSessao() {
+    fetch('/api/estrutura/metricas')
+        .then(function(res) {
+            if (!res.ok) throw new Error("Status HTTP inválido");
+            return res.json();
+        })
+        .then(function(dados) {
+            if (dados && dados.nome_empresa) {
+                document.getElementById('nome_grupo_display').value = dados.nome_empresa;
+            } else {
+                document.getElementById('nome_grupo_display').value = "GRUPO ACADÊMICO";
+            }
+        })
+        .catch(function(err) {
+            console.warn("Aviso: Utilizando cache estável para o grupo:", err);
+            document.getElementById('nome_grupo_display').value = "GRUPO DIDÁTICO (LOCAL)";
+        });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    // Configuração síncrona dos gatilhos de digitação
+    document.getElementById('area_util').addEventListener('input', executarCalculoLocacaoReativa);
+    document.getElementById('valor_condominio').addEventListener('input', executarCalculoLocacaoReativa);
+    document.getElementById('reserva_propria').addEventListener('input', calcularProjecaoIgpmAnual);
+    
+    // Processamento linear e seguro das cargas de dados
+    sincronizarNomeGrupoSessao();
+    recarregarDadosDoServidor();
+    inicializarMotorLeitorVoz();
+});
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 2 DE 4 (EQUAÇÕES E CHAVEAMENTO VISUAL)
+ * ARQUIVO: estrutura.js - PARTE 2 DE 4 (MOTORES DE CÁLCULO E ACESSIBILIDADE)
  * ==========================================================================
  */
 
@@ -75,18 +73,15 @@ function executarCalculoLocacaoReativa() {
     let area = parseFloat(document.getElementById('area_util').value) || 0;
     let condominio = parseFloat(document.getElementById('valor_condominio').value) || 0;
     
-    // Regra de negócio matemática estrita do ERP v2.6: R$ 32,50 fixos por m²
     let aluguelCalculado = area * 32.50; 
     let taxaAnualCalculada = (aluguelCalculado * 12) + condominio;
 
     document.getElementById('valor_aluguel').value = aluguelCalculado.toFixed(2);
     document.getElementById('taxa_anual').value = taxaAnualCalculada.toFixed(2);
 
-    // Alimenta a Provisão Imóvel Próprio de forma reativa com Aluguel + Condomínio
     let provisaoInicial = aluguelCalculado + condominio;
     document.getElementById('reserva_propria').value = provisaoInicial.toFixed(2);
 
-    // Avaliação trilinear de mercado baseada no Cap Rate padrão de 0.55% a.m.
     let valorMercadoEstimado = aluguelCalculado / 0.0055;
     document.getElementById('txt_valor_mercado_real').innerText = `R$ ${valorMercadoEstimado.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
 
@@ -135,30 +130,26 @@ function alternarModoEscuro() {
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 3 DE 4 (SINCRO DE TETOS E ORÇAMENTOS)
+ * ARQUIVO: estrutura.js - PARTE 3 DE 4 (ATUALIZAÇÃO DE PAINÉIS DE KPI)
  * ==========================================================================
  */
 
 function recargarEAtualizarPaineisTotais() {
     fetch('/api/estrutura/metricas')
-        .then(res => {
+        .then(function(res) {
             if (!res.ok) throw new Error("Erro de comunicação financeira");
             return res.json();
         })
-        .then(dados => {
+        .then(function(dados) {
             if (!dados) return;
             
-            // Orçamento de Infraestrutura Engenharia descontando Aluguel, Provisão e Subtotal RH Fixado
             let custoDescontoTotalSetor = dados.aluguel_bruto_setor + dados.provisao_setor + dados.subtotal_fixado_rh;
             let saldoInfraestruturaCalculado = 2000000.00 - custoDescontoTotalSetor;
             let percentualDisponivelInfra = (saldoInfraestruturaCalculado / 2000000.00) * 100;
             
             document.getElementById('kpi-saldo-infra').innerText = `R$ ${saldoInfraestruturaCalculado.toLocaleString('pt-BR', {minimumFractionDigits:2})} ➔ ${percentualDisponivelInfra.toFixed(2)}% Disponível`;
-            
-            // Controle e Cobertura Patrimonial Ativa retornando estritamente Equipamentos e Máquinas
             document.getElementById('kpi-patrimonio-total').innerText = `R$ ${dados.patrimonio_isolado_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             
-            // Limite Geral (Max 40% dos Ativos Globais da Empresa)
             let tetoMaximoAtivosGlobal = 5000000.00 * 0.40; 
             document.getElementById('kpi-teto-ativos').innerText = `Global: R$ ${tetoMaximoAtivosGlobal.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
             
@@ -166,63 +157,60 @@ function recargarEAtualizarPaineisTotais() {
             document.getElementById('barra-limite-setor').style.width = `${Math.min(percentualConsumoTetoPatrimonio, 100)}%`;
             document.getElementById('txt_porcentagem_budget').innerText = `${percentualConsumoTetoPatrimonio.toFixed(1)}% do teto consumido`;
 
-            // Consolidação de Custos Fixos Correntes (Mensal)
             document.getElementById('kpi-custo-fixo-setor').innerText = `R$ ${dados.custo_fixo_isolado_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             document.getElementById('fechamento_custo_fixo_generico').innerText = `R$ ${dados.custo_fixo_total.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
             let impactoFixo = dados.custo_fixo_total > 0 ? (dados.custo_fixo_isolado_setor / dados.custo_fixo_total) * 100 : 0;
             document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Impacto do Setor: ${impactoFixo.toFixed(2)}% do global`;
 
-            // Custos Variáveis Consolidados
             document.getElementById('kpi-custo-variavel-setor').innerText = `R$ ${dados.custo_variavel_isolado_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             document.getElementById('kpi-custo-variavel-total').innerText = `R$ ${dados.custo_variavel_total.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
             
-            // Medidores de Utilidades Técnicas e Custo Minuto Máquina (CMM) do Setor
             document.getElementById('lbl_watts_consumidos').innerText = `${dados.watts_consumidos.toLocaleString('pt-BR')} W`;
             document.getElementById('lbl_gas_consumido').innerText = `${dados.gas_consumido.toLocaleString('pt-BR')} m³`;
             document.getElementById('lbl_agua_consumida').innerText = `${dados.agua_consumido.toLocaleString('pt-BR')} m³`;
             document.getElementById('kpi-custo-minuto-total').innerText = `R$ ${dados.custo_minuto_setor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/min`;
-        }).catch(err => console.error("Erro ao sincronizar barramentos dinâmicos:", err));
+        })
+        .catch(function(err) { console.error("Erro ao sincronizar barramentos dinâmicos:", err); });
 }
 /**
  * ==========================================================================
  * TERADMAS ERP v2.6 - MÓDULO 02 & 07: ENGENHARIA IMOBILIÁRIA E ATIVOS
- * ARQUIVO: estrutura.js - PARTE 4 DE 4 (PERSISTÊNCIA E OPERAÇÕES CRUD)
+ * ARQUIVO: estrutura.js - PARTE 4 DE 4 (PIPELINES E CHAMADAS REST CRUD)
  * ==========================================================================
  */
 
 function recarregarDadosDoServidor() {
-    fetch('/api/estrutura/imoveis').then(res => res.json()).then(imoveis => {
+    fetch('/api/estrutura/imoveis').then(function(res){ return res.json(); }).then(function(imoveis) {
         const corpo = document.getElementById('tabela_imoveis');
         if (corpo) {
             corpo.innerHTML = "";
-            imoveis.forEach(imovel => {
-                // Aluguel Bruto somado de forma real com o valor do condomínio conforme exigido
+            imoveis.forEach(function(imovel) {
                 let aluguelComCondominio = parseFloat(imovel.valor_aluguel) + parseFloat(imovel.valor_condominio);
                 corpo.innerHTML += `<tr><td><strong>${imovel.nome_empresa || "EQUIPE"}</strong></td><td><strong>${imovel.tipo_imovel}</strong><br><small style="color:#6b7280;">${imovel.regiao}</small></td><td>${imovel.area_util} m²</td><td style="color:#1e3a8a; font-weight:bold;">R$ ${aluguelComCondominio.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="carregarImovelEdicao(${imovel.id})">Editar</button> <button onclick="removerImovel(${imovel.id})">Rescindir</button></td></tr>`;
             });
         }
-    }).catch(err => console.error(err));
+    }).catch(function(err){ console.error(err); });
 
-    fetch('/api/estrutura/maquinas').then(res => res.json()).then(maquinas => {
+    fetch('/api/estrutura/maquinas').then(function(res){ return res.json(); }).then(function(maquinas) {
         const corpo = document.getElementById('tabela_maquinas');
         if (corpo) {
             corpo.innerHTML = "";
-            maquinas.forEach(m => {
+            maquinas.forEach(function(m) {
                 corpo.innerHTML += `<tr><td><strong>${m.nome_equipamento}</strong></td><td>R$ ${parseFloat(m.preco_compra).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td>${m.potencia_watts} W</td><td>${m.consumo_gas_m3} m³</td><td style="color:#1e3a8a; font-weight:600;">R$ ${parseFloat(m.custo_minuto_maquina).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="deletarMaquina(${m.id})">Remover</button></td></tr>`;
             });
         }
-    }).catch(err => console.error(err));
+    }).catch(function(err){ console.error(err); });
 
-    fetch('/api/estrutura/rh').then(res => res.json()).then(equipe => {
+    fetch('/api/estrutura/rh').then(function(res){ return res.json(); }).then(function(equipe) {
         const corpo = document.getElementById('tabela_colaboradores');
         if (corpo) {
             corpo.innerHTML = "";
-            equipe.forEach(func => {
+            equipe.forEach(function(func) {
                 corpo.innerHTML += `<tr><td>👤 ${func.nome}</td><td>${func.cargo}</td><td>R$ ${parseFloat(func.salario_base).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td>${func.quantidade}</td><td style="color:#1e3a8a; font-weight:600;">R$ ${parseFloat(func.subtotal).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td><td style="text-align:center;"><button onclick="carregarColaboradorEdicao(${func.id})">Editar</button> <button onclick="removerColaborador(${func.id})">Demitir</button></td></tr>`;
             });
         }
-    }).catch(err => console.error(err));
+    }).catch(function(err){ console.error(err); });
     recargarEAtualizarPaineisTotais();
 }
 
@@ -238,12 +226,10 @@ function salvarImovel(event) {
         valor_aluguel: parseFloat(document.getElementById('valor_aluguel').value) || 0,
         obs_contrato: document.getElementById('txt_igpm_correcao').innerText
     };
-    fetch('/api/estrutura/imoveis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { document.getElementById('formImobiliario').reset(); document.getElementById('imovel_id').value = ""; recarregarDadosDoServidor(); });
+    fetch('/api/estrutura/imoveis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(function(){ document.getElementById('formImobiliario').reset(); document.getElementById('imovel_id').value = ""; recarregarDadosDoServidor(); });
 }
 
-function auditarMargemSegurancaSetor(patrimonioTotal, precoNovo) {
-    return { authorized: (patrimonioTotal + precoNovo) <= 2000000.00 };
-}
+function auditarMargemSegurancaSetor(patrimonioTotal, precoNovo) { return { authorized: (patrimonioTotal + precoNovo) <= 2000000.00 }; }
 
 function salvarMaquina(event) {
     event.preventDefault();
@@ -259,17 +245,14 @@ function salvarMaquina(event) {
         depreciacao: parseFloat(opt.getAttribute('data-dep')) || 0,
         custo_minuto: parseFloat(opt.getAttribute('data-min')) || 0
     };
-    fetch('/api/estrutura/metricas').then(res => res.json()).then(m => {
-        if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).authorized) {
-            alert("Erro Operacional: Esta aquisição excede as diretrizes administrativas de tetos (Max 40% dos ativos)!");
-            return;
-        }
-        fetch('/api/estrutura/maquinas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { seletor.selectedIndex = 0; recarregarDadosDoServidor(); });
+    fetch('/api/estrutura/metricas').then(function(res){ return res.json(); }).then(function(m) {
+        if (!auditarMargemSegurancaSetor((m.patrimonio_ativo_total || 0), dados.preco).authorized) { alert("Erro Operacional: Esta aquisição excede as diretrizes administrativas de tetos (Max 40% dos ativos)!"); return; }
+        fetch('/api/estrutura/maquinas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(function(){ seletor.selectedIndex = 0; recarregarDadosDoServidor(); });
     });
 }
 
 function carregarImovelEdicao(id) {
-    fetch(`/api/estrutura/imoveis/${id}`).then(res => res.json()).then(imovel => {
+    fetch(`/api/estrutura/imoveis/${id}`).then(function(res){ return res.json(); }).then(function(imovel) {
         document.getElementById('imovel_id').value = imovel.id;
         document.getElementById('tipo_imovel').value = imovel.tipo_imovel;
         document.getElementById('area_util').value = imovel.area_util;
@@ -281,7 +264,9 @@ function carregarImovelEdicao(id) {
         document.getElementById('valor_aluguel').value = aluguelCalculado.toFixed(2);
         document.getElementById('taxa_anual').value = ((aluguelCalculado * 12) + parseFloat(imovel.valor_condominio)).toFixed(2);
         document.getElementById('reserva_propria').value = (aluguelCalculado + parseFloat(imovel.valor_condominio)).toFixed(2);
-        document.getElementById('txt_valor_market_real').innerText = `R$ ${(aluguelCalculado / 0.0055).toLocaleString('pt-BR', {maximumFractionDigits:2})}`;
+        
+        // 🎯 RETIFICAÇÃO CRÍTICA DO ID DE MERCADO: De txt_valor_market_real para txt_valor_mercado_real
+        document.getElementById('txt_valor_mercado_real').innerText = `R$ ${(aluguelCalculado / 0.0055).toLocaleString('pt-BR', {maximumFractionDigits:2})}`;
         document.getElementById('txt_igpm_correcao').innerText = imovel.obs_contrato || "R$ 0,00";
     });
 }
@@ -297,11 +282,11 @@ function adicionarColaborador(event) {
         salario_base: parseFloat(seletor.options[seletor.selectedIndex].getAttribute('data-salario')) || 0,
         quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 1
     };
-    fetch('/api/estrutura/rh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(() => { document.getElementById('formContratacaoPredial').reset(); document.getElementById('rh_id').value = ""; recarregarDadosDoServidor(); });
+    fetch('/api/estrutura/rh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) }).then(function(){ document.getElementById('formContratacaoPredial').reset(); document.getElementById('rh_id').value = ""; recarregarDadosDoServidor(); });
 }
 
 function carregarColaboradorEdicao(id) {
-    fetch(`/api/estrutura/rh/${id}`).then(res => res.json()).then(func => {
+    fetch(`/api/estrutura/rh/${id}`).then(function(res){ return res.json(); }).then(function(func) {
         document.getElementById('rh_id').value = func.id;
         document.getElementById('rh_nome').value = func.nome;
         document.getElementById('cargo_suporte').value = func.cargo;
@@ -311,6 +296,6 @@ function carregarColaboradorEdicao(id) {
     });
 }
 
-function deletarMaquina(id) { if(confirm("Deseja remover este ativo do setor?")) fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); }
-function removerImovel(id) { if(confirm("Deseja rescindir este contrato patrimonial?")) fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); }
-function removerColaborador(id) { if(confirm("Deseja demitir este colaborador?")) fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' }).then(() => recarregarDadosDoServidor()); }
+function deletarMaquina(id) { if(confirm("Deseja remover este ativo do setor?")) fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' }).then(function(){ recarregarDadosDoServidor(); }); }
+function removerImovel(id) { if(confirm("Deseja rescindir este contrato patrimonial?")) fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' }).then(function(){ recarregarDadosDoServidor(); }); }
+function removerColaborador(id) { if(confirm("Deseja demitir este colaborador?")) fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' }).then(function(){ recarregarDadosDoServidor(); }); }
