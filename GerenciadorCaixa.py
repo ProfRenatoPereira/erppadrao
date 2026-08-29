@@ -1,6 +1,7 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MOTOR FINANCEIRO CENTRAL (GerenciadorCaixa.py)
 # PARTE 1 DE 2 - GERENCIAMENTO DE CONEXÃO E AGREGADOR DE PATRIMÔNIO ATIVO
+# CORREÇÃO: Cálculo correto de custos fixos do setor ESTRUTURA
 # ==========================================================================
 
 import os
@@ -23,6 +24,8 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
     """
     Motor central unificado que calcula o balanço patrimonial e despesas correntes
     de forma combinada e isolada, gerando métricas do setor e da empresa completa.
+    
+    CORREÇÃO v2: Cálculo correto de custos fixos por setor
     """
     conexao = obter_conexao_master()
     cursor = None
@@ -42,10 +45,6 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
     patrimonio_isolado_setor = 0.0
     custo_fixo_isolado_setor = 0.0
     custo_variavel_isolado_setor = 0.0
-    
-    # Parâmetros Orçamentários e de Controle Administrativo
-    orcamento_liberado_setor = 0.0
-    gastos_especificos_setor = 0.0
 
     try:
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
@@ -77,14 +76,19 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         # ==================================================================
         
         # A) Módulo Imobiliário (Tabela: imoveis_simulacao)
+        imob_aluguel_setor = 0.0
+        imob_condo_setor = 0.0
         try:
-            cursor.execute("SELECT SUM(valor_aluguel) as total FROM imoveis_simulacao WHERE equipe_id = %s", (id_equipe,))
+            cursor.execute("SELECT COALESCE(SUM(valor_aluguel), 0) as aluguel, COALESCE(SUM(valor_condominio), 0) as condo FROM imoveis_simulacao WHERE equipe_id = %s", (id_equipe,))
             res_imob = cursor.fetchone()
-            if res_imob and res_imob['total']:
-                patrimonio_ativo_total += float(res_imob['total'])
+            if res_imob:
+                imob_aluguel_setor = float(res_imob['aluguel'] or 0)
+                imob_condo_setor = float(res_imob['condo'] or 0)
+                patrimonio_ativo_total += imob_aluguel_setor
                 if departamento_atual == 'estrutura':
-                    patrimonio_isolado_setor += float(res_imob['total'])
-        except Exception:
+                    patrimonio_isolado_setor += imob_aluguel_setor
+        except Exception as e:
+            print(f"Aviso: imoveis_simulacao: {e}")
             if conexao: conexao.rollback()
 
         # B) Módulo de Engenharia de Ativos / Máquinas (Tabela: ativos_maquinas)
@@ -95,7 +99,8 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
                 patrimonio_ativo_total += float(res_maq['total'])
                 if departamento_atual == 'maquinas':
                     patrimonio_isolado_setor += float(res_maq['total'])
-        except Exception:
+        except Exception as e:
+            print(f"Aviso: ativos_maquinas: {e}")
             if conexao: conexao.rollback()
 
         # C) Módulo de Almoxarifado / Materiais Estocados (Tabela: ativos_materials)
@@ -106,38 +111,48 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
                 patrimonio_ativo_total += float(res_mat['total'])
                 if departamento_atual == 'materiais':
                     patrimonio_isolado_setor += float(res_mat['total'])
-        except Exception:
+        except Exception as e:
+            print(f"Aviso: ativos_materials: {e}")
             if conexao: conexao.rollback()
+
 # ==========================================================================
 # TERADMAS ERP v2.6 - MOTOR FINANCEIRO CENTRAL (GerenciadorCaixa.py)
 # PARTE 2 DE 2 - CUSTOS FIXOS, VARIÁVEIS CONSOLIDADOS E DICIONÁRIO DE SAÍDA
+# CORREÇÃO: Lógica correta de soma de custos fixos
 # ==========================================================================
 
         # ==================================================================
         # 🔒 EQUAÇÃO REVISADA 02: CONSOLIDAÇÃO DE CUSTOS FIXOS (SOMA MATRICIAL)
+        # CORREÇÃO: Agora soma corretamente os custos do setor ESTRUTURA
         # ==================================================================
-        custo_fixo_total_global = valor_aluguel_global
+        
+        # PASSO 1: Inicializa com valores de imóvel do setor (já calculado acima)
+        custo_fixo_total_global = imob_aluguel_setor + imob_condo_setor
         if departamento_atual == 'estrutura':
-            custo_fixo_isolado_setor = valor_aluguel_global
+            custo_fixo_isolado_setor = imob_aluguel_setor + imob_condo_setor
 
-        # Varre e consolida a folha de funcionários CLT ativa (Tabela: folha_funcionarios)
+        # PASSO 2: Varre e consolida a folha de funcionários CLT ativa (Tabela: folha_funcionarios)
         try:
             cursor.execute("SELECT SUM(salario_base) as total FROM folha_funcionarios WHERE equipe_id = %s", (id_equipe,))
             res_rh_global = cursor.fetchone()
             if res_rh_global and res_rh_global['total']:
                 custo_fixo_total_global += float(res_rh_global['total'])
-        except Exception:
+        except Exception as e:
+            print(f"Aviso: folha_funcionarios: {e}")
             if conexao: conexao.rollback()
 
-        # Varre o suporte predial específico do setor imobiliário (Tabela: estrutura_rh)
+        # PASSO 3: Varre o suporte predial específico do setor imobiliário (Tabela: estrutura_rh)
+        rh_setor_valor = 0.0
         try:
-            cursor.execute("SELECT SUM(subtotal) as total FROM estrutura_rh WHERE equipe_id = %s", (id_equipe,))
+            cursor.execute("SELECT COALESCE(SUM(subtotal), 0) as total FROM estrutura_rh WHERE equipe_id = %s", (id_equipe,))
             res_rh_imob = cursor.fetchone()
-            if res_rh_imob and res_rh_imob['total']:
-                custo_fixo_total_global += float(res_rh_imob['total'])
+            if res_rh_imob:
+                rh_setor_valor = float(res_rh_imob['total'] or 0)
+                custo_fixo_total_global += rh_setor_valor
                 if departamento_atual == 'estrutura':
-                    custo_fixo_isolado_setor += float(res_rh_imob['total'])
-        except Exception:
+                    custo_fixo_isolado_setor += rh_setor_valor
+        except Exception as e:
+            print(f"Aviso: estrutura_rh: {e}")
             if conexao: conexao.rollback()
 
         # ==================================================================
@@ -145,25 +160,30 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         # ==================================================================
         try:
             # Varre encargos patronais e horas extras acumuladas (Tabela: livro_razonete_folha)
-            cursor.execute("SELECT SUM(encargos_patronais + valor_horas_extras) as total FROM livro_razonete_folha WHERE equipe_id = %s", (id_equipe,))
+            cursor.execute("SELECT SUM(COALESCE(encargos_patronais, 0) + COALESCE(valor_horas_extras, 0)) as total FROM livro_razonete_folha WHERE equipe_id = %s", (id_equipe,))
             res_folha_var = cursor.fetchone()
             if res_folha_var and res_folha_var['total']:
                 custo_variavel_total_global += float(res_folha_var['total'])
                 if departamento_atual == 'rh' or departamento_atual == 'folha_pagamento':
                     custo_variavel_isolado_setor += float(res_folha_var['total'])
-        except Exception:
+        except Exception as e:
+            print(f"Aviso: livro_razonete_folha: {e}")
             if conexao: conexao.rollback()
 
         # ==================================================================
         # 🎛️ CIRCUITO DE TRAVAS OPERACIONAIS INDIVIDUAIS POR DEPARTAMENTO
         # ==================================================================
+        orcamento_liberado_setor = 0.0
+        gastos_especificos_setor = 0.0
+        
         if departamento_atual:
             try:
                 cursor.execute("SELECT orcamento_liberado FROM departamentos_orcamento WHERE equipe_id = %s AND departamento = %s", (id_equipe, departamento_atual))
                 dept_orc = cursor.fetchone()
                 if dept_orc:
                     orcamento_liberado_setor = float(dept_orc['orcamento_liberado'] or 0)
-            except Exception:
+            except Exception as e:
+                print(f"Aviso: departamentos_orcamento: {e}")
                 if conexao: conexao.rollback()
 
             try:
@@ -171,7 +191,8 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
                 res_gastos = cursor.fetchone()
                 if res_gastos and res_gastos['total']:
                     gastos_especificos_setor = float(res_gastos['total'])
-            except Exception:
+            except Exception as e:
+                print(f"Aviso: fluxo_caixa filtrado: {e}")
                 if conexao: conexao.rollback()
 
         # Deduções reativas do fluxo de caixa de giro da empresa e saldo setorial
