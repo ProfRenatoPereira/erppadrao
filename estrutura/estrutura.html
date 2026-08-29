@@ -380,17 +380,5 @@
    
 <script src="/estrutura/estrutura.js"></script>
 
-<script>
-(function() {
-    function destravarInterface() {
-        document.querySelectorAll('input, select, button, textarea').forEach(function(el) {
-            if (!['valor_aluguel', 'taxa_anual', 'previa_salario', 'nome_grupo_display'].includes(el.id)) {
-                el.removeAttribute('disabled'); el.removeAttribute('readonly'); el.style.opacity = "1"; el.style.pointerEvents = "auto";
-            }
-        });
-    }
-    destravarInterface(); setTimeout(destravarInterface, 1000);
-})();
-</script>
 </body>
 </html>
