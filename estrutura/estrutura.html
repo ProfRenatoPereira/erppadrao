@@ -109,7 +109,7 @@
             <div class="kpi-comparison-grid">
                 <div class="kpi-metric-block">
                     <span class="kpi-metric-label">Saldo Setor Imobiliário</span>
-                    <span class="kpi-metric-value" id="kpi-saldo-infra" style="color: #16a34a;">R$ 2.000.000,00</span>
+                    <span class="kpi-metric-value" id="kpi-saldo-infra">R$ 2.000.000,00</span>
                 </div>
                 <div class="kpi-metric-block global-spec">
                     <span class="kpi-metric-label">Inicial Global da Infra</span>
@@ -163,7 +163,7 @@
                 </div>
                 <div class="kpi-metric-block">
                     <span class="kpi-metric-label">Limite Geral (Max 40% Ativos)</span>
-                    <span class="kpi-metric-value" id="kpi-teto-ativos" style="color: #3b82f6;">Global: R$ 0,00</span>
+                    <span class="kpi-metric-value" id="kpi-teto-ativos">Global: R$ 0,00</span>
                     <div class="progress-bar-container">
                         <div class="progress-bar-fill" id="barra-limite-setor"></div>
                     </div>
@@ -221,7 +221,7 @@
     </div>
 <!-- ==========================================================================
    TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-   PARTE 3 DE 3 - FORMULÁRIOS, TABELAS DO SUPABASE E INJEÇÃO SCRIPT BLUEPRINT
+   PARTE 3A DE 4 - FORMULÁRIOS DE MODELAGEM PATRIMONIAL E CONTROLE DE ENTRADAS
    ========================================================================== -->
     <div class="grid-main">
         <!-- SEÇÃO: ALOCAÇÃO DE ESPAÇO FÍSICO -->
@@ -241,16 +241,29 @@
                     <div><label class="label-form" style="color:#1e3a8a;">Aluguel:</label><input type="number" id="valor_aluguel" readonly class="input-form input-form-readonly"></div>
                     <div><label class="label-form" style="color:#b45309;">Taxa Anual:</label><input type="number" id="taxa_anual" readonly class="input-form input-form-readonly"></div>
                 </div>
+                
+                <!-- 🎯 MOSAICO DE EQUAÇÕES HOMOLOGADO COM IDENTIFICADORES RETIFICADOS -->
                 <div class="equations-mosaico-grid">
-                    <div class="eq-box-provisao"><label class="label-form">🏢 Provisão Imóvel Próprio</label><input type="number" id="reserva_propria" step="0.01" class="input-form"><span>Projeção IGPM: <strong id="txt_igpm_correcao">R$ 0,00</strong></span></div>
-                    <div class="eq-box-amortizacao"><label class="label-form">📍 Amortização Física</label><div>Mercado: <span id="txt_valor_mercado_real">R$ 0,00</span></div><span>Tempo: <strong id="txt_tempo_meses">0 meses</strong></span></div>
-                    <div class="eq-box-rentabilidade"><label class="label-form">📈 Rentabilidade (Cap Rate)</label><div>Taxa: <span id="txt_taxa_capitalizacao">0.00% a.m.</span></div></div>
+                    <div class="eq-box-provisao">
+                        <label class="label-form">🏢 Provisão Imóvel Próprio</label>
+                        <input type="number" id="reserva_propria" step="0.01" class="input-form">
+                        <span>Projeção IGPM: <strong id="txt_igpm_correcao">R$ 0,00</strong></span>
+                    </div>
+                    <div class="eq-box-amortizacao">
+                        <label class="label-form">📍 Amortização Física</label>
+                        <div>Mercado: <span id="txt_valor_mercado_real">R$ 0,00</span></div>
+                        <span>Tempo: <strong id="txt_tempo_meses">0 meses</strong></span>
+                    </div>
+                    <div class="eq-box-rentabilidade">
+                        <label class="label-form">📈 Rentabilidade (Cap Rate)</label>
+                        <div>Taxa: <span id="txt_taxa_capitalizacao">0.00% a.m.</span></div>
+                    </div>
                 </div>
                 <button type="submit" id="btn_salvar" class="btn-submit">💾 Firmar Contrato de Locação</button>
             </form>
         </div>
 
-        <!-- SEÇÃO: COMPRA DE UTILIDADES E MAQUINAS DO SETOR -->
+        <!-- SEÇÃO: COMPRA DE UTILIDADES E MAQUINAS DO SETOR EXPLODIDA -->
         <div class="card">
             <h3 class="card-title">🚜 Alocação de Equipamentos de Suporte</h3>
             <form id="formMaquinas" onsubmit="salvarMaquina(event)">
@@ -259,12 +272,20 @@
                         <label class="label-form">Selecione o Item Comercial / Industrial para o Setor:</label>
                         <select id="seletor_equipamento" required class="select-form">
                             <option value="" disabled selected>Escolha um equipamento...</option>
-                            <option value="Fogão Industrial" data-preco="4500" data-watts="0" data-gas="1.2" data-agua="0" data-dep="10" data-min="0.15">Fogão Industrial P5 Alta Pressão — R$ 4.500,00</option>
-                            <option value="Geladeira Comercial" data-preco="6800" data-watts="850" data-gas="0" data-agua="0" data-dep="10" data-min="0.22">Geladeira Duplex Inox Expositora — R$ 6.800,00</option>
-                            <option value="Freezer Horizontal" data-preco="5200" data-watts="1100" data-gas="0" data-agua="0" data-dep="10" data-min="0.18">Freezer Industrial F500 — R$ 5.200,00</option>
-                            <option value="Forno Turbo Industrial" data-preco="12500" data-watts="1500" data-gas="2.5" data-agua="0.05" data-dep="12" data-min="0.45">Forno Turbo Gás/Elétrico — R$ 12.500,00</option>
-                            <option value="Banho Maria Industrial" data-preco="3100" data-watts="2000" data-gas="0" data-agua="0.02" data-dep="10" data-min="0.12">Mesa Térmica Buffet Buffet — R$ 3.100,00</option>
-                            <option value="Conjunto Computador Recepção" data-preco="3500" data-watts="350" data-gas="0" data-agua="0" data-dep="20" data-min="0.08">Desktop + Telefone IP — R$ 3.500,00</option>
+                            <option value="Fogão Industrial P5" data-preco="4500" data-watts="0" data-gas="1.2" data-agua="0" data-dep="10" data-min="0.15">Fogão Industrial P5 Alta Pressão — R$ 4.500,00</option>
+                            <option value="Forno Turbo Gás/Elétrico" data-preco="12500" data-watts="1500" data-gas="2.5" data-agua="0.05" data-dep="12" data-min="0.45">Forno Turbo Industrial Combinado — R$ 12.500,00</option>
+                            <option value="Geladeira Comercial Duplex" data-preco="6800" data-watts="850" data-gas="0" data-agua="0" data-dep="10" data-min="0.22">Geladeira Duplex Inox Expositora — R$ 6.800,00</option>
+                            <option value="Freezer Horizontal F500" data-preco="5200" data-watts="1100" data-gas="0" data-agua="0" data-dep="10" data-min="0.18">Freezer Industrial F500 — R$ 5.200,00</option>
+                            <option value="Mesa Térmica Buffet" data-preco="3100" data-watts="2000" data-gas="0" data-agua="0.02" data-dep="10" data-min="0.12">Mesa Térmica Buffet Aquecida — R$ 3.100,00</option>
+                            <option value="Mesa Separadora Louças" data-preco="1800" data-watts="0" data-gas="0" data-agua="0.10" data-dep="10" data-min="0.05">Mesa Separadora de Louças Inox — R$ 1.800,00</option>
+                            <option value="Conjunto Cadeiras e Mesas" data-preco="4200" data-watts="0" data-gas="0" data-agua="0" data-dep="10" data-min="0.00">Lote 10 Jogos Mesas/Cadeiras Refeitório — R$ 4.200,00</option>
+                            <option value="Kit Aparelho Louças Linha Luxo" data-preco="2500" data-watts="0" data-gas="0" data-agua="0" data-dep="20" data-min="0.00">Lote Pratos, Travessas e Tigelas Cerâmica — R$ 2.500,00</option>
+                            <option value="Estojo Talheres Inox Completo" data-preco="1500" data-watts="0" data-gas="0" data-agua="0" data-dep="20" data-min="0.00">Garfos, Facas, Colheres e Utensílios Profissionais — R$ 1.500,00</option>
+                            <option value="Banho Maria Digital" data-preco="3800" data-watts="2400" data-gas="0" data-agua="0.05" data-dep="10" data-min="0.16">Banho Maria de Bancada Digital — R$ 3.800,00</option>
+                            <option value="Computador Recepção" data-preco="3500" data-watts="350" data-gas="0" data-agua="0" data-dep="20" data-min="0.08">Desktop Recepção Core i5 + Telefone IP — R$ 3.500,00</option>
+                            <option value="Computador Portaria" data-preco="2900" data-watts="280" data-gas="0" data-agua="0" data-dep="20" data-min="0.06">Terminal Monitoramento Portaria Acesso — R$ 2.900,00</option>
+                            <option value="Central Telefonica PABX IP" data-preco="1800" data-watts="150" data-gas="0" data-agua="0" data-dep="15" data-min="0.04">Central PABX IP 4 Linhas — R$ 1.800,00</option>
+                            <option value="Móveis Recepção Estofados" data-preco="5500" data-watts="0" data-gas="0" data-agua="0" data-dep="10" data-min="0.00">Balcão de Atendimento + Sofá de Espera — R$ 5.500,00</option>
                         </select>
                     </div>
                 </div>
@@ -286,32 +307,74 @@
                 <button type="submit" id="btn_contratar" class="btn-submit" style="background-color: #1e3a8a;">👥 Confirmar Registro</button>
             </form>
         </div>
-
-        <!-- QUADROS DE TABELAS DINÂMICAS -->
+<!-- ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+   PARTE 3B DE 4 - MAPAS DE TABELAS DINÂMICAS DO SUPABASE E SCRIPTS CORE
+   ========================================================================== -->
+        <!-- QUADROS DE TABELAS DINÂMICAS REAIS COMPLETAS -->
         <div class="table-container">
             <div class="table-header-dark">Contratos Imobiliários Firmados no Supabase</div>
-            <div class="table-responsive"><table><thead><tr><th>Turma/Grupo</th><th>Estrutura</th><th>Área</th><th>Aluguel (Bruto)</th><th style="text-align:center;">Ações</th></tr></thead><tbody id="tabela_imoveis"></tbody></table></div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Turma/Grupo</th>
+                            <th>Estrutura</th>
+                            <th>Área</th>
+                            <th>Aluguel (Bruto)</th>
+                            <th style="text-align:center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela_imoveis"></tbody>
+                </table>
+            </div>
         </div>
+
         <div class="table-container">
             <div class="table-header-dark">Equipamentos e Máquinas no Setor</div>
-            <div class="table-responsive"><table><thead><tr><th>Item</th><th>Preço</th><th>Watts</th><th>Gás</th><th>Custo/Min</th><th style="text-align:center;">Ações</th></tr></thead><tbody id="tabela_maquinas"></tbody></table></div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Preço</th>
+                            <th>Watts</th>
+                            <th>Gás</th>
+                            <th>Custo/Min</th>
+                            <th style="text-align:center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela_maquinas"></tbody>
+                </table>
+            </div>
         </div>
+
         <div class="table-container">
             <div class="table-header-slate">Quadro de Colaboradores e Suporte</div>
-            <div class="table-responsive"><table><thead><tr><th>Nome</th><th>Cargo</th><th>Salário</th><th>Qtd</th><th>Subtotal</th><th style="text-align:center;">Ações</th></tr></thead><tbody id="tabela_colaboradores"></tbody></table></div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Cargo</th>
+                            <th>Salário</th>
+                            <th>Qtd</th>
+                            <th>Subtotal</th>
+                            <th style="text-align:center;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela_colaboradores"></tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    </div> <!-- Fechamento da div grid-main -->
 
-    <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
-        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
-            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
-            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
-            <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
-            <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
-        </footer>
-</div>
+    <footer class="app-footer">
+        <p class="footer-brand-title">© Copyright Física Renato Pereira ®ψΣ. Rev. 2026.</p>
+    </footer>
+</div> <!-- Fechamento da div container principal -->
 
-<!-- INJEÇÃO NATIVA DA ROTA DO BLUEPRINT DA FLASK ENGINE -->
+<!-- INJEÇÃO DA DIRETRIZ LOCAL DE EXECUÇÃO ISOLADA DO BLUEPRINT -->
 <script src="/estrutura/estrutura.js"></script>
 
 <script>
