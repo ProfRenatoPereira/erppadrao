@@ -119,6 +119,7 @@ function calcularPreviaSalario() {
     
     inputPrevia.value = (salario * qtd).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
+
 async function carregarDadosIniciais() {
     try {
         const resMetricas = await fetch('/api/financeiro/metricas?dept=estrutura');
@@ -126,17 +127,19 @@ async function carregarDadosIniciais() {
         const metricas = await resMetricas.json();
         
         const capitalInicial = 5000000.00;
-        const budgetMaximoSetor = capitalInicial * 0.40; 
-        const gastoSetor = metricas.custo_fixo_total || 0; 
+        const budgetMaximoSetor = capitalInicial * 0.40;
+        
+        // CORREÇÃO: Usar custo_fixo_isolado_setor (apenas ESTRUTURA) em vez de custo_fixo_total (toda empresa)
+        const gastoSetor = metricas.custo_fixo_isolado_setor || 0;
         const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 21350.00;
         
         if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = capitalInicial.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('top_custo_fixo_setor')) document.getElementById('top_custo_fixo_setor').innerText = `${gastoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ 0,00/mês`;
-        if(document.getElementById('top_custo_fixo_geral_empresa')) document.getElementById('top_custo_fixo_geral_empresa').innerText = custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
-        if(document.getElementById('custo_fixo_geral_total_valor')) document.getElementById('custo_fixo_geral_total_valor').innerText = custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
-        if(document.getElementById('custo_fixo_setor_valor')) document.getElementById('custo_fixo_setor_valor').innerText = gastoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + "/mês";
+        if(document.getElementById('top_custo_fixo_geral_empresa')) document.getElementById('top_custo_fixo_geral_empresa').innerText = custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        if(document.getElementById('custo_fixo_geral_total_valor')) document.getElementById('custo_fixo_geral_total_valor').innerText = custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        if(document.getElementById('custo_fixo_setor_valor')) document.getElementById('custo_fixo_setor_valor').innerText = gastoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         
         const inputGrupo = document.getElementById('nome_grupo_display');
         if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
@@ -153,7 +156,7 @@ async function carregarDadosIniciais() {
             document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}% do impacto fixo global`;
         }
         if(document.getElementById('custo_fixo_geral_total_detalhes')) {
-            document.getElementById('custo_fixo_geral_total_detalhes').innerText = `→ Proporção Global: O Setor representa ${porcFixo.toFixed(2)}% de toda a Folha e Infraestrutura Corporativa Fixa.`;
+            document.getElementById('custo_fixo_geral_total_detalhes').innerText = `→ Proporção Global: O Setor representa ${porcFixo.toFixed(2)}% de toda a Folha e Infraestrutura Corporativa`;
         }
         if(document.getElementById('custo_fixo_setor_detalhes')) {
             document.getElementById('custo_fixo_setor_detalhes').innerText = `→ Custos Totais: ${porcCapital.toFixed(3)}% | Custos Fixos Fixados: ${porcFixo.toFixed(2)}%`;
@@ -184,6 +187,7 @@ async function carregarDadosIniciais() {
         await carregarTabelaColaboradores();
     } catch (err) { console.error(err); }
 }
+
 async function carregarTabelaImoveis() {
     try {
         const resImoveis = await fetch('/api/estrutura/imoveis');
@@ -192,7 +196,7 @@ async function carregarTabelaImoveis() {
         if (!tbody) return;
         
         if (!imoveis || imoveis.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum espaço alocado no Supabase para este grupo.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum espaço alocado no Supabase para este grupo</td></tr>`;
             return;
         }
 
@@ -222,7 +226,7 @@ async function carregarTabelaColaboradores() {
         if (!tbody) return;
         
         if (!colaboradores || colaboradores.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">MÁSCARA ZERO: Nenhum colaborador alocado neste setor.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">MÁSCARA ZERO: Nenhum colaborador alocado neste setor</td></tr>`;
             return;
         }
 
@@ -309,7 +313,7 @@ async function editarImovel(id) {
             if (document.getElementById('bairro')) document.getElementById('bairro').value = partes[1];
         }
         
-        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato Activo";
+        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato Ativo";
         if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'inline-block';
         calcularPrecoMercadoRefletido();
         mudarFonte(0);
