@@ -1,6 +1,6 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - PARTE 1 DE 4 (ARQUITETURA DE TOPO E VIEWS)
+# ARQUIVO: app_estrutura.py - CORRECTED VERSION
 # ==========================================================================
 
 import os
@@ -8,7 +8,6 @@ from flask import Blueprint, request, render_template_string, session, jsonify, 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-# Definição oficial do ambiente modular isolado para Engenharia Imobiliária e Custos
 estrutura_blueprint = Blueprint('estrutura_blueprint', __name__)
 
 def obter_conexao_master():
@@ -30,11 +29,11 @@ def pagina_estrutura():
             html = f.read()
         return render_template_string(html)
     except FileNotFoundError:
-        return "Erro Crítico: Arquivo 'estrutura.html' não encontrado no ecossistema de servidores.", 404
+        return "Erro Crítico: Arquivo 'estrutura.html' não encontrado.", 404
 
 @estrutura_blueprint.route('/estrutura/estrutura.js', methods=['GET'])
 def rota_estrutura_js():
-    """Injeta nativamente o script do cliente com motores de Cap Rate e tratamento transacional"""
+    """Injeta nativamente o script do cliente"""
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
     caminho_js = os.path.join(diretorio_atual, 'estrutura.js')
     
@@ -43,21 +42,19 @@ def rota_estrutura_js():
             js_conteudo = f.read()
         return js_conteudo, 200, {'Content-Type': 'application/javascript; charset=utf-8'}
     except FileNotFoundError:
-        return "console.error('Erro Crítico: Script estrutural estrutura.js ausente ou corrompido.');", 404
+        return "console.error('Erro: Script estrutura.js ausente.');", 404
 
 @estrutura_blueprint.route('/api/auth/sessao_atual', methods=['GET'])
 def api_sessao_atual_verificar():
-    """Valida o estado transacional da sessão do usuário no Render para mapeamento do JS"""
+    """Valida o estado transacional da sessão"""
     if not session.get('logado'):
         return jsonify({'status': 'desconectado'}), 401
     return jsonify({
         'id_equipe': session.get('id_equipe', 'equipe_alfa'),
         'nome_empresa': session.get('nome_empresa', session.get('nome_grupo', 'GRUPO DIDÁTICO')).upper()
     }), 200
-# ==========================================================================
-# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - PARTE 2 DE 4 (ENDPOINTS DE LEITURA E CONSULTA)
-# ==========================================================================
+
+# ========== ENDPOINTS GET ==========
 
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
 def api_imoveis_listar():
@@ -93,9 +90,18 @@ def api_maquinas_listar():
     cursor = None
     try:
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        cursor.execute("SELECT * FROM erp_maquinas WHERE equipe_id = %s AND departamento = 'ESTRUTURA' ORDER BY id DESC", (id_equipe,))
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS erp_maquinas (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, nome_equipamento TEXT, departamento TEXT,
+                preco_compra REAL, potencia_watts REAL, consumo_gas_m3 REAL, consumo_agua_m3 REAL,
+                taxa_depreciacao REAL, custo_minuto_maquina REAL
+            )
+        ''')
+        conexao.commit()
+        cursor.execute("SELECT * FROM erp_maquinas WHERE equipe_id = %s AND departamento = %s ORDER BY id DESC", (id_equipe, 'ESTRUTURA'))
         return jsonify(cursor.fetchall())
     except psycopg2.DatabaseError as e:
+        if conexao: conexao.rollback()
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
@@ -110,17 +116,23 @@ def api_rh_listar():
     cursor = None
     try:
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS estrutura_rh (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, nome TEXT, cargo TEXT, 
+                salario_base REAL, quantidade INTEGER, subtotal REAL
+            )
+        ''')
+        conexao.commit()
         cursor.execute('SELECT * FROM estrutura_rh WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
         return jsonify(cursor.fetchall())
     except psycopg2.DatabaseError as e:
+        if conexao: conexao.rollback()
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-# ==========================================================================
-# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - PARTE 3 DE 4 (PERSISTÊNCIA E OPERAÇÕES POST)
-# ==========================================================================
+
+# ========== ENDPOINTS POST ==========
 
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['POST'])
 def api_imoveis_salvar():
@@ -165,17 +177,18 @@ def api_maquinas_salvar():
     conexao = obter_conexao_master()
     cursor = None
     try:
-        preco_compra = float(str(dados.get('preco', 0)).replace(',', '.').strip())
-        potencia_watts = float(str(dados.get('potencia', 0)).replace(',', '.').strip())
-        consumo_gas_m3 = float(str(dados.get('gas', 0)).replace(',', '.').strip())
-        consumo_agua_m3 = float(str(dados.get('agua', 0)).replace(',', '.').strip())
-        taxa_depreciacao = float(str(dados.get('depreciacao', 0)).replace(',', '.').strip())
-        custo_minuto_maquina = float(str(dados.get('custo_minuto', 0)).replace(',', '.').strip())
+        preco_compra = float(str(dados.get('preco_compra', 0)).replace(',', '.').strip())
+        watts_consumo = float(str(dados.get('watts_consumo', 0)).replace(',', '.').strip())
+        gas_consumo = float(str(dados.get('gas_consumo', 0)).replace(',', '.').strip())
+        agua_consumo = float(str(dados.get('agua_consumo', 0)).replace(',', '.').strip())
+        depreciacao_anos = int(dados.get('depreciacao_anos', 10))
+        custo_minuto = float(str(dados.get('custo_minuto', 0)).replace(',', '.').strip())
+        
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         cursor.execute('''
             INSERT INTO erp_maquinas (equipe_id, nome_equipamento, departamento, preco_compra, potencia_watts, consumo_gas_m3, consumo_agua_m3, taxa_depreciacao, custo_minuto_maquina) 
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (id_equipe, dados.get('nome'), 'ESTRUTURA', preco_compra, potencia_watts, consumo_gas_m3, consumo_agua_m3, taxa_depreciacao, custo_minuto_maquina))
+        ''', (id_equipe, dados.get('nome_equipamento'), 'ESTRUTURA', preco_compra, watts_consumo, gas_consumo, agua_consumo, depreciacao_anos, custo_minuto))
         conexao.commit()
         return jsonify({'status': 'sucesso'})
     except Exception as err:
@@ -212,10 +225,8 @@ def api_rh_salvar():
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-# ==========================================================================
-# TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - PARTE 4 DE 4 (CRUD INDIVIDUAL, MÈTRICAS E KPIS)
-# ==========================================================================
+
+# ========== ENDPOINTS INDIVIDUAL CRUD ==========
 
 @estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_imovel(id_reg):
@@ -229,9 +240,10 @@ def api_individual_imovel(id_reg):
             conexao.commit()
             return jsonify({'status': 'removido'})
         cursor.execute('SELECT * FROM imoveis_simulacao WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-        return jsonify(dict(cursor.fetchone()) or {})
-    except Exception:
-        return jsonify({'status': 'erro'}), 500
+        row = cursor.fetchone()
+        return jsonify(dict(row) if row else {})
+    except Exception as e:
+        return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
@@ -248,9 +260,10 @@ def api_individual_rh(id_reg):
             conexao.commit()
             return jsonify({'status': 'removido'})
         cursor.execute('SELECT * FROM estrutura_rh WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-        return jsonify(dict(cursor.fetchone()) or {})
-    except Exception:
-        return jsonify({'status': 'erro'}), 500
+        row = cursor.fetchone()
+        return jsonify(dict(row) if row else {})
+    except Exception as e:
+        return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
@@ -267,83 +280,10 @@ def api_individual_maquina(id_reg):
             conexao.commit()
             return jsonify({'status': 'removido'})
         cursor.execute('SELECT * FROM erp_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
-        return jsonify(dict(cursor.fetchone()) or {})
-    except Exception:
-        return jsonify({'status': 'erro'}), 500
-    finally:
-        if cursor: cursor.close()
-        if conexao: conexao.close()
-
-@estrutura_blueprint.route('/api/estrutura/metricas', methods=['GET'])
-def api_modulo_local_metricas():
-    if not session.get('logado'): 
-        return jsonify({'status': 'erro'}), 401
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    nome_empresa = session.get('nome_empresa', session.get('nome_grupo', 'GRUPO DIDÁTICO')).upper()
-    conexao = obter_conexao_master()
-    cursor = None
-    try:
-        cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('SELECT COALESCE(SUM(valor_aluguel), 0) as total_aluguel, COALESCE(SUM(valor_condominio), 0) as total_condo FROM imoveis_simulacao WHERE equipe_id = %s', (id_equipe,))
-        imob_dados = cursor.fetchone()
-        c_aluguel = imob_dados['total_aluguel']
-        c_condo = imob_dados['total_condo']
-        
-        cursor.execute('SELECT COALESCE(SUM(subtotal), 0) as total_rh FROM estrutura_rh WHERE equipe_id = %s', (id_equipe,))
-        c_rh = cursor.fetchone()['total_rh']
-        
-        cursor.execute("SELECT COALESCE(SUM(preco_compra), 0) as pat, COALESCE(SUM(potencia_watts), 0) as w, COALESCE(SUM(consumo_gas_m3), 0) as g, COALESCE(SUM(consumo_agua_m3), 0) as a, COALESCE(SUM(custo_minuto_maquina), 0) as cmm FROM erp_maquinas WHERE equipe_id = %s AND departamento = 'ESTRUTURA'", (id_equipe,))
-        m_setor = cursor.fetchone()
-        
-        cursor.execute("SELECT COALESCE(SUM(preco_compra), 0) as pat_global, COALESCE(SUM(custo_minuto_maquina), 0) as cmm_global FROM erp_maquinas WHERE equipe_id = %s", (id_equipe,))
-        m_global = cursor.fetchone()
-        
-        cursor.execute("SELECT COALESCE(SUM(subtotal), 0) as total_rh_global FROM estrutura_rh WHERE equipe_id = %s", (id_equipe,))
-        rh_global = cursor.fetchone()['total_rh_global']
-        
-        cursor.execute('SELECT COALESCE(SUM(valor_aluguel + valor_condominio), 0) as imob_global FROM imoveis_simulacao WHERE equipe_id = %s', (id_equipe,))
-        imob_global = cursor.fetchone()['imob_global']
-        
-        c_provisao = c_aluguel + c_condo
-        c_fixo_setor = c_aluguel + c_condo + c_rh + c_provisao
-        c_fixo_global_todos_setores = imob_global + rh_global + imob_global + 21350.00
-        c_var_setor = (m_setor['w'] * 0.00075) + (m_setor['g'] * 4.50) + (m_setor['a'] * 8.20)
-        
-        return jsonify({
-            'nome_empresa': nome_empresa, 'capital_total': 5000000.00, 'aluguel_bruto_setor': c_aluguel, 'condominio_bruto_setor': c_condo,
-            'provisao_setor': c_provisao, 'subtotal_fixado_rh': c_rh, 'patrimonio_isolado_setor': m_setor['pat'], 'patrimonio_ativo_total': m_global['pat_global'],
-            'custo_fixo_isolado_setor': c_fixo_setor, 'custo_fixo_total': c_fixo_global_todos_setores, 'custo_variavel_isolado_setor': c_var_setor, 'custo_variavel_total': c_var_setor + 500.00,
-            'watts_consumidos': int(m_setor['w']), 'gas_consumido': float(m_setor['g']), 'agua_consumido': float(m_setor['a']), 'custo_minuto_setor': float(m_setor['cmm']), 'custo_minuto_global': float(m_global['cmm_global'])
-        })
-    except psycopg2.DatabaseError as e:
-        print(f"Erro no motor contábil: {e}")
-        return jsonify({'status': 'erro'}), 500
-    finally:
-        if cursor: cursor.close()
-        if conexao: conexao.close()
-
-# RESOLUÇÃO DO ERRO 404 DO ESTRUTURA.JS DA LINHA 28
-@estrutura_blueprint.route('/api/estrutura/kpis', methods=['GET'])
-def api_compatibilidade_kpis_legado():
-    if not session.get('logado'): 
-        return jsonify({'status': 'erro'}), 401
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    conexao = obter_conexao_master()
-    cursor = None
-    try:
-        cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('SELECT COALESCE(SUM(valor_aluguel), 0) as a, COALESCE(SUM(valor_condominio), 0) as c FROM imoveis_simulacao WHERE equipe_id = %s', (id_equipe,))
-        imob = cursor.fetchone()
-        cursor.execute("SELECT COALESCE(SUM(custo_minuto_maquina), 0) as m FROM erp_maquinas WHERE equipe_id = %s AND departamento = 'ESTRUTURA'", (id_equipe,))
-        maq = cursor.fetchone()
-        cursor.execute('SELECT COALESCE(SUM(subtotal), 0) as r FROM estrutura_rh WHERE equipe_id = %s', (id_equipe,))
-        rh = cursor.fetchone()
-        return jsonify({
-            'aluguel_total': float(imob['a']), 'condominio_total': float(imob['c']),
-            'custo_maquinas_minuto': float(maq['m']), 'folha_suporte_total': float(rh['r'])
-        }), 200
-    except Exception:
-        return jsonify({'status': 'erro'}), 500
+        row = cursor.fetchone()
+        return jsonify(dict(row) if row else {})
+    except Exception as e:
+        return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
