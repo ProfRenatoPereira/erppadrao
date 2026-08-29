@@ -312,6 +312,72 @@
 </div>
 
 <!-- INJEÇÃO NATIVA DA ROTA DO BLUEPRINT DA FLASK ENGINE -->
+ <script>
+        function alternarModoEscuro() {
+            document.body.classList.toggle("dark-mode");
+            console.log("[ERP] Layout adaptativo de acessibilidade chaveado.");
+        }
+
+        let tamanhoFonte = 13;
+        function alterarFonte(direcao) {
+            tamanhoFonte += direcao;
+            document.querySelectorAll('.tabela-erp td, input, select, label').forEach(el => {
+                el.style.fontSize = tamanhoFonte + 'px';
+            });
+            console.log("[ERP] Escala de fonte WCAG modificada para: " + tamanhoFonte + "px");
+        }
+
+        function salvarImovel(e) {
+            e.preventDefault();
+            const payload = {
+                tipo_imovel: document.getElementById("tipo_imovel").value,
+                regiao: document.getElementById("regiao_imovel").value,
+                area_util: document.getElementById("area_util").value,
+                valor_aluguel: document.getElementById("valor_aluguel").value,
+                valor_condominio: document.getElementById("valor_condominio").value
+            };
+            fetch('/api/estrutura/imoveis', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+            .then(res => res.json()).then(() => { alert("Contrato gravado!"); verificarSessaoEIniciar(); });
+        }
+
+        // SOLUÇÃO DO ERRO 500: Payload completo contendo parâmetros contábeis implícitos obrigatórios
+        function salvarMaquina(e) {
+            e.preventDefault();
+            const payload = {
+                nome: document.getElementById("nome_maquina").value,
+                preco: document.getElementById("preco_maquina").value || "15000",
+                potencia: document.getElementById("potencia_maquina").value || "3500",
+                gas: "0.0",          // Obrigatório para o INSERT no backend
+                agua: "0.0",         // Obrigatório para o INSERT no backend
+                depreciacao: "0.10", // Taxa de depreciação fixa 10%
+                custo_minuto: "0.05"
+            };
+            fetch('/api/estrutura/maquinas', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+            .then(res => {
+                if (!res.ok) throw new Error("Erro na gravação do ativo.");
+                return res.json();
+            })
+            .then(() => { 
+                alert("Ativo operacional alocado com sucesso!"); 
+                document.getElementById("form_maquinas").reset();
+                verificarSessaoEIniciar(); 
+            })
+            .catch(err => alert("Erro ao persistir equipamento: " + err));
+        }
+
+        function salvarRH(e) {
+            e.preventDefault();
+            const payload = {
+                nome: document.getElementById("nome_rh").value,
+                cargo: document.getElementById("cargo_rh").value,
+                quantidade: document.getElementById("quantidade_rh").value,
+                salario_base: document.getElementById("salario_base_rh").value
+            };
+            fetch('/api/estrutura/rh', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
+            .then(res => res.json()).then(() => { alert("Provisão de RH confirmada!"); verificarSessaoEIniciar(); });
+        }
+    </script>
+   
 <script src="/estrutura/estrutura.js"></script>
 
 <script>
