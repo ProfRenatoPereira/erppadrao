@@ -7,7 +7,6 @@
     <!-- CSS Core do Sistema -->
     <link rel="stylesheet" href="/static/css/erppadrao_core.css">
     <style>
-        /* EstilosLocais para garantir a identidade visual do print */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f4f6f9; color: #333; transition: background 0.3s, color 0.3s; }
         body.dark-mode { background-color: #1a1a1a; color: #f4f4f4; }
         .acessibilidade-bar { display: flex; justify-content: flex-end; gap: 10px; background: #fff; padding: 10px; border-radius: 4px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -130,7 +129,7 @@
                     <option value="Sistema de Exaustão Industrial">Sistema de Exaustão Industrial</option>
                 </select>
             </div>
-            <!-- Campos ocultos de suporte contábil exigidos pelo backend -->
+            <!-- Campos ocultos de suporte contábil -->
             <input type="hidden" id="preco_maquina" value="15000">
             <input type="hidden" id="potencia_maquina" value="3500">
             <button type="submit" class="btn-acao-principal bg-laranja">alocar ativo operacional</button>
@@ -233,7 +232,6 @@
         © Copyright Física Renato Pereira G&E. Rev. 2026.
     </div>
 
-    <!-- FUNÇÕES ADICIONAIS DE ACESSIBILIDADE EXIGIDAS NO CONSOLE -->
     <script>
         function alternarModoEscuro() {
             document.body.classList.toggle("dark-mode");
@@ -249,7 +247,6 @@
             console.log("[ERP] Escala de fonte WCAG modificada para: " + tamanhoFonte + "px");
         }
 
-        // Funções Wrappers para disparar as rotas de persistência POST mapeadas no Python
         function salvarImovel(e) {
             e.preventDefault();
             const payload = {
@@ -263,16 +260,29 @@
             .then(res => res.json()).then(() => { alert("Contrato gravado!"); verificarSessaoEIniciar(); });
         }
 
+        // SOLUÇÃO DO ERRO 500: Payload completo contendo parâmetros contábeis implícitos obrigatórios
         function salvarMaquina(e) {
             e.preventDefault();
             const payload = {
                 nome: document.getElementById("nome_maquina").value,
-                preco: document.getElementById("preco_maquina").value,
-                potencia: document.getElementById("potencia_maquina").value,
+                preco: document.getElementById("preco_maquina").value || "15000",
+                potencia: document.getElementById("potencia_maquina").value || "3500",
+                gas: "0.0",          // Obrigatório para o INSERT no backend
+                agua: "0.0",         // Obrigatório para o INSERT no backend
+                depreciacao: "0.10", // Taxa de depreciação fixa 10%
                 custo_minuto: "0.05"
             };
             fetch('/api/estrutura/maquinas', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) })
-            .then(res => res.json()).then(() => { alert("Ativo alocado!"); verificarSessaoEIniciar(); });
+            .then(res => {
+                if (!res.ok) throw new Error("Erro na gravação do ativo.");
+                return res.json();
+            })
+            .then(() => { 
+                alert("Ativo operacional alocado com sucesso!"); 
+                document.getElementById("form_maquinas").reset();
+                verificarSessaoEIniciar(); 
+            })
+            .catch(err => alert("Erro ao persistir equipamento: " + err));
         }
 
         function salvarRH(e) {
