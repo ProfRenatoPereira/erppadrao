@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # ==========================================================================
 # TERADMAS ERP v2.6 - APP MASTER (NÚCLEO PRINCIPAL DA APLICAÇÃO)
 # Servidor Flask central com roteamento para todos os módulos
@@ -82,7 +81,6 @@ app.register_blueprint(folha_blueprint)
 app.register_blueprint(manutencao_blueprint)
 app.register_blueprint(requisicoes_blueprint)
 app.register_blueprint(roi_blueprint)
-
 # ========== MIDDLEWARE DE AUTENTICAÇÃO ==========
 
 @app.before_request
@@ -128,7 +126,6 @@ def rota_contingencia_grid():
     if not session.get('logado'):
         return redirect('/login')
     return redirect('/estrutura')
-
 # ========== API DE MÉTRICAS GLOBAIS ==========
 
 @app.route('/api/financeiro/metricas', methods=['GET'])
@@ -164,7 +161,6 @@ def api_kpis_resumidos():
         'custo_fixo': metricas.get('custo_fixo_geral_empresa'),
         'capital_disponivel': metricas.get('capital_disponivel_total')
     })
-
 # ========== TRATAMENTO DE ERROS ==========
 
 @app.errorhandler(404)
