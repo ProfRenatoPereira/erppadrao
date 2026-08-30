@@ -1,4 +1,4 @@
-// erppadrao - static/estrutura/estrutura.js
+// erppadrao - estrutura/estrutura.js
 // Script de controle do módulo de investimentos imobiliários e infraestrutura predial
 
 let tamanhoFonteAtual = 16;
@@ -46,6 +46,7 @@ function alternarAltoContraste() {
     document.body.classList.remove('dark-mode');
     document.body.classList.toggle('alto-contraste');
 }
+
 function alternarLeitorAudio() {
     leitorAtivo = !leitorAtivo;
     const btn = document.getElementById('btn-leitor');
@@ -72,7 +73,6 @@ function alternarLeitorAudio() {
         window.speechSynthesis.cancel();
     }
 }
-
 function calcularPrecoMercadoRefletido() {
     const cidade = document.getElementById('cidade')?.value;
     const bairro = document.getElementById('bairro')?.value;
@@ -105,7 +105,7 @@ function calcularPrecoMercadoRefletido() {
 
 function calcularPreviaSalario() {
     const select = document.getElementById('cargo_suporte');
-    const qtdInput = document.getElementById('qtd_colaboradores') || document.getElementById('vagas');
+    const qtdInput = document.getElementById('qtd_colaboradores');
     const inputPrevia = document.getElementById('previa_salario');
     
     if (!select || !qtdInput || !inputPrevia) return;
@@ -126,6 +126,7 @@ function calcularPreviaSalario() {
     
     inputPrevia.value = (salario * qtd).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
+
 async function carregarDadosIniciais() {
     try {
         const resMetricas = await fetch('/api/financeiro/metricas?dept=estrutura');
@@ -205,7 +206,9 @@ async function carregarDadosIniciais() {
         await carregarTabelaMaquinas();
         await carregarTabelaColaboradores();
         calcularCustoMinutoMaquina();
-    } catch (err) { console.error('Erro ao carregar dados iniciais:', err); }
+    } catch (err) { 
+        console.error('Erro ao carregar dados iniciais:', err); 
+    }
 }
 
 async function carregarTabelaImoveis() {
@@ -232,6 +235,7 @@ async function carregarTabelaImoveis() {
                 </td>
             </tr>
         `).join('');
+        
         calcularPrecoMercadoRefletido();
     } catch (err) { console.error('Erro ao carregar tabela de imóveis:', err); }
 }
@@ -244,14 +248,19 @@ async function carregarTabelaMaquinas() {
         
         if (!maquinas || maquinas.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum equipamento adquirido</td></tr>`;
-            const tags = ['consumo_energia', 'kpi-energia-mensal', 'consumo_gas', 'kpi-gas-mensal', 'consumo_agua', 'kpi-agua-mensal'];
-            tags.forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerText = id.includes('energia') ? "Consumida: 0 W" : "Consumido: 0 m³"; });
+            if (document.getElementById('kpi-energia-mensal')) document.getElementById('kpi-energia-mensal').innerText = "0 W";
+            if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = "0 m³";
+            if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = "0 m³";
             return;
         }
 
-        let totalWatts = 0; let totalGas = 0; let totalAgua = 0;
+        // Inicializa somatórios contábeis de despesa variável de insumos
+        let totalWatts = 0;
+        let totalGas = 0;
+        let totalAgua = 0;
 
         tbody.innerHTML = maquinas.map(m => {
+            // Soma mapeando de forma segura as duas variações possíveis de nomes de coluna vindas da API
             totalWatts += parseFloat(m.potencia_watts || m.watts_consumo || 0);
             totalGas += parseFloat(m.consumo_gas_m3 || m.gas_consumo || 0);
             totalAgua += parseFloat(m.consumo_agua_m3 || m.agua_consumo || 0);
@@ -270,14 +279,16 @@ async function carregarTabelaMaquinas() {
             `;
         }).join('');
 
-        const txtEnergia = document.getElementById('consumo_energia') || document.getElementById('kpi-energia-mensal');
-        const txtGas = document.getElementById('consumo_gas') || document.getElementById('kpi-gas-mensal');
-        const txtAgua = document.getElementById('consumo_agua') || document.getElementById('kpi-agua-mensal');
+        // Alimenta dinamicamente os elementos visuais na interface do ERP
+        const txtEnergia = document.getElementById('kpi-energia-mensal') || document.getElementById('kpi_energia');
+        const txtGas = document.getElementById('kpi-gas-mensal') || document.getElementById('kpi_gas');
+        const txtAgua = document.getElementById('kpi-agua-mensal') || document.getElementById('kpi_agua');
 
-        if (txtEnergia) txtEnergia.innerText = `Consumida: ${totalWatts.toLocaleString('pt-BR')} W`;
-        if (txtGas) txtGas.innerText = `Consumido: ${totalGas.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
-        if (txtAgua) txtAgua.innerText = `Consumida: ${totalAgua.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
-    } catch (err) { console.error(err); }
+        if (txtEnergia) txtEnergia.innerText = `${totalWatts.toLocaleString('pt-BR')} W`;
+        if (txtGas) txtGas.innerText = `${totalGas.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
+        if (txtAgua) txtAgua.innerText = `${totalAgua.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
+
+    } catch (err) { console.error('Erro ao carregar tabela de máquinas:', err); }
 }
 
 async function carregarTabelaColaboradores() {
@@ -304,12 +315,33 @@ async function carregarTabelaColaboradores() {
                 </td>
             </tr>
         `).join('');
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error('Erro ao carregar colaboradores:', err); }
+}
+async function calcularCustoMinutoMaquina() {
+    try {
+        const resMaquinas = await fetch('/api/estrutura/maquinas');
+        const maquinas = await resMaquinas.json();
+        const elem = document.getElementById('kpi-custo-minuto-total');
+        
+        if (!elem) return;
+        if (!maquinas || maquinas.length === 0) {
+            elem.innerText = 'R$ 0,00/min';
+            return;
+        }
+        
+        const totalCustoMinuto = maquinas.reduce((sum, m) => sum + (m.custo_minuto || m.custo_minuto_maquina || 0), 0);
+        elem.innerText = totalCustoMinuto.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/min';
+    } catch (err) { console.error('Erro ao calcular custo minuto:', err); }
 }
 
 async function salvarImovel(e) {
     if(e && e.preventDefault) e.preventDefault();
+    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
+    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
+    
     const dados = {
+        equipe_id: equipeId,
+        dept: deptAtual,
         id: document.getElementById('imovel_id').value ? parseInt(document.getElementById('imovel_id').value) : null,
         tipo_imovel: document.getElementById('tipo_imovel').value,
         regiao: document.getElementById('cidade').value + " - " + document.getElementById('bairro').value,
@@ -318,53 +350,154 @@ async function salvarImovel(e) {
         valor_condominio: parseFloat(document.getElementById('valor_condominio').value) || 0,
         obs_contrato: "Taxa Anual: R$ " + (document.getElementById('taxa_anual')?.value || "0.00")
     };
-    const res = await fetch('/api/estrutura/imoveis', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
-    if (res.ok) { limparFormularioImobiliario(); carregarDadosIniciais(); alert("🎯 Contrato salvo!"); }
+
+    try {
+        const res = await fetch('/api/estrutura/imoveis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        if (res.ok) {
+            limparFormularioImobiliario();
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
+            carregarDadosIniciais();
+            alert("🎯 Contrato salvo!");
+        } else { alert("❌ Erro ao salvar contrato."); }
+    } catch (err) { console.error('Erro ao salvar imóvel:', err); }
 }
 
 async function salvarMaquina(e) {
     if(e && e.preventDefault) e.preventDefault();
     const select = document.getElementById('seletor_equipamento');
-    const option = select?.options[select.selectedIndex];
-    if (!option || !option.value) { alert("❌ Selecione um equipamento válido."); return; }
+    const option = select.options[select.selectedIndex];
     
+    if (!option || !option.value) {
+        alert("❌ Selecione um equipamento válido.");
+        return;
+    }
+
+    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
+    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
+
     const dados = {
+        equipe_id: equipeId,
+        dept: deptAtual,
         nome_equipamento: option.value,
         preco_compra: parseFloat(option.getAttribute('data-preco')) || 0,
         watts_consumo: parseFloat(option.getAttribute('data-watts')) || 0,
         gas_consumo: parseFloat(option.getAttribute('data-gas')) || 0,
         agua_consumo: parseFloat(option.getAttribute('data-agua')) || 0,
-        depreciacao_anos: int(option.getAttribute('data-dep')) || 10,
+        depreciacao_anos: parseInt(option.getAttribute('data-dep')) || 10,
         custo_minuto: parseFloat(option.getAttribute('data-min')) || 0
     };
-    const res = await fetch('/api/estrutura/maquinas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
-    if (res.ok) { document.getElementById('formMaquinas').reset(); carregarDadosIniciais(); alert("🎯 Equipamento adicionado!"); }
-}
 
+    try {
+        const res = await fetch('/api/estrutura/maquinas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        if (res.ok) {
+            document.getElementById('formMaquinas').reset();
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
+            carregarDadosIniciais();
+            alert("🎯 Equipamento adicionado!");
+        } else { alert("❌ Erro ao adicionar equipamento."); }
+    } catch (err) { console.error('Erro ao salvar máquina:', err); }
+}
 async function adicionarColaborador(e) {
     if(e && e.preventDefault) e.preventDefault();
     const select = document.getElementById('cargo_suporte');
-    const option = select?.options[select.selectedIndex];
-    const elNome = document.getElementById('rh_nome') || document.getElementById('nome_colaborador');
-    const elQtd = document.getElementById('qtd_colaboradores') || document.getElementById('vagas');
-
-    if (!elNome || !elNome.value.trim()) { alert("❌ Digite o nome do colaborador."); return; }
-    if (!option || !option.value) { alert("❌ Selecione um cargo válido."); return; }
+    const option = select.options[select.selectedIndex];
+    
+    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
+    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
 
     const dados = {
-        nome: elNome.value, cargo: select.value,
+        equipe_id: equipeId,
+        dept: deptAtual,
+        nome: document.getElementById('rh_nome').value,
+        cargo: select.value,
         salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
-        quantidade: int(elQtd ? elQtd.value : 1) || 1
+        quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 0
     };
-    const res = await fetch('/api/estrutura/rh', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
-    if (res.ok) { 
-        if(document.getElementById('formContratacaoPredial')) document.getElementById('formContratacaoPredial').reset();
-        if(document.getElementById('previa_salario')) document.getElementById('previa_salario').value = "R$ 0,00";
-        carregarDadosIniciais(); alert("🎯 Colaborador adicionado!"); 
-    } else { alert("❌ Erro ao adicionar colaborador."); }
+
+    try {
+        const res = await fetch('/api/estrutura/rh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        if (res.ok) {
+            document.getElementById('formContratacaoPredial').reset();
+            document.getElementById('previa_salario').value = "R$ 0,00";
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
+            carregarDadosIniciais();
+            alert("🎯 Colaborador adicionado!");
+        } else { alert("❌ Erro ao adicionar colaborador."); }
+    } catch (err) { console.error('Erro ao salvar colaborador:', err); }
 }
 
-async function deletarImovel(id) { if (!confirm('Confirmar rescisão?')) return; const res = await fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' }); if (res.ok) carregarDadosIniciais(); }
-async function deletarMaquina(id) { if (!confirm('Remover equipamento?')) return; const res = await fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' }); if (res.ok) carregarDadosIniciais(); }
-async function deletarColaborador(id) { if (!confirm('Confirmar demissão?')) return; const res = await fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' }); if (res.ok) carregarDadosIniciais(); }
-function limparFormularioImobiliario() { if (document.getElementById('formImobiliario')) document.getElementById('formImobiliario').reset(); if (document.getElementById('imovel_id')) document.getElementById('imovel_id').value = ''; }
+async function editarImovel(id) {
+    try {
+        const res = await fetch(`/api/estrutura/imoveis/${id}`);
+        const i = await res.json();
+        
+        document.getElementById('imovel_id').value = i.id;
+        document.getElementById('tipo_imovel').value = i.tipo_imovel;
+        document.getElementById('area_util').value = i.area_util;
+        document.getElementById('valor_condominio').value = i.valor_condominio;
+        
+        if (i.regiao && i.regiao.includes(" - ")) {
+            const partes = i.regiao.split(" - ");
+            if (document.getElementById('cidade')) document.getElementById('cidade').value = partes[0];
+            if (document.getElementById('bairro')) document.getElementById('bairro').value = partes[1];
+        }
+        
+        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar";
+        calcularPrecoMercadoRefletido();
+    } catch (err) { console.error('Erro ao editar imóvel:', err); }
+}
+
+async function deletarImovel(id) {
+    if (!confirm('Confirmar rescisão do contrato?')) return;
+    try {
+        const res = await fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
+            carregarDadosIniciais();
+            alert("🎯 Contrato rescindido.");
+        }
+    } catch (err) { console.error('Erro ao deletar imóvel:', err); }
+}
+
+async function deletarMaquina(id) {
+    if (!confirm('Remover este equipamento?')) return;
+    try {
+        const res = await fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
+            carregarDadosIniciais();
+            alert("🎯 Equipamento removido.");
+        }
+    } catch (err) { console.error('Erro ao deletar máquina:', err); }
+}
+
+async function deletarColaborador(id) {
+    if (!confirm('Confirmar demissão?')) return;
+    try {
+        const res = await fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
+            carregarDadosIniciais();
+            alert("🎯 Colaborador desligado.");
+        }
+    } catch (err) { console.error('Erro ao deletar colaborador:', err); }
+}
+
+function limparFormularioImobiliario() {
+    const form = document.getElementById('formImobiliario');
+    if (form) form.reset();
+    if (document.getElementById('imovel_id')) document.getElementById('imovel_id').value = '';
+    if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
+}
