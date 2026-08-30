@@ -1,3 +1,6 @@
+// erppadrao - estrutura/estrutura.js
+// Script de controle do módulo de investimentos imobiliários e infraestrutura predial
+
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 let idEdicaoRHAtual = null; 
@@ -31,6 +34,7 @@ function mudarFonte(dir) {
         el.style.setProperty('font-size', (tamanhoFonteAtual - 3) + 'px', 'important');
     });
 }
+
 function alternarModoEscuro() { 
     document.body.classList.remove('alto-contraste');
     document.body.classList.toggle('dark-mode');
@@ -122,6 +126,7 @@ function calcularPreviaSalario() {
     
     inputPrevia.value = (salario * qtd).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
+
 async function carregarDadosIniciais() {
     try {
         const resMetricas = await fetch('/api/financeiro/metricas?dept=estrutura');
@@ -132,7 +137,7 @@ async function carregarDadosIniciais() {
         const budgetMaximoSetor = capitalInicial * 0.40;
         const gastoSetor = metricas.custo_fixo_isolado_setor || 0;
         const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 21350.00;
-        const patrimônioSetor = metricas.patrimonio_isolado_setor || 0;
+        const patrimonioSetor = metricas.patrimonio_isolado_setor || 0;
         
         const elementos = {
             'top_capital_total': capitalInicial.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
@@ -141,7 +146,7 @@ async function carregarDadosIniciais() {
             'top_budget_inicial': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
             'kpi-saldo-infra': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
             'kpi-orcamento-inicial': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'kpi-patrimonio-total': patrimônioSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
+            'kpi-patrimonio-total': patrimonioSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
             'kpi-custo-fixo-setor': gastoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês',
             'fechamento_custo_fixo_generico': custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês'
         };
@@ -150,6 +155,7 @@ async function carregarDadosIniciais() {
             const elem = document.getElementById(id);
             if (elem) elem.innerText = elementos[id];
         });
+        
         if(document.getElementById('kpi-teto-ativos')) 
             document.getElementById('kpi-teto-ativos').innerText = 'Global: ' + (capitalInicial * 0.40).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('kpi-custo-variavel-setor')) 
@@ -179,6 +185,7 @@ async function carregarDadosIniciais() {
         const barraProgresso = document.getElementById('barra-limite-setor');
         const txtPorcentagem = document.getElementById('txt_porcentagem_budget');
         const cardBudget = document.getElementById('card_budget_limite');
+        
         if (txtBudget) txtBudget.innerText = `R$ ${gastoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${budgetMaximoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if (barraProgresso) barraProgresso.style.width = `${porcBudget}%`;
         if (txtPorcentagem) txtPorcentagem.innerText = `${porcBudget.toFixed(1)}% do teto consumido`;
@@ -241,21 +248,39 @@ async function carregarTabelaMaquinas() {
         
         if (!maquinas || maquinas.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum equipamento adquirido</td></tr>`;
+            if (document.getElementById('kpi-energia-mensal')) document.getElementById('kpi-energia-mensal').innerText = "0 W";
+            if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = "0 m³";
+            if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = "0 m³";
             return;
         }
 
-        tbody.innerHTML = maquinas.map(m => `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="font-weight: 700;">${m.nome_equipamento || m.equipment_name || 'Equipamento'}</td>
-                <td style="color: #1e3a8a; font-weight: 800;">R$ ${(m.preco_compra || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                <td style="text-align: center;">${m.watts_consumo || m.potencia_watts || 0} W</td>
-                <td style="text-align: center;">${m.gas_consumo || m.consumo_gas_m3 || 0} m³</td>
-                <td style="color: #5b21b6; font-weight: bold;">R$ ${(m.custo_minuto || m.custo_minuto_maquina || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                <td style="text-align: center;">
-                    <button type="button" onclick="deletarMaquina(${m.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2; font-size:10px;">Remover</button>
-                </td>
-            </tr>
-        `).join('');
+        let totalWatts = 0;
+        let totalGas = 0;
+        let totalAgua = 0;
+
+        tbody.innerHTML = maquinas.map(m => {
+            totalWatts += parseFloat(m.potencia_watts || m.watts_consumo || 0);
+            totalGas += parseFloat(m.consumo_gas_m3 || m.gas_consumo || 0);
+            totalAgua += parseFloat(m.consumo_agua_m3 || m.agua_consumo || 0);
+
+            return `
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="font-weight: 700;">${m.nome_equipamento || m.equipment_name || 'Equipamento'}</td>
+                    <td style="color: #1e3a8a; font-weight: 800;">R$ ${(m.preco_compra || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td style="text-align: center;">${m.watts_consumo || m.potencia_watts || 0} W</td>
+                    <td style="text-align: center;">${m.gas_consumo || m.consumo_gas_m3 || 0} m³</td>
+                    <td style="color: #5b21b6; font-weight: bold;">R$ ${(m.custo_minuto || m.custo_minuto_maquina || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td style="text-align: center;">
+                        <button type="button" onclick="deletarMaquina(${m.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2; font-size:10px;">Remover</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        if (document.getElementById('kpi-energia-mensal')) document.getElementById('kpi-energia-mensal').innerText = `${totalWatts.toLocaleString('pt-BR')} W`;
+        if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = `${totalGas.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
+        if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = `${totalAgua.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
+
     } catch (err) { console.error('Erro ao carregar tabela de máquinas:', err); }
 }
 
@@ -285,7 +310,6 @@ async function carregarTabelaColaboradores() {
         `).join('');
     } catch (err) { console.error('Erro ao carregar colaboradores:', err); }
 }
-
 async function calcularCustoMinutoMaquina() {
     try {
         const resMaquinas = await fetch('/api/estrutura/maquinas');
@@ -302,6 +326,7 @@ async function calcularCustoMinutoMaquina() {
         elem.innerText = totalCustoMinuto.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/min';
     } catch (err) { console.error('Erro ao calcular custo minuto:', err); }
 }
+
 async function salvarImovel(e) {
     if(e && e.preventDefault) e.preventDefault();
     const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
@@ -373,7 +398,6 @@ async function salvarMaquina(e) {
         } else { alert("❌ Erro ao adicionar equipamento."); }
     } catch (err) { console.error('Erro ao salvar máquina:', err); }
 }
-
 async function adicionarColaborador(e) {
     if(e && e.preventDefault) e.preventDefault();
     const select = document.getElementById('cargo_suporte');
