@@ -1,6 +1,6 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - VERSÃO COMPLETA CORRIGIDA
+# ARQUIVO: app_estrutura.py - VERSÃO COMPLETA INTEGRADA CORRIGIDA
 # ==========================================================================
 
 import os
