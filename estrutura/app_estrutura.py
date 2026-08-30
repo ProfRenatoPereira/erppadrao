@@ -1,6 +1,6 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - CORRECTED VERSION
+# ARQUIVO: app_estrutura.py - VERSÃO COMPLETA INTEGRADA
 # ==========================================================================
 
 import os
@@ -8,16 +8,17 @@ from flask import Blueprint, request, render_template_string, session, jsonify, 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+# Inicialização do Blueprint do Módulo Imobiliário e Estrutura
 estrutura_blueprint = Blueprint('estrutura_blueprint', __name__)
 
 def obter_conexao_master():
-    """Recupera a string de conexão unificada via URL_SUPABASE importada de app_master"""
+    """Recupera a string de conexão unificada via URL_SUPABASE importada do módulo master"""
     from app_master import URL_SUPABASE
     return psycopg2.connect(URL_SUPABASE)
 
 @estrutura_blueprint.route('/estrutura', methods=['GET'])
 def pagina_estrutura():
-    """Injeta e renderiza a interface HTML síncrona tratando persistência estrita de sessão"""
+    """Renderiza a interface HTML síncrona validando a persistência de sessão da equipe"""
     if not session.get('logado') or not session.get('id_equipe'):
         return redirect('/login')
         
@@ -29,11 +30,11 @@ def pagina_estrutura():
             html = f.read()
         return render_template_string(html)
     except FileNotFoundError:
-        return "Erro Crítico: Arquivo 'estrutura.html' não encontrado.", 404
+        return "Erro Crítico: Arquivo 'estrutura.html' não encontrado no diretório.", 404
 
 @estrutura_blueprint.route('/estrutura/estrutura.js', methods=['GET'])
 def rota_estrutura_js():
-    """Injeta nativamente o script do cliente"""
+    """Injeta nativamente o script estático do cliente com o cabeçalho mime-type correto"""
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
     caminho_js = os.path.join(diretorio_atual, 'estrutura.js')
     
@@ -42,11 +43,10 @@ def rota_estrutura_js():
             js_conteudo = f.read()
         return js_conteudo, 200, {'Content-Type': 'application/javascript; charset=utf-8'}
     except FileNotFoundError:
-        return "console.error('Erro: Script estrutura.js ausente.');", 404
-
+        return "console.error('Erro Crítico: Script estrutura.js ausente do servidor.');", 404
 @estrutura_blueprint.route('/api/auth/sessao_atual', methods=['GET'])
 def api_sessao_atual_verificar():
-    """Valida o estado transacional da sessão"""
+    """Valida o estado transacional e as credenciais ativas da sessão"""
     if not session.get('logado'):
         return jsonify({'status': 'desconectado'}), 401
     return jsonify({
@@ -54,7 +54,7 @@ def api_sessao_atual_verificar():
         'nome_empresa': session.get('nome_empresa', session.get('nome_grupo', 'GRUPO DIDÁTICO')).upper()
     }), 200
 
-# ========== ENDPOINTS GET ==========
+# ========== ENDPOINTS GET (LISTAGENS) ==========
 
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['GET'])
 def api_imoveis_listar():
@@ -80,7 +80,6 @@ def api_imoveis_listar():
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-
 @estrutura_blueprint.route('/api/estrutura/maquinas', methods=['GET'])
 def api_maquinas_listar():
     if not session.get('logado'): 
@@ -107,6 +106,7 @@ def api_maquinas_listar():
         if cursor: cursor.close()
         if conexao: conexao.close()
 
+@blueprint.route('/api/estrutura/rh', methods=['GET'])
 @estrutura_blueprint.route('/api/estrutura/rh', methods=['GET'])
 def api_rh_listar():
     if not session.get('logado'): 
@@ -131,8 +131,7 @@ def api_rh_listar():
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-
-# ========== ENDPOINTS POST ==========
+# ========== ENDPOINTS POST (SALVAMENTO / ATUALIZAÇÃO) ==========
 
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['POST'])
 def api_imoveis_salvar():
@@ -197,7 +196,6 @@ def api_maquinas_salvar():
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
-
 @estrutura_blueprint.route('/api/estrutura/rh', methods=['POST'])
 def api_rh_salvar():
     if not session.get('logado'): 
@@ -213,10 +211,10 @@ def api_rh_salvar():
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         if id_rh:
             cursor.execute('UPDATE estrutura_rh SET nome=%s, cargo=%s, salario_base=%s, quantidade=%s, subtotal=%s WHERE id=%s AND equipe_id=%s',
-                           (dados.get('nome'), dados.get('cargo'), salario_base, quantidade, (salario_base * quantidade), id_rh, id_equipe))
+                           (dados.get('nome'), dados.get('cargo'), salario_base, quantidade, (salario_base * quantity), id_rh, id_equipe))
         else:
             cursor.execute('INSERT INTO estrutura_rh (equipe_id, nome, cargo, salario_base, quantidade, subtotal) VALUES (%s, %s, %s, %s, %s, %s)',
-                           (id_equipe, dados.get('nome'), dados.get('cargo'), salario_base, quantidade, (salario_base * quantidade)))
+                           (id_equipe, dados.get('nome'), dados.get('cargo'), salario_base, quantity, (salario_base * quantity)))
         conexao.commit()
         return jsonify({'status': 'sucesso'})
     except Exception as err:
@@ -226,7 +224,7 @@ def api_rh_salvar():
         if cursor: cursor.close()
         if conexao: conexao.close()
 
-# ========== ENDPOINTS INDIVIDUAL CRUD ==========
+# ========== ENDPOINTS INDIVIDUAL CRUD (GET / DELETE) ==========
 
 @estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_imovel(id_reg):
@@ -287,3 +285,16 @@ def api_individual_maquina(id_reg):
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
+
+@estrutura_blueprint.route('/api/estrutura/cargos_disponiveis', methods=['GET'])
+def api_cargos_disponiveis_listar():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+    catalogo_cargos = [
+        {'cargo': 'Zelador', 'salario': 2017.32},
+        {'cargo': 'Auxiliar de Serviços Gerais', 'salario': 1850.00},
+        {'cargo': 'Eletricista Predial', 'salario': 2850.00},
+        {'cargo': 'Técnico de Manutenção Industrial', 'salario': 3400.00},
+        {'cargo': 'Vigilante Patrimonial', 'salario': 2300.00}
+    ]
+    return jsonify(catalogo_cargos), 200
