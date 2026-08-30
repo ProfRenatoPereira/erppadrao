@@ -1,5 +1,6 @@
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
+let idEdicaoRHAtual = null; 
 
 document.addEventListener("DOMContentLoaded", function() {
     carregarDadosIniciais();
@@ -8,6 +9,9 @@ document.addEventListener("DOMContentLoaded", function() {
     document.getElementById('bairro')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('area_util')?.addEventListener('input', calcularPrecoMercadoRefletido);
     document.getElementById('valor_condominio')?.addEventListener('input', calcularPrecoMercadoRefletido);
+    
+    document.getElementById('cargo_suporte')?.addEventListener('change', calcularPreviaSalario);
+    document.getElementById('qtd_colaboradores')?.addEventListener('input', calcularPreviaSalario);
 });
 
 function alterarFonte(dir) {
@@ -27,7 +31,6 @@ function mudarFonte(dir) {
         el.style.setProperty('font-size', (tamanhoFonteAtual - 3) + 'px', 'important');
     });
 }
-
 function alternarModoEscuro() { 
     document.body.classList.remove('alto-contraste');
     document.body.classList.toggle('dark-mode');
@@ -66,7 +69,6 @@ function alternarLeitorAudio() {
         window.speechSynthesis.cancel();
     }
 }
-
 function calcularPrecoMercadoRefletido() {
     const cidade = document.getElementById('cidade')?.value;
     const bairro = document.getElementById('bairro')?.value;
@@ -120,7 +122,6 @@ function calcularPreviaSalario() {
     
     inputPrevia.value = (salario * qtd).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
-
 async function carregarDadosIniciais() {
     try {
         const resMetricas = await fetch('/api/financeiro/metricas?dept=estrutura');
@@ -133,7 +134,6 @@ async function carregarDadosIniciais() {
         const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 21350.00;
         const patrimônioSetor = metricas.patrimonio_isolado_setor || 0;
         
-        // Atualiza todos os KPIs principais
         const elementos = {
             'top_capital_total': capitalInicial.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
             'top_giro_global_label': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
@@ -145,12 +145,11 @@ async function carregarDadosIniciais() {
             'kpi-custo-fixo-setor': gastoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês',
             'fechamento_custo_fixo_generico': custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês'
         };
-        
+
         Object.keys(elementos).forEach(id => {
             const elem = document.getElementById(id);
             if (elem) elem.innerText = elementos[id];
         });
-        
         if(document.getElementById('kpi-teto-ativos')) 
             document.getElementById('kpi-teto-ativos').innerText = 'Global: ' + (capitalInicial * 0.40).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
         if(document.getElementById('kpi-custo-variavel-setor')) 
@@ -180,7 +179,6 @@ async function carregarDadosIniciais() {
         const barraProgresso = document.getElementById('barra-limite-setor');
         const txtPorcentagem = document.getElementById('txt_porcentagem_budget');
         const cardBudget = document.getElementById('card_budget_limite');
-        
         if (txtBudget) txtBudget.innerText = `R$ ${gastoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${budgetMaximoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
         if (barraProgresso) barraProgresso.style.width = `${porcBudget}%`;
         if (txtPorcentagem) txtPorcentagem.innerText = `${porcBudget.toFixed(1)}% do teto consumido`;
@@ -234,7 +232,6 @@ async function carregarTabelaImoveis() {
         calcularPrecoMercadoRefletido();
     } catch (err) { console.error('Erro ao carregar tabela de imóveis:', err); }
 }
-
 async function carregarTabelaMaquinas() {
     try {
         const resMaquinas = await fetch('/api/estrutura/maquinas');
@@ -305,10 +302,14 @@ async function calcularCustoMinutoMaquina() {
         elem.innerText = totalCustoMinuto.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/min';
     } catch (err) { console.error('Erro ao calcular custo minuto:', err); }
 }
-
 async function salvarImovel(e) {
     if(e && e.preventDefault) e.preventDefault();
+    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
+    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
+    
     const dados = {
+        equipe_id: equipeId,
+        dept: deptAtual,
         id: document.getElementById('imovel_id').value ? parseInt(document.getElementById('imovel_id').value) : null,
         tipo_imovel: document.getElementById('tipo_imovel').value,
         regiao: document.getElementById('cidade').value + " - " + document.getElementById('bairro').value,
@@ -326,11 +327,10 @@ async function salvarImovel(e) {
         });
         if (res.ok) {
             limparFormularioImobiliario();
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
             alert("🎯 Contrato salvo!");
-        } else {
-            alert("❌ Erro ao salvar contrato.");
-        }
+        } else { alert("❌ Erro ao salvar contrato."); }
     } catch (err) { console.error('Erro ao salvar imóvel:', err); }
 }
 
@@ -343,8 +343,13 @@ async function salvarMaquina(e) {
         alert("❌ Selecione um equipamento válido.");
         return;
     }
-    
+
+    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
+    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
+
     const dados = {
+        equipe_id: equipeId,
+        dept: deptAtual,
         nome_equipamento: option.value,
         preco_compra: parseFloat(option.getAttribute('data-preco')) || 0,
         watts_consumo: parseFloat(option.getAttribute('data-watts')) || 0,
@@ -362,11 +367,10 @@ async function salvarMaquina(e) {
         });
         if (res.ok) {
             document.getElementById('formMaquinas').reset();
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
             alert("🎯 Equipamento adicionado!");
-        } else {
-            alert("❌ Erro ao adicionar equipamento.");
-        }
+        } else { alert("❌ Erro ao adicionar equipamento."); }
     } catch (err) { console.error('Erro ao salvar máquina:', err); }
 }
 
@@ -375,7 +379,12 @@ async function adicionarColaborador(e) {
     const select = document.getElementById('cargo_suporte');
     const option = select.options[select.selectedIndex];
     
+    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
+    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
+
     const dados = {
+        equipe_id: equipeId,
+        dept: deptAtual,
         nome: document.getElementById('rh_nome').value,
         cargo: select.value,
         salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
@@ -391,11 +400,10 @@ async function adicionarColaborador(e) {
         if (res.ok) {
             document.getElementById('formContratacaoPredial').reset();
             document.getElementById('previa_salario').value = "R$ 0,00";
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
             alert("🎯 Colaborador adicionado!");
-        } else {
-            alert("❌ Erro ao adicionar colaborador.");
-        }
+        } else { alert("❌ Erro ao adicionar colaborador."); }
     } catch (err) { console.error('Erro ao salvar colaborador:', err); }
 }
 
@@ -425,6 +433,7 @@ async function deletarImovel(id) {
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' });
         if (res.ok) {
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
             alert("🎯 Contrato rescindido.");
         }
@@ -436,6 +445,7 @@ async function deletarMaquina(id) {
     try {
         const res = await fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' });
         if (res.ok) {
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
             alert("🎯 Equipamento removido.");
         }
@@ -447,6 +457,7 @@ async function deletarColaborador(id) {
     try {
         const res = await fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' });
         if (res.ok) {
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
             alert("🎯 Colaborador desligado.");
         }
