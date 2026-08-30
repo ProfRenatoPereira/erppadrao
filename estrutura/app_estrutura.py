@@ -1,6 +1,6 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-# ARQUIVO: app_estrutura.py - VERSÃO COMPLETA INTEGRADA CORRIGIDA
+# ARQUIVO: app_estrutura.py - VERSÃO COMPLETA INTEGRADA FINAL
 # ==========================================================================
 
 import os
@@ -294,6 +294,8 @@ def api_cargos_disponiveis_listar():
         {'cargo': 'Auxiliar de Serviços Gerais', 'salario': 1850.00},
         {'cargo': 'Eletricista Predial', 'salario': 2850.00},
         {'cargo': 'Técnico de Manutenção Industrial', 'salario': 3400.00},
-        {'cargo': 'Vigilante Patrimonial', 'salario': 2300.00}
+        {'cargo': 'Vigilante Patrimonial', 'salario': 2300.00},
+        {'cargo': 'Recepcionista', 'salario': 1950.00},
+        {'cargo': 'Porteiro', 'salario': 2170.41}
     ]
     return jsonify(catalogo_cargos), 200
