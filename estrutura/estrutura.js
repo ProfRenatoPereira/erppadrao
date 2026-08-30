@@ -248,19 +248,17 @@ async function carregarTabelaMaquinas() {
         
         if (!maquinas || maquinas.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum equipamento adquirido</td></tr>`;
-            if (document.getElementById('kpi-energia-mensal')) document.getElementById('kpi-energia-mensal').innerText = "0 W";
-            if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = "0 m³";
-            if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = "0 m³";
+            const tags = ['consumo_energia', 'kpi-energia-mensal', 'consumo_gas', 'kpi-gas-mensal', 'consumo_agua', 'kpi-agua-mensal'];
+            tags.forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerText = id.includes('energia') ? "Consumida: 0 W" : "Consumido: 0 m³"; });
             return;
         }
 
-        // Inicializa somatórios contábeis de despesa variável de insumos
-        let totalWatts = 0;
-        let totalGas = 0;
+        let totalWatts = 0; 
+        let totalGas = 0; 
         let totalAgua = 0;
 
         tbody.innerHTML = maquinas.map(m => {
-            // Soma mapeando de forma segura as duas variações possíveis de nomes de coluna vindas da API
+            // Mapeamento corrigido baseado estritamente nas colunas reais da tabela 'erp_maquinas' do Supabase
             totalWatts += parseFloat(m.potencia_watts || m.watts_consumo || 0);
             totalGas += parseFloat(m.consumo_gas_m3 || m.gas_consumo || 0);
             totalAgua += parseFloat(m.consumo_agua_m3 || m.agua_consumo || 0);
@@ -279,16 +277,15 @@ async function carregarTabelaMaquinas() {
             `;
         }).join('');
 
-        // Alimenta dinamicamente os elementos visuais na interface do ERP
-        const txtEnergia = document.getElementById('kpi-energia-mensal') || document.getElementById('kpi_energia');
-        const txtGas = document.getElementById('kpi-gas-mensal') || document.getElementById('kpi_gas');
-        const txtAgua = document.getElementById('kpi-agua-mensal') || document.getElementById('kpi_agua');
+        // Tenta injetar os valores em todas as variações de IDs de labels possíveis da tela
+        const txtEnergia = document.getElementById('consumo_energia') || document.getElementById('kpi-energia-mensal');
+        const txtGas = document.getElementById('consumo_gas') || document.getElementById('kpi-gas-mensal');
+        const txtAgua = document.getElementById('consumo_agua') || document.getElementById('kpi-agua-mensal');
 
-        if (txtEnergia) txtEnergia.innerText = `${totalWatts.toLocaleString('pt-BR')} W`;
-        if (txtGas) txtGas.innerText = `${totalGas.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
-        if (txtAgua) txtAgua.innerText = `${totalAgua.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
-
-    } catch (err) { console.error('Erro ao carregar tabela de máquinas:', err); }
+        if (txtEnergia) txtEnergia.innerText = `Consumida: ${totalWatts.toLocaleString('pt-BR')} W`;
+        if (txtGas) txtGas.innerText = `Consumido: ${totalGas.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
+        if (txtAgua) txtAgua.innerText = `Consumida: ${totalAgua.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
+    } catch (err) { console.error('Erro no somatório de utilidades:', err); }
 }
 
 async function carregarTabelaColaboradores() {
