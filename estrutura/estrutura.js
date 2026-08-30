@@ -405,34 +405,47 @@ async function salvarMaquina(e) {
 async function adicionarColaborador(e) {
     if(e && e.preventDefault) e.preventDefault();
     const select = document.getElementById('cargo_suporte');
-    const option = select.options[select.selectedIndex];
+    const option = select ? select.options[select.selectedIndex] : null;
     
-    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
-    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
+    // Captura redundante para cobrir qualquer variação de ID do HTML
+    const elNome = document.getElementById('rh_nome') || document.getElementById('nome_colaborador');
+    const elQtd = document.getElementById('qtd_colaboradores') || document.getElementById('vagas');
+
+    if (!elNome || !elNome.value.trim()) { 
+        alert("❌ Digite o nome do colaborador."); 
+        return; 
+    }
+    if (!option || !option.value) { 
+        alert("❌ Selecione um cargo válido."); 
+        return; 
+    }
 
     const dados = {
-        equipe_id: equipeId,
-        dept: deptAtual,
-        nome: document.getElementById('rh_nome').value,
+        dept: 'estrutura', // Chave fundamental para a validação do app_estrutura.py
+        nome: elNome.value, 
         cargo: select.value,
         salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
-        quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 0
+        quantidade: parseInt(elQtd ? elQtd.value : 1) || 1
     };
 
     try {
-        const res = await fetch('/api/estrutura/rh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
+        const res = await fetch('/api/estrutura/rh', { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' }, 
+            body: JSON.stringify(dados) 
         });
-        if (res.ok) {
-            document.getElementById('formContratacaoPredial').reset();
-            document.getElementById('previa_salario').value = "R$ 0,00";
+        if (res.ok) { 
+            if(document.getElementById('formContratacaoPredial')) document.getElementById('formContratacaoPredial').reset();
+            if(document.getElementById('form_contratacao_apoio')) document.getElementById('form_contratacao_apoio').reset();
+            if(document.getElementById('previa_salario')) document.getElementById('previa_salario').value = "R$ 0,00";
+            
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            carregarDadosIniciais();
-            alert("🎯 Colaborador adicionado!");
-        } else { alert("❌ Erro ao adicionar colaborador."); }
-    } catch (err) { console.error('Erro ao salvar colaborador:', err); }
+            carregarDadosIniciais(); 
+            alert("🎯 Colaborador adicionado!"); 
+        } else { 
+            alert("❌ Erro ao adicionar colaborador (Código do servidor de falha)."); 
+        }
+    } catch (err) { console.error('Erro de envio no POST de RH:', err); }
 }
 
 async function editarImovel(id) {
