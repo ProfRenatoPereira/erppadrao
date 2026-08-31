@@ -188,12 +188,18 @@ def erro_servidor(erro):
 
 # ========== EXECUÇÃO DO SERVIDOR ==========
 
+# ========== EXECUÇÃO DO SERVIDOR (CORREÇÃO DE BIND DE PORTA) ==========
+
 if __name__ == '__main__':
-    porta = int(os.environ.get("PORT", 5000))
+    # Captura a porta padrão fornecida dinamicamente pelo Render (geralmente 10000) ou adota 5000 localmente
+    porta_servidor = int(os.environ.get("PORT", 5000))
+    
+    # Força o modo de desenvolvimento a ler variáveis reais de ambiente do Render
     debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
     
     print(f"🚀 Iniciando TERADMAS ERP v2.6")
-    print(f"📍 Porta: {porta}")
-    print(f"🔧 Debug: {debug_mode}")
+    print(f"📍 Endereço de Bind: 0.0.0.0:{porta_servidor}")
+    print(f"🔧 Modo Debug: {debug_mode}")
     
-    app.run(host='0.0.0.0', port=porta, debug=debug_mode)
+    # CRÍTICO: O host DEVE ser '0.0.0.0' para que o container do Render consiga efetuar o roteamento externo
+    app.run(host='0.0.0.0', port=porta_servidor, debug=debug_mode)
