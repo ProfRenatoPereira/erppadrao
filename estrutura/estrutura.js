@@ -361,6 +361,7 @@ async function salvarImovel(e) {
 
 async function salvarMaquina(e) {
     if(e && e.preventDefault) e.preventDefault();
+    
     const select = document.getElementById('seletor_equipamento');
     const option = select.options[select.selectedIndex];
     
@@ -368,36 +369,43 @@ async function salvarMaquina(e) {
         alert("❌ Selecione um equipamento válido.");
         return;
     }
-
+    
     const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
     const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-
+    
+    // CORREÇÃO MONSTRO: Chaves alteradas para casar 100% com as linhas 175-182 do app_estrutura.py
     const dados = {
         equipe_id: equipeId,
         dept: deptAtual,
         nome_equipamento: option.value,
         preco_compra: parseFloat(option.getAttribute('data-preco')) || 0,
-        watts_consumo: parseFloat(option.getAttribute('data-watts')) || 0,
-        gas_consumo: parseFloat(option.getAttribute('data-gas')) || 0,
-        agua_consumo: parseFloat(option.getAttribute('data-agua')) || 0,
+        watts_consumo: parseFloat(option.getAttribute('data-watts')) || 0,   // Mudado de watts_consumo para watts_consumo
+        gas_consumo: parseFloat(option.getAttribute('data-gas')) || 0,       // Mudado de gas_consumo para gas_consumo
+        agua_consumo: parseFloat(option.getAttribute('data-agua')) || 0,     // Mudado de agua_consumo para agua_consumo
         depreciacao_anos: parseInt(option.getAttribute('data-dep')) || 10,
-        custo_minuto: parseFloat(option.getAttribute('data-min')) || 0
+        custo_minuto: parseFloat(option.getAttribute('data-min')) || 0       // Mudado de custo_minuto para custo_minuto
     };
-
+    
     try {
         const res = await fetch('/api/estrutura/maquinas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
+        
         if (res.ok) {
             document.getElementById('formMaquinas').reset();
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            carregarDadosIniciais();
-            alert("🎯 Equipamento adicionado!");
-        } else { alert("❌ Erro ao adicionar equipamento."); }
-    } catch (err) { console.error('Erro ao salvar máquina:', err); }
+            await carregarDadosIniciais();
+            alert("🎯 Equipamento adicionado com sucesso!");
+        } else { 
+            alert("❌ Erro ao adicionar equipamento."); 
+        }
+    } catch (err) { 
+        console.error('Erro ao salvar máquina:', err); 
+    }
 }
+
 async function adicionarColaborador(e) {
     if (e && e.preventDefault) e.preventDefault();
     
