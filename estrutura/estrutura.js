@@ -407,7 +407,7 @@ async function adicionarColaborador(e) {
     const select = document.getElementById('cargo_suporte');
     const option = select ? select.options[select.selectedIndex] : null;
     
-    // Captura redundante para cobrir qualquer variação de ID do HTML
+    // Captura redundante para garantir a leitura dos inputs da tela
     const elNome = document.getElementById('rh_nome') || document.getElementById('nome_colaborador');
     const elQtd = document.getElementById('qtd_colaboradores') || document.getElementById('vagas');
 
@@ -420,12 +420,18 @@ async function adicionarColaborador(e) {
         return; 
     }
 
+    const equipeIdLogada = sessionStorage.getItem('id_equipe') || "equipe_alfa";
+    const salarioBase = parseFloat(option.getAttribute('data-salario')) || 0;
+    const quantidade = parseInt(elQtd ? elQtd.value : 1) || 1;
+
+    // Montagem do payload compatível com as rotas do app_estrutura.py e tabelas do Supabase
     const dados = {
-        dept: 'estrutura', // Chave fundamental para a validação do app_estrutura.py
+        equipe_id: equipeIdLogada,
+        dept: 'estrutura', // Chave exigida para a validação contábil no motor
         nome: elNome.value, 
         cargo: select.value,
-        salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
-        quantidade: parseInt(elQtd ? elQtd.value : 1) || 1
+        salario_base: salarioBase,
+        quantidade: quantidade
     };
 
     try {
@@ -434,6 +440,7 @@ async function adicionarColaborador(e) {
             headers: { 'Content-Type': 'application/json' }, 
             body: JSON.stringify(dados) 
         });
+        
         if (res.ok) { 
             if(document.getElementById('formContratacaoPredial')) document.getElementById('formContratacaoPredial').reset();
             if(document.getElementById('form_contratacao_apoio')) document.getElementById('form_contratacao_apoio').reset();
@@ -443,7 +450,7 @@ async function adicionarColaborador(e) {
             carregarDadosIniciais(); 
             alert("🎯 Colaborador adicionado!"); 
         } else { 
-            alert("❌ Erro ao adicionar colaborador (Código do servidor de falha)."); 
+            alert("❌ Erro ao adicionar colaborador (O servidor de hospedagem falhou)."); 
         }
     } catch (err) { console.error('Erro de envio no POST de RH:', err); }
 }
