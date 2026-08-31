@@ -399,36 +399,88 @@ async function salvarMaquina(e) {
     } catch (err) { console.error('Erro ao salvar máquina:', err); }
 }
 async function adicionarColaborador(e) {
-    if(e && e.preventDefault) e.preventDefault();
-    const select = document.getElementById('cargo_suporte');
-    const option = select.options[select.selectedIndex];
+    if (e && e.preventDefault) e.preventDefault();
+    
+    // 1. Mapeamento preciso dos elementos do DOM com base no estrutura.html
+    const inputNome = document.getElementById('rh_nome');
+    const selectCargo = document.getElementById('cargo_suporte');
+    const inputQuantidade = document.getElementById('qtd_colaboradores');
+    
+    if (!selectCargo || !inputQuantidade) {
+        alert("❌ Erro crítico de interface: Elementos do formulário de RH não foram localizados.");
+        return;
+    }
+    
+    const optionSelecionada = selectCargo.options[selectCargo.selectedIndex];
+    if (!selectCargo.value || !optionSelecionada) {
+        alert("❌ Por favor, selecione uma função/cargo operacional válido antes de continuar.");
+        return;
+    }
     
     const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
     const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-
+    
+    // 2. Extração segura dos atributos e higienização de valores
+    const nomeTratado = inputNome && inputNome.value.trim() ? inputNome.value.trim() : "N/A";
+    const salarioBaseValor = parseFloat(optionSelecionada.getAttribute('data-salario')) || 0;
+    const quantidadeAlocada = parseInt(inputQuantidade.value) || 0;
+    
+    if (quantidadeAlocada <= 0) {
+        alert("❌ A quantidade de vagas alocadas deve ser maior que zero.");
+        return;
+    }
+    
+    // 3. Montagem estrita do payload casado com o endpoint do app_estrutura.py
     const dados = {
         equipe_id: equipeId,
         dept: deptAtual,
-        nome: document.getElementById('rh_nome').value,
-        cargo: select.value,
-        salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
-        quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 0
+        nome: nomeTratado,
+        cargo: selectCargo.value,
+        salario_base: salarioBaseValor,
+        quantidade: quantidadeAlocada
     };
-
+    
+    // Isolamento visual: Desabilita o botão para evitar cliques duplicados concorrentes no banco
+    const btnContratar = document.getElementById('btn_contratar');
+    if (btnContratar) btnContratar.disabled = true;
+    
     try {
+        // 4. Execução da requisição assíncrona POST para o backend nativo
         const res = await fetch('/api/estrutura/rh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
-        if (res.ok) {
-            document.getElementById('formContratacaoPredial').reset();
-            document.getElementById('previa_salario').value = "R$ 0,00";
-            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            carregarDadosIniciais();
-            alert("🎯 Colaborador adicionado!");
-        } else { alert("❌ Erro ao adicionar colaborador."); }
-    } catch (err) { console.error('Erro ao salvar colaborador:', err); }
+        
+        const respostaServidor = await res.json();
+        
+        if (res.ok && respostaServidor.status === 'sucesso') {
+            // Limpa os campos do formulário e redefine a prévia monetária
+            const formularioRH = document.getElementById('formContratacaoPredial');
+            if (formularioRH) formularioRH.reset();
+            
+            const campoPrevia = document.getElementById('previa_salario');
+            if (campoPrevia) campoPrevia.value = "R$ 0,00";
+            
+            // 5. ATUALIZAÇÃO REATIVA DOS CUSTOS FIXOS E TOTAIS
+            // Invocação segura do refresh global das abas do professor (se presente na janela master)
+            if (typeof window.forcarAtualizacaoMetricasTopboard === 'function') {
+                window.forcarAtualizacaoMetricasTopboard();
+            }
+            
+            // EXECUÇÃO DO MOTOR LOCAL DE RENDERIZAÇÃO: Puxa o GerenciadorCaixa e recalcula o topo na tela
+            await carregarDadosIniciais();
+            
+            alert("🎯 Colaborador inserido com sucesso! O painel de custos foi recalculado.");
+        } else {
+            alert(`❌ Erro no processamento: ${respostaServidor.message || 'Falha desconhecida na API.'}`);
+        }
+    } catch (err) {
+        console.error('Erro de persistência na tabela estrutura_rh:', err);
+        alert("❌ Falha de rede. Não foi possível conectar ao servidor da aplicação.");
+    } finally {
+        if (btnContratar) btnContratar.disabled = false;
+    }
 }
 
 async function editarImovel(id) {
