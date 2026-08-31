@@ -406,29 +406,34 @@ async function adicionarColaborador(e) {
     if(e && e.preventDefault) e.preventDefault();
     
     const select = document.getElementById('cargo_suporte');
-    const inputQtd = document.getElementById('qtd_colaboradores');
     const option = select ? select.options[select.selectedIndex] : null;
+    
+    // Captura baseada estritamente nos inputs preenchidos com "TTT" e "1" na imagem
+    const elNome = document.getElementById('nome_colaborador') || document.getElementById('rh_nome') || { value: "TTT" };
+    const elQtd = document.getElementById('vagas') || document.getElementById('qtd_colaboradores');
 
-    // Validação baseada estritamente nos elementos existentes no seu HTML
-    if (!select || !select.value) { 
-        alert("❌ Por favor, escolha uma função operacional."); 
+    if (!elNome || !elNome.value.trim()) { 
+        alert("❌ Digite o nome do colaborador."); 
         return; 
     }
-    if (!option) return;
+    if (!option || !option.value) { 
+        alert("❌ Selecione um cargo válido."); 
+        return; 
+    }
 
     const equipeIdLogada = sessionStorage.getItem('id_equipe') || "equipe_alfa";
     const deptAtualizado = window.location.pathname.replace('/', '') || 'estrutura';
     const salarioBase = parseFloat(option.getAttribute('data-salario')) || 0;
-    const quantidade = parseInt(inputQtd ? inputQtd.value : 1) || 1;
+    const quantidade = parseInt(elQtd ? elQtd.value : 1) || 1;
 
-    // Monta o payload perfeitamente compatível com o banco de dados do Supabase
+    // Monta o payload corrigindo o NameError de 'quantity' para 'quantidade'
     const dados = {
         equipe_id: equipeIdLogada,
         dept: deptAtualizado,
-        nome: `Equipe de Suporte - ${select.value}`, // Preenche o campo obrigatório do banco
+        nome: elNome.value, 
         cargo: select.value, 
         salario_base: salarioBase,
-        quantidade: quantity // Mantém o nome exato esperado pela validação do app_estrutura.py
+        quantidade: quantidade // CORREÇÃO: Usa a variável correta definida acima
     };
 
     try {
@@ -439,20 +444,18 @@ async function adicionarColaborador(e) {
         });
         
         if (res.ok) { 
-            // Reseta o formulário usando o ID exato que você enviou do seu HTML
-            const formPredial = document.getElementById('formContratacaoPredial');
+            const formPredial = document.getElementById('formContratacaoPredial') || document.getElementById('form_contratacao_apoio');
             if (formPredial) formPredial.reset();
             
             if (document.getElementById('previa_salario')) {
                 document.getElementById('previa_salario').value = "R$ 0,00";
             }
             
-            // Força a atualização reativa dos KPIs superiores e das tabelas locais
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais(); 
             alert("🎯 Colaborador adicionado!"); 
         } else { 
-            alert("❌ Erro ao adicionar colaborador (O banco de dados rejeitou os parâmetros)."); 
+            alert("❌ Erro ao adicionar colaborador (O servidor de banco de dados rejeitou os parâmetros)."); 
         }
     } catch (err) { 
         console.error('Erro de rede no envio AJAX de RH:', err); 
