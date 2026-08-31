@@ -361,7 +361,6 @@ async function salvarImovel(e) {
 
 async function salvarMaquina(e) {
     if(e && e.preventDefault) e.preventDefault();
-    
     const select = document.getElementById('seletor_equipamento');
     const option = select.options[select.selectedIndex];
     
@@ -369,126 +368,67 @@ async function salvarMaquina(e) {
         alert("❌ Selecione um equipamento válido.");
         return;
     }
-    
+
     const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
     const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-    
-    // CORREÇÃO MONSTRO: Chaves alteradas para casar 100% com as linhas 175-182 do app_estrutura.py
+
     const dados = {
         equipe_id: equipeId,
         dept: deptAtual,
         nome_equipamento: option.value,
         preco_compra: parseFloat(option.getAttribute('data-preco')) || 0,
-        watts_consumo: parseFloat(option.getAttribute('data-watts')) || 0,   // Mudado de watts_consumo para watts_consumo
-        gas_consumo: parseFloat(option.getAttribute('data-gas')) || 0,       // Mudado de gas_consumo para gas_consumo
-        agua_consumo: parseFloat(option.getAttribute('data-agua')) || 0,     // Mudado de agua_consumo para agua_consumo
+        watts_consumo: parseFloat(option.getAttribute('data-watts')) || 0,
+        gas_consumo: parseFloat(option.getAttribute('data-gas')) || 0,
+        agua_consumo: parseFloat(option.getAttribute('data-agua')) || 0,
         depreciacao_anos: parseInt(option.getAttribute('data-dep')) || 10,
-        custo_minuto: parseFloat(option.getAttribute('data-min')) || 0       // Mudado de custo_minuto para custo_minuto
+        custo_minuto: parseFloat(option.getAttribute('data-min')) || 0
     };
-    
+
     try {
         const res = await fetch('/api/estrutura/maquinas', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
-        
         if (res.ok) {
             document.getElementById('formMaquinas').reset();
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            await carregarDadosIniciais();
-            alert("🎯 Equipamento adicionado com sucesso!");
-        } else { 
-            alert("❌ Erro ao adicionar equipamento."); 
-        }
-    } catch (err) { 
-        console.error('Erro ao salvar máquina:', err); 
-    }
+            carregarDadosIniciais();
+            alert("🎯 Equipamento adicionado!");
+        } else { alert("❌ Erro ao adicionar equipamento."); }
+    } catch (err) { console.error('Erro ao salvar máquina:', err); }
 }
-
 async function adicionarColaborador(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    
-    // 1. Mapeamento preciso dos elementos do DOM com base no estrutura.html
-    const inputNome = document.getElementById('rh_nome');
-    const selectCargo = document.getElementById('cargo_suporte');
-    const inputQuantidade = document.getElementById('qtd_colaboradores');
-    
-    if (!selectCargo || !inputQuantidade) {
-        alert("❌ Erro crítico de interface: Elementos do formulário de RH não foram localizados.");
-        return;
-    }
-    
-    const optionSelecionada = selectCargo.options[selectCargo.selectedIndex];
-    if (!selectCargo.value || !optionSelecionada) {
-        alert("❌ Por favor, selecione uma função/cargo operacional válido antes de continuar.");
-        return;
-    }
+    if(e && e.preventDefault) e.preventDefault();
+    const select = document.getElementById('cargo_suporte');
+    const option = select.options[select.selectedIndex];
     
     const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
     const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-    
-    // 2. Extração segura dos atributos e higienização de valores
-    const nomeTratado = inputNome && inputNome.value.trim() ? inputNome.value.trim() : "N/A";
-    const salarioBaseValor = parseFloat(optionSelecionada.getAttribute('data-salario')) || 0;
-    const quantidadeAlocada = parseInt(inputQuantidade.value) || 0;
-    
-    if (quantidadeAlocada <= 0) {
-        alert("❌ A quantidade de vagas alocadas deve ser maior que zero.");
-        return;
-    }
-    
-    // 3. Montagem estrita do payload casado com o endpoint do app_estrutura.py
+
     const dados = {
         equipe_id: equipeId,
         dept: deptAtual,
-        nome: nomeTratado,
-        cargo: selectCargo.value,
-        salario_base: salarioBaseValor,
-        quantidade: quantidadeAlocada
+        nome: document.getElementById('rh_nome').value,
+        cargo: select.value,
+        salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
+        quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 0
     };
-    
-    // Isolamento visual: Desabilita o botão para evitar cliques duplicados concorrentes no banco
-    const btnContratar = document.getElementById('btn_contratar');
-    if (btnContratar) btnContratar.disabled = true;
-    
+
     try {
-        // 4. Execução da requisição assíncrona POST para o backend nativo
         const res = await fetch('/api/estrutura/rh', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
-        
-        const respostaServidor = await res.json();
-        
-        if (res.ok && respostaServidor.status === 'sucesso') {
-            // Limpa os campos do formulário e redefine a prévia monetária
-            const formularioRH = document.getElementById('formContratacaoPredial');
-            if (formularioRH) formularioRH.reset();
-            
-            const campoPrevia = document.getElementById('previa_salario');
-            if (campoPrevia) campoPrevia.value = "R$ 0,00";
-            
-            // 5. ATUALIZAÇÃO REATIVA DOS CUSTOS FIXOS E TOTAIS
-            // Invocação segura do refresh global das abas do professor (se presente na janela master)
-            if (typeof window.forcarAtualizacaoMetricasTopboard === 'function') {
-                window.forcarAtualizacaoMetricasTopboard();
-            }
-            
-            // EXECUÇÃO DO MOTOR LOCAL DE RENDERIZAÇÃO: Puxa o GerenciadorCaixa e recalcula o topo na tela
-            await carregarDadosIniciais();
-            
-            alert("🎯 Colaborador inserido com sucesso! O painel de custos foi recalculado.");
-        } else {
-            alert(`❌ Erro no processamento: ${respostaServidor.message || 'Falha desconhecida na API.'}`);
-        }
-    } catch (err) {
-        console.error('Erro de persistência na tabela estrutura_rh:', err);
-        alert("❌ Falha de rede. Não foi possível conectar ao servidor da aplicação.");
-    } finally {
-        if (btnContratar) btnContratar.disabled = false;
-    }
+        if (res.ok) {
+            document.getElementById('formContratacaoPredial').reset();
+            document.getElementById('previa_salario').value = "R$ 0,00";
+            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
+            carregarDadosIniciais();
+            alert("🎯 Colaborador adicionado!");
+        } else { alert("❌ Erro ao adicionar colaborador."); }
+    } catch (err) { console.error('Erro ao salvar colaborador:', err); }
 }
 
 async function editarImovel(id) {
