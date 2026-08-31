@@ -1,34 +1,27 @@
-// erppadrao - estrutura/estrutura.js
-// Script de controle do módulo de investimentos imobiliários e infraestrutura predial
-
+// erppadrao - estrutura/estrutura.js - PARTE 1 DE 2
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
-let idEdicaoRHAtual = null; 
 
 document.addEventListener("DOMContentLoaded", function() {
+    // Carrega a malha transacional do banco de dados imediatamente
     carregarDadosIniciais();
     
+    // 🧠 GATILHOS OPERACIONAIS: Vincula a readequação de preços aos inputs do formulário
     document.getElementById('cidade')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('bairro')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('area_util')?.addEventListener('input', calcularPrecoMercadoRefletido);
     document.getElementById('valor_condominio')?.addEventListener('input', calcularPrecoMercadoRefletido);
-    
-    document.getElementById('cargo_suporte')?.addEventListener('change', calcularPreviaSalario);
-    document.getElementById('qtd_colaboradores')?.addEventListener('input', calcularPreviaSalario);
 });
 
-function alterarFonte(dir) {
-    const dirValue = dir === '+' ? 1 : (dir === '-' ? -1 : 0);
-    tamanhoFonteAtual += dirValue;
-    tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
-    mudarFonte(dirValue);
-}
-
+// 📐 NOVO MOTOR DE REDIMENSIONAMENTO FORÇADO (CORRIGE O TRAVAMENTO)
 function mudarFonte(dir) {
     tamanhoFonteAtual += dir;
     tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
+    
+    // Altera o padrão proporcional na raiz do documento
     document.documentElement.style.fontSize = tamanhoFonteAtual + 'px';
     
+    // Varre e limpa classes fixas em pixels, aplicando o tamanho dinâmico direto no DOM
     const elementos = document.querySelectorAll("p, label, input, select, th, td, h1, h2, h3, h4, span, button, a");
     elementos.forEach(el => {
         el.style.setProperty('font-size', (tamanhoFonteAtual - 3) + 'px', 'important');
@@ -49,9 +42,9 @@ function alternarAltoContraste() {
 
 function alternarLeitorAudio() {
     leitorAtivo = !leitorAtivo;
-    const btn = document.getElementById('btn-leitor');
+    const btn = document.getElementById('btn-leitor-audio');
     if (btn) {
-        btn.innerText = leitorAtivo ? "🔇 Desativar Leitor" : "📢 Ativar Leitor";
+        btn.innerText = leitorAtivo ? "🔇 Desativar Leitor" : "🔊 Ativar Leitor";
         btn.style.backgroundColor = leitorAtivo ? "#ef4444" : "#0284c7";
     }
     
@@ -64,7 +57,7 @@ function alternarLeitorAudio() {
         utterance.onend = function() {
             leitorAtivo = false;
             if (btn) {
-                btn.innerText = "📢 Ativar Leitor";
+                btn.innerText = "🔊 Ativar Leitor";
                 btn.style.backgroundColor = "#0284c7";
             }
         };
@@ -73,6 +66,7 @@ function alternarLeitorAudio() {
         window.speechSynthesis.cancel();
     }
 }
+
 function calcularPrecoMercadoRefletido() {
     const cidade = document.getElementById('cidade')?.value;
     const bairro = document.getElementById('bairro')?.value;
@@ -92,7 +86,7 @@ function calcularPrecoMercadoRefletido() {
     } else if (cidade === "São José dos Pinhais" || cidade === "Araucária" || cidade === "Pinhais") {
         precoM2 = 21.00; 
     }
-
+    
     const valorAluguelMensal = area * precoM2;
     const taxaAnualEstimada = area * 4.50; 
     
@@ -102,30 +96,7 @@ function calcularPrecoMercadoRefletido() {
     if (inputAluguel) inputAluguel.value = valorAluguelMensal.toFixed(2);
     if (inputTaxaAnual) inputTaxaAnual.value = taxaAnualEstimada.toFixed(2);
 }
-
-function calcularPreviaSalario() {
-    const select = document.getElementById('cargo_suporte');
-    const qtdInput = document.getElementById('qtd_colaboradores');
-    const inputPrevia = document.getElementById('previa_salario');
-    
-    if (!select || !qtdInput || !inputPrevia) return;
-    
-    const option = select.options[select.selectedIndex];
-    if (!select.value || !option) {
-        inputPrevia.value = "R$ 0,00";
-        return;
-    }
-    
-    const salario = parseFloat(option.getAttribute('data-salario')) || 0;
-    const qtd = parseInt(qtdInput.value) || 0;
-    
-    if (qtd <= 0) {
-        inputPrevia.value = "R$ 0,00";
-        return;
-    }
-    
-    inputPrevia.value = (salario * qtd).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
+// erppadrao - estrutura/estrutura.js - PARTE 2 DE 2
 
 async function carregarDadosIniciais() {
     try {
@@ -133,65 +104,33 @@ async function carregarDadosIniciais() {
         if (!resMetricas.ok) throw new Error("Falha na comunicação.");
         const metricas = await resMetricas.json();
         
-        const capitalInicial = 5000000.00;
-        const budgetMaximoSetor = capitalInicial * 0.40;
-        const gastoSetor = metricas.custo_fixo_isolado_setor || 0;
-        const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 21350.00;
-        const patrimonioSetor = metricas.patrimonio_isolado_setor || 0;
-        
-        const elementos = {
-            'top_capital_total': capitalInicial.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'top_giro_global_label': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'top_giro_global': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'top_budget_inicial': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'kpi-saldo-infra': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'kpi-orcamento-inicial': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'kpi-patrimonio-total': patrimonioSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'kpi-custo-fixo-setor': gastoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês',
-            'fechamento_custo_fixo_generico': custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês'
-        };
-
-        Object.keys(elementos).forEach(id => {
-            const elem = document.getElementById(id);
-            if (elem) elem.innerText = elementos[id];
-        });
-        
-        if(document.getElementById('kpi-teto-ativos')) 
-            document.getElementById('kpi-teto-ativos').innerText = 'Global: ' + (capitalInicial * 0.40).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        if(document.getElementById('kpi-custo-variavel-setor')) 
-            document.getElementById('kpi-custo-variavel-setor').innerText = (metricas.custo_variavel_isolado_setor || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês';
-        if(document.getElementById('kpi-custo-variavel-total')) 
-            document.getElementById('kpi-custo-variavel-total').innerText = (metricas.custo_variavel_total || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês';
+        if(document.getElementById('top_capital_total')) document.getElementById('top_capital_total').innerText = `R$ ${(metricas.capital_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if(document.getElementById('top_giro_global')) document.getElementById('top_giro_global').innerText = `R$ ${(metricas.capital_disponivel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if(document.getElementById('top_custo_fixo')) document.getElementById('top_custo_fixo').innerText = `R$ ${(metricas.custo_fixo_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
+        if(document.getElementById('top_custo_variavel')) document.getElementById('top_custo_variavel').innerText = `R$ ${(metricas.custo_valiavel_total || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
         
         const inputGrupo = document.getElementById('nome_grupo_display');
         if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
 
-        let porcCapital = (gastoSetor / capitalInicial) * 100;
-        let porcFixo = custoFixoGeralEmpresa > 0 ? (gastoSetor / custoFixoGeralEmpresa) * 100 : 0;
-        let porcBudget = budgetMaximoSetor > 0 ? (gastoSetor / budgetMaximoSetor) * 100 : 0;
-        porcBudget = Math.min(100, Math.max(0, porcBudget));
-
-        const percentuais = {
-            'txt_porcentagem_setor_imob': `➔ Custos Totais: ${porcCapital.toFixed(2)}% | Custos Fixos: ${porcFixo.toFixed(1)}%`,
-            'txt_proporcao_global_empresa': `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}% do impacto fixo global`
-        };
+        // 🧠 MOTOR DE GOVERNANÇA ORÇAMENTÁRIA DO SETOR (40% Máximo do Capital Inicial)
+        const capitalInicial = metricas.capital_total || 0;
+        const budgetMaximoSetor = capitalInicial * 0.40; 
+        const gastoAtualSetor = metricas.custo_fixo_total || 0; 
         
-        Object.keys(percentuais).forEach(id => {
-            const elem = document.getElementById(id);
-            if (elem) elem.innerText = percentuais[id];
-        });
+        let porcentagemConsumida = budgetMaximoSetor > 0 ? (gastoAtualSetor / budgetMaximoSetor) * 100 : 0;
+        porcentagemConsumida = Math.min(100, Math.max(0, porcentagemConsumida)); 
         
         const txtBudget = document.getElementById('top_budget_setor');
-        const barraProgresso = document.getElementById('barra-limite-setor');
+        const barraProgresso = document.getElementById('barra_progresso_budget');
         const txtPorcentagem = document.getElementById('txt_porcentagem_budget');
         const cardBudget = document.getElementById('card_budget_limite');
         
-        if (txtBudget) txtBudget.innerText = `R$ ${gastoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${budgetMaximoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if (barraProgresso) barraProgresso.style.width = `${porcBudget}%`;
-        if (txtPorcentagem) txtPorcentagem.innerText = `${porcBudget.toFixed(1)}% do teto consumido`;
+        if (txtBudget) txtBudget.innerText = `R$ ${gastoAtualSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${budgetMaximoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
+        if (barraProgresso) barraProgresso.style.width = `${porcentagemConsumida}%`;
+        if (txtPorcentagem) txtPorcentagem.innerText = `${porcentagemConsumida.toFixed(1)}% do teto consumido`;
         
         if (cardBudget && barraProgresso) {
-            if (gastoSetor > budgetMaximoSetor) {
+            if (gastoAtualSetor > budgetMaximoSetor) {
                 cardBudget.style.backgroundColor = "#fef2f2";
                 cardBudget.style.borderColor = "#fca5a5";
                 barraProgresso.style.backgroundColor = "#ef4444"; 
@@ -202,30 +141,19 @@ async function carregarDadosIniciais() {
             }
         }
 
-        await carregarTabelaImoveis();
-        await carregarTabelaMaquinas();
-        await carregarTabelaColaboradores();
-        calcularCustoMinutoMaquina();
-    } catch (err) { 
-        console.error('Erro ao carregar dados iniciais:', err); 
-    }
-}
-
-async function carregarTabelaImoveis() {
-    try {
         const resImoveis = await fetch('/api/estrutura/imoveis');
         const imoveis = await resImoveis.json();
         const tbody = document.getElementById('tabela_imoveis');
         if (!tbody) return;
         
         if (!imoveis || imoveis.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum espaço alocado</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum espaço alocado no Supabase para este grupo.</td></tr>`;
             return;
         }
 
         tbody.innerHTML = imoveis.map(i => `
             <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="font-weight: 900; color: #1e3a8a;">${i.nome_empresa || 'N/A'}</td>
+                <td style="font-weight: 900; color: #1e3a8a;">${i.nome_empresa}</td>
                 <td><strong>${i.tipo_imovel}</strong><br><span style="font-size: 11px; color: #94a3b8;">${i.regiao}</span></td>
                 <td style="font-family: monospace; font-weight: bold;">${i.area_util} m²</td>
                 <td style="color: #1e3a8a; font-weight: 800;">R$ ${(i.valor_aluguel || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
@@ -237,111 +165,20 @@ async function carregarTabelaImoveis() {
         `).join('');
         
         calcularPrecoMercadoRefletido();
-    } catch (err) { console.error('Erro ao carregar tabela de imóveis:', err); }
-}
-async function carregarTabelaMaquinas() {
-    try {
-        const resMaquinas = await fetch('/api/estrutura/maquinas');
-        const maquinas = await resMaquinas.json();
-        const tbody = document.getElementById('tabela_maquinas');
-        if (!tbody) return;
-        
-        if (!maquinas || maquinas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum equipamento adquirido</td></tr>`;
-            if (document.getElementById('kpi-energia-mensal')) document.getElementById('kpi-energia-mensal').innerText = "0 W";
-            if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = "0 m³";
-            if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = "0 m³";
-            return;
-        }
-
-        let totalWatts = 0;
-        let totalGas = 0;
-        let totalAgua = 0;
-
-        tbody.innerHTML = maquinas.map(m => {
-            totalWatts += parseFloat(m.potencia_watts || m.watts_consumo || 0);
-            totalGas += parseFloat(m.consumo_gas_m3 || m.gas_consumo || 0);
-            totalAgua += parseFloat(m.consumo_agua_m3 || m.agua_consumo || 0);
-
-            return `
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="font-weight: 700;">${m.nome_equipamento || m.equipment_name || 'Equipamento'}</td>
-                    <td style="color: #1e3a8a; font-weight: 800;">R$ ${(m.preco_compra || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                    <td style="text-align: center;">${m.watts_consumo || m.potencia_watts || 0} W</td>
-                    <td style="text-align: center;">${m.gas_consumo || m.consumo_gas_m3 || 0} m³</td>
-                    <td style="color: #5b21b6; font-weight: bold;">R$ ${(m.custo_minuto || m.custo_minuto_maquina || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                    <td style="text-align: center;">
-                        <button type="button" onclick="deletarMaquina(${m.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2; font-size:10px;">Remover</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        if (document.getElementById('kpi-energia-mensal')) document.getElementById('kpi-energia-mensal').innerText = `${totalWatts.toLocaleString('pt-BR')} W`;
-        if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = `${totalGas.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
-        if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = `${totalAgua.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
-
-    } catch (err) { console.error('Erro ao carregar tabela de máquinas:', err); }
-}
-
-async function carregarTabelaColaboradores() {
-    try {
-        const res = await fetch('/api/estrutura/rh');
-        const colaboradores = await res.json();
-        const tbody = document.getElementById('tabela_colaboradores');
-        if (!tbody) return;
-        
-        if (!colaboradores || colaboradores.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum colaborador alocado</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = colaboradores.map(c => `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="font-weight: 700;">👷 ${c.nome || 'N/A'}</td>
-                <td style="font-weight: 600;">${c.cargo}</td>
-                <td style="text-align: right;">R$ ${(c.salario_base || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                <td style="text-align: center; font-weight: bold;">${c.quantidade}</td>
-                <td style="color: #4338ca; font-weight: bold; text-align: right;">R$ ${(c.subtotal || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                <td style="text-align: center;">
-                    <button type="button" onclick="deletarColaborador(${c.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2; font-size:10px;">Demitir</button>
-                </td>
-            </tr>
-        `).join('');
-    } catch (err) { console.error('Erro ao carregar colaboradores:', err); }
-}
-async function calcularCustoMinutoMaquina() {
-    try {
-        const resMaquinas = await fetch('/api/estrutura/maquinas');
-        const maquinas = await resMaquinas.json();
-        const elem = document.getElementById('kpi-custo-minuto-total');
-        
-        if (!elem) return;
-        if (!maquinas || maquinas.length === 0) {
-            elem.innerText = 'R$ 0,00/min';
-            return;
-        }
-        
-        const totalCustoMinuto = maquinas.reduce((sum, m) => sum + (m.custo_minuto || m.custo_minuto_maquina || 0), 0);
-        elem.innerText = totalCustoMinuto.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/min';
-    } catch (err) { console.error('Erro ao calcular custo minuto:', err); }
+        mudarFonte(0); // Sincroniza e aplica a escala de fonte correta WCAG
+    } catch (err) { console.error(err); }
 }
 
 async function salvarImovel(e) {
     if(e && e.preventDefault) e.preventDefault();
-    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
-    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-    
     const dados = {
-        equipe_id: equipeId,
-        dept: deptAtual,
         id: document.getElementById('imovel_id').value ? parseInt(document.getElementById('imovel_id').value) : null,
         tipo_imovel: document.getElementById('tipo_imovel').value,
         regiao: document.getElementById('cidade').value + " - " + document.getElementById('bairro').value,
         area_util: parseFloat(document.getElementById('area_util').value) || 0,
         valor_aluguel: parseFloat(document.getElementById('valor_aluguel').value) || 0,
         valor_condominio: parseFloat(document.getElementById('valor_condominio').value) || 0,
-        obs_contrato: "Taxa Anual: R$ " + (document.getElementById('taxa_anual')?.value || "0.00")
+        obs_contrato: "Taxa Anual Prevista: R$ " + (document.getElementById('taxa_anual')?.value || "0.00")
     };
 
     try {
@@ -352,83 +189,10 @@ async function salvarImovel(e) {
         });
         if (res.ok) {
             limparFormularioImobiliario();
-            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
-            alert("🎯 Contrato salvo!");
-        } else { alert("❌ Erro ao salvar contrato."); }
-    } catch (err) { console.error('Erro ao salvar imóvel:', err); }
-}
-
-async function salvarMaquina(e) {
-    if(e && e.preventDefault) e.preventDefault();
-    const select = document.getElementById('seletor_equipamento');
-    const option = select.options[select.selectedIndex];
-    
-    if (!option || !option.value) {
-        alert("❌ Selecione um equipamento válido.");
-        return;
-    }
-
-    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
-    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-
-    const dados = {
-        equipe_id: equipeId,
-        dept: deptAtual,
-        nome_equipamento: option.value,
-        preco_compra: parseFloat(option.getAttribute('data-preco')) || 0,
-        watts_consumo: parseFloat(option.getAttribute('data-watts')) || 0,
-        gas_consumo: parseFloat(option.getAttribute('data-gas')) || 0,
-        agua_consumo: parseFloat(option.getAttribute('data-agua')) || 0,
-        depreciacao_anos: parseInt(option.getAttribute('data-dep')) || 10,
-        custo_minuto: parseFloat(option.getAttribute('data-min')) || 0
-    };
-
-    try {
-        const res = await fetch('/api/estrutura/maquinas', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-        if (res.ok) {
-            document.getElementById('formMaquinas').reset();
-            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            carregarDadosIniciais();
-            alert("🎯 Equipamento adicionado!");
-        } else { alert("❌ Erro ao adicionar equipamento."); }
-    } catch (err) { console.error('Erro ao salvar máquina:', err); }
-}
-async function adicionarColaborador(e) {
-    if(e && e.preventDefault) e.preventDefault();
-    const select = document.getElementById('cargo_suporte');
-    const option = select.options[select.selectedIndex];
-    
-    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
-    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-
-    const dados = {
-        equipe_id: equipeId,
-        dept: deptAtual,
-        nome: document.getElementById('rh_nome').value,
-        cargo: select.value,
-        salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
-        quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 0
-    };
-
-    try {
-        const res = await fetch('/api/estrutura/rh', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-        if (res.ok) {
-            document.getElementById('formContratacaoPredial').reset();
-            document.getElementById('previa_salario').value = "R$ 0,00";
-            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            carregarDadosIniciais();
-            alert("🎯 Colaborador adicionado!");
-        } else { alert("❌ Erro ao adicionar colaborador."); }
-    } catch (err) { console.error('Erro ao salvar colaborador:', err); }
+            alert("🎯 Contrato de alocação processado e salvo!");
+        }
+    } catch (err) { console.error(err); }
 }
 
 async function editarImovel(id) {
@@ -447,45 +211,22 @@ async function editarImovel(id) {
             if (document.getElementById('bairro')) document.getElementById('bairro').value = partes[1];
         }
         
-        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar";
+        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato Activo";
+        if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'inline-block';
         calcularPrecoMercadoRefletido();
-    } catch (err) { console.error('Erro ao editar imóvel:', err); }
+        mudarFonte(0);
+    } catch (err) { console.error(err); }
 }
 
 async function deletarImovel(id) {
-    if (!confirm('Confirmar rescisão do contrato?')) return;
+    if (!confirm('Confirmar a rescisão legal do contrato imobiliário?')) return;
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' });
         if (res.ok) {
-            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
-            alert("🎯 Contrato rescindido.");
+            alert("🎯 Contrato rescindido com sucesso.");
         }
-    } catch (err) { console.error('Erro ao deletar imóvel:', err); }
-}
-
-async function deletarMaquina(id) {
-    if (!confirm('Remover este equipamento?')) return;
-    try {
-        const res = await fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            carregarDadosIniciais();
-            alert("🎯 Equipamento removido.");
-        }
-    } catch (err) { console.error('Erro ao deletar máquina:', err); }
-}
-
-async function deletarColaborador(id) {
-    if (!confirm('Confirmar demissão?')) return;
-    try {
-        const res = await fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-            if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            carregarDadosIniciais();
-            alert("🎯 Colaborador desligado.");
-        }
-    } catch (err) { console.error('Erro ao deletar colaborador:', err); }
+    } catch (err) { console.error(err); }
 }
 
 function limparFormularioImobiliario() {
@@ -493,4 +234,7 @@ function limparFormularioImobiliario() {
     if (form) form.reset();
     if (document.getElementById('imovel_id')) document.getElementById('imovel_id').value = '';
     if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
+    if (document.getElementById('btn_cancelar')) document.getElementById('btn_cancelar').style.display = 'none';
+    calcularPrecoMercadoRefletido();
+    mudarFonte(0);
 }
