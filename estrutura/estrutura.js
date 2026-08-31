@@ -404,32 +404,29 @@ async function salvarMaquina(e) {
 }
 async function adicionarColaborador(e) {
     if(e && e.preventDefault) e.preventDefault();
-    const select = document.getElementById('cargo_suporte');
-    const option = select ? select.options[select.selectedIndex] : null;
     
-    // Captura redundante para garantir a leitura dos inputs da tela
-    const elNome = document.getElementById('rh_nome') || document.getElementById('nome_colaborador');
-    const elQtd = document.getElementById('qtd_colaboradores') || document.getElementById('vagas');
+    const select = document.getElementById('cargo_suporte');
+    const inputQtd = document.getElementById('qtd_colaboradores');
+    const option = select ? select.options[select.selectedIndex] : null;
 
-    if (!elNome || !elNome.value.trim()) { 
-        alert("❌ Digite o nome do colaborador."); 
+    // Validação estrita baseada nos elementos reais do seu formulário HTML
+    if (!select || !select.value) { 
+        alert("❌ Por favor, escolha uma função/cargo operacional."); 
         return; 
     }
-    if (!option || !option.value) { 
-        alert("❌ Selecione um cargo válido."); 
-        return; 
-    }
+    if (!option) return;
 
     const equipeIdLogada = sessionStorage.getItem('id_equipe') || "equipe_alfa";
+    const deptAtualizado = window.location.pathname.replace('/', '') || 'estrutura';
     const salarioBase = parseFloat(option.getAttribute('data-salario')) || 0;
-    const quantidade = parseInt(elQtd ? elQtd.value : 1) || 1;
+    const quantidade = parseInt(inputQtd ? inputQtd.value : 1) || 1;
 
-    // Montagem do payload compatível com as rotas do app_estrutura.py e tabelas do Supabase
+    // Montagem do payload adaptada para a ausência do input de nome na interface
     const dados = {
         equipe_id: equipeIdLogada,
-        dept: 'estrutura', // Chave exigida para a validação contábil no motor
-        nome: elNome.value, 
-        cargo: select.value,
+        dept: deptAtualizado,
+        nome: `Equipe de ${select.value}`, // Preenche o campo obrigatório do banco de forma elegante
+        cargo: select.value, 
         salario_base: salarioBase,
         quantidade: quantidade
     };
@@ -442,17 +439,25 @@ async function adicionarColaborador(e) {
         });
         
         if (res.ok) { 
-            if(document.getElementById('formContratacaoPredial')) document.getElementById('formContratacaoPredial').reset();
-            if(document.getElementById('form_contratacao_apoio')) document.getElementById('form_contratacao_apoio').reset();
-            if(document.getElementById('previa_salario')) document.getElementById('previa_salario').value = "R$ 0,00";
+            // Reseta o formulário usando o ID exato mapeado no seu HTML
+            const formPredial = document.getElementById('formContratacaoPredial');
+            if (formPredial) formPredial.reset();
             
+            if (document.getElementById('previa_salario')) {
+                document.getElementById('previa_salario').value = "R$ 0,00";
+            }
+            
+            // Força a atualização reativa dos KPIs do cabeçalho global e tabelas
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais(); 
             alert("🎯 Colaborador adicionado!"); 
         } else { 
-            alert("❌ Erro ao adicionar colaborador (O servidor de hospedagem falhou)."); 
+            alert("❌ Erro ao adicionar colaborador (O servidor de banco de dados rejeitou o registro)."); 
         }
-    } catch (err) { console.error('Erro de envio no POST de RH:', err); }
+    } catch (err) { 
+        console.error('Erro de envio no método POST de RH:', err); 
+        alert("❌ Falha crítica de comunicação com o servidor Render.");
+    }
 }
 
 async function editarImovel(id) {
