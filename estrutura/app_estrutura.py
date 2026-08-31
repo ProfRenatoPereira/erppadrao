@@ -106,30 +106,41 @@ def api_maquinas_listar():
         if cursor: cursor.close()
         if conexao: conexao.close()
 
-@estrutura_blueprint.route('/api/estrutura/rh', methods=['GET'])
-def api_rh_listar():
+@estrutura_blueprint.route('/api/estrutura/rh', methods=['POST'])
+def api_rh_salvar():
     if not session.get('logado'): 
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+    dados = request.json or {}
     id_equipe = session.get('id_equipe', 'equipe_alfa')
+    id_rh = dados.get('id')
     conexao = obter_conexao_master()
     cursor = None
     try:
+        salario_base = float(str(dados.get('salario_base', 0)).replace(',', '.').strip())
+        quantidade = int(dados.get('quantidade', 1))
+        subtotal_calculado = salario_base * quantidade
+        
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS estrutura_rh (
-                id SERIAL PRIMARY KEY, equipe_id TEXT, nome TEXT, cargo TEXT, 
-                salario_base REAL, quantidade INTEGER, subtotal REAL
-            )
-        ''')
+        if id_rh:
+            cursor.execute('''
+                UPDATE estrutura_rh 
+                SET nome=%s, cargo=%s, salario_base=%s, quantidade=%s, subtotal=%s 
+                WHERE id=%s AND equipe_id=%s
+            ''', (dados.get('nome'), dados.get('cargo'), salario_base, quantidade, subtotal_calculado, id_rh, id_equipe))
+        else:
+            cursor.execute('''
+                INSERT INTO estrutura_rh (equipe_id, nome, cargo, salario_base, quantidade, subtotal) 
+                VALUES (%s, %s, %s, %s, %s, %s)
+            ''', (id_equipe, dados.get('nome'), dados.get('cargo'), salario_base, quantidade, subtotal_calculado))
         conexao.commit()
-        cursor.execute('SELECT * FROM estrutura_rh WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
-        return jsonify(cursor.fetchall())
-    except psycopg2.DatabaseError as e:
+        return jsonify({'status': 'sucesso'})
+    except Exception as err:
         if conexao: conexao.rollback()
-        return jsonify({'status': 'erro', 'message': str(e)}), 500
+        return jsonify({'status': 'erro', 'message': str(err)}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
+
 # ========== ENDPOINTS POST ==========
 
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['POST'])
