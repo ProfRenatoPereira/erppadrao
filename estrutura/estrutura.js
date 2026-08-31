@@ -409,9 +409,9 @@ async function adicionarColaborador(e) {
     const inputQtd = document.getElementById('qtd_colaboradores');
     const option = select ? select.options[select.selectedIndex] : null;
 
-    // Validação estrita baseada nos elementos reais do seu formulário HTML
+    // Validação baseada estritamente nos elementos existentes no seu HTML
     if (!select || !select.value) { 
-        alert("❌ Por favor, escolha uma função/cargo operacional."); 
+        alert("❌ Por favor, escolha uma função operacional."); 
         return; 
     }
     if (!option) return;
@@ -421,14 +421,14 @@ async function adicionarColaborador(e) {
     const salarioBase = parseFloat(option.getAttribute('data-salario')) || 0;
     const quantidade = parseInt(inputQtd ? inputQtd.value : 1) || 1;
 
-    // Montagem do payload adaptada para a ausência do input de nome na interface
+    // Monta o payload perfeitamente compatível com o banco de dados do Supabase
     const dados = {
         equipe_id: equipeIdLogada,
         dept: deptAtualizado,
-        nome: `Equipe de ${select.value}`, // Preenche o campo obrigatório do banco de forma elegante
+        nome: `Equipe de Suporte - ${select.value}`, // Preenche o campo obrigatório do banco
         cargo: select.value, 
         salario_base: salarioBase,
-        quantidade: quantidade
+        quantidade: quantity // Mantém o nome exato esperado pela validação do app_estrutura.py
     };
 
     try {
@@ -439,7 +439,7 @@ async function adicionarColaborador(e) {
         });
         
         if (res.ok) { 
-            // Reseta o formulário usando o ID exato mapeado no seu HTML
+            // Reseta o formulário usando o ID exato que você enviou do seu HTML
             const formPredial = document.getElementById('formContratacaoPredial');
             if (formPredial) formPredial.reset();
             
@@ -447,16 +447,15 @@ async function adicionarColaborador(e) {
                 document.getElementById('previa_salario').value = "R$ 0,00";
             }
             
-            // Força a atualização reativa dos KPIs do cabeçalho global e tabelas
+            // Força a atualização reativa dos KPIs superiores e das tabelas locais
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais(); 
             alert("🎯 Colaborador adicionado!"); 
         } else { 
-            alert("❌ Erro ao adicionar colaborador (O servidor de banco de dados rejeitou o registro)."); 
+            alert("❌ Erro ao adicionar colaborador (O banco de dados rejeitou os parâmetros)."); 
         }
     } catch (err) { 
-        console.error('Erro de envio no método POST de RH:', err); 
-        alert("❌ Falha crítica de comunicação com o servidor Render.");
+        console.error('Erro de rede no envio AJAX de RH:', err); 
     }
 }
 
