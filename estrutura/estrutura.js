@@ -248,17 +248,17 @@ async function carregarTabelaMaquinas() {
         
         if (!maquinas || maquinas.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum equipamento adquirido</td></tr>`;
-            const tags = ['consumo_energia', 'kpi-energia-mensal', 'consumo_gas', 'kpi-gas-mensal', 'consumo_agua', 'kpi-agua-mensal'];
-            tags.forEach(id => { if(document.getElementById(id)) document.getElementById(id).innerText = id.includes('energia') ? "Consumida: 0 W" : "Consumido: 0 m³"; });
+            if (document.getElementById('kpi-energia-mensal')) document.getElementById('kpi-energia-mensal').innerText = "0 W";
+            if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = "0 m³";
+            if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = "0 m³";
             return;
         }
 
-        let totalWatts = 0; 
-        let totalGas = 0; 
+        let totalWatts = 0;
+        let totalGas = 0;
         let totalAgua = 0;
 
         tbody.innerHTML = maquinas.map(m => {
-            // Mapeamento corrigido baseado estritamente nas colunas reais da tabela 'erp_maquinas' do Supabase
             totalWatts += parseFloat(m.potencia_watts || m.watts_consumo || 0);
             totalGas += parseFloat(m.consumo_gas_m3 || m.gas_consumo || 0);
             totalAgua += parseFloat(m.consumo_agua_m3 || m.agua_consumo || 0);
@@ -267,9 +267,9 @@ async function carregarTabelaMaquinas() {
                 <tr style="border-bottom: 1px solid #e5e7eb;">
                     <td style="font-weight: 700;">${m.nome_equipamento || m.equipment_name || 'Equipamento'}</td>
                     <td style="color: #1e3a8a; font-weight: 800;">R$ ${(m.preco_compra || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
-                    <td style="text-align: center;">${m.potencia_watts || m.watts_consumo || 0} W</td>
-                    <td style="text-align: center;">${m.consumo_gas_m3 || m.gas_consumo || 0} m³</td>
-                    <td style="color: #5b21b6; font-weight: bold;">R$ ${(m.custo_minuto_maquina || m.custo_minuto || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td style="text-align: center;">${m.watts_consumo || m.potencia_watts || 0} W</td>
+                    <td style="text-align: center;">${m.gas_consumo || m.consumo_gas_m3 || 0} m³</td>
+                    <td style="color: #5b21b6; font-weight: bold;">R$ ${(m.custo_minuto || m.custo_minuto_maquina || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
                     <td style="text-align: center;">
                         <button type="button" onclick="deletarMaquina(${m.id})" class="btn-top" style="background-color: #fef2f2; color: #dc2626; border-color: #fee2e2; font-size:10px;">Remover</button>
                     </td>
@@ -277,15 +277,11 @@ async function carregarTabelaMaquinas() {
             `;
         }).join('');
 
-        // Tenta injetar os valores em todas as variações de IDs de labels possíveis da tela
-        const txtEnergia = document.getElementById('consumo_energia') || document.getElementById('kpi-energia-mensal');
-        const txtGas = document.getElementById('consumo_gas') || document.getElementById('kpi-gas-mensal');
-        const txtAgua = document.getElementById('consumo_agua') || document.getElementById('kpi-agua-mensal');
+        if (document.getElementById('kpi-energia-mensal')) document.getElementById('kpi-energia-mensal').innerText = `${totalWatts.toLocaleString('pt-BR')} W`;
+        if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = `${totalGas.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
+        if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = `${totalAgua.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
 
-        if (txtEnergia) txtEnergia.innerText = `Consumida: ${totalWatts.toLocaleString('pt-BR')} W`;
-        if (txtGas) txtGas.innerText = `Consumido: ${totalGas.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
-        if (txtAgua) txtAgua.innerText = `Consumida: ${totalAgua.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
-    } catch (err) { console.error('Erro no somatório de utilidades:', err); }
+    } catch (err) { console.error('Erro ao carregar tabela de máquinas:', err); }
 }
 
 async function carregarTabelaColaboradores() {
@@ -404,62 +400,35 @@ async function salvarMaquina(e) {
 }
 async function adicionarColaborador(e) {
     if(e && e.preventDefault) e.preventDefault();
-    
     const select = document.getElementById('cargo_suporte');
-    const option = select ? select.options[select.selectedIndex] : null;
+    const option = select.options[select.selectedIndex];
     
-    // Captura baseada estritamente nos inputs preenchidos com "TTT" e "1" na imagem
-    const elNome = document.getElementById('nome_colaborador') || document.getElementById('rh_nome') || { value: "TTT" };
-    const elQtd = document.getElementById('vagas') || document.getElementById('qtd_colaboradores');
+    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
+    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
 
-    if (!elNome || !elNome.value.trim()) { 
-        alert("❌ Digite o nome do colaborador."); 
-        return; 
-    }
-    if (!option || !option.value) { 
-        alert("❌ Selecione um cargo válido."); 
-        return; 
-    }
-
-    const equipeIdLogada = sessionStorage.getItem('id_equipe') || "equipe_alfa";
-    const deptAtualizado = window.location.pathname.replace('/', '') || 'estrutura';
-    const salarioBase = parseFloat(option.getAttribute('data-salario')) || 0;
-    const quantidade = parseInt(elQtd ? elQtd.value : 1) || 1;
-
-    // Monta o payload corrigindo o NameError de 'quantity' para 'quantidade'
     const dados = {
-        equipe_id: equipeIdLogada,
-        dept: deptAtualizado,
-        nome: elNome.value, 
-        cargo: select.value, 
-        salario_base: salarioBase,
-        quantidade: quantidade // CORREÇÃO: Usa a variável correta definida acima
+        equipe_id: equipeId,
+        dept: deptAtual,
+        nome: document.getElementById('rh_nome').value,
+        cargo: select.value,
+        salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
+        quantidade: parseInt(document.getElementById('qtd_colaboradores').value) || 0
     };
 
     try {
-        const res = await fetch('/api/estrutura/rh', { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify(dados) 
+        const res = await fetch('/api/estrutura/rh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
         });
-        
-        if (res.ok) { 
-            const formPredial = document.getElementById('formContratacaoPredial') || document.getElementById('form_contratacao_apoio');
-            if (formPredial) formPredial.reset();
-            
-            if (document.getElementById('previa_salario')) {
-                document.getElementById('previa_salario').value = "R$ 0,00";
-            }
-            
+        if (res.ok) {
+            document.getElementById('formContratacaoPredial').reset();
+            document.getElementById('previa_salario').value = "R$ 0,00";
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            carregarDadosIniciais(); 
-            alert("🎯 Colaborador adicionado!"); 
-        } else { 
-            alert("❌ Erro ao adicionar colaborador (O servidor de banco de dados rejeitou os parâmetros)."); 
-        }
-    } catch (err) { 
-        console.error('Erro de rede no envio AJAX de RH:', err); 
-    }
+            carregarDadosIniciais();
+            alert("🎯 Colaborador adicionado!");
+        } else { alert("❌ Erro ao adicionar colaborador."); }
+    } catch (err) { console.error('Erro ao salvar colaborador:', err); }
 }
 
 async function editarImovel(id) {
