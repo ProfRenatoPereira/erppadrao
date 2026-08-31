@@ -300,7 +300,19 @@
                 <input type="hidden" id="rh_id" value="">
                 <div class="grid-form-row">
                     <div><label class="label-form">Nome:</label><input type="text" id="rh_nome" required class="input-form"></div>
-                    <div><label class="label-form">Cargo:</label><select id="cargo_suporte" required class="select-form" onchange="calcularPreviaSalario()"><option value="Zelador" data-salario="2017.32">Zelador</option><option value="Porteiro" data-salario="2170.41">Porteiro</option><option value="Recepcionista" data-salario="1957.06">Recepcionista</option></select></div>
+                    <div><label class="label-form">Cargo:</label><select id="cargo_suporte" required class="select-form" onchange="calcularPreviaSalario()">
+    <option value="" disabled selected>Escolha uma função...</option>
+    <option value="Zelador" data-salario="2017.32">Zelador (Piso PR) - R$ 2.017,32</option>
+    <option value="Porteiro" data-salario="2170.41">Porteiro (Piso PR) - R$ 2.170,41</option>
+    <option value="Recepcionista" data-salario="1957.06">Recepcionista (Piso PR) - R$ 1.957,06</option>
+    <option value="Auxiliar de Serviços Gerais" data-salario="1850.00">Auxiliar de Serviços Gerais - R$ 1.850,00</option>
+    <option value="Eletricista Predial" data-salario="2850.00">Eletricista Predial - R$ 2.850,00</option>
+    <option value="Técnico de Manutenção Industrial" data-salario="3400.00">Técnico de Manutenção - R$ 3.400,00</option>
+    <option value="Vigilante Patrimonial" data-salario="2300.00">Vigilante Patrimonial - R$ 2.300,00</option>
+    <option value="Cozinheira" data-salario="2250.00">Cozinheira Industrial - R$ 2.250,00</option>
+    <option value="Ajudante de Cozinha" data-salario="1913.66">Ajudante de Cozinha - R$ 1.913,66</option>
+</select>
+</div>
                     <div><label class="label-form">Vagas:</label><input type="number" id="qtd_colaboradores" min="1" value="1" required class="input-form" oninput="calcularPreviaSalario()"></div>
                     <div><label class="label-form">Prévia:</label><input type="text" id="previa_salario" readonly class="input-form input-form-readonly" value="R$ 0,00"></div>
                 </div>
