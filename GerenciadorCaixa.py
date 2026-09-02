@@ -1,6 +1,6 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MOTOR FINANCEIRO CENTRAL (GerenciadorCaixa.py)
-# VERSÃO ATUALIZADA: ISOLAMENTO ENTRE UTENSÍLIOS (MOD 2) E MÁQUINAS (MOD 7)
+# PARTE 1 DE 2: POOL DE CONEXÕES E PROCESSAMENTO PATRIMONIAL ISOLADO
 # ==========================================================================
 
 import os
@@ -8,7 +8,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 def obter_conexao_master():
-    """Recupera a string de conexão unificada cadastrada no app_master ou env."""
+    """Importação tardia blindada contra loops circulares e quedas de sessão no Render."""
     try:
         from app_master import URL_SUPABASE
         return psycopg2.connect(URL_SUPABASE)
@@ -20,21 +20,24 @@ def obter_conexao_master():
 
 def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
     """
-    Motor central que calcula o balanço patrimonial e despesas correntes,
-    separando rigidamente os utensílios de suporte das máquinas industriais.
+    Motor central unificado que calcula o balanço patrimonial e despesas correntes
+    de forma combinada e isolada, corrigindo a duplicidade na computação de ativos.
     """
     conexao = obter_conexao_master()
     cursor = None
     
+    # Parâmetros padrão de inicialização segura do ecossistema
     capital_total = 5000000.00
     valor_aluguel_global = 0.0
     nome_empresa = "GRUPO ACADÊMICO"
     total_gasto_fluxo = 0.0
     
+    # Acumuladores de Empresa Completa (Soma matricial de todos os setores)
     patrimonio_ativo_total = 0.0
     custo_fixo_total_global = 0.0
     custo_variavel_total_global = 0.0
     
+    # Indicadores Isolados do Setor Requisitante
     patrimonio_isolado_setor = 0.0
     custo_fixo_isolado_setor = 0.0
     custo_variavel_isolado_setor = 0.0
@@ -42,7 +45,7 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
     try:
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # 1. Parâmetros estáveis da fundação do negócio
+        # 1. Recupera os parâmetros estáveis da fundação do negócio
         try:
             cursor.execute("SELECT nome_empresa, capital_total, valor_aluguel FROM config_simulacao WHERE equipe_id = %s", (id_equipe,))
             config = cursor.fetchone()
@@ -51,21 +54,21 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
                 valor_aluguel_global = float(config['valor_aluguel'] or 0)
                 nome_empresa = config['nome_empresa']
         except Exception as e:
-            print(f"Aviso: config_simulacao indisponível: {e}")
+            print(f"Aviso: Tabela config_simulacao indisponível: {e}")
             if conexao: conexao.rollback()
 
-        # 2. Somatório histórico de movimentações no Livro de Caixa
+        # 2. Computa o somatório histórico de movimentações no Livro de Fluxo de Caixa
         try:
             cursor.execute("SELECT SUM(valor) as total FROM fluxo_caixa WHERE equipe_id = %s", (id_equipe,))
             resultado_fluxo = cursor.fetchone()
             if resultado_fluxo and resultado_fluxo['total']:
                 total_gasto_fluxo = float(resultado_fluxo['total'])
         except Exception as e:
-            print(f"Aviso: fluxo_caixa indisponível: {e}")
+            print(f"Aviso: Tabela fluxo_caixa indisponível: {e}")
             if conexao: conexao.rollback()
 
         # ==================================================================
-        # 🏢 SEÇÃO 01: PATRIMÔNIO ATIVO (IMÓVEIS, UTENSÍLIOS E MÁQUINAS)
+        # 🏢 SEÇÃO 01: COMPUTAÇÃO E ISOLAMENTO DO PATRIMÔNIO ATIVO TOTAL
         # ==================================================================
         
         # A) Módulo Imobiliário (Tabela: imoveis_simulacao)
@@ -84,38 +87,50 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
             print(f"Aviso: imoveis_simulacao: {e}")
             if conexao: conexao.rollback()
 
-        # B) Diferenciação de Ativos / Máquinas / Utensílios (Tabela: erp_maquinas)
+        # B) Diferenciação Estrita de Ativos Industriais e Utensílios (Tabela: erp_maquinas)
         try:
-            # Puxa o patrimônio consolidado de toda a empresa (Máquinas + Utensílios)
-            cursor.execute("SELECT SUM(preco_compra) as total FROM erp_maquinas WHERE equipe_id = %s", (id_equipe,))
-            res_maq = cursor.fetchone()
-            if res_maq and res_maq['total']:
-                patrimonio_ativo_total += float(res_maq['total'])
+            # 1. Soma isolada de Utensílios de Suporte Predial (Módulo 02)
+            cursor.execute("SELECT COALESCE(SUM(preco_compra), 0) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = 'UTENSILIOS'", (id_equipe,))
+            total_utensilios = float(cursor.fetchone()['total'] or 0)
+            
+            # 2. Soma isolada de Máquinas Industriais de Produção (Módulo 07)
+            cursor.execute("SELECT COALESCE(SUM(preco_compra), 0) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = 'PRODUCAO'", (id_equipe,))
+            total_producao = float(cursor.fetchone()['total'] or 0)
+            
+            # 3. Consolidação limpa do patrimônio mecânico sem dupla contagem
+            patrimonio_ativo_total += total_utensilios + total_producao
+            
+            # Encaminha o saldo patrimonial isolado correto para validação de tetos por tela
+            if departamento_atual == 'estrutura':
+                patrimonio_isolado_setor += total_utensilios
+            elif departamento_atual == 'maquinas':
+                patrimonio_isolado_setor += total_producao
                 
-            # Filtro Isolado Módulo 02: Puxa apenas Utensílios de Suporte Predial
-            cursor.execute("SELECT SUM(preco_compra) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = 'UTENSILIOS'", (id_equipe,))
-            res_utensilios = cursor.fetchone()
-            if res_utensilios and res_utensilios['total'] and departamento_atual == 'estrutura':
-                patrimonio_isolado_setor += float(res_utensilios['total'])
-
-            # Filtro Isolado Módulo 07: Puxa apenas Máquinas Industriais de Produção
-            cursor.execute("SELECT SUM(preco_compra) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = 'PRODUCAO'", (id_equipe,))
-            res_producao = cursor.fetchone()
-            if res_producao and res_producao['total'] and departamento_atual == 'maquinas':
-                patrimonio_isolado_setor += float(res_producao['total'])
         except Exception as e:
-            print(f"Aviso: erp_maquinas: {e}")
+            print(f"Erro no isolamento de soma de erp_maquinas: {e}")
             if conexao: conexao.rollback()
-        # ==================================================================
-        # 🏢 SEÇÃO 02: ESTRUTURAÇÃO E RATEIO DE CUSTOS FIXOS (SOMA MATRICIAL)
+
+        # C) Módulo de Almoxarifado / Materiais Estocados (Tabela: ativos_materials)
+        try:
+            cursor.execute("SELECT SUM(quantidade_estoque * preco_unitario) as total FROM ativos_materials WHERE equipe_id = %s", (id_equipe,))
+            res_mat = cursor.fetchone()
+            if res_mat and res_mat['total']:
+                patrimonio_ativo_total += float(res_mat['total'])
+                if departamento_atual == 'materiais':
+                    patrimonio_isolado_setor += float(res_mat['total'])
+        except Exception as e:
+            print(f"Aviso: ativos_materials: {e}")
+            if conexao: conexao.rollback()
+                
+        # 🔒 SEÇÃO 02: CONSOLIDAÇÃO DE CUSTOS FIXOS (SOMA MATRICIAL)
         # ==================================================================
         
-        # PASSO 1: Ocupação imobiliária (Aluguel Global + Locações Específicas do Setor)
-        custo_fixo_total_global = valor_aluguel_global + imob_aluguel_setor + imob_condo_setor
+        # PASSO 1: Inicializa com valores de imóvel do setor
+        custo_fixo_total_global = imob_aluguel_setor + imob_condo_setor
         if departamento_atual == 'estrutura':
             custo_fixo_isolado_setor = imob_aluguel_setor + imob_condo_setor
 
-        # PASSO 2: Folha de funcionários CLT ativa da administração (Tabela: folha_funcionarios)
+        # PASSO 2: Varre e consolida a folha de funcionários CLT ativa (Tabela: folha_funcionarios)
         try:
             cursor.execute("SELECT SUM(salario_base) as total FROM folha_funcionarios WHERE equipe_id = %s", (id_equipe,))
             res_rh_global = cursor.fetchone()
@@ -125,7 +140,7 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
             print(f"Aviso: folha_funcionarios: {e}")
             if conexao: conexao.rollback()
 
-        # PASSO 3: Suporte predial e refeitório específico do Módulo 02 (Tabela: estrutura_rh)
+        # PASSO 3: Varre o suporte predial específico do setor imobiliário (Tabela: estrutura_rh)
         try:
             cursor.execute("SELECT COALESCE(SUM(subtotal), 0) as total FROM estrutura_rh WHERE equipe_id = %s", (id_equipe,))
             res_rh_imob = cursor.fetchone()
@@ -153,19 +168,45 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
             if conexao: conexao.rollback()
 
         # ==================================================================
-        # 📊 SEÇÃO 04: BALANÇO DE FLUXO DE CAIXA E DISPONIBILIDADE
+        # 🎛️ SEÇÃO 04: CIRCUITO DE TRAVAS OPERACIONAIS POR DEPARTAMENTO
         # ==================================================================
+        orcamento_liberado_setor = 0.0
+        gastos_especificos_setor = 0.0
+        
+        if departamento_atual:
+            try:
+                cursor.execute("SELECT orcamento_liberado FROM departamentos_orcamento WHERE equipe_id = %s AND departamento = %s", (id_equipe, departamento_atual))
+                dept_orc = cursor.fetchone()
+                if dept_orc:
+                    orcamento_liberado_setor = float(dept_orc['orcamento_liberado'] or 0)
+            except Exception as e:
+                print(f"Aviso: departamentos_orcamento: {e}")
+                if conexao: conexao.rollback()
+
+            try:
+                cursor.execute("SELECT SUM(valor) as total FROM fluxo_caixa WHERE equipe_id = %s AND departamento = %s", (id_equipe, departamento_atual))
+                res_gastos = cursor.fetchone()
+                if res_gastos and res_gastos['total']:
+                    gastos_especificos_setor = float(res_gastos['total'])
+            except Exception as e:
+                print(f"Aviso: fluxo_caixa filtrado: {e}")
+                if conexao: conexao.rollback()
+
+        # Deduções reativas do fluxo de caixa de giro da empresa e saldo setorial
         capital_disponivel_total = capital_total - total_gasto_fluxo - valor_aluguel_global
+        capital_disponivel_departamento = orcamento_liberado_setor - gastos_especificos_setor
 
         return {
             'nome_empresa': nome_empresa.upper(),
             'capital_total': capital_total,
             'capital_disponivel_total': max(0.0, capital_disponivel_total),
+            'capital_disponivel_departamento': max(0.0, capital_disponivel_departamento),
             
             # Métricas Consolidadas Universais (Toda a Empresa)
             'patrimonio_ativo_total': patrimonio_ativo_total,
-            'custo_fixo_geral_empresa': custo_fixo_total_global,
+            'custo_fixo_total': custo_fixo_total_global,
             'custo_variavel_total': custo_variavel_total_global,
+            'custo_fixo_geral_empresa': custo_fixo_total_global,
             
             # Métricas Isoladas Específicas do Setor Requisitante
             'patrimonio_isolado_setor': patrimonio_isolado_setor,
@@ -177,208 +218,13 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         print(f"Erro Crítico no Motor de Métricas de Caixa: {e}")
         return {
             'nome_empresa': "MODO SEGURANÇA", 
-            'capital_total': 5000000.00, 'capital_disponivel_total': 0.0,
-            'patrimonio_ativo_total': 0.0, 'custo_fixo_geral_empresa': 21350.00, 'custo_variavel_total': 0.0,
-            'patrimonio_isolado_setor': 0.0, 'custo_fixo_isolado_setor': 0.0, 'custo_variavel_isolado_setor': 0.0
+            'capital_total': 5000000.00, 'capital_disponivel_total': 0.0, 'capital_disponivel_departamento': 0.0,
+            'patrimonio_ativo_total': 0.0, 'custo_fixo_total': 21350.00, 'custo_variavel_total': 0.0,
+            'custo_fixo_geral_empresa': 21350.00, 'patrimonio_isolado_setor': 0.0, 'custo_fixo_isolado_setor': 0.0, 'custo_variavel_isolado_setor': 0.0
         }
 
     finally:
-        if cursor: cursor.close()
-        if conexao: conexao.close()
-# ==========================================================================
-# TERADMAS ERP v2.6 - APP MASTER (NÚCLEO PRINCIPAL DA APLICAÇÃO)
-# Servidor Flask central com roteamento para todos os módulos
-# ==========================================================================
-
-import os
-from flask import Flask, session, jsonify, request, redirect, render_template_string
-from datetime import timedelta
-from whitenoise import WhiteNoise
-
-# URL de conexão com Supabase (PostgreSQL)
-URL_SUPABASE = os.environ.get(
-    "DATABASE_URL", 
-    "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
-)
-
-# Inicialização do aplicativo Flask
-app = Flask(__name__, static_folder='static', static_url_path='/static')
-
-# Configuração do WhiteNoise para servir arquivos estáticos
-app.wsgi_app = WhiteNoise(
-    app.wsgi_app, 
-    root=os.path.join(os.path.dirname(__file__), 'static'), 
-    prefix='static/'
-)
-
-# Configurações de sessão
-app.secret_key = "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
-app.permanent_session_lifetime = timedelta(days=7)
-
-# Importação do gerenciador de métricas central
-import GerenciadorCaixa
-
-# ========== IMPORTAÇÃO DE BLUEPRINTS MODULARES ==========
-try:
-    from login.app_login import login_blueprint
-    from configuracao.app_configuracao import configuracao_blueprint
-    from estrutura.app_estrutura import estrutura_blueprint
-    from maquinas.app_maquinas import maquinas_blueprint
-    from materiais.app_materiais import materiais_blueprint
-    from processos.app_processos import processos_blueprint
-    from produtos.app_produtos import produtos_blueprint
-    from precificacao.app_precificacao import precificacao_blueprint
-    from clientes.app_clientes import clientes_blueprint
-    from vendas.app_vendas import vendas_blueprint
-    from estoque.app_estoque import estoque_blueprint
-    from financeiro.app_financeiro import financeiro_blueprint
-    from nota_fiscal.app_nota_fiscal import nota_fiscal_blueprint
-    from rh.app_rh import rh_blueprint
-    from pcp.app_pcp import pcp_blueprint
-    from orcamentos.app_orcamentos import orcamentos_blueprint
-    from compras_insumos.app_compras import compras_blueprint
-    from engenharia_producao.app_producao import producao_blueprint
-    from folha_pagamento.app_folha import folha_blueprint
-    from manutencao.app_manutencao import manutencao_blueprint
-    from requisicoes.app_requisicoes import requisicoes_blueprint
-    from roi.app_roi import roi_blueprint
-except ImportError as e:
-    print(f"⚠️ Aviso: Alguns módulos não puderam ser importados: {e}")
-
-# ========== REGISTRO DE BLUEPRINTS ==========
-app.register_blueprint(login_blueprint)
-app.register_blueprint(configuracao_blueprint)
-app.register_blueprint(estrutura_blueprint)
-app.register_blueprint(maquinas_blueprint)
-app.register_blueprint(materiais_blueprint)
-app.register_blueprint(processos_blueprint)
-app.register_blueprint(produtos_blueprint)
-app.register_blueprint(precificacao_blueprint)
-app.register_blueprint(clientes_blueprint)
-app.register_blueprint(vendas_blueprint)
-app.register_blueprint(estoque_blueprint)
-app.register_blueprint(financeiro_blueprint)
-app.register_blueprint(nota_fiscal_blueprint)
-app.register_blueprint(rh_blueprint)
-app.register_blueprint(pcp_blueprint)
-app.register_blueprint(orcamentos_blueprint)
-app.register_blueprint(compras_blueprint)
-app.register_blueprint(producao_blueprint)
-app.register_blueprint(folha_blueprint)
-app.register_blueprint(manutencao_blueprint)
-app.register_blueprint(requisicoes_blueprint)
-app.register_blueprint(roi_blueprint)
-
-# ========== MIDDLEWARE DE AUTENTICAÇÃO ==========
-
-@app.before_request
-def verificar_fluxo_de_aula():
-    """Middleware que valida sessão e autorização em cada request"""
-    if request.path.startswith('/static') or request.path.startswith('/login') or request.path == '/logout':
-        return
-
-    if not session.get('logado'):
-        if request.is_json:
-            return jsonify({'status': 'erro', 'message': 'Sessão expirada'}), 401
-        return redirect('/login')
-
-    if session.get('professor_master'):
-        return
-
-    if not session.get('empresa_inicializada') and request.endpoint != 'configuracao_blueprint.api_inicializar_empresa':
-        if not request.path.startswith('/configuracao'):
-            if request.is_json:
-                return jsonify({'status': 'erro', 'message': 'Empresa não inicializada'}), 400
-            return redirect('/configuracao/inicializacao')
-
-# ========== ROTAS PRINCIPAIS ==========
-
-@app.route('/')
-def rota_raiz_direta():
-    """Rota raiz com redirecionamento inteligente"""
-    if not session.get('logado'):
-        return redirect('/login')
-    
-    if session.get('empresa_inicializada'):
-        return redirect('/estrutura')
-    else:
-        return redirect('/configuracao/inicializacao')
-
-@app.route('/grid')
-def rota_contingencia_grid():
-    """Rota de contingência para links residuais do front-end"""
-    if not session.get('logado'):
-        return redirect('/login')
-    return redirect('/estrutura')
-
-@app.route('/logout')
-def rota_encerrar_turno():
-    """Limpa a sessão atual do banco de dados na memória do servidor"""
-    session.clear()
-    return redirect('/login')
-
-# ========== API DE MÉTRICAS GLOBAIS ==========
-
-@app.route('/api/financeiro/metricas', methods=['GET'])
-def api_global_metricas_calculadas():
-    """Endpoint central de métricas consolidadas de toda a empresa"""
-    if not session.get('logado'):
-        return jsonify({'status': 'erro', 'message': 'Acesso negado'}), 401
-        
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    departamento = request.args.get('dept', '')
-    
-    try:
-        metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, departamento)
-        return jsonify(metricas)
-    except Exception as e:
-        print(f"❌ Erro na API de métricas: {e}")
-        return jsonify({'status': 'erro', 'message': str(e)}), 500
-
-@app.route('/api/financeiro/kpis', methods=['GET'])
-def api_kpis_resumidos():
-    """Endpoint de KPIs simplificados para dashboard rápido"""
-    if not session.get('logado'):
-        return jsonify({'status': 'erro'}), 401
-    
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe)
-    
-    return jsonify({
-        'capital_total': metricas.get('capital_total'),
-        'patrimonio_ativo': metricas.get('patrimonio_ativo_total'),
-        'custo_fixo': metricas.get('custo_fixo_geral_empresa'),
-        'capital_disponivel': metricas.get('capital_disponivel_total')
-    })
-
-# ========== TRATAMENTO DE ERROS ==========
-
-@app.errorhandler(404)
-def erro_nao_encontrado(erro):
-    if request.is_json:
-        return jsonify({'status': 'erro', 'message': 'Recurso não encontrado'}), 404
-    return render_template_string("""
-        <h1>❌ Página não encontrada</h1>
-        <p>O recurso solicitado não existe no sistema TERADMAS.</p>
-        <a href="/">Voltar ao início</a>
-    """), 404
-
-@app.errorhandler(500)
-def erro_servidor(erro):
-    print(f"❌ ERRO 500: {erro}")
-    if request.is_json:
-        return jsonify({'status': 'erro', 'message': 'Erro interno do servidor'}), 500
-    return render_template_string("""
-        <h1>❌ Erro Interno</h1>
-        <p>Ocorreu um erro crítico ao processar no servidor.</p>
-        <a href="/">Voltar ao início</a>
-    """), 500
-
-# ========== EXECUÇÃO DO SERVIDOR ==========
-
-if __name__ == '__main__':
-    porta = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
-    
-    print(f"🚀 Servidor Central TERADMAS ERP v2.6 Ativo")
-    app.run(host='0.0.0.0', port=porta, debug=debug_mode)
+        if cursor: 
+            cursor.close()
+        if conexao: 
+            conexao.close()
