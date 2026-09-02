@@ -1,32 +1,39 @@
-// erppadrao - estrutura/estrutura.js
-// Script de controle do módulo de investimentos imobiliários e infraestrutura predial
+// ==========================================================================
+// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+// ARQUIVO: estrutura.js - PARTE 1 DE 3 (ACESSIBILIDADE E ENGENHARIA IMOBILIÁRIA)
+// ==========================================================================
 
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 let idEdicaoRHAtual = null; 
 
 document.addEventListener("DOMContentLoaded", function() {
+    "use strict";
     carregarDadosIniciais();
     
+    // Listeners do Bloco de Alocação de Espaço Físico
     document.getElementById('cidade')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('bairro')?.addEventListener('change', calcularPrecoMercadoRefletido);
     document.getElementById('area_util')?.addEventListener('input', calcularPrecoMercadoRefletido);
     document.getElementById('valor_condominio')?.addEventListener('input', calcularPrecoMercadoRefletido);
     
+    // Listeners do Bloco de Apoio Predial / RH
     document.getElementById('cargo_suporte')?.addEventListener('change', calcularPreviaSalario);
     document.getElementById('qtd_colaboradores')?.addEventListener('input', calcularPreviaSalario);
+    
+    // Listener do Botão do Leitor de Áudio
+    document.getElementById('btn-leitor')?.addEventListener('click', alternarLeitorAudio);
 });
 
+/* ==========================================================================
+   SISTEMA DE ACESSIBILIDADE CORE (WCAG)
+   ========================================================================== */
 function alterarFonte(dir) {
-    const dirValue = dir === '+' ? 1 : (dir === '-' ? -1 : 0);
-    tamanhoFonteAtual += dirValue;
+    "use strict";
+    const passo = dir === '+' ? 1 : (dir === '-' ? -1 : 0);
+    tamanhoFonteAtual += passo;
     tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
-    mudarFonte(dirValue);
-}
-
-function mudarFonte(dir) {
-    tamanhoFonteAtual += dir;
-    tamanhoFonteAtual = Math.max(12, Math.min(24, tamanhoFonteAtual));
+    
     document.documentElement.style.fontSize = tamanhoFonteAtual + 'px';
     
     const elementos = document.querySelectorAll("p, label, input, select, th, td, h1, h2, h3, h4, span, button, a");
@@ -36,18 +43,19 @@ function mudarFonte(dir) {
 }
 
 function alternarModoEscuro() { 
+    "use strict";
     document.body.classList.remove('alto-contraste');
     document.body.classList.toggle('dark-mode');
-    const btn = document.getElementById('btn_tema');
-    if (btn) btn.innerText = document.body.classList.contains('dark-mode') ? "☀️ Modo Claro" : "🌙 Modo Escuro";
 }
 
 function alternarAltoContraste() { 
+    "use strict";
     document.body.classList.remove('dark-mode');
     document.body.classList.toggle('alto-contraste');
 }
 
 function alternarLeitorAudio() {
+    "use strict";
     leitorAtivo = !leitorAtivo;
     const btn = document.getElementById('btn-leitor');
     if (btn) {
@@ -73,9 +81,14 @@ function alternarLeitorAudio() {
         window.speechSynthesis.cancel();
     }
 }
+
+/* ==========================================================================
+   REGRAS DE NEGÓCIO: ENGENHARIA IMOBILIÁRIA REATIVA
+   ========================================================================== */
 function calcularPrecoMercadoRefletido() {
-    const cidade = document.getElementById('cidade')?.value;
-    const bairro = document.getElementById('bairro')?.value;
+    "use strict";
+    const cidade = document.getElementById('cidade')?.value || "Curitiba";
+    const bairro = document.getElementById('bairro')?.value || "CIC";
     const area = parseFloat(document.getElementById('area_util')?.value) || 0;
     
     if (area <= 0) {
@@ -84,13 +97,11 @@ function calcularPrecoMercadoRefletido() {
         return;
     }
     
-    let precoM2 = 22.00;
-    if (cidade === "Curitiba") {
-        if (bairro === "Centro") precoM2 = 30.00;
-        else if (bairro === "Boqueirão") precoM2 = 25.00;
-        else if (bairro === "CIC") precoM2 = 23.50;
-    } else if (cidade === "São José dos Pinhais" || cidade === "Araucária" || cidade === "Pinhais") {
-        precoM2 = 21.00; 
+    let precoM2 = 23.50; // Padrão CIC
+    if (cidade === "Curitiba" && bairro === "Centro") {
+        precoM2 = 30.00;
+    } else if (cidade === "Curitiba" && bairro === "Boqueirão") {
+        precoM2 = 25.00;
     }
 
     const valorAluguelMensal = area * precoM2;
@@ -101,40 +112,96 @@ function calcularPrecoMercadoRefletido() {
     
     if (inputAluguel) inputAluguel.value = valorAluguelMensal.toFixed(2);
     if (inputTaxaAnual) inputTaxaAnual.value = taxaAnualEstimada.toFixed(2);
-}
 
+    // Mosaico Contábil Pedagógico (Cálculos Avançados de Mercado)
+    const txtIgpm = document.getElementById('txt_igpm_correcao');
+    const txtValorMercado = document.getElementById('txt_valor_mercado_real');
+    const txtTaxaCapitalizacao = document.getElementById('txt_taxa_capitalizacao');
+    const txtTempoMeses = document.getElementById('txt_tempo_meses');
+
+    const projecaoIgpm = valorAluguelMensal * 1.0425; // Simulação IPCA/IGPM didático
+    const valorVenalVenha = valorAluguelMensal / 0.0055; // 0.55% Cap Rate padrão
+
+    if (txtIgpm) txtIgpm.innerText = projecaoIgpm.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    if (txtValorMercado) txtValorMercado.innerText = valorVenalVenha.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    if (txtTaxaCapitalizacao) txtTaxaCapitalizacao.innerText = "0.55% a.m.";
+    if (txtTempoMeses) txtTempoMeses.innerText = "120 meses";
+}
+// ==========================================================================
+// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+// ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTOR DE RH E ENGENHARIA DE KPIS)
+// ==========================================================================
+
+/* ==========================================================================
+   REGRAS DE NEGÓCIO: APOIO PREDIAL & ENCARGOS TRABALHISTAS (CLT)
+   ========================================================================== */
 function calcularPreviaSalario() {
+    "use strict";
     const select = document.getElementById('cargo_suporte');
-    const qtdInput = document.getElementById('qtd_colaboradores');
+    const inputSalario = document.getElementById('rh_salario');
+    const inputAdicionais = document.getElementById('rh_adicionais');
+    const inputEncargos = document.getElementById('rh_encargos');
+    const inputCustoTotal = document.getElementById('rh_custo_total');
     const inputPrevia = document.getElementById('previa_salario');
+    const qtdInput = document.getElementById('qtd_colaboradores');
     
-    if (!select || !qtdInput || !inputPrevia) return;
+    if (!select || !inputSalario || !inputAdicionais || !inputEncargos || !inputCustoTotal || !inputPrevia || !qtdInput) return;
     
     const option = select.options[select.selectedIndex];
-    if (!select.value || !option) {
+    const quantidade = parseInt(qtdInput.value) || 1;
+
+    if (!select.value || !option || quantidade <= 0) {
+        inputSalario.value = "0.00";
+        inputAdicionais.value = "0.00";
+        inputEncargos.value = "0.00";
+        inputCustoTotal.value = "0.00";
         inputPrevia.value = "R$ 0,00";
         return;
     }
     
-    const salario = parseFloat(option.getAttribute('data-salario')) || 0;
-    const qtd = parseInt(qtdInput.value) || 0;
+    const salarioBaseUnitario = parseFloat(option.getAttribute('data-salario')) || 0;
+    const periculosidadePct = parseFloat(option.getAttribute('data-periculosidade')) || 0;
+    const insalubridadePct = parseFloat(option.getAttribute('data-insalubridade')) || 0;
     
-    if (qtd <= 0) {
-        inputPrevia.value = "R$ 0,00";
-        return;
+    // Cálculo de Adicionais sobre a base contratual por vaga
+    let adicionaisUnitario = 0;
+    if (periculosidadePct > 0) {
+        adicionaisUnitario += salarioBaseUnitario * (periculosidadePct / 100);
+    }
+    if (insalubridadePct > 0) {
+        adicionaisUnitario += salarioBaseUnitario * (insalubridadePct / 100);
     }
     
-    inputPrevia.value = (salario * qtd).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const baseCalculoEncargos = salarioBaseUnitario + adicionaisUnitario;
+    const encargosSociaisUnitario = baseCalculoEncargos * 0.68; // Alíquota padrão do ERP (68%)
+    const custoMensalUnitario = baseCalculoEncargos + encargosSociaisUnitario;
+    
+    // Multiplicação pelo volume de vagas alocadas
+    const subtotalSalarioBase = salarioBaseUnitario * quantidade;
+    const subtotalAdicionais = adicionaisUnitario * quantidade;
+    const subtotalEncargos = encargosSociaisUnitario * quantity = quantidade;
+    const custoMensalTotalGeral = custoMensalUnitario * quantidade;
+    
+    inputSalario.value = subtotalSalarioBase.toFixed(2);
+    inputAdicionais.value = subtotalAdicionais.toFixed(2);
+    inputEncargos.value = subtotalEncargos.toFixed(2);
+    inputCustoTotal.value = custoMensalTotalGeral.toFixed(2);
+    
+    inputPrevia.value = custoMensalTotalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+/* ==========================================================================
+   CARREGADOR MESTRE: CONSOLIDAÇÃO ASSÍNCRONA DE ATIVOS E REGRAS DE TETOS
+   ========================================================================== */
 async function carregarDadosIniciais() {
+    "use strict";
     try {
         const resMetricas = await fetch('/api/financeiro/metricas?dept=estrutura');
-        if (!resMetricas.ok) throw new Error("Falha na comunicação.");
+        if (!resMetricas.ok) throw new Error("Falha na sincronização.");
         const metricas = await resMetricas.json();
         
         const capitalInicial = 5000000.00;
-        const budgetMaximoSetor = capitalInicial * 0.40;
+        const budgetMaximoSetor = capitalInicial * 0.40; // Trava regulamentar de 40%
         const gastoSetor = metricas.custo_fixo_isolado_setor || 0;
         const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 21350.00;
         const patrimonioSetor = metricas.patrimonio_isolado_setor || 0;
@@ -156,12 +223,15 @@ async function carregarDadosIniciais() {
             if (elem) elem.innerText = elementos[id];
         });
         
-        if(document.getElementById('kpi-teto-ativos')) 
-            document.getElementById('kpi-teto-ativos').innerText = 'Global: ' + (capitalInicial * 0.40).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        if(document.getElementById('kpi-custo-variavel-setor')) 
+        if(document.getElementById('kpi-teto-ativos')) {
+            document.getElementById('kpi-teto-ativos').innerText = 'Global: ' + budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        }
+        if(document.getElementById('kpi-custo-variavel-setor')) {
             document.getElementById('kpi-custo-variavel-setor').innerText = (metricas.custo_variavel_isolado_setor || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês';
-        if(document.getElementById('kpi-custo-variavel-total')) 
+        }
+        if(document.getElementById('kpi-custo-variavel-total')) {
             document.getElementById('kpi-custo-variavel-total').innerText = (metricas.custo_variavel_total || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês';
+        }
         
         const inputGrupo = document.getElementById('nome_grupo_display');
         if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
@@ -171,15 +241,12 @@ async function carregarDadosIniciais() {
         let porcBudget = budgetMaximoSetor > 0 ? (gastoSetor / budgetMaximoSetor) * 100 : 0;
         porcBudget = Math.min(100, Math.max(0, porcBudget));
 
-        const percentuais = {
-            'txt_porcentagem_setor_imob': `➔ Custos Totais: ${porcCapital.toFixed(2)}% | Custos Fixos: ${porcFixo.toFixed(1)}%`,
-            'txt_proporcao_global_empresa': `➔ Proporção deste Setor frente à Empresa: ${porcFixo.toFixed(2)}% do impacto fixo global`
-        };
-        
-        Object.keys(percentuais).forEach(id => {
-            const elem = document.getElementById(id);
-            if (elem) elem.innerText = percentuais[id];
-        });
+        if (document.getElementById('txt_porcentagem_setor_imob')) {
+            document.getElementById('txt_porcentagem_setor_imob').innerText = `➔ Alocado: ${porcBudget.toFixed(2)}% do Teto`;
+        }
+        if (document.getElementById('txt_proporcao_global_empresa')) {
+            document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Impacto do Setor: ${porcFixo.toFixed(2)}% do impacto fixo global`;
+        }
         
         const txtBudget = document.getElementById('top_budget_setor');
         const barraProgresso = document.getElementById('barra-limite-setor');
@@ -202,16 +269,22 @@ async function carregarDadosIniciais() {
             }
         }
 
+        // Chamada imediata encadeada das tabelas do inventário e sub-módulos
         await carregarTabelaImoveis();
-        await carregarTabelaMaquinas();
+        await carregarTabelaUtensilios();
         await carregarTabelaColaboradores();
-        calcularCustoMinutoMaquina();
+        calcularCustoMinutoUtensilio();
     } catch (err) { 
-        console.error('Erro ao carregar dados iniciais:', err); 
+        console.error('Erro ao processar painel de KPIs superiores:', err); 
     }
 }
+// ==========================================================================
+// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+// ARQUIVO: estrutura.js - PARTE 3A DE 3 (RENDERIZAÇÃO DE TABELAS PARTE 1)
+// ==========================================================================
 
 async function carregarTabelaImoveis() {
+    "use strict";
     try {
         const resImoveis = await fetch('/api/estrutura/imoveis');
         const imoveis = await resImoveis.json();
@@ -235,19 +308,22 @@ async function carregarTabelaImoveis() {
                 </td>
             </tr>
         `).join('');
-        
         calcularPrecoMercadoRefletido();
-    } catch (err) { console.error('Erro ao carregar tabela de imóveis:', err); }
+    } catch (err) { 
+        console.error('Erro ao carregar tabela de imóveis:', err); 
+    }
 }
-async function carregarTabelaMaquinas() {
+
+async function carregarTabelaUtensilios() {
+    "use strict";
     try {
         const resMaquinas = await fetch('/api/estrutura/maquinas');
         const maquinas = await resMaquinas.json();
-        const tbody = document.getElementById('tabela_maquinas');
+        const tbody = document.getElementById('tabela_utensilios'); // Alinhado ao novo DOM
         if (!tbody) return;
         
         if (!maquinas || maquinas.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum equipamento adquirido</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Nenhum utensílio adquirido</td></tr>`;
             if (document.getElementById('kpi-energia-mensal')) document.getElementById('kpi-energia-mensal').innerText = "0 W";
             if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = "0 m³";
             if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = "0 m³";
@@ -265,7 +341,7 @@ async function carregarTabelaMaquinas() {
 
             return `
                 <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="font-weight: 700;">${m.nome_equipamento || m.equipment_name || 'Equipamento'}</td>
+                    <td style="font-weight: 700;">${m.nome_equipamento || 'Utensílio'}</td>
                     <td style="color: #1e3a8a; font-weight: 800;">R$ ${(m.preco_compra || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
                     <td style="text-align: center;">${m.watts_consumo || m.potencia_watts || 0} W</td>
                     <td style="text-align: center;">${m.gas_consumo || m.consumo_gas_m3 || 0} m³</td>
@@ -281,10 +357,17 @@ async function carregarTabelaMaquinas() {
         if (document.getElementById('kpi-gas-mensal')) document.getElementById('kpi-gas-mensal').innerText = `${totalGas.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
         if (document.getElementById('kpi-agua-mensal')) document.getElementById('kpi-agua-mensal').innerText = `${totalAgua.toLocaleString('pt-BR', {minimumFractionDigits: 2})} m³`;
 
-    } catch (err) { console.error('Erro ao carregar tabela de máquinas:', err); }
+    } catch (err) { 
+        console.error('Erro ao carregar tabela de utensílios:', err); 
+    }
 }
+// ==========================================================================
+// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+// ARQUIVO: estrutura.js - PARTE 3B DE 3 (RENDERIZAÇÃO DE RH E SALVAMENTO)
+// ==========================================================================
 
 async function carregarTabelaColaboradores() {
+    "use strict";
     try {
         const res = await fetch('/api/estrutura/rh');
         const colaboradores = await res.json();
@@ -298,7 +381,7 @@ async function carregarTabelaColaboradores() {
 
         tbody.innerHTML = colaboradores.map(c => `
             <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="font-weight: 700;">👷 ${c.nome || 'N/A'}</td>
+                <td style="font-weight: 700;"> Subtenente. ${c.nome || 'N/A'}</td>
                 <td style="font-weight: 600;">${c.cargo}</td>
                 <td style="text-align: right;">R$ ${(c.salario_base || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
                 <td style="text-align: center; font-weight: bold;">${c.quantidade}</td>
@@ -308,9 +391,13 @@ async function carregarTabelaColaboradores() {
                 </td>
             </tr>
         `).join('');
-    } catch (err) { console.error('Erro ao carregar colaboradores:', err); }
+    } catch (err) { 
+        console.error('Erro ao carregar colaboradores:', err); 
+    }
 }
-async function calcularCustoMinutoMaquina() {
+
+async function calcularCustoMinutoUtensilio() {
+    "use strict";
     try {
         const resMaquinas = await fetch('/api/estrutura/maquinas');
         const maquinas = await resMaquinas.json();
@@ -324,10 +411,13 @@ async function calcularCustoMinutoMaquina() {
         
         const totalCustoMinuto = maquinas.reduce((sum, m) => sum + (m.custo_minuto || m.custo_minuto_maquina || 0), 0);
         elem.innerText = totalCustoMinuto.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/min';
-    } catch (err) { console.error('Erro ao calcular custo minuto:', err); }
+    } catch (err) { 
+        console.error('Erro ao calcular custo minuto:', err); 
+    }
 }
 
 async function salvarImovel(e) {
+    "use strict";
     if(e && e.preventDefault) e.preventDefault();
     const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
     const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
@@ -354,24 +444,29 @@ async function salvarImovel(e) {
             limparFormularioImobiliario();
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
-            alert("🎯 Contrato salvo!");
-        } else { alert("❌ Erro ao salvar contrato."); }
-    } catch (err) { console.error('Erro ao salvar imóvel:', err); }
+            alert("🎯 Contrato firmado com sucesso!");
+        } else { 
+            alert("❌ Erro ao salvar contrato imobiliário."); 
+        }
+    } catch (err) { 
+        console.error('Erro ao salvar imóvel:', err); 
+    }
 }
 
 async function salvarMaquina(e) {
+    "use strict";
     if(e && e.preventDefault) e.preventDefault();
     const select = document.getElementById('seletor_equipamento');
     const option = select.options[select.selectedIndex];
     
     if (!option || !option.value) {
-        alert("❌ Selecione um equipamento válido.");
+        alert("❌ Selecione um utensílio válido.");
         return;
     }
-
+    
     const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
     const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-
+    
     const dados = {
         equipe_id: equipeId,
         dept: deptAtual,
@@ -391,14 +486,24 @@ async function salvarMaquina(e) {
             body: JSON.stringify(dados)
         });
         if (res.ok) {
-            document.getElementById('formMaquinas').reset();
+            select.selectedIndex = 0;
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
-            alert("🎯 Equipamento adicionado!");
-        } else { alert("❌ Erro ao adicionar equipamento."); }
-    } catch (err) { console.error('Erro ao salvar máquina:', err); }
+            alert("🎯 Ativo de suporte alocado!");
+        } else { 
+            alert("❌ Erro ao salvar utensílio."); 
+        }
+    } catch (err) { 
+        console.error('Erro ao salvar máquina:', err); 
+    }
 }
+// ==========================================================================
+// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+// ARQUIVO: estrutura.js - PARTE 3C DE 3 (EXCLUSÕES, EDIÇÃO E RESETS)
+// ==========================================================================
+
 async function adicionarColaborador(e) {
+    "use strict";
     if(e && e.preventDefault) e.preventDefault();
     const select = document.getElementById('cargo_suporte');
     const option = select.options[select.selectedIndex];
@@ -427,11 +532,16 @@ async function adicionarColaborador(e) {
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
             alert("🎯 Colaborador adicionado!");
-        } else { alert("❌ Erro ao adicionar colaborador."); }
-    } catch (err) { console.error('Erro ao salvar colaborador:', err); }
+        } else { 
+            alert("❌ Erro ao adicionar colaborador."); 
+        }
+    } catch (err) { 
+        console.error('Erro ao salvar colaborador:', err); 
+    }
 }
 
 async function editarImovel(id) {
+    "use strict";
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`);
         const i = await res.json();
@@ -447,13 +557,16 @@ async function editarImovel(id) {
             if (document.getElementById('bairro')) document.getElementById('bairro').value = partes[1];
         }
         
-        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar";
+        if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "🔄 Atualizar Contrato";
         calcularPrecoMercadoRefletido();
-    } catch (err) { console.error('Erro ao editar imóvel:', err); }
+    } catch (err) { 
+        console.error('Erro ao editar imóvel:', err); 
+    }
 }
 
 async function deletarImovel(id) {
-    if (!confirm('Confirmar rescisão do contrato?')) return;
+    "use strict";
+    if (!confirm('Confirmar rescisão do contrato de locação?')) return;
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`, { method: 'DELETE' });
         if (res.ok) {
@@ -461,23 +574,29 @@ async function deletarImovel(id) {
             carregarDadosIniciais();
             alert("🎯 Contrato rescindido.");
         }
-    } catch (err) { console.error('Erro ao deletar imóvel:', err); }
+    } catch (err) { 
+        console.error('Erro ao deletar imóvel:', err); 
+    }
 }
 
 async function deletarMaquina(id) {
-    if (!confirm('Remover este equipamento?')) return;
+    "use strict";
+    if (!confirm('Remover este utensílio de suporte?')) return;
     try {
         const res = await fetch(`/api/estrutura/maquinas/${id}`, { method: 'DELETE' });
         if (res.ok) {
             if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
             carregarDadosIniciais();
-            alert("🎯 Equipamento removido.");
+            alert("🎯 Utensílio removido.");
         }
-    } catch (err) { console.error('Erro ao deletar máquina:', err); }
+    } catch (err) { 
+        console.error('Erro ao deletar máquina/utensílio:', err); 
+    }
 }
 
 async function deletarColaborador(id) {
-    if (!confirm('Confirmar demissão?')) return;
+    "use strict";
+    if (!confirm('Confirmar desligamento do funcionário predial?')) return;
     try {
         const res = await fetch(`/api/estrutura/rh/${id}`, { method: 'DELETE' });
         if (res.ok) {
@@ -485,12 +604,32 @@ async function deletarColaborador(id) {
             carregarDadosIniciais();
             alert("🎯 Colaborador desligado.");
         }
-    } catch (err) { console.error('Erro ao deletar colaborador:', err); }
+    } catch (err) { 
+        console.error('Erro ao deletar colaborador:', err); 
+    }
 }
 
 function limparFormularioImobiliario() {
+    "use strict";
     const form = document.getElementById('formImobiliario');
     if (form) form.reset();
     if (document.getElementById('imovel_id')) document.getElementById('imovel_id').value = '';
     if (document.getElementById('btn_salvar')) document.getElementById('btn_salvar').innerText = "💾 Firmar Contrato de Locação";
+    calcularPrecoMercadoRefletido();
 }
+
+// Atalhos de Teclado Universais para Auditoria e Contingência Pedagógica
+document.addEventListener('keydown', function(event) {
+    "use strict";
+    if (event.altKey && event.key.toLowerCase() === 'p') {
+        event.preventDefault();
+        const painel = document.querySelector('a[href="/professor_painel_secreto"]');
+        if (painel) window.location.href = painel.href;
+    }
+    if (event.key === 'Escape') {
+        limparFormularioImobiliario();
+        document.getElementById('formMaquinas')?.reset();
+        document.getElementById('formContratacaoPredial')?.reset();
+        if (document.getElementById('previa_salario')) document.getElementById('previa_salario').value = "R$ 0,00";
+    }
+});
