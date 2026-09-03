@@ -4,10 +4,12 @@
 # ==========================================================================
 
 import os
+import logging
 from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+logger = logging.getLogger(__name__)
 maquinas_blueprint = Blueprint('maquinas_blueprint', __name__)
 
 def obter_conexao_master():
@@ -33,6 +35,7 @@ def rota_maquinas_js():
         with open(caminho_js, 'r', encoding='utf-8') as f: js_conteudo = f.read()
         return js_conteudo, 200, {'Content-Type': 'application/javascript'}
     except FileNotFoundError: return "console.error('Script offline.');", 404
+
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
 # APP PYTHON - PARTE 2 DE 3: LISTAGEM E MIGRATION SÍNCRONA SUPABASE
@@ -51,7 +54,8 @@ def api_listar_maquinas():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS erp_maquinas (
                 id SERIAL PRIMARY KEY, 
-                equipe_id TEXT
+                equipe_id TEXT,
+                departamento TEXT DEFAULT 'PRODUCAO'
             )
         ''')
         conexao.commit()
@@ -76,15 +80,20 @@ def api_listar_maquinas():
         cursor.execute("ALTER TABLE erp_maquinas ADD COLUMN IF NOT EXISTS is_patrimonio BOOLEAN;")
         conexao.commit()
         
-        # 3. Retorna a listagem indexada por equipe
-        cursor.execute('SELECT * FROM erp_maquinas WHERE equipe_id = %s ORDER BY id DESC', (id_equipe,))
+        # 3. Retorna APENAS máquinas da produção (departamento = 'PRODUCAO')
+        cursor.execute('''
+            SELECT * FROM erp_maquinas 
+            WHERE equipe_id = %s AND (departamento = 'PRODUCAO' OR departamento IS NULL)
+            ORDER BY id DESC
+        ''', (id_equipe,))
         return jsonify(cursor.fetchall())
     except psycopg2.DatabaseError as e:
-        print(f"[TERADMAS DB ATIVOS ERROR] Erro na readequação estrutural: {e}")
+        logger.error(f"[TERADMAS DB ATIVOS ERROR] Erro na readequação estrutural: {e}")
         return jsonify([]), 200
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
+
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
 # APP PYTHON - PARTE 3 DE 3: PERSISTÊNCIA CRUD E SISTEMA DE EXCLUSÃO
@@ -121,6 +130,9 @@ def api_salvar_maquina():
         jor = str(dados.get('jornada_semanal', '44')).strip()
         tur = str(dados.get('turnos_trabalho', '1')).strip()
         isp = bool(dados.get('is_patrimonio', True))
+        
+        # ✅ CRÍTICO: Define o departamento como 'PRODUCAO' para máquinas
+        departamento = 'PRODUCAO'
 
         if id_reg:
             cursor.execute('''
@@ -128,23 +140,24 @@ def api_salvar_maquina():
                     nome_equipamento=%s, potencia=%s, consumo_eletrico=%s, consumo_agua=%s, consumo_gases=%s,
                     velocidade=%s, avanco=%s, frequencia_manutencao=%s, preco_compra=%s, depreciacao_mensal=%s,
                     valor_venda_final=%s, operador_nome=%s, custo_minuto_operador=%s, custo_minuto_maquina=%s,
-                    jornada_semanal=%s, turnos_trabalho=%s, is_patrimonio=%s
-                WHERE id=%s AND equipe_id=%s
-            ''', (nome_eq, pot, c_ele, c_agu, c_gas, vel, avc, frq, prc, dep, rsd, op_n, c_op, c_mq, jor, tur, isp, id_reg, id_equipe))
+                    jornada_semanal=%s, turnos_trabalho=%s, is_patrimonio=%s, departamento=%s
+                WHERE id=%s AND equipe_id=%s AND departamento='PRODUCAO'
+            ''', (nome_eq, pot, c_ele, c_agu, c_gas, vel, avc, frq, prc, dep, rsd, op_n, c_op, c_mq, jor, tur, isp, departamento, id_reg, id_equipe))
         else:
             cursor.execute('''
                 INSERT INTO erp_maquinas (
                     equipe_id, nome_equipamento, potencia, consumo_eletrico, consumo_agua, consumo_gases,
                     velocidade, avanco, frequencia_manutencao, preco_compra, depreciacao_mensal,
                     valor_venda_final, operador_nome, custo_minuto_operador, custo_minuto_maquina,
-                    jornada_semanal, turnos_trabalho, is_patrimonio
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (id_equipe, nome_eq, pot, c_ele, c_agu, c_gas, vel, avc, frq, prc, dep, rsd, op_n, c_op, c_mq, jor, tur, isp))
+                    jornada_semanal, turnos_trabalho, is_patrimonio, departamento
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ''', (id_equipe, nome_eq, pot, c_ele, c_agu, c_gas, vel, avc, frq, prc, dep, rsd, op_n, c_op, c_mq, jor, tur, isp, departamento))
             
         conexao.commit()
         return jsonify({'status': 'sucesso'}), 200
     except Exception as e:
         if conexao: conexao.rollback()
+        logger.error(f"Erro ao salvar máquina: {e}")
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
@@ -157,7 +170,10 @@ def api_buscar_maquina_id(id_reg):
     try:
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        cursor.execute('SELECT * FROM erp_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, session.get('id_equipe', 'equipe_alfa')))
+        cursor.execute('''
+            SELECT * FROM erp_maquinas 
+            WHERE id = %s AND equipe_id = %s AND departamento = 'PRODUCAO'
+        ''', (id_reg, session.get('id_equipe', 'equipe_alfa')))
         m = cursor.fetchone()
         return jsonify(dict(m)) if m else (jsonify({'status': 'erro'}), 404)
     finally:
@@ -171,11 +187,16 @@ def api_deletar_maquina(id_reg):
     try:
         conexao = obter_conexao_master()
         cursor = conexao.cursor()
-        cursor.execute('DELETE FROM erp_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, session.get('id_equipe', 'equipe_alfa')))
+        # ✅ CRÍTICO: Apenas deleta máquinas do departamento 'PRODUCAO'
+        cursor.execute('''
+            DELETE FROM erp_maquinas 
+            WHERE id = %s AND equipe_id = %s AND departamento = 'PRODUCAO'
+        ''', (id_reg, session.get('id_equipe', 'equipe_alfa')))
         conexao.commit()
         return jsonify({'status': 'removido'}), 200
     except Exception as e:
         if conexao: conexao.rollback()
+        logger.error(f"Erro ao deletar máquina: {e}")
         return jsonify({'status': 'erro'}), 500
     finally:
         if cursor: cursor.close()
