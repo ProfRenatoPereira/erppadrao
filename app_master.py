@@ -2,35 +2,35 @@
 # TERADMAS ERP v2.6 - APP MASTER (NÚCLEO PRINCIPAL DA APLICAÇÃO)
 # Servidor Flask central com roteamento para todos os módulos
 # ==========================================================================
-
+ 
 import os
 from flask import Flask, session, jsonify, request, redirect, render_template_string
 from datetime import timedelta
 from whitenoise import WhiteNoise
-
+ 
 # URL de conexão com Supabase (PostgreSQL)
 URL_SUPABASE = os.environ.get(
     "DATABASE_URL", 
     "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
 )
-
+ 
 # Inicialização do aplicativo Flask
 app = Flask(__name__, static_folder='static', static_url_path='/static')
-
+ 
 # Configuração do WhiteNoise para servir arquivos estáticos
 app.wsgi_app = WhiteNoise(
     app.wsgi_app, 
     root=os.path.join(os.path.dirname(__file__), 'static'), 
     prefix='static/'
 )
-
+ 
 # Configurações de sessão
 app.secret_key = "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
 app.permanent_session_lifetime = timedelta(days=7)
-
+ 
 # Importação do gerenciador de métricas central
 import GerenciadorCaixa
-
+ 
 # ========== IMPORTAÇÃO DE BLUEPRINTS MODULARES ==========
 try:
     from login.app_login import login_blueprint
@@ -57,33 +57,58 @@ try:
     from roi.app_roi import roi_blueprint
 except ImportError as e:
     print(f"⚠️ Checklist ERP: Alguns módulos operam em modo contingência: {e}")
+ 
+# ========== REGISTRO DE BLUEPRINTS (checagem de existência para segurança) ==========
+if 'login_blueprint' in globals():
+    app.register_blueprint(login_blueprint)
+else:
+    print("⚠️ login_blueprint não disponível; registrando em modo contingência.")
 
-# ========== REGISTRO DE BLUEPRINTS ==========
-app.register_blueprint(login_blueprint)
-app.register_blueprint(configuracao_blueprint)
-app.register_blueprint(estrutura_blueprint)
-app.register_blueprint(maquinas_blueprint)
-app.register_blueprint(materiais_blueprint)
-app.register_blueprint(processos_blueprint)
-app.register_blueprint(produtos_blueprint)
-app.register_blueprint(precificacao_blueprint)
-app.register_blueprint(clientes_blueprint)
-app.register_blueprint(vendas_blueprint)
-app.register_blueprint(estoque_blueprint)
-app.register_blueprint(financeiro_blueprint)
-app.register_blueprint(nota_fiscal_blueprint)
-app.register_blueprint(rh_blueprint)
-app.register_blueprint(pcp_blueprint)
-app.register_blueprint(orcamentos_blueprint)
-app.register_blueprint(compras_blueprint)
-app.register_blueprint(producao_blueprint)
-app.register_blueprint(folha_blueprint)
-app.register_blueprint(manutencao_blueprint)
-app.register_blueprint(requisicoes_blueprint)
-app.register_blueprint(roi_blueprint)
-
+if 'configuracao_blueprint' in globals():
+    app.register_blueprint(configuracao_blueprint)
+if 'estrutura_blueprint' in globals():
+    app.register_blueprint(estrutura_blueprint)
+if 'maquinas_blueprint' in globals():
+    app.register_blueprint(maquinas_blueprint)
+if 'materiais_blueprint' in globals():
+    app.register_blueprint(materiais_blueprint)
+if 'processos_blueprint' in globals():
+    app.register_blueprint(processos_blueprint)
+if 'produtos_blueprint' in globals():
+    app.register_blueprint(produtos_blueprint)
+if 'precificacao_blueprint' in globals():
+    app.register_blueprint(precificacao_blueprint)
+if 'clientes_blueprint' in globals():
+    app.register_blueprint(clientes_blueprint)
+if 'vendas_blueprint' in globals():
+    app.register_blueprint(vendas_blueprint)
+if 'estoque_blueprint' in globals():
+    app.register_blueprint(estoque_blueprint)
+if 'financeiro_blueprint' in globals():
+    app.register_blueprint(financeiro_blueprint)
+if 'nota_fiscal_blueprint' in globals():
+    app.register_blueprint(nota_fiscal_blueprint)
+if 'rh_blueprint' in globals():
+    app.register_blueprint(rh_blueprint)
+if 'pcp_blueprint' in globals():
+    app.register_blueprint(pcp_blueprint)
+if 'orcamentos_blueprint' in globals():
+    app.register_blueprint(orcamentos_blueprint)
+if 'compras_blueprint' in globals():
+    app.register_blueprint(compras_blueprint)
+if 'producao_blueprint' in globals():
+    app.register_blueprint(producao_blueprint)
+if 'folha_blueprint' in globals():
+    app.register_blueprint(folha_blueprint)
+if 'manutencao_blueprint' in globals():
+    app.register_blueprint(manutencao_blueprint)
+if 'requisicoes_blueprint' in globals():
+    app.register_blueprint(requisicoes_blueprint)
+if 'roi_blueprint' in globals():
+    app.register_blueprint(roi_blueprint)
+ 
 # ========== MIDDLEWARE DE AUTENTICAÇÃO ==========
-
+ 
 @app.before_request
 def verificar_fluxo_de_aula():
     """Middleware que valida sessão e autorização em cada request"""
@@ -103,9 +128,9 @@ def verificar_fluxo_de_aula():
             if request.is_json:
                 return jsonify({'status': 'erro', 'message': 'Empresa não inicializada'}), 400
             return redirect('/configuracao/inicializacao')
-
+ 
 # ========== ROTAS PRINCIPAIS ==========
-
+ 
 @app.route('/')
 def rota_raiz_direta():
     """Rota raiz com redirecionamento inteligente"""
@@ -116,22 +141,22 @@ def rota_raiz_direta():
         return redirect('/estrutura')
     else:
         return redirect('/configuracao/inicializacao')
-
+ 
 @app.route('/grid')
 def rota_contingencia_grid():
     """Rota de contingência para links residuais do front-end"""
     if not session.get('logado'):
         return redirect('/login')
     return redirect('/estrutura')
-
+ 
 @app.route('/logout')
 def rota_encerrar_turno():
     """Limpa a sessão atual do banco de dados na memória do servidor"""
     session.clear()
     return redirect('/login')
-
+ 
 # ========== API DE MÉTRICAS GLOBAIS ==========
-
+ 
 @app.route('/api/financeiro/metricas', methods=['GET'])
 def api_global_metricas_calculadas():
     """Endpoint central de métricas consolidadas de toda a empresa"""
@@ -147,51 +172,7 @@ def api_global_metricas_calculadas():
     except Exception as e:
         print(f"❌ Erro na API de métricas: {e}")
         return jsonify({'status': 'erro', 'message': str(e)}), 500
-
+ 
 @app.route('/api/financeiro/kpis', methods=['GET'])
 def api_kpis_resumidos():
-    """Endpoint de KPIs simplificados para dashboard rápido"""
-    if not session.get('logado'):
-        return jsonify({'status': 'erro'}), 401
-    
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe)
-    
-    return jsonify({
-        'capital_total': metricas.get('capital_total'),
-        'patrimonio_ativo': metricas.get('patrimonio_ativo_total'),
-        'custo_fixo': metricas.get('custo_fixo_geral_empresa'),
-        'capital_disponivel': metricas.get('capital_disponivel_total')
-    })
-
-# ========== TRATAMENTO DE ERROS ==========
-
-@app.errorhandler(404)
-def erro_nao_encontrado(erro):
-    if request.is_json:
-        return jsonify({'status': 'erro', 'message': 'Recurso não encontrado'}), 404
-    return render_template_string("""
-        <h1>❌ Página não encontrada</h1>
-        <p>O recurso solicitado não existe no sistema TERADMAS.</p>
-        <a href="/">Voltar ao início</a>
-    """), 404
-
-@app.errorhandler(500)
-def erro_servidor(erro):
-    print(f"❌ ERRO 500: {erro}")
-    if request.is_json:
-        return jsonify({'status': 'erro', 'message': 'Erro interno do servidor'}), 500
-    return render_template_string("""
-        <h1>❌ Erro Interno</h1>
-        <p>Ocorreu um erro crítico ao processar no servidor.</p>
-        <a href="/">Voltar ao início</a>
-    """), 500
-
-# ========== EXECUÇÃO DO SERVIDOR ==========
-
-if __name__ == '__main__':
-    porta = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
-    
-    print(f"🚀 Servidor Central TERADMAS ERP v2.6 Ativo")
-    app.run(host='0.0.0.0', port=porta, debug=debug_mode)
+    """Endpoint de*
