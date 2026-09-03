@@ -4,9 +4,12 @@
 # ==========================================================================
 
 import os
+import logging
 from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 import psycopg2
 from psycopg2.extras import RealDictCursor
+
+logger = logging.getLogger(__name__)
 
 # Inicialização do Blueprint do Módulo Imobiliário e Estrutura
 estrutura_blueprint = Blueprint('estrutura_blueprint', __name__)
@@ -44,6 +47,7 @@ def rota_estrutura_js():
         return js_conteudo, 200, {'Content-Type': 'application/javascript; charset=utf-8'}
     except FileNotFoundError:
         return "console.error('Erro: Script estrutura.js ausente.');", 404
+
 @estrutura_blueprint.route('/api/auth/sessao_atual', methods=['GET'])
 def api_sessao_atual_verificar():
     """Valida o estado transacional da sessão"""
@@ -76,10 +80,12 @@ def api_imoveis_listar():
         return jsonify(cursor.fetchall())
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
+        logger.error(f"Erro ao listar imóveis: {e}")
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
+
 @estrutura_blueprint.route('/api/estrutura/maquinas', methods=['GET'])
 def api_maquinas_listar():
     if not session.get('logado'): 
@@ -97,10 +103,16 @@ def api_maquinas_listar():
             )
         ''')
         conexao.commit()
-        cursor.execute("SELECT * FROM erp_maquinas WHERE equipe_id = %s AND departamento = %s ORDER BY id DESC", (id_equipe, 'ESTRUTURA'))
+        # ✅ CRÍTICO: Filtra APENAS estrutura, não toca em PRODUCAO
+        cursor.execute('''
+            SELECT * FROM erp_maquinas 
+            WHERE equipe_id = %s AND departamento = 'ESTRUTURA' 
+            ORDER BY id DESC
+        ''', (id_equipe,))
         return jsonify(cursor.fetchall())
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
+        logger.error(f"Erro ao listar máquinas de estrutura: {e}")
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
@@ -126,10 +138,12 @@ def api_rh_listar():
         return jsonify(cursor.fetchall())
     except psycopg2.DatabaseError as e:
         if conexao: conexao.rollback()
+        logger.error(f"Erro ao listar RH de estrutura: {e}")
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
+
 # ========== ENDPOINTS POST ==========
 
 @estrutura_blueprint.route('/api/estrutura/imoveis', methods=['POST'])
@@ -161,6 +175,7 @@ def api_imoveis_salvar():
         return jsonify({'status': 'sucesso'})
     except Exception as err:
         if conexao: conexao.rollback()
+        logger.error(f"Erro ao salvar imóvel: {err}")
         return jsonify({'status': 'erro', 'message': str(err)}), 500
     finally:
         if cursor: cursor.close()
@@ -191,10 +206,12 @@ def api_maquinas_salvar():
         return jsonify({'status': 'sucesso'})
     except Exception as err:
         if conexao: conexao.rollback()
+        logger.error(f"Erro ao salvar máquina de estrutura: {err}")
         return jsonify({'status': 'erro', 'message': str(err)}), 500
     finally:
         if cursor: cursor.close()
         if conexao: conexao.close()
+
 @estrutura_blueprint.route('/api/estrutura/rh', methods=['POST'])
 def api_rh_salvar():
     if not session.get('logado'): 
@@ -218,6 +235,7 @@ def api_rh_salvar():
         return jsonify({'status': 'sucesso'})
     except Exception as err:
         if conexao: conexao.rollback()
+        logger.error(f"Erro ao salvar RH de estrutura: {err}")
         return jsonify({'status': 'erro', 'message': str(err)}), 500
     finally:
         if cursor: cursor.close()
@@ -240,6 +258,7 @@ def api_individual_imovel(id_reg):
         row = cursor.fetchone()
         return jsonify(dict(row) if row else {})
     except Exception as e:
+        logger.error(f"Erro ao processar imóvel individual: {e}")
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
@@ -260,6 +279,7 @@ def api_individual_rh(id_reg):
         row = cursor.fetchone()
         return jsonify(dict(row) if row else {})
     except Exception as e:
+        logger.error(f"Erro ao processar RH individual: {e}")
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
@@ -273,13 +293,21 @@ def api_individual_maquina(id_reg):
     try:
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         if request.method == 'DELETE':
-            cursor.execute('DELETE FROM erp_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+            # ✅ CRÍTICO: Apenas deleta máquinas de ESTRUTURA
+            cursor.execute('''
+                DELETE FROM erp_maquinas 
+                WHERE id = %s AND equipe_id = %s AND departamento = 'ESTRUTURA'
+            ''', (id_reg, id_equipe))
             conexao.commit()
             return jsonify({'status': 'removido'})
-        cursor.execute('SELECT * FROM erp_maquinas WHERE id = %s AND equipe_id = %s', (id_reg, id_equipe))
+        cursor.execute('''
+            SELECT * FROM erp_maquinas 
+            WHERE id = %s AND equipe_id = %s AND departamento = 'ESTRUTURA'
+        ''', (id_reg, id_equipe))
         row = cursor.fetchone()
         return jsonify(dict(row) if row else {})
     except Exception as e:
+        logger.error(f"Erro ao processar máquina individual: {e}")
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
