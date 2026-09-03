@@ -1,8 +1,8 @@
 // ==========================================================================
-// TERADMAS ERP v2.6 - PAINEL GLOBAL DE MÉTRICAS CONSOLIDADAS
-// ARQUIVO: metrics.js - PARTE 1 DE 2 (SINCRO E PROCESSAMENTO FINANCEIRO)
-// ==========================================================================
-
+ // TERADMAS ERP v2.6 - PAINEL GLOBAL DE MÉTRICAS CONSOLIDADAS
+ // ARQUIVO: metrics.js - PARTE 1 DE 2 (SINCRO E PROCESSAMENTO FINANCEIRO)
+ // ==========================================================================
+ 
 const GlobalMetrics = {
     dataCache: null,
     lastUpdate: null,
@@ -78,10 +78,10 @@ const GlobalMetrics = {
         }
     },
 // ==========================================================================
-// TERADMAS ERP v2.6 - PAINEL GLOBAL DE MÉTRICAS CONSOLIDADAS
-// ARQUIVO: metrics.js - PARTE 2 DE 2 (FORMATADORES E CÁLCULO IMOBILIÁRIO)
-// ==========================================================================
-
+ // TERADMAS ERP v2.6 - PAINEL GLOBAL DE MÉTRICAS CONSOLIDADAS
+ // ARQUIVO: metrics.js - PARTE 2 DE 2 (FORMATADORES E CÁLCULO IMOBILIÁRIO)
+ // ==========================================================================
+ 
     /**
      * Auxiliar de injeção e formatação de valores monetários e decimais
      */
@@ -107,7 +107,7 @@ const GlobalMetrics = {
         
         elem.innerText = formatted;
     },
-
+ 
     /**
      * Retorna um resumo estruturado para relatórios rápidos
      */
@@ -123,7 +123,7 @@ const GlobalMetrics = {
             Despesa Variável: R$ ${(data.custo_variavel_total || 0).toLocaleString('pt-BR')}
         `;
     },
-
+ 
     /**
      * Força a atualização manual instantânea
      */
@@ -133,7 +133,7 @@ const GlobalMetrics = {
         this.loadMetrics();
     }
 };
-
+ 
 /**
  * ==========================================================================
  * MATRIZES E PARÂMETROS COMPLEMENTARES DE ENGENHARIA ECONÔMICA
@@ -146,7 +146,7 @@ const MATRIZ_LOCACAO_RMC = {
     "Araucária": { valor_m2: 22.00, condominio_base: 250.00, cap_rate: 0.0045, igpm: 0.0425 },
     "Campo Largo": { valor_m2: 19.50, condominio_base: 220.00, cap_rate: 0.0042, igpm: 0.0425 }
 };
-
+ 
 const TABELA_SALARIOS_AQUECIMENTO = {
     "Gerente de Infraestrutura": 8500.00,
     "Supervisor Predial": 5200.00,
@@ -157,7 +157,7 @@ const TABELA_SALARIOS_AQUECIMENTO = {
     "Motorista": 2400.00,
     "Segurança Patrimonial": 2300.00
 };
-
+ 
 /**
  * Motor reativo unificado para cálculo patrimonial imobiliário
  */
@@ -212,7 +212,7 @@ function executarCalculoLocacaoReativa() {
         console.error("❌ Erro no processamento matemático patrimonial:", erro);
     }
 }
-
+ 
 // Vinculação de gatilhos imediatos nos inputs de simulação
 function configurarGatilhosImobiliarios() {
     "use strict";
@@ -225,7 +225,7 @@ function configurarGatilhosImobiliarios() {
         }
     });
 }
-
+ 
 // Inicialização segura atrelada ao ciclo de vida do DOM
 document.addEventListener('DOMContentLoaded', () => {
     "use strict";
@@ -235,5 +235,7 @@ document.addEventListener('DOMContentLoaded', () => {
     configurarGatilhosImobiliarios();
     executarCalculoLocacaoReativa();
 });
-
+ 
 window.GlobalMetrics = GlobalMetrics;
+// expose a helper expected by a few modules:
+window.forcarAtualizacaoMetricasTopboard = () => GlobalMetrics.forceRefresh();
