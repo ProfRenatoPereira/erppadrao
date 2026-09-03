@@ -58,9 +58,9 @@
         /* SISTEMA DE MENU DROPDOWN */
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
-        .nav-link { display: block; padding: 10px 12px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; border-radius: 6px; }
+        .nav-link { display: block; padding: 10px 12px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
         .nav-link:hover, .nav-item:hover .nav-link { background-color: #1e3a8a; color: white; }
-        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #ffffff; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; border: 1px solid #cbd5e1; padding: 4px 0; list-style: none; z-index: 9999; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #ffffff; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; }
         .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; border-bottom: 1px solid #f1f5f9; }
         .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
         .nav-item:hover .dropdown-menu { display: block; }
@@ -84,18 +84,18 @@
         
         /* BOTÕES */
         .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 10px; color: #1f2937; }
-        .btn-submit { width: 100%; background-color: #1e3a8a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 6px; }
+        .btn-submit { width: 100%; background-color: #1e3a8a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .btn-submit:hover { background-color: #172554; }
         
         /* ACESSIBILIDADE CLASSES COLAPSADAS */
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .card, body.dark-mode .kpi-card-horizontal, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode .card, body.dark-mode .kpi-card-horizontal, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #cbd5e1 !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
         body.dark-mode .input-form-readonly { background-color: #1e293b !important; color: #94a3b8 !important; }
         body.dark-mode thead { background-color: #0f172a !important; color: #cbd5e1 !important; }
         
         body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-        body.alto-contraste .card, body.alto-contraste .kpi-card-horizontal, body.alto-contraste .table-container, body.alto-contraste table { background-color: #000000 !important; border: 2px solid #ffffff !important; color: #ffffff !important; }
+        body.alto-contraste .card, body.alto-contraste .kpi-card-horizontal, body.alto-contraste .table-container, body.alto-contraste table { background-color: #000000 !important; border: 2px solid #ffff00 !important; }
         body.alto-contraste th, body.alto-contraste td, body.alto-contraste label { color: #ffffff !important; }
         body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
         body.alto-contraste button, body.alto-contraste .btn-submit { background-color: #ffff00 !important; color: #000000 !important; font-weight: 900 !important; border: 2px solid #ffffff !important; }
@@ -112,11 +112,11 @@
     <header class="corporate-header">
         <div class="accessibility-bar">
             <span>♿ Acessibilidade:</span>
-            <button onclick="alterarFonte('+')">A+</button>
-            <button onclick="alterarFonte('-')">A-</button>
-            <button onclick="alternarAltoContraste()">⚫ Alto Contraste</button>
-            <button onclick="alternarModoEscuro()">✔️ Escuro / Claro</button>
-            <button id="btn-leitor">📢 Ativar Leitor de Tela</button>
+            <button onclick="alterarFonte('+')" aria-label="Aumentar fonte">A+</button>
+            <button onclick="alterarFonte('-')" aria-label="Diminuir fonte">A-</button>
+            <button onclick="alternarAltoContraste()" aria-pressed="false">⚫ Alto Contraste</button>
+            <button onclick="alternarModoEscuro()" aria-pressed="false">✔️ Escuro / Claro</button>
+            <button id="btn-leitor" aria-pressed="false">📢 Ativar Leitor de Tela</button>
         </div>
         
         <div class="header-main-row">
@@ -216,7 +216,6 @@
             </div>
         </div>
 
-        <!-- 📊 CARDS HORIZONTAIS DE REDES E UTILIDADES TÉCNICAS (SINCRO COM UTENSÍLIOS) -->
         <div class="kpi-row-panel" style="margin-top: 10px;">
             <div class="kpi-card-horizontal">
                 <div class="label-form" style="color: #b45309;">⚡ Rede Elétrica Industrial</div>
@@ -241,7 +240,6 @@
             </div>
         </div>
 
-        <!-- 📊 CARD DO CUSTO MINUTO UTENSÍLIOS INDIVIDUALIZADO DO SETOR -->
         <div class="kpi-row-panel" style="margin-top: 10px;">
             <div class="kpi-card-horizontal" style="grid-column: span 2; text-align: center; background-color: #f8fafc; border: 1px solid #cbd5e1;">
                 <div class="label-form" style="color: #0f172a; font-weight: bold; text-align: center;">⏱️ Indicador de Custo Minuto Utensílios do Setor</div>
@@ -328,7 +326,7 @@
                 <input type="hidden" id="imovel_id" value="">
                 <div class="grid-form-row">
                     <div><label class="label-form">Grupo:</label><input type="text" id="nome_grupo_display" readonly class="input-form input-form-readonly"></div>
-                    <div><label class="label-form">Tipo:</label><select id="tipo_imovel" required class="select-form"><option value="Barracão Industrial">Barracão Industrial</option><option value="Escritório Comercial">Escritório Comercial</option></select></div>
+                    <div><label class="label-form">Tipo:</label><select id="tipo_imovel" required class="select-form"><option value="Barracão Industrial">Barracão Industrial</option><option value="Galpão">Galpão</option></select></div>
                     <div><label class="label-form">Cidade:</label><select id="cidade" class="select-form"><option value="Curitiba">Curitiba</option></select></div>
                     <div><label class="label-form">Bairro:</label><select id="bairro" class="select-form"><option value="CIC">CIC</option></select></div>
                 </div>
@@ -370,19 +368,19 @@
                         <select id="seletor_equipamento" required class="select-form">
                             <option value="" disabled selected>Escolha um utensílio...</option>
                             <option value="Fogão Industrial P5" data-preco="4500" data-watts="0" data-gas="1.2" data-agua="0" data-dep="10" data-min="0.15">Fogão Industrial P5 Alta Pressão — R$ 4.500,00</option>
-                            <option value="Forno Turbo Gás/Elétrico" data-preco="12500" data-watts="1500" data-gas="2.5" data-agua="0.05" data-dep="12" data-min="0.45">Forno Turbo Industrial Combinado — R$ 12.500,00</option>
-                            <option value="Geladeira Comercial Duplex" data-preco="6800" data-watts="850" data-gas="0" data-agua="0" data-dep="10" data-min="0.22">Geladeira Duplex Inox Expositora — R$ 6.800,00</option>
+                            <option value="Forno Turbo Gás/Elétrico" data-preco="12500" data-watts="1500" data-gas="2.5" data-agua="0.05" data-dep="12" data-min="0.45">Forno Turbo Industrial — R$ 12.500,00</option>
+                            <option value="Geladeira Comercial Duplex" data-preco="6800" data-watts="850" data-gas="0" data-agua="0" data-dep="10" data-min="0.22">Geladeira Duplex Inox — R$ 6.800,00</option>
                             <option value="Freezer Horizontal F500" data-preco="5200" data-watts="1100" data-gas="0" data-agua="0" data-dep="10" data-min="0.18">Freezer Industrial F500 — R$ 5.200,00</option>
-                            <option value="Mesa Térmica Buffet" data-preco="3100" data-watts="2000" data-gas="0" data-agua="0.02" data-dep="10" data-min="0.12">Mesa Térmica Buffet Aquecida — R$ 3.100,00</option>
+                            <option value="Mesa Térmica Buffet" data-preco="3100" data-watts="2000" data-gas="0" data-agua="0.02" data-dep="10" data-min="0.12">Mesa Térmica Buffet — R$ 3.100,00</option>
                             <option value="Mesa Separadora Louças" data-preco="1800" data-watts="0" data-gas="0" data-agua="0.10" data-dep="10" data-min="0.05">Mesa Separadora de Louças Inox — R$ 1.800,00</option>
-                            <option value="Conjunto Cadeiras e Mesas" data-preco="4200" data-watts="0" data-gas="0" data-agua="0" data-dep="10" data-min="0.00">Lote 10 Jogos Mesas/Cadeiras Refeitório — R$ 4.200,00</option>
-                            <option value="Kit Aparelho Louças Linha Luxo" data-preco="2500" data-watts="0" data-gas="0" data-agua="0" data-dep="20" data-min="0.00">Lote Pratos, Travessas e Tigelas Cerâmica — R$ 2.500,00</option>
-                            <option value="Estojo Talheres Inox Completo" data-preco="1500" data-watts="0" data-gas="0" data-agua="0" data-dep="20" data-min="0.00">Garfos, Facas, Colheres e Utensílios Profissionais — R$ 1.500,00</option>
-                            <option value="Banho Maria Digital" data-preco="3800" data-watts="2400" data-gas="0" data-agua="0.05" data-dep="10" data-min="0.16">Banho Maria de Bancada Digital — R$ 3.800,00</option>
-                            <option value="Computador Recepção" data-preco="3500" data-watts="350" data-gas="0" data-agua="0" data-dep="20" data-min="0.08">Desktop Recepção Core i5 + Telefone IP — R$ 3.500,00</option>
-                            <option value="Computador Portaria" data-preco="2900" data-watts="280" data-gas="0" data-agua="0" data-dep="20" data-min="0.06">Terminal Monitoramento Portaria Acesso — R$ 2.900,00</option>
-                            <option value="Central Telefonica PABX IP" data-preco="1800" data-watts="150" data-gas="0" data-agua="0" data-dep="15" data-min="0.04">Central PABX IP 4 Linhas — R$ 1.800,00</option>
-                            <option value="Móveis Recepção Estofados" data-preco="5500" data-watts="0" data-gas="0" data-agua="0" data-dep="10" data-min="0.00">Balcão de Atendimento + Sofá de Espera — R$ 5.500,00</option>
+                            <option value="Conjunto Cadeiras e Mesas" data-preco="4200" data-watts="0" data-gas="0" data-agua="0" data-dep="10" data-min="0.00">Lote 10 Jogos Mesas/Cadeiras — R$ 4.200,00</option>
+                            <option value="Kit Aparelho Louças Linha Luxo" data-preco="2500" data-watts="0" data-gas="0" data-agua="0" data-dep="20" data-min="0.00">Lote Pratos e Travessas — R$ 2.500,00</option>
+                            <option value="Estojo Talheres Inox Completo" data-preco="1500" data-watts="0" data-gas="0" data-agua="0" data-dep="20" data-min="0.00">Talheres Inox — R$ 1.500,00</option>
+                            <option value="Banho Maria Digital" data-preco="3800" data-watts="2400" data-gas="0" data-agua="0.05" data-dep="10" data-min="0.16">Banho Maria Digital — R$ 3.800,00</option>
+                            <option value="Computador Recepção" data-preco="3500" data-watts="350" data-gas="0" data-agua="0" data-dep="20" data-min="0.08">Desktop Recepção — R$ 3.500,00</option>
+                            <option value="Computador Portaria" data-preco="2900" data-watts="280" data-gas="0" data-agua="0" data-dep="20" data-min="0.06">Terminal Portaria — R$ 2.900,00</option>
+                            <option value="Central Telefonica PABX IP" data-preco="1800" data-watts="150" data-gas="0" data-agua="0" data-dep="15" data-min="0.04">Central PABX IP — R$ 1.800,00</option>
+                            <option value="Móveis Recepção Estofados" data-preco="5500" data-watts="0" data-gas="0" data-agua="0" data-dep="10" data-min="0.00">Balcão e Sofá — R$ 5.500,00</option>
                         </select>
                     </div>
                 </div>
@@ -403,9 +401,9 @@
                     <div style="grid-column: span 2;"><label class="label-form">Cargo de Suporte:</label><select id="cargo_suporte" required class="select-form">
                         <option value="" disabled selected>Escolha uma função...</option>
                         <option value="Auxiliar de Serviços Gerais" data-salario="1650.00" data-periculosidade="0" data-insalubridade="20">Auxiliar de Serviços Gerais — R$ 1.650,00</option>
-                        <option value="Operador de Caldeira / Utilidades" data-salario="2400.00" data-periculosidade="30" data-insalubridade="0">Operador de Caldeira / Utilidades — R$ 2.400,00</option>
+                        <option value="Operador de Caldeira / Utilidades" data-salario="2400.00" data-periculosidade="30" data-insalubridade="0">Operador de Caldeira — R$ 2.400,00</option>
                         <option value="Técnico de Manutenção Predial" data-salario="2800.00" data-periculosidade="30" data-insalubridade="0">Técnico de Manutenção Predial — R$ 2.800,00</option>
-                        <option value="Vigilante Patrimonial Escala" data-salario="2100.00" data-periculosidade="30" data-insalubridade="0">Vigilante Patrimonial Escala — R$ 2.100,00</option>
+                        <option value="Vigilante Patrimonial Escala" data-salario="2100.00" data-periculosidade="30" data-insalubridade="0">Vigilante Patrimonial — R$ 2.100,00</option>
                         <option value="Recepcionista Corporativo" data-salario="1750.00" data-periculosidade="0" data-insalubridade="0">Recepcionista Corporativo — R$ 1.750,00</option>
                     </select></div>
                 </div>
@@ -416,7 +414,7 @@
                     <div><label class="label-form" style="color: #15803d;">Custo Encargos:</label><input type="number" id="rh_encargos" readonly class="input-form input-form-readonly"></div>
                 </div>
                 <div class="grid-form-row" style="margin-top: 10px;">
-                    <div style="grid-column: span 4;"><label class="label-form" style="color: #7c2d12;">Prévia Contábil Unitária + Encargos Sociais:</label><input type="text" id="previa_salario" value="R$ 0,00" readonly class="input-form input-form-readonly" style="font-size:13px; color:#7c2d12;"></div>
+                    <div style="grid-column: span 4;"><label class="label-form" style="color: #7c2d12;">Prévia Contábil Unitária + Encargos Sociais:</label><input type="text" id="previa_salario" readonly value="R$ 0,00" class="input-form input-form-readonly"></div>
                     <input type="hidden" id="rh_custo_total" value="0.00">
                 </div>
                 <button type="submit" id="btn_salvar_rh" class="btn-submit" style="background-color: #065f46; margin-top: 10px;">👥 Alocar Colaborador de Suporte</button>
@@ -494,12 +492,16 @@
     </div>
 <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
         <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
-            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção coletiva.</p>
             <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
             <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
             <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
         </footer>
     </div> <!-- Fechamento da class="container" principal -->
+
+    <!-- Carrega o motor de métricas e o script do módulo estrutura -->
+    <script src="/static/global_metrics.js"></script>
+    <script src="/estrutura/estrutura.js"></script>
 
 </body>
 </html>
