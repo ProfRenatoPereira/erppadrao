@@ -2,20 +2,20 @@
 # TERADMAS ERP v2.6 - MOTOR FINANCEIRO CENTRAL (GerenciadorCaixa.py)
 # PARTE 1 DE 2: POOL DE CONEXÕES E PROCESSAMENTO PATRIMONIAL ISOLADO
 # ==========================================================================
-
+ 
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import SimpleConnectionPool
 import logging
-
+ 
 # Configuração de logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
+ 
 # Pool de conexões global (evita reconexões repetidas)
 _connection_pool = None
-
+ 
 def obter_pool_conexoes():
     """Retorna ou cria um pool de conexões reutilizável"""
     global _connection_pool
@@ -33,7 +33,7 @@ def obter_pool_conexoes():
             return None
     
     return _connection_pool
-
+ 
 def obter_conexao_master():
     """Obtém uma conexão do pool com fallback seguro"""
     try:
@@ -51,18 +51,24 @@ def obter_conexao_master():
     except psycopg2.Error as e:
         logger.error(f"❌ Erro ao obter conexão: {e}")
         return None
-
+ 
 def liberar_conexao_master(conexao):
     """Libera conexão de volta ao pool"""
     try:
         pool = obter_pool_conexoes()
         if pool and conexao:
-            pool.putconn(conexao)
+            try:
+                pool.putconn(conexao)
+            except Exception:
+                # se falhar ao devolver ao pool, fecha
+                conexao.close()
+        elif conexao:
+            conexao.close()
     except Exception as e:
         logger.warning(f"⚠️ Erro ao liberar conexão: {e}")
         if conexao:
             conexao.close()
-
+ 
 def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
     """
     Motor central unificado que calcula o balanço patrimonial e despesas correntes
