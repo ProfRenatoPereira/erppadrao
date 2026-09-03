@@ -1,8 +1,8 @@
 // ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-// ARQUIVO: estrutura.js - PARTE 1 DE 3 (ACESSIBILIDADE E ENGENHARIA IMOBILIÁRIA)
-// ==========================================================================
-
+ // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+ // ARQUIVO: estrutura.js - PARTE 1 DE 3 (ACESSIBILIDADE E ENGENHARIA IMOBILIÁRIA)
+ // ==========================================================================
+ 
 let tamanhoFonteAtual = 16;
 let leitorAtivo = false;
 let idEdicaoRHAtual = null; 
@@ -61,6 +61,7 @@ function alternarLeitorAudio() {
     if (btn) {
         btn.innerText = leitorAtivo ? "🔇 Desativar Leitor" : "📢 Ativar Leitor";
         btn.style.backgroundColor = leitorAtivo ? "#ef4444" : "#0284c7";
+        btn.setAttribute('aria-pressed', leitorAtivo ? 'true' : 'false');
     }
     
     if (leitorAtivo) {
@@ -74,6 +75,7 @@ function alternarLeitorAudio() {
             if (btn) {
                 btn.innerText = "📢 Ativar Leitor";
                 btn.style.backgroundColor = "#0284c7";
+                btn.setAttribute('aria-pressed', 'false');
             }
         };
         window.speechSynthesis.speak(utterance);
@@ -128,10 +130,10 @@ function calcularPrecoMercadoRefletido() {
     if (txtTempoMeses) txtTempoMeses.innerText = "120 meses";
 }
 // ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-// ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTOR DE RH E ENGENHARIA DE KPIS)
-// ==========================================================================
-
+ // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+ // ARQUIVO: estrutura.js - PARTE 2 DE 3 (MOTOR DE RH E ENGENHARIA DE KPIS)
+ // ==========================================================================
+ 
 /* ==========================================================================
    REGRAS DE NEGÓCIO: APOIO PREDIAL & ENCARGOS TRABALHISTAS (CLT)
    ========================================================================== */
@@ -179,7 +181,7 @@ function calcularPreviaSalario() {
     // Multiplicação pelo volume de vagas alocadas
     const subtotalSalarioBase = salarioBaseUnitario * quantidade;
     const subtotalAdicionais = adicionaisUnitario * quantidade;
-    const subtotalEncargos = encargosSociaisUnitario * quantity = quantidade;
+    const subtotalEncargos = encargosSociaisUnitario * quantidade;
     const custoMensalTotalGeral = custoMensalUnitario * quantidade;
     
     inputSalario.value = subtotalSalarioBase.toFixed(2);
@@ -279,14 +281,19 @@ async function carregarDadosIniciais() {
     }
 }
 // ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-// ARQUIVO: estrutura.js - PARTE 3A DE 3 (RENDERIZAÇÃO DE TABELAS PARTE 1)
-// ==========================================================================
-
+ // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+ // ARQUIVO: estrutura.js - PARTE 3A DE 3 (RENDERIZAÇÃO DE TABELAS PARTE 1)
+ // ==========================================================================
+ 
 async function carregarTabelaImoveis() {
     "use strict";
     try {
         const resImoveis = await fetch('/api/estrutura/imoveis');
+        if (!resImoveis.ok) {
+            console.warn('Resposta /api/estrutura/imoveis não OK', resImoveis.status);
+            document.getElementById('tabela_imoveis').innerHTML = `<tr><td colspan="5" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Erro ao carregar espaços patrimoniais</td></tr>`;
+            return;
+        }
         const imoveis = await resImoveis.json();
         const tbody = document.getElementById('tabela_imoveis');
         if (!tbody) return;
@@ -318,6 +325,10 @@ async function carregarTabelaUtensilios() {
     "use strict";
     try {
         const resMaquinas = await fetch('/api/estrutura/maquinas');
+        if (!resMaquinas.ok) {
+            document.getElementById('tabela_utensilios').innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Erro ao carregar utensílios</td></tr>`;
+            return;
+        }
         const maquinas = await resMaquinas.json();
         const tbody = document.getElementById('tabela_utensilios'); // Alinhado ao novo DOM
         if (!tbody) return;
@@ -362,14 +373,18 @@ async function carregarTabelaUtensilios() {
     }
 }
 // ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-// ARQUIVO: estrutura.js - PARTE 3B DE 3 (RENDERIZAÇÃO DE RH E SALVAMENTO)
-// ==========================================================================
-
+ // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+ // ARQUIVO: estrutura.js - PARTE 3B DE 3 (RENDERIZAÇÃO DE RH E SALVAMENTO)
+ // ==========================================================================
+ 
 async function carregarTabelaColaboradores() {
     "use strict";
     try {
         const res = await fetch('/api/estrutura/rh');
+        if (!res.ok) {
+            document.getElementById('tabela_colaboradores').innerHTML = `<tr><td colspan="6" style="padding: 16px; text-align: center; color: #94a3b8; font-style: italic; font-weight: bold;">Erro ao carregar colaboradores</td></tr>`;
+            return;
+        }
         const colaboradores = await res.json();
         const tbody = document.getElementById('tabela_colaboradores');
         if (!tbody) return;
@@ -381,7 +396,7 @@ async function carregarTabelaColaboradores() {
 
         tbody.innerHTML = colaboradores.map(c => `
             <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="font-weight: 700;"> Subtenente. ${c.nome || 'N/A'}</td>
+                <td style="font-weight: 700;"> ${c.nome || 'N/A'}</td>
                 <td style="font-weight: 600;">${c.cargo}</td>
                 <td style="text-align: right;">R$ ${(c.salario_base || 0).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
                 <td style="text-align: center; font-weight: bold;">${c.quantidade}</td>
@@ -400,6 +415,7 @@ async function calcularCustoMinutoUtensilio() {
     "use strict";
     try {
         const resMaquinas = await fetch('/api/estrutura/maquinas');
+        if (!resMaquinas.ok) return;
         const maquinas = await resMaquinas.json();
         const elem = document.getElementById('kpi-custo-minuto-total');
         
@@ -498,10 +514,10 @@ async function salvarMaquina(e) {
     }
 }
 // ==========================================================================
-// TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-// ARQUIVO: estrutura.js - PARTE 3C DE 3 (EXCLUSÕES, EDIÇÃO E RESETS)
-// ==========================================================================
-
+ // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+ // ARQUIVO: estrutura.js - PARTE 3C DE 3 (EXCLUSÕES, EDIÇÃO E RESETS)
+ // ==========================================================================
+ 
 async function adicionarColaborador(e) {
     "use strict";
     if(e && e.preventDefault) e.preventDefault();
@@ -544,6 +560,7 @@ async function editarImovel(id) {
     "use strict";
     try {
         const res = await fetch(`/api/estrutura/imoveis/${id}`);
+        if (!res.ok) return;
         const i = await res.json();
         
         document.getElementById('imovel_id').value = i.id;
