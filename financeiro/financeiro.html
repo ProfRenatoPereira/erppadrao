@@ -1,10 +1,13 @@
-<!-- erppadrao - financeiro/financeiro.html - VERSÃO APRIMORADA COM ALOCAÇÃO SETORIAL -->
+<!-- ==========================================================================
+   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
+   ARQUIVO: estrutura.html - PARTE 1A DE 3 (FOLHA DE ESTILOS CSS COMPLETA)
+   ========================================================================== -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fluxo de Caixa - Gestão Financeira</title>
+    <title>Investimentos Imobiliários e Utensílios de Suporte</title>
     <link rel="icon" type="image/png" href="/static/logo.png">
     <style>
         html { font-size: 16px; transition: font-size 0.15s ease; box-sizing: border-box; }
@@ -12,147 +15,93 @@
         body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
         .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
         
-        .card { background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-        .label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
-        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; }
-        .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
-        .btn-submit:hover { background-color: #15803d; }
-        .btn-secondary { background-color: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
-        .btn-secondary:hover { background-color: #0369a1; }
+        /* GRID PRINCIPAL DE ENTRADAS */
+        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; align-items: start; }
+        .grid-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 12px; margin-bottom: 10px; }
         
-        .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; }
-        .bg-blue-metric { background-color: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
-        .bg-emerald-metric { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+        /* MATRIZ DE CONFIGURAÇÃO DE KPIS HORIZONTAIS */
+        .kpi-row-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; width: 100%; }
+        .kpi-card-horizontal { background-color: #ffffff; padding: 14px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+        .kpi-comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+        .kpi-metric-block { display: flex; flex-direction: column; text-align: left; }
+        .kpi-metric-label { font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; }
+        .kpi-metric-value { font-size: 16px; font-weight: 900; color: #0f172a; margin-top: 2px; }
+        .kpi-sub-label-progress { font-size: 10px; font-weight: bold; margin-top: 2px; }
         
-        .grid-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
-        @media (min-width: 1024px) { .grid-main { grid-template-columns: 1fr 1fr 1fr; } }
+        /* UTILITÁRIOS INTERNOS */
+        .global-spec { border-left: 2px dashed #cbd5e1; padding-left: 12px; }
+        .danger-spec { border-left: 2px dashed #fca5a5; padding-left: 12px; }
         
-        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; }
-        .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; text-align: left; }
-        .table-responsive { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
-        thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
-        th, td { padding: 12px; }
-        tr { border-bottom: 1px solid #e5e7eb; }
+        /* BARRAS DE PROGRESSO */
+        .progress-bar-container { width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 4px; margin-top: 4px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background-color: #3b82f6; width: 0%; transition: width 0.3s ease; }
         
-        .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; }
-        .logo-area { display: flex; align-items: center; gap: 14px; }
+        /* MOSAICO DE EQUAÇÕES */
+        .equations-mosaico-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 12px 0; }
+        .equations-mosaico-grid div { padding: 8px; border-radius: 8px; font-size: 10px; font-weight: 500; border: 1px solid; }
+        .equations-mosaico-grid span { display: block; margin-top: 4px; font-size: 9px; }
+        .eq-box-provisao { background-color: #f0fdf4; border-color: #bbf7d0; color: #166534; }
+        .eq-box-amortizacao { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
+        .eq-box-rentabilidade { background-color: #f0fdfa; border-color: #99f6e4; color: #115e59; }
+        
+        /* CORPORATE HEADER & NAV */
+        .corporate-header { background-color: #0f172a; color: white; padding: 0; border-bottom: 3px solid #1e3a8a; position: relative; }
+        .accessibility-bar { background-color: #1e293b; padding: 6px 16px; display: flex; gap: 8px; align-items: center; font-size: 11px; font-weight: bold; border-bottom: 1px solid #334155; }
+        .accessibility-bar button { background: #334155; border: none; color: white; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        .accessibility-bar button:hover { background: #475569; }
+        .header-main-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; flex-wrap: wrap; gap: 16px; }
+        .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; }
+        .logo-badge { height: 50px; width: auto; background: white; padding: 3px; border-radius: 6px; }
+        .logo-text h1 { font-size: 16px; font-weight: 900; color: #38bdf8; text-transform: uppercase; margin: 0; }
+        .logo-text small { font-size: 10px; color: #94a3b8; font-weight: bold; display: block; margin-top: 2px; }
+        
+        /* SISTEMA DE MENU DROPDOWN */
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
-        .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; }
+        .nav-item { position: relative; }
+        .nav-link { display: block; padding: 10px 12px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
+        .nav-link:hover, .nav-item:hover .nav-link { background-color: #1e3a8a; color: white; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #ffffff; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; }
+        .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
+        .nav-item:hover .dropdown-menu { display: block; }
         
+        /* ELEMENTOS DE PAINEL E CARDS */
+        .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 18px 0 12px 0; }
+        .page-title { font-size: 16px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
+        .card { background-color: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); margin-bottom: 16px; }
+        .card-title { font-size: 12px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 14px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
+        .label-form { font-size: 10px; font-weight: bold; color: #4b5563; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; box-sizing: border-box; }
+        .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #475569; }
+        
+        /* TABELAS */
+        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; margin-top: 16px; }
+        .table-header-dark { padding: 12px 16px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; }
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
+        th, td { padding: 10px 14px; text-align: left; }
+        
+        /* BOTÕES */
+        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 10px; color: #1f2937; }
+        .btn-submit { width: 100%; background-color: #1e3a8a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-submit:hover { background-color: #172554; }
+        
+        /* ACESSIBILIDADE CLASSES COLAPSADAS */
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode .card, body.dark-mode .kpi-card-horizontal, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #cbd5e1 !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        body.dark-mode .input-form-readonly { background-color: #1e293b !important; color: #94a3b8 !important; }
+        body.dark-mode thead { background-color: #0f172a !important; color: #cbd5e1 !important; }
         
-        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; }
-        
-        .departamento-badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; margin-right: 4px; background-color: #dbeafe; color: #1e40af; }
-        .percentual-bar { height: 24px; background: linear-gradient(to right, #16a34a, #86efac); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: white; }
+        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
+        body.alto-contraste .card, body.alto-contraste .kpi-card-horizontal, body.alto-contraste .table-container, body.alto-contraste table { background-color: #000000 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste th, body.alto-contraste td, body.alto-contraste label { color: #ffffff !important; }
+        body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
+        body.alto-contraste button, body.alto-contraste .btn-submit { background-color: #ffff00 !important; color: #000000 !important; font-weight: 900 !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste a { color: #ffff00 !important; }
     </style>
 </head>
-<body style="transition: all 0.2s ease;">
-
-    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA -->
-    <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white;">
-        <div style="display: flex; align-items: center;">
-            <img src="/static/Logo.svg" alt="Logo Corporativo" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
-        </div>
-        <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
-            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
-        </div>
-    </div>
-
-    <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL -->
-
-
-
-
-<head>
-    
-<!-- erppadrao - maquinas/maquinas.html - PARTE 3 DE 6 -->
-<body style="transition: all 0.2s ease;">
-
-    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA NATIVA -->
-    <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
-        <div style="display: flex; align-items: center;">
-            <img src="/static/Logo.svg" alt="Logo Corporativo Vetorial" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
-        </div>
-        <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
-            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
-        </div>
-    </div>
-
-    <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
-    <header class="corporate-header">
-        <div class="logo-area">
-            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
-            <div style="display: flex; flex-direction: column; text-align: left;">
-                <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">TERADMAS ERP v2.6</span>
-                <span style="font-size: 10px; color: #94a3b8; font-weight: bold; line-height: 1.3; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</span>
-            </div>
-        </div>
-        <input type="checkbox" id="menu-toggle">
-        <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
-        <nav>
-            <ul class="nav-corporate-menu">
-                <li class="nav-item">
-                    <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
-                    <ul class="dropdown-menu">
-                        <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
-                        <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
-                        <li><a href="/orcamentos">03. Limites Orçamentários</a></li>
-                        <li><a href="/rh">04. Organograma e RH</a></li>
-                        <li><a href="/folha_pagamento">05. Folha de Pagamento</a></li>
-                        <li><a href="/requisicoes">06. Requisições Internas</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item">
-                    <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
-                    <ul class="dropdown-menu">
-                        <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
-                        <li><a href="/materiais">08. Catálogo de Materiais</a></li>
-                        <li><a href="/processos">09. Fluxos de Processos</a></li>
-                        <li><a href="/produtos">10. Fichas Técnicas (BOM)</a></li>
-                        <li><a href="/manutencao">11. Plano de Manutenção</a></li>
-                        <li><a href="/precificacao">12. Formação de Preço</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item">
-                    <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
-                    <ul class="dropdown-menu">
-                        <li><a href="/compras_insumos">13. Compras de Insumos</a></li>
-                        <li><a href="/pcp">14. Planejamento (PCP)</a></li>
-                        <li><a href="/engenharia_producao">15. Execução de Fábrica</a></li>
-                        <li><a href="/estoque">16. Almoxarifado Central</a></li>
-                        <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item">
-                    <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
-                    <ul class="dropdown-menu">
-                        <li><a href="/clientes">18. Carteira de Clientes</a></li>
-                        <li><a href="/vendas">19. Módulo de Vendas</a></li>
-                        <li><a href="/financeiro">20. Fluxo de Caixa Geral</a></li>
-                        <li><a href="/roi">21. Retorno sobre Investimento</a></li>
-                        <li><a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a></li>
-                        <li><a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a></li>
-                    </ul>
-                </li>
-            </ul>
-        </nav>
-    </header>
-
 
 
 
