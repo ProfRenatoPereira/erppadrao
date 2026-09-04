@@ -1,93 +1,173 @@
+<!-- erppadrao - maquinas/maquinas.html - PARTE 1 DE 6 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Financeiro - Fluxo de Caixa e Faturamento</title>
+    <title>Máquinas - Engenharia de Ativos</title>
     <link rel="icon" type="image/png" href="/static/logo.png">
-    <script src="https://tailwindcss.com"></script>
     <style>
-        /* Diretrizes de Acessibilidade Visual WCAG */
-        html { font-size: 16px; transition: font-size 0.15s ease; }
+        html { font-size: 16px; transition: font-size 0.15s ease; box-sizing: border-box; }
+        *, *:before, *:after { box-sizing: inherit; }
+        body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
+        .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
+        .grid-top { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; text-align: center; font-weight: bold; font-size: 14px; margin-top: 16px; }
+        .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
+        
+        /* LINHAS DO FORMULÁRIO HORIZONTAL */
+        .flex-form-row { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; margin-bottom: 4px; }
+        
+        /* CARDS E INSUMOS ELÁSTICOS CONTRA ESTOUROS COGNITIVOS */
+        .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; min-height: 95px; word-wrap: break-word; word-break: break-word; }
+        .metric-card p { font-size: 11px; text-transform: uppercase; margin: 0 0 2px 0; font-weight: bold; }
+        .metric-card h3, .metric-card h4 { font-size: 16px; font-weight: 900; margin: 0; white-space: normal; word-break: break-all; }
+        
+        .bg-blue-metric { background-color: #eff6ff; border-color: #bfdbfe; color: #1e3a8a; }
+        .bg-emerald-metric { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+        .bg-slate-metric { background-color: #f8fafc; border-color: #cbd5e1; color: #334155; }
+        .bg-amber-metric { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
+        .bg-purple-metric { background-color: #faf5ff; border-color: #e9d5ff; color: #6b21a8; }
+        
+        .badge-percent { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: bold; margin-top: 4px; }
+        .badge-purple-value { background-color: #f3e8ff; color: #6b21a8; }
+        
+        .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; flex-wrap: wrap; gap: 16px; }
+        .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; z-index: 10001; }
+        .menu-toggle-label { display: none; flex-direction: column; gap: 4px; cursor: pointer; padding: 12px 0; z-index: 10001; }
+        .menu-toggle-label span { display: block; width: 22px; height: 3px; background-color: #cbd5e1; border-radius: 2px; transition: 0.2s; }
+        #menu-toggle { display: none; }
+/* erppadrao - maquinas/maquinas.html - PARTE 2 DE 6 */
+        .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
+        .nav-item { position: relative; }
+        .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; transition: all 0.15s; cursor: pointer; border-radius: 6px; }
+        .nav-link:hover, .nav-item:hover .nav-link { background-color: #1e3a8a; color: white; }
+        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #ffffff; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; border: 1px solid #cbd5e1; padding: 6px 0; list-style: none; z-index: 9999; }
+        .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; transition: background 0.15s; border-bottom: 1px solid #f1f5f9; }
+        .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
+        .nav-item:hover .dropdown-menu { display: block; }
+        
+        .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px; text-align: left; }
+        .page-title { font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
+        .card-title { font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
+        .card { background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .flex-col-gap { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; text-align: left; }
+        .label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
+        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; }
+        .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #475569; }
+        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; }
+        .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; text-align: left; }
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
+        th, td { padding: 12px; }
+        tr { border-bottom: 1px solid #e5e7eb; }
+        
+        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; white-space: normal; word-wrap: break-word; word-break: break-word; display: inline-block; vertical-align: middle; }
+        .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; white-space: normal; word-wrap: break-word; word-break: break-word; }
+        .btn-submit:hover { background-color: #15803d; }
+        .btn-cancel { background-color: #e5e7eb; color: #374151; padding: 10px 14px; border: none; border-radius: 8px; cursor: pointer; font-size: 11px; white-space: normal; word-wrap: break-word; }
+        .flex-btn-group { padding-top: 8px; display: flex; gap: 8px; }
+
+        @media (max-width: 1120px) {
+            .menu-toggle-label { display: flex; }
+            .nav-corporate-menu { display: none; flex-direction: column; position: absolute; top: 100%; left: 0; width: 100%; background-color: #0f172a; border-top: 1px solid #334155; padding: 8px 0; box-shadow: 0 10px 15px rgba(0,0,0,0.3); z-index: 9998; }
+            .nav-item { width: 100%; }
+            .nav-link { padding: 12px 20px; border-bottom: 1px solid #1e293b; color: #f8fafc; }
+            .dropdown-menu { display: block; position: static; box-shadow: none; border: none; background-color: #172554 !important; padding: 0; min-width: 100%; }
+            #menu-toggle:checked ~ nav .nav-corporate-menu, #menu-toggle:checked ~ .nav-corporate-menu { display: flex; }
+        }
+        
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .card, body.dark-mode .metric-card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+        body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
+        body.dark-mode thead { background-color: #334155 !important; }
         
         body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-        body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+        body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste .table-container, body.alto-contraste table, body.alto-contraste th, body.alto-contraste td { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
         body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; font-weight: bold !important; }
-        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste label { color: #ffff00 !important; }
+        body.alto-contraste button, body.alto-contraste .btn-submit, body.alto-contraste .btn-top { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #000000 !important; }
+        body.alto-contraste h1, body.alto-contraste h2, body.alto-contraste h3, body.alto-contraste h4, body.alto-contraste label, body.alto-contraste p, body.alto-contraste span, body.alto-contraste td { color: #ffff00 !important; }
         
-        @media print { #barra-acessibilidade, form, header, button, .actions-legal { display: none !important; } body { background-color: #fff; color: #000; } }
+        @media (min-width: 1024px) { .col-form { grid-column: span 12 / span 12; } .col-table { grid-column: span 12 / span 12; } }
     </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased text-gray-800 transition-all duration-200">
+<!-- erppadrao - maquinas/maquinas.html - PARTE 3 DE 6 -->
+<body style="transition: all 0.2s ease;">
 
-    <!-- BARRA TOP DE ACESSIBILIDADE FIXA -->
-    <div id="barra-acessibilidade" class="bg-[#0f172a] px-4 py-2 flex flex-col sm:flex-row justify-between items-center text-xs border-b border-[#334155] text-white sticky top-0 z-50 gap-2 select-none">
-        <span class="font-extrabold text-blue-400">®ψΣ TERADMAS</span>
-        <div class="flex flex-wrap gap-2 items-center justify-center">
-            <button type="button" onclick="mudarFonte(1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="bg-[#334155] px-2 py-0.5 rounded font-bold">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">⚫ Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="bg-[#334155] px-2 py-0.5 rounded font-bold">🌙 Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="bg-[#0284c7] px-2 py-0.5 rounded font-bold">🔊 Ativar Leitor</button>
+    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA REALINHADA NATIVA -->
+    <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white; font-size: 11px; font-family: sans-serif; user-select: none;">
+        <div style="display: flex; align-items: center;">
+            <img src="/static/Logo.svg" alt="Logo Corporativo Vetorial" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
+            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
+            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
+            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
+            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
     </div>
 
-    <div class="container mx-auto p-4 max-w-7xl">
-        
-        <!-- TOPBOARD DE MÉTRICAS FINANCEIRAS DO ERPPADRAO -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-2 font-bold text-sm text-center">
-            <div class="metric-card bg-blue-50 border border-blue-200 p-4 rounded-xl shadow-sm">
-                <p class="text-[11px] uppercase text-blue-900 tracking-wider mb-0.5">💰 Caixa de Giro Disponível</p>
-                <h3 class="text-lg text-blue-900 font-black" id="top_giro_global">R$ 0,00</h3>
-            </div>
-            <div class="metric-card bg-purple-50 border border-purple-200 p-4 rounded-xl shadow-sm flex flex-col justify-center items-center">
-                <p class="text-[11px] uppercase text-purple-950 tracking-wider mb-0.5">🏢 Total de Títulos a Receber</p>
-                <h3 class="text-lg text-purple-800 font-black" id="top_total_receber">R$ 0,00</h3>
-                <span class="text-[10px] bg-purple-200 text-purple-900 px-2 py-0.5 rounded-full mt-1 font-mono" id="top_faturamentos_qtd">0 Títulos</span>
-            </div>
-            <div class="metric-card bg-slate-50 border border-slate-300 p-4 rounded-xl shadow-sm">
-                <p class="text-[11px] uppercase text-slate-700 tracking-wider mb-0.5">🔒 Compromissos Fixos do Mês</p>
-                <h4 class="text-base text-slate-800 font-black" id="top_custo_fixo">R$ 0,00</h4>
-            </div>
-            <div class="metric-card bg-green-50 border border-green-300 p-4 rounded-xl shadow-sm">
-                <p class="text-[11px] uppercase text-green-900 tracking-wider mb-0.5">📈 Total de Receitas Liquidadas</p>
-                <h4 class="text-base text-green-700 font-black" id="top_total_liquidado">R$ 0,00</h4>
+    <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL RESPONSIVO -->
+    <header class="corporate-header">
+        <div class="logo-area">
+            <img src="/static/logo.png" alt="Logo ERP" class="logo-img" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none'">
+            <div style="display: flex; flex-direction: column; text-align: left;">
+                <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; line-height: 1.2;">TERADMAS ERP v2.6</span>
+                <span style="font-size: 10px; color: #94a3b8; font-weight: bold; line-height: 1.3; margin-top: 2px;">Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</span>
             </div>
         </div>
-        <!-- CABEÇALHO CORPORATIVO RESPONSIVO -->
-        <header class="bg-white border-b border-gray-200 shadow-sm rounded-xl overflow-visible relative z-40 mb-6">
-            <div class="px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
-                    <div class="flex items-center gap-3">
-                        <img src="/static/logo.png" alt="Logo TERADMAS" class="h-16 w-auto object-contain border rounded p-1 shadow-sm">
-                        <div>
-                            <h1 class="text-xl lg:text-2xl font-black text-blue-900 tracking-tight uppercase">TERCEIRO ADM ASSOCIADOS</h1>
-                            <p class="text-xs text-gray-500 font-semibold mt-1">Módulo 4: Gestão do Fluxo Financeiro, Faturamento de Contratos e Tesouraria</p>
-                        </div>
-                    </div>
-                    <button type="button" onclick="alternarMenuMobile()" class="md:hidden text-2xl bg-gray-100 text-slate-800 p-2 rounded-lg font-bold">☰</button>
-                </div>
-            </div>
-
-            <!-- MENU HAMBÚRGUER FLUIDO -->
-            <nav class="hidden md:block bg-blue-950 px-6 py-1 rounded-b-xl border-t border-blue-900 text-white select-none transition-all duration-300" id="menuNavegacao">
-                <ul class="flex flex-col md:flex-row gap-1 lg:gap-4 font-sans text-xs font-bold uppercase tracking-wider">
-                    <li class="relative group py-2 md:py-3 px-2 cursor-pointer hover:bg-blue-900 rounded">
-                        <span class="text-gray-100">🏢 Módulos Iniciais ▼</span>
-                        <ul class="hidden group-hover:block absolute left-0 top-full bg-white text-gray-800 rounded-lg shadow-xl border py-2 w-64 normal-case font-medium z-50">
-                            <li><a href="/grid" class="block px-4 py-2 hover:bg-slate-100 text-gray-700">Painel Principal</a></li>
-                            <li><a href="/clientes" class="block px-4 py-2 hover:bg-slate-100 text-gray-700">6. Cadastro de Clientes (CRM)</a></li>
-                            <li><a href="/financeiro" class="block px-4 py-2 hover:bg-slate-100 text-blue-900 font-bold bg-blue-50 border-l-4 border-blue-600">4. Fluxo Financeiro</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </nav>
-        </header>
-
+        <input type="checkbox" id="menu-toggle">
+        <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
+        <nav>
+            <ul class="nav-corporate-menu">
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
+                        <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
+                        <li><a href="/orcamentos">03. Limites Orçamentários</a></li>
+                        <li><a href="/rh">04. Organograma e RH</a></li>
+                        <li><a href="/folha_pagamento">05. Folha de Pagamento</a></li>
+                        <li><a href="/requisicoes">06. Requisições Internas</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
+                        <li><a href="/materiais">08. Catálogo de Materiais</a></li>
+                        <li><a href="/processos">09. Fluxos de Processos</a></li>
+                        <li><a href="/produtos">10. Fichas Técnicas (BOM)</a></li>
+                        <li><a href="/manutencao">11. Plano de Manutenção</a></li>
+                        <li><a href="/precificacao">12. Formação de Preço</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/compras_insumos">13. Compras de Insumos</a></li>
+                        <li><a href="/pcp">14. Planejamento (PCP)</a></li>
+                        <li><a href="/engenharia_producao">15. Execução de Fábrica</a></li>
+                        <li><a href="/estoque">16. Almoxarifado Central</a></li>
+                        <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/clientes">18. Carteira de Clientes</a></li>
+                        <li><a href="/vendas">19. Módulo de Vendas</a></li>
+                        <li><a href="/financeiro">20. Fluxo de Caixa Geral</a></li>
+                        <li><a href="/roi">21. Retorno sobre Investimento</a></li>
+                        <li><a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a></li>
+                        <li><a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
+    </header>
         <div class="border-b pb-2 mb-4">
             <h2 class="text-xl font-black text-blue-900 uppercase tracking-tight" id="txt_titulo_pagina">Página 4: Gestão Financeira - Faturamento de Títulos e Contas a Receber</h2>
         </div>
