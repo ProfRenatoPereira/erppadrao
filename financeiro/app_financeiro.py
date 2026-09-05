@@ -268,14 +268,8 @@ def api_obter_resumo_quotas():
             )
         ''')
         
-        cursor.execute('SELECT departamento_id, procentual_quota AS porcentagem_quota FROM (
-            SELECT departamento_id, porcentagem_quota as procentual_quota FROM quotas_departamentos WHERE equipe_id = %s AND porcentagem_quota > 0 ORDER BY porcentagem_quota DESC
-        ) as sub', (str(id_equipe),))
-        # Fallback to simpler select if above aliasing fails
+        cursor.execute('SELECT departamento_id, porcentagem_quota FROM quotas_departamentos WHERE equipe_id = %s AND porcentagem_quota > 0 ORDER BY porcentagem_quota DESC', (str(id_equipe),))
         linhas = cursor.fetchall()
-        if not linhas:
-            cursor.execute('SELECT departamento_id, porcentagem_quota FROM quotas_departamentos WHERE equipe_id = %s AND porcentagem_quota > 0 ORDER BY porcentagem_quota DESC', (str(id_equipe),))
-            linhas = cursor.fetchall()
         
         cursor.close()
         import GerenciadorCaixa
