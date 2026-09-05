@@ -102,7 +102,77 @@
         body.alto-contraste a { color: #ffff00 !important; }
     </style>
 </head>
+<body>
 
+    <!-- ♿ ACESSIBILIDADE E ARQUITETURA DE TOPO CORPORATIVA -->
+    <header class="corporate-header">
+        <div class="accessibility-bar">
+            <span>♿ Acessibilidade:</span>
+            <button onclick="alterarFonte('+')" aria-label="Aumentar fonte">A+</button>
+            <button onclick="alterarFonte('-')" aria-label="Diminuir fonte">A-</button>
+            <button onclick="alternarAltoContraste()" aria-pressed="false">⚫ Alto Contraste</button>
+            <button onclick="alternarModoEscuro()" aria-pressed="false">✔️ Escuro / Claro</button>
+            <button id="btn-leitor" aria-pressed="false">📢 Ativar Leitor de Tela</button>
+        </div>
+        
+        <div class="header-main-row">
+            <div class="logo-area">
+                <img src="/static/logo.png" alt="TERADMAS Logo" class="logo-badge">
+                <div class="logo-text">
+                    <h1>TERADMAS ERP v2.6</h1>
+                    <small>Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</small>
+                </div>
+            </div>
+            
+            <nav aria-label="Menu Principal do Sistema">
+                <ul class="nav-corporate-menu">
+                    <li class="nav-item">
+                        <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
+                        <ul class="dropdown-menu">
+                            <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
+                            <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
+                            <li><a href="/orcamentos">03. Limites Orçamentários</a></li>
+                            <li><a href="/rh">04. Organograma e RH</a></li>
+                            <li><a href="/folha_pagamento">05. Folha de Pagamento</a></li>
+                            <li><a href="/requisicoes">06. Requisições Internas</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
+                        <ul class="dropdown-menu">
+                            <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
+                            <li><a href="/materiais">08. Catálogo de Materiais</a></li>
+                            <li><a href="/processos">09. Fluxos de Processos</a></li>
+                            <li><a href="/produtos">10. Fichas Técnicas (BOM)</a></li>
+                            <li><a href="/manutencao">11. Plano de Manutenção</a></li>
+                            <li><a href="/precificacao">12. Formação de Preço</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
+                        <ul class="dropdown-menu">
+                            <li><a href="/compras_insumos">13. Compras de Insumos</a></li>
+                            <li><a href="/pcp">14. Planejamento (PCP)</a></li>
+                            <li><a href="/engenharia_producao">15. Execução de Fábrica</a></li>
+                            <li><a href="/estoque">16. Almoxarifado Central</a></li>
+                            <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
+                        <ul class="dropdown-menu">
+                            <li><a href="/clientes">18. Carteira de Clientes</a></li>
+                            <li><a href="/vendas">19. Módulo de Vendas</a></li>
+                            <li><a href="/financeiro">20. Fluxo de Caixa Geral</a></li>
+                            <li><a href="/roi">21. Retorno sobre Investimento</a></li>
+                            <li><a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a></li>
+                            <li><a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </header>
 
 
 
@@ -252,11 +322,12 @@
             </div>
         </div>
 
-        <!-- RODAPÉ INSTITUCIONAL -->
-        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: center;">
-            <p style="margin: 0 0 4px 0; font-weight: bold;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
-            <p style="margin: 0 0 4px 0; font-weight: 900; color: #1e3a8a;">© Copyright Física Renato Pereira ®ψΣ.</p>
-            <p style="color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026 - Versão Financeiro Aprimorado.</p>
+         <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
+        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
+            <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
         </footer>
     </div>
 
