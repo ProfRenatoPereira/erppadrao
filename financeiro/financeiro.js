@@ -1,130 +1,184 @@
-// erppadrao - financeiro/financeiro.js
-let tamanhoFonteAtual = 16;
-let leitorAtivo = false;
+/**
+ * TERADMAS ERP v2.6 - Controlador Financeiro e Gestão de Quotas Reativas (20 Módulos)
+ */
 
-document.addEventListener("DOMContentLoaded", function() {
-    carregarDadosIniciais();
-});
+let capitalDisponivelGlobal = 0.00;
+let faturamentoTotalGlobal = 0.00;
+let deptoAtual = "";
 
-function mudarFonte(dir) {
-    tamanhoFonteAtual += dir;
-    document.documentElement.style.fontSize = Math.max(12, Math.min(24, tamanhoFonteAtual)) + 'px';
-}
-function alternarModoEscuro() { document.body.classList.toggle('dark-mode'); }
-function alternarAltoContraste() { document.body.classList.toggle('alto-contraste'); }
-function alternarMenuMobile() { document.getElementById('menuNavegacao').classList.toggle('hidden'); }
+const formatarBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-function alternarLeitorAudio() {
-    leitorAtivo = !leitorAtivo;
-    document.getElementById('btn-leitor-audio').innerText = leitorAtivo ? "🔇 Desativar Leitor" : "🔊 Ativar Leitor";
-    if (leitorAtivo) {
-        window.speechSynthesis.cancel();
-        const texto = `Módulo de Fluxo Financeiro aberto. Utilize o formulário à esquerda para faturar duplicatas vinculadas aos clientes do CRM, ou liquide os títulos no livro razão à direita.`;
-        const utterance = new SpeechSynthesisUtterance(texto);
-        utterance.lang = 'pt-BR';
-        window.speechSynthesis.speak(utterance);
-    } else { window.speechSynthesis.cancel(); }
-}
-
-async function carregarDadosIniciais() {
-    // 1. Atualiza as barras de indicadores econômicos globais do topo
-    const resMetricas = await fetch('/api/financeiro/metricas?dept=financeiro');
-    const metricas = await resMetricas.json();
-    
-    document.getElementById('top_giro_global').innerText = `R$ ${metricas.capital_disponivel_total.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-    document.getElementById('top_custo_fixo').innerText = `R$ ${metricas.custo_fixo_total.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`;
-
-    // Configura a verba setorial base de finanças
-    const verbaDisponivelSetor = metricas.capital_disponivel_departamento || 0;
-    const pctDoCapital = ((verbaDisponivelSetor / (metricas.capital_total || 1)) * 100).toFixed(2);
-    document.getElementById('top_verba_reais').innerText = `R$ ${verbaDisponivelSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-    document.getElementById('top_verba_porcentagem').innerText = `${pctDoCapital}% do Capital`;
-
-    // 2. Busca e herda os clientes prospectados no CRM (Fase 6) para popular o seletor
-    const resClientes = await fetch('/api/clientes/listar');
-    const clientes = await resClientes.json();
-    const selectClientes = document.getElementById('financeiro_cliente_id');
-    
-    if (clientes.length === 0) {
-        selectClientes.innerHTML = '<option value="">❌ Nenhum Cliente Cadastrado (Vá para Clientes/CRM)</option>';
-    } else {
-        selectClientes.innerHTML = '<option value="">-- Selecione o Cliente Devedor --</option>' + 
-            clientes.map(c => `<option value="${c.id}">${c.nome_cliente} (${c.tipo_pessoa})</option>`).join('');
+async function carregarDashboardFinanceiro() {
+    try {
+        const response = await fetch('/api/metrics/consolidated');
+        const metrics = await response.json();
+        
+        // Atribui valores coletados, tratando nulos ou indefinidos de forma segura
+        capitalDisponivelGlobal = parseFloat(metrics.capital_total) || 0;
+        faturamentoTotalGlobal = parseFloat(metrics.faturamento_bruto) || 0;
+        
+        document.getElementById('top_capital_total').innerText = formatarBRL(capitalDisponivelGlobal);
+        document.getElementById('top_giro_global').innerText = formatarBRL(faturamentoTotalGlobal);
+        
+        recalcularMétricasPainel();
+        await renderizarResumoQuotas();
+        await carregarLivroRazao();
+    } catch (e) {
+        console.error("Erro na carga inicial das métricas corporativas:", e);
     }
-
-    // 3. Carrega o razão de contas a receber à direita
-    carregarTabelaRazonete();
 }
-async function carregarTabelaRazonete() {
-    const resTitulos = await fetch('/api/financeiro/listar');
-    const titulos = await resTitulos.json();
-    const tbody = document.getElementById('tabela_financeiro');
-    
-    let totalAberto = 0;
-    let totalLiquidado = 0;
-    let contadorTitulos = 0;
-    
-    titulos.forEach(t => {
-        if (t.status_titulo === 'Aberto') {
-            totalAberto += (t.financeiro_valor || 0);
-            contadorTitulos++;
-        } else if (t.status_titulo === 'Liquidado') {
-            totalLiquidado += (t.financeiro_valor || 0);
-        }
-    });
-    
-    document.getElementById('top_total_receber').innerText = `R$ ${totalAberto.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-    document.getElementById('top_faturamentos_qtd').innerText = `${contadorTitulos} Títulos em Aberto`;
-    document.getElementById('top_total_liquidado').innerText = `R$ ${totalLiquidado.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
 
-    if (titulos.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 italic">Nenhum título gerado no livro razão para este grupo.</td></tr>`;
+function atualizarVisualizacaoQuota(valor) {
+    document.getElementById('percentual_valor').value = valor;
+    recalcularMétricasPainel();
+}
+
+function atualizarSliderQuota(valor) {
+    document.getElementById('percentual_quota').value = valor;
+    recalcularMétricasPainel();
+}
+
+function recalcularMétricasPainel() {
+    const pct = parseFloat(document.getElementById('percentual_valor').value) || 0;
+    // Calcula o valor real da cota; se capital total for 0, o retorno será R$ 0,00 mantendo estabilidade
+    const valorAlocado = capitalDisponivelGlobal * (pct / 100);
+    
+    document.getElementById('valor_alocado_reais').value = formatarBRL(valorAlocado);
+    document.getElementById('top_quota_calculada').innerText = formatarBRL(valorAlocado);
+    
+    // Cálculo do Custo Operacional Líquido Reativo baseado na variável injetada
+    const custoFixoFicticioBase = 4200.00;
+    const custoCalculado = custoFixoFicticioBase - (valorAlocado * 0.15);
+    document.getElementById('top_custo_fixo').innerText = formatarBRL(custoCalculado < 0 ? 0 : custoCalculado);
+}
+
+async function atualizarDetalhesSetor() {
+    deptoAtual = document.getElementById('departamento_selecionado').value;
+    const infoBox = document.getElementById('info_setor');
+    const infoTxt = document.getElementById('info_setor_texto');
+    
+    if(!deptoAtual) {
+        infoBox.style.display = "none";
         return;
     }
-
-    tbody.innerHTML = titulos.map(t => {
-        const corStatus = t.status_titulo === 'Liquidado' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
-        const botaoAcao = t.status_titulo === 'Aberto' 
-            ? `<button onclick="liquidarTitulo(${t.id})" class="bg-green-600 text-white font-bold px-2 py-0.5 rounded text-[10px] uppercase hover:bg-green-700">Liquidar</button>`
-            : `<span class="text-gray-400 text-[10px] font-bold">CONCLUÍDO</span>`;
-
-        return `
-        <tr class="hover:bg-gray-50 border-b text-[11px]">
-            <td class="p-3"><strong>FT-00${t.id}</strong><br><span class="text-blue-900 font-bold">${t.cliente_nome_suporte}</span></td>
-            <td class="p-3">${t.financeiro_descricao}<br><span class="text-gray-400 text-[10px]">Emissão: ${t.financeiro_data}</span></td>
-            <td class="p-3 font-semibold">${t.financeiro_condicao}</td>
-            <td class="p-3 font-mono font-bold text-gray-900">R$ ${t.financeiro_valor.toFixed(2)}<br><span class="px-2 py-0.2 rounded-full text-[9px] ${corStatus}">${t.status_titulo}</span></td>
-            <td class="p-3 text-center whitespace-nowrap actions-legal">${botaoAcao}</td>
-        </tr>`;
-    }).join('');
+    
+    try {
+        const response = await fetch(`/api/financeiro/quota/${deptoAtual}`);
+        const data = await response.json();
+        const pctSalva = data.porcentagem_quota || 0;
+        
+        document.getElementById('percentual_quota').value = pctSalva;
+        document.getElementById('percentual_valor').value = pctSalva;
+        
+        infoTxt.innerHTML = `Módulo destino <strong>/${deptoAtual}</strong> selecionado. Defina e salve a quota percentual desejada.`;
+        infoBox.style.display = "block";
+        
+        recalcularMétricasPainel();
+    } catch (err) {
+        console.error("Erro ao sincronizar dados da cota do módulo:", err);
+    }
 }
 
-async function lancarFaturamento(e) {
-    e.preventDefault();
-    const select = document.getElementById('financeiro_cliente_id');
-    if (!select.value) return;
-
-    const dados = {
-        cliente_id: parseInt(select.value),
-        cliente_nome_suporte: select.options[select.selectedIndex].text.split(' ('),
-        financeiro_descricao: document.getElementById('financeiro_descricao').value.trim(),
-        financeiro_valor: parseFloat(document.getElementById('financeiro_valor').value) || 0,
-        financeiro_condicao: document.getElementById('financeiro_condicao').value,
-        financeiro_data: document.getElementById('financeiro_data').value
+async function efetuarFaturamento(event) {
+    event.preventDefault();
+    const payload = {
+        cliente: document.getElementById('fat_cliente').value,
+        descricao: document.getElementById('fat_descricao').value,
+        valor: parseFloat(document.getElementById('fat_valor').value)
     };
-
-    await fetch('/api/financeiro/faturar', {
+    
+    const response = await fetch('/api/financeiro/faturar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados)
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
     });
-
-    document.getElementById('formFinanceiro').reset();
-    carregarDadosIniciais();
+    
+    if(response.ok) {
+        alert("Faturamento computado e adicionado ao fluxo de caixa!");
+        document.getElementById('formFaturamento').reset();
+        await carregarDashboardFinanceiro();
+    }
 }
 
-async function liquidarTitulo(id) {
-    if (!confirm('Deseja confirmar a liquidação e entrada física deste valor no caixa operacional disponível?')) return;
-    await fetch(`/api/financeiro/liquidar/${id}`, { method: 'POST' });
-    carregarDadosIniciais();
+async function salvarAlocacaoSetorial(event) {
+    event.preventDefault();
+    if(!deptoAtual) return alert("Selecione um módulo alvo primeiro.");
+    
+    const payload = {
+        departamento_id: deptoAtual,
+        porcentagem_quota: parseFloat(document.getElementById('percentual_valor').value)
+    };
+    
+    const response = await fetch('/api/financeiro/quota', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+    
+    if(response.ok) {
+        alert("Quota parametrizada salva com sucesso!");
+        await carregarDashboardFinanceiro();
+    }
 }
+
+async function renderizarResumoQuotas() {
+    try {
+        const response = await fetch('/api/financeiro/quotas/summary');
+        const distribuicao = await response.json();
+        const container = document.getElementById('tabela_quotas_resumo');
+        container.innerHTML = "";
+        
+        if (distribuicao.length === 0) {
+            container.innerHTML = `<div style="padding:8px;background-color:#f3f4f6;font-size:11px;">Sem quotas setoriais parametrizadas.</div>`;
+            return;
+        }
+        
+        distribuicao.forEach(setor => {
+            const valorMonetario = capitalDisponivelGlobal * (setor.porcentagem_quota / 100);
+            container.innerHTML += `
+                <div style="padding: 6px 8px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px;">
+                    <div style="display:flex; justify-content: space-between; font-weight: bold;">
+                        <span>📍 /${setor.departamento_id}</span>
+                        <span style="color:#16a34a;">${setor.porcentagem_quota}% (${formatarBRL(valorMonetario)})</span>
+                    </div>
+                    <div class="barra-percentual-setor">
+                        <div class="preenchimento-barra" style="width: ${setor.porcentagem_quota}%"></div>
+                    </div>
+                </div>
+            `;
+        });
+    } catch (e) {
+        console.error("Erro ao renderizar painel de sumário:", e);
+    }
+}
+
+async function carregarLivroRazao() {
+    try {
+        const response = await fetch('/api/financeiro/livro-razao');
+        const dados = await response.json();
+        const tbody = document.getElementById('tabela_financeiro');
+        tbody.innerHTML = "";
+        
+        if(dados.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:12px;color:#94a3b8;">Nenhum título liquidado em caixa.</td></tr>`;
+            return;
+        }
+        
+        dados.forEach(item => {
+            const dataFmt = new Date(item.created_at).toLocaleDateString('pt-BR');
+            tbody.innerHTML += `
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="font-weight: bold; padding:10px;">${item.cliente_origem}</td>
+                    <td style="padding:10px;">${item.descricao} <br><small style="color:#94a3b8;">${dataFmt}</small></td>
+                    <td style="padding:10px;"><span style="background-color:#dcfce7;color:#15803d;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">LIQUIDADO</span></td>
+                    <td style="font-weight:900;color:#16a34a;padding:10px;">${formatarBRL(parseFloat(item.valor_nominal))}</td>
+                    <td style="text-align:center;padding:10px;"><span style="color:#16a34a;font-weight:bold;">✓ Entrada</span></td>
+                </tr>
+            `;
+        });
+    } catch (err) {
+        console.error("Erro ao preencher o livro razão:", err);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", carregarDashboardFinanceiro);
