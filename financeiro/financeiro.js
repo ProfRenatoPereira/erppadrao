@@ -10,12 +10,12 @@ const formatarBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', curren
 
 async function carregarDashboardFinanceiro() {
     try {
-        const response = await fetch('/api/metrics/consolidated');
+        const response = await fetch('/api/financeiro/metrics');
         const metrics = await response.json();
         
         // Atribui valores coletados, tratando nulos ou indefinidos de forma segura
         capitalDisponivelGlobal = parseFloat(metrics.capital_total) || 0;
-        faturamentoTotalGlobal = parseFloat(metrics.faturamento_bruto) || 0;
+        faturamentoTotalGlobal = parseFloat(metrics.faturamento_consolidado) || 0;
         
         document.getElementById('top_capital_total').innerText = formatarBRL(capitalDisponivelGlobal);
         document.getElementById('top_giro_global').innerText = formatarBRL(faturamentoTotalGlobal);
@@ -82,9 +82,12 @@ async function atualizarDetalhesSetor() {
 async function efetuarFaturamento(event) {
     event.preventDefault();
     const payload = {
-        cliente: document.getElementById('fat_cliente').value,
-        descricao: document.getElementById('fat_descricao').value,
-        valor: parseFloat(document.getElementById('fat_valor').value)
+        cliente_id: parseInt(document.getElementById('fat_cliente_id').value) || 0,
+        cliente_nome_suporte: document.getElementById('fat_cliente_nome').value,
+        financeiro_descricao: document.getElementById('fat_descricao').value,
+        financeiro_valor: parseFloat(document.getElementById('fat_valor').value),
+        financeiro_condicao: document.getElementById('fat_condicao').value,
+        financeiro_data: document.getElementById('fat_data').value
     };
     
     const response = await fetch('/api/financeiro/faturar', {
@@ -94,8 +97,22 @@ async function efetuarFaturamento(event) {
     });
     
     if(response.ok) {
-        alert("Faturamento computado e adicionado ao fluxo de caixa!");
+        alert("Título gerado e registrado no Razão com sucesso!");
         document.getElementById('formFaturamento').reset();
+        await carregarDashboardFinanceiro();
+    }
+}
+
+async function liquidarTitulo(idReg) {
+    if(!confirm(`Confirmar liquidação e entrada física em caixa do título FT-00${idReg}?`)) return;
+    
+    const response = await fetch(`/api/financeiro/liquidar/${idReg}`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'}
+    });
+    
+    if(response.ok) {
+        alert("Título liquidado! Recurso injetado no Caixa de Giro.");
         await carregarDashboardFinanceiro();
     }
 }
@@ -154,25 +171,31 @@ async function renderizarResumoQuotas() {
 
 async function carregarLivroRazao() {
     try {
-        const response = await fetch('/api/financeiro/livro-razao');
+        const response = await fetch('/api/financeiro/listar');
         const dados = await response.json();
         const tbody = document.getElementById('tabela_financeiro');
         tbody.innerHTML = "";
         
         if(dados.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:12px;color:#94a3b8;">Nenhum título liquidado em caixa.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:12px;color:#94a3b8;">Nenhum título localizado no razão contábil.</td></tr>`;
             return;
         }
         
         dados.forEach(item => {
-            const dataFmt = new Date(item.created_at).toLocaleDateString('pt-BR');
+            const ehAberto = item.status_titulo === 'Aberto';
+            const badgeColor = ehAberto ? 'background-color:#fef3c7;color:#d97706;' : 'background-color:#dcfce7;color:#15803d;';
+            
+            const botaoAcao = ehAberto 
+                ? `<button onclick="liquidarTitulo(${item.id})" class="btn-submit" style="padding:4px 8px;font-size:10px;width:auto;display:inline-block;">⚡ Liquidar</button>`
+                : `<span style="color:#16a34a;font-weight:bold;">✓ Em Caixa</span>`;
+
             tbody.innerHTML += `
                 <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="font-weight: bold; padding:10px;">${item.cliente_origem}</td>
-                    <td style="padding:10px;">${item.descricao} <br><small style="color:#94a3b8;">${dataFmt}</small></td>
-                    <td style="padding:10px;"><span style="background-color:#dcfce7;color:#15803d;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">LIQUIDADO</span></td>
-                    <td style="font-weight:900;color:#16a34a;padding:10px;">${formatarBRL(parseFloat(item.valor_nominal))}</td>
-                    <td style="text-align:center;padding:10px;"><span style="color:#16a34a;font-weight:bold;">✓ Entrada</span></td>
+                    <td style="font-weight: bold; padding:10px;">FT-00${item.id}<br><small style="color:#6b7280;">ID Clie: ${item.cliente_id}</small></td>
+                    <td style="padding:10px;"><strong>${item.cliente_nome_suporte}</strong><br><small style="color:#94a3b8;">${item.financeiro_descricao}</small></td>
+                    <td style="padding:10px;"><span style="${badgeColor}padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">${item.status_titulo.toUpperCase()}</span></td>
+                    <td style="font-weight:900;color:#1e3a8a;padding:10px;">${formatarBRL(parseFloat(item.financeiro_valor))}<br><small style="color:#6b7280;">${item.financeiro_condicao} | ${item.financeiro_data}</small></td>
+                    <td style="text-align:center;padding:10px;">${botaoAcao}</td>
                 </tr>
             `;
         });
