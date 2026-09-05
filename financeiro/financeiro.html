@@ -1,4 +1,4 @@
-<!-- erppadrao - financeiro/financeiro.html - VERSÃO COMPACTA PARTE 1 DE 5 -->
+<!-- erppadrao - financeiro/financeiro.html - VERSÃO FRAGMENTADA PARTE 1.1 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -75,7 +75,7 @@
             <img src="/static/Logo.svg" alt="Logo Corporativo" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
+            <span style="font-weight: bold; color: #94a3b8; margin-right: 4px; font-size: 0.7rem;">♿ Acessibilidade:</span>
             <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
             <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
             <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
@@ -83,6 +83,7 @@
             <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
     </div>
+
     <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL -->
     <header class="corporate-header" style="font-size: 0.75rem;">
         <div class="logo-area">
@@ -149,28 +150,31 @@
             <h2 style="font-size: 1.15rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0;">📊 Gestão Financeira - Faturamento + Alocação Setorial de Recursos</h2>
         </div>
 
-        <!-- 📈 SEÇÃO DE MÉTRICAS GLOBAIS NO TOPO (IDs ADAPTADOS PARA O CIRCUITO DE SINCRONIA) -->
+        <!-- 📈 SEÇÃO DE MÉTRICAS GLOBAIS NO TOPO (IDs CONECTADOS COM GLOBAL_METRICS.JS) -->
         <div class="grid-top">
             <div class="metric-card bg-blue-metric">
                 <p style="margin: 0; font-size: 0.7rem;">💰 Capital Fundação (Total)</p>
                 <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="global-capital-total">R$ 0,00</h3>
-                <small id="global-porcento-capital" style="font-weight: bold; font-size: 0.65rem;"></small>
+                <small id="global-porcento-capital" style="font-weight: bold; font-size: 0.65rem; display: block; margin-top: 2px;"></small>
             </div>
             <div class="metric-card bg-emerald-metric">
                 <p style="margin: 0; font-size: 0.7rem;">🏦 Capital Disponível (Giro)</p>
                 <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="global-capital-disponivel">R$ 0,00</h3>
-                <small id="global-porcento-disponivel" style="font-weight: bold; font-size: 0.65rem;"></small>
+                <small id="global-porcento-disponivel" style="font-weight: bold; font-size: 0.65rem; display: block; margin-top: 2px;"></small>
             </div>
             <div class="metric-card" style="background-color: #fef3c7; border-color: #fcd34d; color: #92400e;">
                 <p style="margin: 0; font-size: 0.7rem;">🏢 Patrimônio / Faturamento Ativo</p>
                 <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="global-patrimonio">R$ 0,00</h3>
-                <small id="global-porcento-patrimonio" style="font-weight: bold; font-size: 0.65rem;"></small>
+                <small id="global-porcento-patrimonio" style="font-weight: bold; font-size: 0.65rem; display: block; margin-top: 2px;"></small>
             </div>
             <div class="metric-card" style="background-color: #f5e6ff; border-color: #e9d5ff; color: #6b21a8;">
                 <p style="margin: 0; font-size: 0.7rem;">📉 Custo Fixo Operacional Geral</p>
                 <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="global-custo-fixo">R$ 0,00</h3>
                 <span id="global-last-update" style="font-size: 0.6rem; display: block; margin-top: 4px; color: #6b21a8; font-weight: bold;">🔄 Sincronizando...</span>
+                
+                <!-- Suportes técnicos para evitar quebras de objeto no global_metrics.js -->
                 <span id="global-custo-variavel" style="display: none;"></span>
+                <small id="global-porcento-patrimonio-fake" style="display: none;"></small>
             </div>
         </div>
 
@@ -259,17 +263,21 @@
                             <span style="font-weight: bold; color: #16a34a;">%</span>
                         </div>
                     </div>
+
                     <div>
                         <label class="label-form">Valor Alocado Convertido:</label>
                         <input type="text" id="valor_alocado_reais" readonly class="input-form" style="background-color: #f3f4f6; font-weight: bold; color: #16a34a; font-size: 0.9rem;" value="R$ 0,00">
                     </div>
+
                     <div id="info_setor" style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 8px; font-size: 0.7rem; color: #065f46; display: none;">
                         <p style="margin: 0; font-weight: bold;">ℹ️ Informações do Setor Selecionado:</p>
                         <p style="margin: 2px 0 0 0;" id="info_setor_texto">Selecione um departamento...</p>
                     </div>
+
                     <button type="submit" class="btn-secondary" style="margin-top: 8px;">💾 Confirmar Alocação Setorial</button>
                 </form>
             </div>
+
             <!-- QUADRO 3: DISTRIBUIÇÃO DE QUOTAS (RESUMO ATUAL) -->
             <div class="card">
                 <h3 style="font-size: 0.85rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">📊 Distribuição Atual de Quotas Setoriais</h3>
@@ -304,8 +312,8 @@
         </div>
 
         <!-- ♿ RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
-        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 0.7rem; color: #6b7280; text-align: justify; line-height: 1.6;">
-            <p style="margin: 0 0 1rem 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
             <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
             <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
             <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
