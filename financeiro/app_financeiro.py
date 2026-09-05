@@ -24,7 +24,6 @@ def servir_js_financeiro():
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
     return send_from_directory(diretorio_atual, 'financeiro.js', mimetype='application/javascript')
 
-@app.route('/api/financeiro/faturar', methods=['POST'])
 @financeiro_blueprint.route('/api/financeiro/faturar', methods=['POST'])
 def api_faturar_titulo():
     if not session.get('logado'):
@@ -44,7 +43,7 @@ def api_faturar_titulo():
                 financeiro_valor REAL, financeiro_condicao TEXT,
                 financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
             )
-        ''')
+        ''');
         
         cursor.execute('''
             INSERT INTO razao_financeiro (equipe_id, cliente_id, cliente_nome_suporte, 
@@ -70,6 +69,7 @@ def api_listar_titulos():
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         id_equipe = session.get('id_equipe', 'equipe_alfa')
         
+        # Correção Crítica: Cria a tabela ANTES do SELECT para evitar o erro UndefinedTable
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS razao_financeiro (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
@@ -77,7 +77,7 @@ def api_listar_titulos():
                 financeiro_valor REAL, financeiro_condicao TEXT,
                 financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
             )
-        ''')
+        ''');
         
         cursor.execute('SELECT * FROM razao_financeiro WHERE equipe_id = %s ORDER BY id DESC', (str(id_equipe),))
         linhas = cursor.fetchall()
@@ -98,6 +98,15 @@ def api_liquidar_titulo_id(id_reg):
         id_equipe = session.get('id_equipe', 'equipe_alfa')
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS razao_financeiro (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
+                cliente_nome_suporte TEXT, financeiro_descricao TEXT,
+                financeiro_valor REAL, financeiro_condicao TEXT,
+                financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
+            )
+        ''');
         
         cursor.execute('SELECT * FROM razao_financeiro WHERE id = %s AND equipe_id = %s AND status_titulo = \'Aberto\'', (int(id_reg), str(id_equipe)))
         titulo = cursor.fetchone()
@@ -133,6 +142,22 @@ def api_obter_metrics_totais():
         id_equipe = session.get('id_equipe', 'equipe_alfa')
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        # Garante as tabelas operacionais antes das agregações matemáticas
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS razao_financeiro (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
+                cliente_nome_suporte TEXT, financeiro_descricao TEXT,
+                financeiro_valor REAL, financeiro_condicao TEXT,
+                financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
+            )
+        ''');
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS fluxo_caixa (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, departamento TEXT,
+                descricao TEXT, valor REAL, tipo TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
+            )
+        ''')
         
         capital_fundacao = 0.0
         try:
