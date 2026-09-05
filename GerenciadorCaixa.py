@@ -1,6 +1,6 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MOTOR FINANCEIRO CENTRAL (GerenciadorCaixa.py)
-# PARTE 1 DE 2: POOL DE CONEXÕES E PROCESSAMENTO PATRIMONIAL ISOLADO
+# Atualizado: fallback de leitura de capital inicial e ajuste na interpretação do fluxo_caixa
 # ==========================================================================
  
 import os
@@ -73,11 +73,6 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
     """
     Motor central unificado que calcula o balanço patrimonial e despesas correntes
     de forma combinada e isolada, corrigindo a duplicidade na computação de ativos.
-    
-    CRÍTICO: Diferencia máquinas por departamento:
-    - PRODUCAO: Máquinas de produção (módulo maquinas/)
-    - ESTRUTURA: Máquinas de suporte predial (módulo estrutura/)
-    - UTENSILIOS: Utensílios prediais (uso histórico)
     """
     conexao = obter_conexao_master()
     cursor = None
@@ -86,7 +81,7 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
     capital_total = 5000000.00
     valor_aluguel_global = 0.0
     nome_empresa = "GRUPO ACADÊMICO"
-    total_gasto_fluxo = 0.0
+    total_movimentacoes_fluxo = 0.0
     
     # Acumuladores de Empresa Completa (Soma matricial de todos os setores)
     patrimonio_ativo_total = 0.0
@@ -120,30 +115,50 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         
         # 1. Recupera os parâmetros estáveis da fundação do negócio
         try:
-            cursor.execute("SELECT nome_empresa, capital_total, valor_aluguel FROM config_simulacao WHERE equipe_id = %s", (id_equipe,))
+            cursor.execute("SELECT nome_empresa, capital_total, valor_aluguel FROM config_simulacao WHERE equipe_id = %s LIMIT 1", (id_equipe,))
             config = cursor.fetchone()
             if config:
-                capital_total = float(config['capital_total'] or 5000000.00)
-                valor_aluguel_global = float(config['valor_aluguel'] or 0)
-                nome_empresa = config['nome_empresa']
+                capital_total = float(config.get('capital_total') or capital_total)
+                valor_aluguel_global = float(config.get('valor_aluguel') or 0)
+                nome_empresa = config.get('nome_empresa') or nome_empresa
         except psycopg2.ProgrammingError:
             logger.info("ℹ️ Tabela config_simulacao indisponível (esperado em primeira execução)")
         except Exception as e:
             logger.warning(f"⚠️ Erro ao consultar config_simulacao: {e}")
 
+        # Se não encontrou em config_simulacao, faz fallback nas tabelas que o front pode usar
+        if not config:
+            tabelas_teste = [
+                ("configuracao_equipes", "capital_inicial", "equipe_id"),
+                ("configuracao_equipes", "capital_social", "equipe_id"),
+                ("inicializacao_negocio", "capital_inicial", "equipe_id"),
+                ("inicializacao_negocio", "capital_social", "equipe_id")
+            ]
+            for tabela, coluna, coluna_filtro in tabelas_teste:
+                try:
+                    cursor.execute(f"SELECT {coluna} as valor FROM {tabela} WHERE {coluna_filtro} = %s LIMIT 1", (id_equipe,))
+                    reg = cursor.fetchone()
+                    if reg and reg.get('valor') is not None:
+                        capital_total = float(reg['valor'])
+                        logger.info(f"ℹ️ Capital inicial obtido de {tabela}.{coluna}")
+                        break
+                except Exception:
+                    # tabela/coluna não existe, ignora e segue
+                    continue
+
         # 2. Computa o somatório histórico de movimentações no Livro de Fluxo de Caixa
         try:
-            cursor.execute("SELECT SUM(valor) as total FROM fluxo_caixa WHERE equipe_id = %s", (id_equipe,))
+            cursor.execute("SELECT COALESCE(SUM(valor), 0) as total FROM fluxo_caixa WHERE equipe_id = %s", (id_equipe,))
             resultado_fluxo = cursor.fetchone()
-            if resultado_fluxo and resultado_fluxo.get('total'):
-                total_gasto_fluxo = float(resultado_fluxo['total'])
+            if resultado_fluxo and resultado_fluxo.get('total') is not None:
+                total_movimentacoes_fluxo = float(resultado_fluxo['total'])
         except psycopg2.ProgrammingError:
             logger.info("ℹ️ Tabela fluxo_caixa indisponível")
         except Exception as e:
             logger.warning(f"⚠️ Erro ao consultar fluxo_caixa: {e}")
 
         # ==================================================================
-        # 🏢 SEÇÃO 01: COMPUTAÇÃO E ISOLAMENTO DO PATRIMÔNIO ATIVO TOTAL
+        # 🏢 COMPUTAÇÃO DO PATRIMÔNIO ATIVO TOTAL
         # ==================================================================
         
         # A) Módulo Imobiliário (Tabela: imoveis_simulacao)
@@ -163,50 +178,27 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         except Exception as e:
             logger.warning(f"⚠️ Erro em imoveis_simulacao: {e}")
 
-        # B) ✅ CRÍTICO: Diferenciação Estrita de Ativos Industriais por Departamento
-        # Separa máquinas de PRODUCAO (módulo maquinas/) de ESTRUTURA (módulo estrutura/)
+        # Máquinas por departamento (erp_maquinas)
         try:
-            # 1. Soma APENAS máquinas de PRODUCAO (engenharia de ativos - módulo 07)
-            cursor.execute('''
-                SELECT COALESCE(SUM(preco_compra), 0) as total 
-                FROM erp_maquinas 
-                WHERE equipe_id = %s AND departamento = 'PRODUCAO'
-            ''', (id_equipe,))
-            total_producao = float(cursor.fetchone()['total'] or 0)
-            
-            # 2. Soma APENAS máquinas de ESTRUTURA (suporte predial - módulo 02)
-            cursor.execute('''
-                SELECT COALESCE(SUM(preco_compra), 0) as total 
-                FROM erp_maquinas 
-                WHERE equipe_id = %s AND departamento = 'ESTRUTURA'
-            ''', (id_equipe,))
-            total_estrutura = float(cursor.fetchone()['total'] or 0)
-            
-            # 3. Soma UTENSILIOS (compatibilidade histórica, se existir)
-            cursor.execute('''
-                SELECT COALESCE(SUM(preco_compra), 0) as total 
-                FROM erp_maquinas 
-                WHERE equipe_id = %s AND departamento = 'UTENSILIOS'
-            ''', (id_equipe,))
-            total_utensilios = float(cursor.fetchone()['total'] or 0)
-            
-            # 4. Consolidação limpa do patrimônio mecânico SEM dupla contagem
+            cursor.execute('SELECT COALESCE(SUM(preco_compra), 0) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = %s', (id_equipe, 'PRODUCAO'))
+            total_producao = float(cursor.fetchone().get('total') or 0)
+            cursor.execute('SELECT COALESCE(SUM(preco_compra), 0) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = %s', (id_equipe, 'ESTRUTURA'))
+            total_estrutura = float(cursor.fetchone().get('total') or 0)
+            cursor.execute('SELECT COALESCE(SUM(preco_compra), 0) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = %s', (id_equipe, 'UTENSILIOS'))
+            total_utensilios = float(cursor.fetchone().get('total') or 0)
             patrimonio_ativo_total += total_producao + total_estrutura + total_utensilios
-            
-            # 5. Encaminha o saldo patrimonial isolado CORRETO para validação de tetos por tela
             if departamento_atual == 'estrutura':
                 patrimonio_isolado_setor += total_estrutura
-            elif departamento_atual == 'maquinas':
+            elif departamento_atual == 'maquinas' or departamento_atual == 'producao':
                 patrimonio_isolado_setor += total_producao
-                
         except psycopg2.ProgrammingError:
             logger.info("ℹ️ Tabela erp_maquinas indisponível")
         except Exception as e:
             logger.warning(f"⚠️ Erro no isolamento de erp_maquinas: {e}")
 
-        # C) Módulo de Almoxarifado / Materiais Estocados (Tabela: ativos_materials)
+        # Materiais/almoxarifado
         try:
-            cursor.execute("SELECT SUM(quantidade_estoque * preco_unitario) as total FROM ativos_materials WHERE equipe_id = %s", (id_equipe,))
+            cursor.execute("SELECT COALESCE(SUM(quantidade_estoque * preco_unitario), 0) as total FROM ativos_materials WHERE equipe_id = %s", (id_equipe,))
             res_mat = cursor.fetchone()
             if res_mat and res_mat.get('total'):
                 patrimonio_ativo_total += float(res_mat['total'])
@@ -217,17 +209,14 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         except Exception as e:
             logger.warning(f"⚠️ Erro em ativos_materials: {e}")
                 
-        # 🔒 SEÇÃO 02: CONSOLIDAÇÃO DE CUSTOS FIXOS (SOMA MATRICIAL)
-        # ==================================================================
-        
-        # PASSO 1: Inicializa com valores de imóvel do setor
+        # 🔒 CONSOLIDAÇÃO DE CUSTOS FIXOS
         custo_fixo_total_global = imob_aluguel_setor + imob_condo_setor
         if departamento_atual == 'estrutura':
             custo_fixo_isolado_setor = imob_aluguel_setor + imob_condo_setor
 
-        # PASSO 2: Varre e consolida a folha de funcionários CLT ativa (Tabela: folha_funcionarios)
+        # Folha CLT
         try:
-            cursor.execute("SELECT SUM(salario_base) as total FROM folha_funcionarios WHERE equipe_id = %s", (id_equipe,))
+            cursor.execute("SELECT COALESCE(SUM(salario_base), 0) as total FROM folha_funcionarios WHERE equipe_id = %s", (id_equipe,))
             res_rh_global = cursor.fetchone()
             if res_rh_global and res_rh_global.get('total'):
                 custo_fixo_total_global += float(res_rh_global['total'])
@@ -236,7 +225,6 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         except Exception as e:
             logger.warning(f"⚠️ Erro em folha_funcionarios: {e}")
 
-        # PASSO 3: Varre o suporte predial específico do setor imobiliário (Tabela: estrutura_rh)
         try:
             cursor.execute("SELECT COALESCE(SUM(subtotal), 0) as total FROM estrutura_rh WHERE equipe_id = %s", (id_equipe,))
             res_rh_imob = cursor.fetchone()
@@ -250,11 +238,9 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         except Exception as e:
             logger.warning(f"⚠️ Erro em estrutura_rh: {e}")
 
-        # ==================================================================
-        # ⚡ SEÇÃO 03: CONSOLIDAÇÃO DE CUSTOS VARIÁVEIS GLOBAIS
-        # ==================================================================
+        # CUSTOS VARIÁVEIS
         try:
-            cursor.execute("SELECT SUM(COALESCE(encargos_patronais, 0) + COALESCE(valor_horas_extras, 0)) as total FROM livro_razonete_folha WHERE equipe_id = %s", (id_equipe,))
+            cursor.execute("SELECT COALESCE(SUM(COALESCE(encargos_patronais, 0) + COALESCE(valor_horas_extras, 0)), 0) as total FROM livro_razonete_folha WHERE equipe_id = %s", (id_equipe,))
             res_folha_var = cursor.fetchone()
             if res_folha_var and res_folha_var.get('total'):
                 custo_variavel_total_global += float(res_folha_var['total'])
@@ -265,9 +251,7 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
         except Exception as e:
             logger.warning(f"⚠️ Falha ao ler livro_razonete_folha: {e}")
 
-        # ==================================================================
-        # 🎛️ SEÇÃO 04: CIRCUITO DE TRAVAS OPERACIONAIS POR DEPARTAMENTO
-        # ==================================================================
+        # ORÇAMENTO E GASTOS ESPECÍFICOS DO SETOR
         orcamento_liberado_setor = 0.0
         gastos_especificos_setor = 0.0
         
@@ -283,17 +267,19 @@ def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
                 logger.warning(f"⚠️ Erro em departamentos_orcamento: {e}")
 
             try:
-                cursor.execute("SELECT SUM(valor) as total FROM fluxo_caixa WHERE equipe_id = %s AND departamento = %s", (id_equipe, departamento_atual))
+                cursor.execute("SELECT COALESCE(SUM(valor), 0) as total FROM fluxo_caixa WHERE equipe_id = %s AND departamento = %s", (id_equipe, departamento_atual))
                 res_gastos = cursor.fetchone()
-                if res_gastos and res_gastos.get('total'):
-                    gastos_especificos_setor = float(res_gastos['total'])
+                if res_gastos and res_gastos.get('total') is not None:
+                    gastos_especificos_setor = float(res_gastos.get('total') or 0)
             except psycopg2.ProgrammingError:
                 logger.info(f"ℹ️ Tabela fluxo_caixa indisponível para {departamento_atual}")
             except Exception as e:
                 logger.warning(f"⚠️ Erro ao filtrar fluxo_caixa: {e}")
 
-        # Deduções reativas do fluxo de caixa de giro da empresa e saldo setorial
-        capital_disponivel_total = capital_total - total_gasto_fluxo - valor_aluguel_global
+        # Interpretação consistente do fluxo_caixa:
+        # - assumimos que 'valor' positivo = entrada (receita), negativo = saída (despesa)
+        # capital_disponivel_total = capital_total + sum(valor) - valor_aluguel_global
+        capital_disponivel_total = capital_total + total_movimentacoes_fluxo - valor_aluguel_global
         capital_disponivel_departamento = orcamento_liberado_setor - gastos_especificos_setor
 
         return {
