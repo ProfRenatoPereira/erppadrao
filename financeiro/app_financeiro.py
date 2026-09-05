@@ -1,7 +1,8 @@
 # erppadrao - financeiro/app_financeiro.py
-from flask import Blueprint, request, render_template_string, session, jsonify
+from flask import Blueprint, request, render_template_string, session, jsonify, send_from_directory
 import psycopg2
 from psycopg2.extras import RealDictCursor
+import os
 
 financeiro_blueprint = Blueprint('financeiro_blueprint', __name__)
 
@@ -12,12 +13,20 @@ def obter_conexao_master():
 @financeiro_blueprint.route('/financeiro')
 def pagina_financeiro():
     if not session.get('logado'):
-        # Redireciona de forma segura se o token de turno expirou
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
     with open('financeiro/financeiro.html', 'r', encoding='utf-8') as f:
         html = f.read()
     return render_template_string(html)
+
+# =========================================================================
+# 🛠️ ROTA CORRIGIDA PARA SERVIR O ARQUIVO JAVASCRIPT EXTERNO SEM ERRO 404
+# =========================================================================
+@financeiro_blueprint.route('/financeiro/financeiro.js')
+def servir_js_financeiro():
+    """Entrega o arquivo financeiro.js diretamente do diretório financeiro"""
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    return send_from_directory(diretorio_atual, 'financeiro.js', mimetype='application/javascript')
 
 @financeiro_blueprint.route('/api/financeiro/faturar', methods=['POST'])
 def api_faturar_titulo():
@@ -30,7 +39,6 @@ def api_faturar_titulo():
     conexao = obter_conexao_master()
     cursor = conexao.cursor()
     
-    # Cria a estrutura do razão no banco Supabase se ainda não houver
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS razao_financeiro (
             id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
@@ -103,13 +111,8 @@ def api_liquidar_titulo_id(id_reg):
     conexao.close()
     return jsonify({'status': 'sucesso'})
 
-# =========================================================================
-# LÓGICA DE INTEGRAÇÃO DAS MÉTRICAS REATIVAS (UNIFICAÇÃO COM FUNDAÇÃO DE CAPITAL)
-# =========================================================================
-
-@financeiro_blueprint.route('/api/financeiro/metrics', methods=['GET'])
+@financeiro_blueprint.route('/api/financeiro/metricas', methods=['GET'])
 def api_obter_metrics_totais():
-    """Calcula e retorna os valores dos cards do topo unificando com o capital inicial"""
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
@@ -117,46 +120,55 @@ def api_obter_metrics_totais():
     conexao = obter_conexao_master()
     cursor = conexao.cursor(cursor_factory=RealDictCursor)
     
-    # 1. Captura o Capital de Fundação direto da tabela de equipes vinculada
-    capital_inicial = 0.0
+    capital_fundacao = 0.0
     try:
         cursor.execute('SELECT capital_inicial FROM configuracao_equipes WHERE equipe_id = %s', (id_equipe,))
         reg_conf = cursor.fetchone()
         if reg_conf:
-            capital_inicial = float(reg_conf['capital_inicial'])
+            capital_fundacao = float(reg_conf['capital_inicial'])
     except Exception:
         pass
 
-    # 2. Consolida o Faturamento total bruto com base em liquidações físicas em caixa
-    faturamento_consolidado = 0.0
+    faturamento_bruto = 0.0
     fluxo_movimentado = 0.0
     
     try:
         cursor.execute('SELECT financeiro_valor FROM razao_financeiro WHERE equipe_id = %s AND status_titulo = \'Liquidado\'', (id_equipe,))
         titulos_pagos = cursor.fetchall()
         for t in titulos_pagos:
-            faturamento_consolidado += float(t['financeiro_valor'])
+            faturamento_bruto += float(t['financeiro_valor'])
             
         cursor.execute('SELECT valor FROM fluxo_caixa WHERE equipe_id = %s', (id_equipe,))
         movimentacoes = cursor.fetchall()
         for m in movimentacoes:
-            # Multiplicado por -1 devido à inversão de sinal padronizada do caixa original
             fluxo_movimentado += (float(m['valor']) * -1)
     except Exception:
         pass
         
-    capital_total_disponivel = capital_inicial + fluxo_movimentado
+    capital_disponivel_total = capital_fundacao + fluxo_movimentado
     
+    custo_fixo_geral = 0.0
+    try:
+        cursor.execute("SELECT SUM(valor) as total FROM fluxo_caixa WHERE equipe_id = %s AND tipo = 'CUSTO_FIXO'", (id_equipe,))
+        res_custo = cursor.fetchone()
+        if res_custo and res_custo['total']:
+            custo_fixo_geral = float(res_custo['total'])
+    except Exception:
+        pass
+        
     cursor.close()
     conexao.close()
+    
     return jsonify({
-        'capital_total': capital_total_disponivel,
-        'faturamento_consolidado': faturamento_consolidado
-    })
+        'capital_total': capital_fundacao,
+        'capital_disponivel_total': capital_disponivel_total,
+        'patrimonio_ativo_total': faturamento_bruto,
+        'custo_fixo_geral_empresa': custo_fixo_geral,
+        'custo_variavel_total': 0.0
+    }), 200
 
 @financeiro_blueprint.route('/api/financeiro/quota', methods=['POST'])
 def api_salvar_quota_setorial():
-    """Grava as alocações em porcentagem das 20 rotas funcionais ativas"""
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
