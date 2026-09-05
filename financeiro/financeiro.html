@@ -1,433 +1,159 @@
-<!-- ==========================================================================
-   TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
-   ARQUIVO: estrutura.html - PARTE 1A DE 3 (FOLHA DE ESTILOS CSS COMPLETA)
-   ========================================================================== -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investimentos Imobiliários e Utensílios de Suporte</title>
-    <link rel="icon" type="image/png" href="/static/logo.png">
+    <title>Gestão Financeira - TERADMAS ERP</title>
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://jsdelivr.net" rel="stylesheet">
+    <link href="https://jsdelivr.net" rel="stylesheet">
     <style>
-        html { font-size: 16px; transition: font-size 0.15s ease; box-sizing: border-box; }
-        *, *:before, *:after { box-sizing: inherit; }
-        body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
-        .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
-        
-        /* GRID PRINCIPAL DE ENTRADAS */
-        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; align-items: start; }
-        .grid-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 12px; margin-bottom: 10px; }
-        
-        /* MATRIZ DE CONFIGURAÇÃO DE KPIS HORIZONTAIS */
-        .kpi-row-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; width: 100%; }
-        .kpi-card-horizontal { background-color: #ffffff; padding: 14px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
-        .kpi-comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-        .kpi-metric-block { display: flex; flex-direction: column; text-align: left; }
-        .kpi-metric-label { font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; }
-        .kpi-metric-value { font-size: 16px; font-weight: 900; color: #0f172a; margin-top: 2px; }
-        .kpi-sub-label-progress { font-size: 10px; font-weight: bold; margin-top: 2px; }
-        
-        /* UTILITÁRIOS INTERNOS */
-        .global-spec { border-left: 2px dashed #cbd5e1; padding-left: 12px; }
-        .danger-spec { border-left: 2px dashed #fca5a5; padding-left: 12px; }
-        
-        /* BARRAS DE PROGRESSO */
-        .progress-bar-container { width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 4px; margin-top: 4px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background-color: #3b82f6; width: 0%; transition: width 0.3s ease; }
-        
-        /* MOSAICO DE EQUAÇÕES */
-        .equations-mosaico-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 12px 0; }
-        .equations-mosaico-grid div { padding: 8px; border-radius: 8px; font-size: 10px; font-weight: 500; border: 1px solid; }
-        .equations-mosaico-grid span { display: block; margin-top: 4px; font-size: 9px; }
-        .eq-box-provisao { background-color: #f0fdf4; border-color: #bbf7d0; color: #166534; }
-        .eq-box-amortizacao { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
-        .eq-box-rentabilidade { background-color: #f0fdfa; border-color: #99f6e4; color: #115e59; }
-        
-        /* CORPORATE HEADER & NAV */
-        .corporate-header { background-color: #0f172a; color: white; padding: 0; border-bottom: 3px solid #1e3a8a; position: relative; }
-        .accessibility-bar { background-color: #1e293b; padding: 6px 16px; display: flex; gap: 8px; align-items: center; font-size: 11px; font-weight: bold; border-bottom: 1px solid #334155; }
-        .accessibility-bar button { background: #334155; border: none; color: white; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
-        .accessibility-bar button:hover { background: #475569; }
-        .header-main-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; flex-wrap: wrap; gap: 16px; }
-        .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; }
-        .logo-badge { height: 50px; width: auto; background: white; padding: 3px; border-radius: 6px; }
-        .logo-text h1 { font-size: 16px; font-weight: 900; color: #38bdf8; text-transform: uppercase; margin: 0; }
-        .logo-text small { font-size: 10px; color: #94a3b8; font-weight: bold; display: block; margin-top: 2px; }
-        
-        /* SISTEMA DE MENU DROPDOWN */
-        .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
-        .nav-item { position: relative; }
-        .nav-link { display: block; padding: 10px 12px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
-        .nav-link:hover, .nav-item:hover .nav-link { background-color: #1e3a8a; color: white; }
-        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #ffffff; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; }
-        .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; border-bottom: 1px solid #f1f5f9; }
-        .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
-        .nav-item:hover .dropdown-menu { display: block; }
-        
-        /* ELEMENTOS DE PAINEL E CARDS */
-        .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 18px 0 12px 0; }
-        .page-title { font-size: 16px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
-        .card { background-color: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); margin-bottom: 16px; }
-        .card-title { font-size: 12px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 14px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
-        .label-form { font-size: 10px; font-weight: bold; color: #4b5563; text-transform: uppercase; display: block; margin-bottom: 4px; }
-        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; box-sizing: border-box; }
-        .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #475569; }
-        
-        /* TABELAS */
-        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; margin-top: 16px; }
-        .table-header-dark { padding: 12px 16px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; }
-        .table-responsive { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
-        th, td { padding: 10px 14px; text-align: left; }
-        
-        /* BOTÕES */
-        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 10px; color: #1f2937; }
-        .btn-submit { width: 100%; background-color: #1e3a8a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
-        .btn-submit:hover { background-color: #172554; }
-        
-        /* ACESSIBILIDADE CLASSES COLAPSADAS */
-        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .card, body.dark-mode .kpi-card-horizontal, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #cbd5e1 !important; }
-        body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
-        body.dark-mode .input-form-readonly { background-color: #1e293b !important; color: #94a3b8 !important; }
-        body.dark-mode thead { background-color: #0f172a !important; color: #cbd5e1 !important; }
-        
-        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-        body.alto-contraste .card, body.alto-contraste .kpi-card-horizontal, body.alto-contraste .table-container, body.alto-contraste table { background-color: #000000 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste th, body.alto-contraste td, body.alto-contraste label { color: #ffffff !important; }
-        body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button, body.alto-contraste .btn-submit { background-color: #ffff00 !important; color: #000000 !important; font-weight: 900 !important; border: 2px solid #ffffff !important; }
-        body.alto-contraste a { color: #ffff00 !important; }
-
-
- html { font-size: 16px; transition: font-size 0.15s ease; box-sizing: border-box; }
-        *, *:before, *:after { box-sizing: inherit; }
-        body { margin: 0; padding: 0; font-family: sans-serif; background-color: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
-        .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
-        
-        /* GRID PRINCIPAL DE ENTRADAS */
-        .grid-main { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; align-items: start; }
-        .grid-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 12px; margin-bottom: 10px; }
-        
-        /* MATRIZ DE CONFIGURAÇÃO DE KPIS HORIZONTAIS */
-        .kpi-row-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; width: 100%; }
-        .kpi-card-horizontal { background-color: #ffffff; padding: 14px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
-        .kpi-comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-        .kpi-metric-block { display: flex; flex-direction: column; text-align: left; }
-        .kpi-metric-label { font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; }
-        .kpi-metric-value { font-size: 16px; font-weight: 900; color: #0f172a; margin-top: 2px; }
-        .kpi-sub-label-progress { font-size: 10px; font-weight: bold; margin-top: 2px; }
-        
-        /* UTILITÁRIOS INTERNOS */
-        .global-spec { border-left: 2px dashed #cbd5e1; padding-left: 12px; }
-        .danger-spec { border-left: 2px dashed #fca5a5; padding-left: 12px; }
-        
-        /* BARRAS DE PROGRESSO */
-        .progress-bar-container { width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 4px; margin-top: 4px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background-color: #3b82f6; width: 0%; transition: width 0.3s ease; }
-        
-        /* MOSAICO DE EQUAÇÕES */
-        .equations-mosaico-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 12px 0; }
-        .equations-mosaico-grid div { padding: 8px; border-radius: 8px; font-size: 10px; font-weight: 500; border: 1px solid; }
-        .equations-mosaico-grid span { display: block; margin-top: 4px; font-size: 9px; }
-        .eq-box-provisao { background-color: #f0fdf4; border-color: #bbf7d0; color: #166534; }
-        .eq-box-amortizacao { background-color: #fffbec; border-color: #fde68a; color: #78350f; }
-        .eq-box-rentabilidade { background-color: #f0fdfa; border-color: #99f6e4; color: #115e59; }
-        
-        /* CORPORATE HEADER & NAV */
-        .corporate-header { background-color: #0f172a; color: white; padding: 0; border-bottom: 3px solid #1e3a8a; position: relative; }
-        .accessibility-bar { background-color: #1e293b; padding: 6px 16px; display: flex; gap: 8px; align-items: center; font-size: 11px; font-weight: bold; border-bottom: 1px solid #334155; }
-        .accessibility-bar button { background: #334155; border: none; color: white; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
-        .accessibility-bar button:hover { background: #475569; }
-        .header-main-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; flex-wrap: wrap; gap: 16px; }
-        .logo-area { display: flex; align-items: center; gap: 14px; user-select: none; }
-        .logo-badge { height: 50px; width: auto; background: white; padding: 3px; border-radius: 6px; }
-        .logo-text h1 { font-size: 16px; font-weight: 900; color: #38bdf8; text-transform: uppercase; margin: 0; }
-        .logo-text small { font-size: 10px; color: #94a3b8; font-weight: bold; display: block; margin-top: 2px; }
-        
-        /* SISTEMA DE MENU DROPDOWN */
-        .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
-        .nav-item { position: relative; }
-        .nav-link { display: block; padding: 10px 12px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; }
-        .nav-link:hover, .nav-item:hover .nav-link { background-color: #1e3a8a; color: white; }
-        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #ffffff; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.15); border-radius: 0 0 8px 8px; }
-        .dropdown-menu a { display: block; padding: 10px 16px; font-size: 11px; color: #1e293b; text-decoration: none; font-weight: bold; text-align: left; border-bottom: 1px solid #f1f5f9; }
-        .dropdown-menu a:hover { background-color: #f1f5f9; color: #1e3a8a; }
-        .nav-item:hover .dropdown-menu { display: block; }
-        
-        /* ELEMENTOS DE PAINEL E CARDS */
-        .page-header { border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin: 18px 0 12px 0; }
-        .page-title { font-size: 16px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0; }
-        .card { background-color: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); margin-bottom: 16px; }
-        .card-title { font-size: 12px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 14px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb; }
-        .label-form { font-size: 10px; font-weight: bold; color: #4b5563; text-transform: uppercase; display: block; margin-bottom: 4px; }
-        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; box-sizing: border-box; }
-        .input-form-readonly { background-color: #f3f4f6; font-weight: bold; color: #475569; }
-        
-        /* TABELAS */
-        .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; margin-top: 16px; }
-        .table-header-dark { padding: 12px 16px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; }
-        .table-responsive { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
-        th, td { padding: 10px 14px; text-align: left; }
-        
-        /* BOTÕES */
-        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 10px; color: #1f2937; }
-        .btn-submit { width: 100%; background-color: #1e3a8a; color: white; border: none; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
-        .btn-submit:hover { background-color: #172554; }
-        
-        /* ACESSIBILIDADE CLASSES COLAPSADAS */
-        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .card, body.dark-mode .kpi-card-horizontal, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #cbd5e1 !important; }
-        body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
-        body.dark-mode .input-form-readonly { background-color: #1e293b !important; color: #94a3b8 !important; }
-        body.dark-mode thead { background-color: #0f172a !important; color: #cbd5e1 !important; }
-        
-        body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-        body.alto-contraste .card, body.alto-contraste .kpi-card-horizontal, body.alto-contraste .table-container, body.alto-contraste table { background-color: #000000 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste th, body.alto-contraste td, body.alto-contraste label { color: #ffffff !important; }
-        body.alto-contraste input, body.alto-contraste select { background-color: #000000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste button, body.alto-contraste .btn-submit { background-color: #ffff00 !important; color: #000000 !important; font-weight: 900 !important; border: 2px solid #ffffff !important; }
-        body.alto-contraste a { color: #ffff00 !important; }
-
-
-
-       
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .erp-header { background-color: #0d1b2a; color: white; padding: 15px; }
+        .card-metric { border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .card-metric:hover { transform: translateY(-3px); }
+        .panel-form { background: white; border-radius: 8px; padding: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); height: 100%; }
+        .section-title { font-weight: 700; color: #1b263b; border-bottom: 2px solid #e0e1dd; padding-bottom: 8px; margin-bottom: 20px; text-transform: uppercase; font-size: 0.95rem; }
     </style>
 </head>
 <body>
 
-    <!-- ♿ ACESSIBILIDADE E ARQUITETURA DE TOPO CORPORATIVA -->
-    <header class="corporate-header">
-        <div class="accessibility-bar">
-            <span>♿ Acessibilidade:</span>
-            <button onclick="alterarFonte('+')" aria-label="Aumentar fonte">A+</button>
-            <button onclick="alterarFonte('-')" aria-label="Diminuir fonte">A-</button>
-            <button onclick="alternarAltoContraste()" aria-pressed="false">⚫ Alto Contraste</button>
-            <button onclick="alternarModoEscuro()" aria-pressed="false">✔️ Escuro / Claro</button>
-            <button id="btn-leitor" aria-pressed="false">📢 Ativar Leitor de Tela</button>
+    <!-- Cabeçalho do Sistema -->
+    <div class="erp-header d-flex justify-content-between align-items-center px-4 mb-4">
+        <div class="d-flex align-items-center">
+            <span class="fw-bold fs-5"><i class="bi bi-cpu-fill text-primary"></i> TERADMAS ERP <span class="badge bg-primary fs-7">V2.5</span></span>
         </div>
+        <div class="text-end text-white-50 fs-7">Gerenciador de Caixa & Alocação de Recursos Setoriais</div>
+    </div>
+
+    <div class="container-fluid px-4">
         
-        <div class="header-main-row">
-            <div class="logo-area">
-                <img src="/static/logo.png" alt="TERADMAS Logo" class="logo-badge">
-                <div class="logo-text">
-                    <h1>TERADMAS ERP v2.6</h1>
-                    <small>Gerenciador de Planejamento de Recursos Empresariais - Abordagem Pedagógico-Didática de Custos</small>
+        <!-- Bloco de Título Principal -->
+        <div class="bg-white p-3 rounded shadow-sm mb-4 border-start border-primary border-4">
+            <h5 class="m-0 fw-bold text-uppercase"><i class="bi bi-sliders"></i> Gestão Financeira - Faturamento + Alocação Setorial de Recursos</h5>
+        </div>
+
+        <!-- QUADRO DE CARDS / MÉTRICAS (Métricas Gerais e Variáveis Dinâmicas) -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card card-metric bg-dark text-white p-3">
+                    <div class="text-white-50 small text-uppercase fw-bold">Capital Total Disponível</div>
+                    <h3 class="mt-2 mb-0 fw-bold" id="card-capital-total">R$ 0,00</h3>
                 </div>
             </div>
-            
-            <nav aria-label="Menu Principal do Sistema">
-                <ul class="nav-corporate-menu">
-                    <li class="nav-item">
-                        <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
-                        <ul class="dropdown-menu">
-                            <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
-                            <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
-                            <li><a href="/orcamentos">03. Limites Orçamentários</a></li>
-                            <li><a href="/rh">04. Organograma e RH</a></li>
-                            <li><a href="/folha_pagamento">05. Folha de Pagamento</a></li>
-                            <li><a href="/requisicoes">06. Requisições Internas</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
-                        <ul class="dropdown-menu">
-                            <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
-                            <li><a href="/materiais">08. Catálogo de Materiais</a></li>
-                            <li><a href="/processos">09. Fluxos de Processos</a></li>
-                            <li><a href="/produtos">10. Fichas Técnicas (BOM)</a></li>
-                            <li><a href="/manutencao">11. Plano de Manutenção</a></li>
-                            <li><a href="/precificacao">12. Formação de Preço</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
-                        <ul class="dropdown-menu">
-                            <li><a href="/compras_insumos">13. Compras de Insumos</a></li>
-                            <li><a href="/pcp">14. Planejamento (PCP)</a></li>
-                            <li><a href="/engenharia_producao">15. Execução de Fábrica</a></li>
-                            <li><a href="/estoque">16. Almoxarifado Central</a></li>
-                            <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
-                        </ul>
-                    </li>
-                    <li class="nav-item">
-                        <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
-                        <ul class="dropdown-menu">
-                            <li><a href="/clientes">18. Carteira de Clientes</a></li>
-                            <li><a href="/vendas">19. Módulo de Vendas</a></li>
-                            <li><a href="/financeiro">20. Fluxo de Caixa Geral</a></li>
-                            <li><a href="/roi">21. Retorno sobre Investimento</a></li>
-                            <li><a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a></li>
-                            <li><a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a></li>
-                        </ul>
-                    </li>
-                </ul>
-            </nav>
-        </div>
-    </header>
-
-
-
-    
-
-    <div class="container">
-        <div style="border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">
-            <h2 style="font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0;">📊 Gestão Financeira - Faturamento + Alocação Setorial de Recursos</h2>
-        </div>
-
-        <!-- 📈 SEÇÃO DE MÉTRICAS GLOBAIS NO TOPO -->
-        <div class="grid-top">
-            <div class="metric-card bg-blue-metric">
-                <p style="margin: 0; font-size: 11px;">💰 Capital Total Disponível</p>
-                <h3 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0;" id="top_capital_total">R$ 0,00</h3>
+            <div class="col-md-3">
+                <div class="card card-metric bg-primary text-white p-3">
+                    <div class="text-white-50 small text-uppercase fw-bold">Faturamento Bruto</div>
+                    <h3 class="mt-2 mb-0 fw-bold" id="card-faturamento">R$ 0,00</h3>
+                </div>
             </div>
-            <div class="metric-card bg-emerald-metric">
-                <p style="margin: 0; font-size: 11px;">🏦 Caixa de Giro</p>
-                <h3 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0;" id="top_giro_global">R$ 0,00</h3>
+            <div class="col-md-3">
+                <div class="card card-metric bg-warning text-dark p-3">
+                    <div class="text-dark-50 small text-uppercase fw-bold">Quota Alocada (Departamento)</div>
+                    <h3 class="mt-2 mb-0 fw-bold" id="card-quota-departamento">R$ 0,00</h3>
+                    <small class="fw-bold text-muted">*Equivale a <span id="txt-porcentagem">0</span>% dos recursos</small>
+                </div>
             </div>
-            <div class="metric-card" style="background-color: #fef3c7; border-color: #fcd34d; color: #92400e;">
-                <p style="margin: 0; font-size: 11px;">📋 Custo Fixo Mensal</p>
-                <h3 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0;" id="top_custo_fixo">R$ 0,00</h3>
-            </div>
-            <div class="metric-card" style="background-color: #f5e6ff; border-color: #e9d5ff; color: #6b21a8;">
-                <p style="margin: 0; font-size: 11px;">💵 Contas a Receber (Aberto)</p>
-                <h3 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0;" id="top_total_receber">R$ 0,00</h3>
+            <div class="col-md-3">
+                <div class="card card-metric bg-danger text-white p-3">
+                    <div class="text-white-50 small text-uppercase fw-bold">Custo Fixo/Variável Ajustado</div>
+                    <h3 class="mt-2 mb-0 fw-bold" id="card-custo-departamento">R$ 0,00</h3>
+                </div>
             </div>
         </div>
 
-        <!-- 🚀 ARQUITETURA TRÍPLICE: FATURAMENTO + ALOCAÇÃO SETORIAL + RAZÃO -->
-        <div class="grid-main">
-            
-            <!-- QUADRO 1: FATURAMENTO DE TÍTULOS -->
-            <div class="card">
-                <h3 style="font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">💵 Faturar Lançamento Financeiro</h3>
-                <form id="formFinanceiro" onsubmit="lancarFaturamento(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
-                    <input type="hidden" id="registro_id" name="id">
-                    
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Vincular Cliente Devedor (CRM):</label>
-                        <select id="financeiro_cliente_id" class="select-form" required>
-                            <option value="">-- Carregando Clientes --</option>
-                        </select>
-                    </div>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Descrição da Cobrança:</label>
-                        <input type="text" id="financeiro_descricao" required placeholder="Ex: Faturamento referente a Contrato Mensal" class="input-form">
-                    </div>
-
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label class="label-form">Valor do Título (R$):</label>
-                            <input type="number" step="0.01" id="financeiro_valor" required placeholder="0.00" class="input-form" style="font-weight: bold;">
+        <!-- PAINÉIS OPERACIONAIS -->
+        <div class="row g-4">
+            <!-- Form 1: Faturamento -->
+            <div class="col-md-6">
+                <div class="panel-form">
+                    <div class="section-title"><i class="bi bi-receipt-cutoff text-primary"></i> Faturar Lançamento Financeiro</div>
+                    <form id="form-faturamento">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Faturar Cliente/Origem</label>
+                            <input type="text" class="form-control form-control-lg" id="fat-cliente" required placeholder="Digite o nome corporativo ou ID">
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 4px;">
-                            <label class="label-form">Prazo / Condição:</label>
-                            <select id="financeiro_condicao" class="select-form">
-                                <option value="À Vista">À Vista (Imediato)</option>
-                                <option value="30 Dias">30 Dias</option>
-                                <option value="60 Dias">60 Dias</option>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Valor Nominal do Título (R$)</label>
+                            <input type="number" step="0.01" class="form-control form-control-lg" id="fat-valor" required placeholder="0,00">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 mt-2 fw-bold"><i class="bi bi-check-circle"></i> EFETUAR FATURAMENTO</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Form 2: Alocação Setorial das Quotas -->
+            <div class="col-md-6">
+                <div class="panel-form">
+                    <div class="section-title"><i class="bi bi-pie-chart-fill text-success"></i> Alocação de Quota - Recursos por Departamento</div>
+                    <form id="form-quota">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Selecione o Departamento Alvo</label>
+                            <select class="form-select form-select-lg" id="select-departamento" required>
+                                <option value="" disabled selected>-- Selecione um dos 20 Departamentos --</option>
+                                <option value="1">01. Administração Geral</option>
+                                <option value="2">02. Recursos Humanos</option>
+                                <option value="3">03. Compras & Suprimentos</option>
+                                <option value="4">04. Produção & Operações</option>
+                                <option value="5">05. Vendas & Comercial</option>
+                                <option value="6">06. Marketing & Comunicação</option>
+                                <option value="7">07. Logística & Distribuição</option>
+                                <option value="8">08. Tecnologia da Informação</option>
+                                <option value="9">09. Controladoria & Auditoria</option>
+                                <option value="10">10. Jurídico & Compliance</option>
+                                <option value="11">11. Atendimento ao Cliente / SAC</option>
+                                <option value="12">12. Pesquisa e Desenvolvimento (P&D)</option>
+                                <option value="13">13. Manutenção & Infraestrutura</option>
+                                <option value="14">14. Qualidade & Processos</option>
+                                <option value="15">15. Faturamento & Cobrança</option>
+                                <option value="16">16. Planejamento Estratégico</option>
+                                <option value="17">17. Exportação / Comércio Exterior</option>
+                                <option value="18">18. Segurança do Trabalho & SESMT</option>
+                                <option value="19">19. Relacionamento com Investidores</option>
+                                <option value="20">20. Gestão de Contratos</option>
                             </select>
                         </div>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Data de Emissão:</label>
-                        <input type="date" id="financeiro_data" required class="input-form">
-                    </div>
-
-                    <button type="submit" id="btn_salvar" class="btn-submit" style="margin-top: 8px;">⚙️ Faturar Contrato</button>
-                </form>
-            </div>
-
-            <!-- QUADRO 2: ALOCAÇÃO DE QUOTA SETORIAL -->
-            <div class="card">
-                <h3 style="font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">🎯 Alocação de Quota - Recursos por Departamento</h3>
-                <form id="formAlocacao" onsubmit="salvarAlocacaoSetorial(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
-                    
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Selecionar Departamento:</label>
-                        <select id="departamento_selecionado" class="select-form" onchange="atualizarDetalhesSetor()" required>
-                            <option value="">-- Escolha o Departamento --</option>
-                            <option value="administrativo">📁 Administrativo & RH</option>
-                            <option value="engenharia">🛠️ Engenharia & Produtos</option>
-                            <option value="producao">🏭 Produção & PCP</option>
-                            <option value="vendas">📈 Vendas & Comercial</option>
-                            <option value="financeiro">💰 Financeiro & Controladoria</option>
-                            <option value="estrutura">🏢 Imobiliário & Suporte</option>
-                        </select>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Quota em Porcentagem (%) do Capital Total:</label>
-                        <div style="display: flex; gap: 4px; align-items: center;">
-                            <input type="range" id="percentual_quota" min="0" max="100" value="10" class="input-form" style="height: 8px; padding: 0;" onchange="atualizarVisualizacaoQuota()">
-                            <input type="number" id="percentual_valor" min="0" max="100" value="10" step="0.5" class="input-form" style="width: 50px;" onchange="atualizarSliderQuota()">
-                            <span style="font-weight: bold; color: #16a34a;">%</span>
+                        <div class="mb-3">
+                            <label class="form-label d-flex justify-content-between fw-semibold text-muted">
+                                <span>Quota Parametrizada (% do Capital)</span>
+                                <span id="valor-range" class="text-success fw-bold fs-5">0%</span>
+                            </label>
+                            <input type="range" class="form-range" id="range-quota" min="0" max="100" value="0">
                         </div>
-                    </div>
-
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Valor Alocado (R$):</label>
-                        <input type="text" id="valor_alocado_reais" readonly class="input-form" style="background-color: #f3f4f6; font-weight: bold; color: #16a34a; font-size: 14px;">
-                    </div>
-
-                    <div id="info_setor" style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 8px; font-size: 11px; color: #065f46; display: none;">
-                        <p style="margin: 0; font-weight: bold;">ℹ️ Informações do Setor Selecionado:</p>
-                        <p style="margin: 2px 0 0 0;" id="info_setor_texto">Selecione um departamento...</p>
-                    </div>
-
-                    <button type="submit" class="btn-secondary" style="margin-top: 8px;">💾 Confirmar Alocação Setorial</button>
-                </form>
-            </div>
-
-            <!-- QUADRO 3: DISTRIBUIÇÃO DE QUOTAS (RESUMO) -->
-            <div class="card">
-                <h3 style="font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">📊 Distribuição Atual de Quotas Setoriais</h3>
-                <div id="tabela_quotas_resumo" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="padding: 8px; background-color: #f3f4f6; border-radius: 6px; font-size: 11px;">
-                        <p style="margin: 0; font-weight: bold;">Carregando distribuição de setores...</p>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted">Valor Líquido da Quota Convertido</label>
+                            <input type="text" class="form-control form-control-lg bg-light" id="valor-alocado-calculado" readonly value="R$ 0,00">
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg w-100 mt-2 fw-bold"><i class="bi bi-shield-check"></i> CONFIRMAR ALOCAÇÃO SETORIAL</button>
+                    </form>
                 </div>
             </div>
-
         </div>
 
-        <!-- TABELA COMPLETA: LIVRO RAZÃO E CAIXA -->
-        <div class="table-container" style="margin-top: 24px;">
-            <div class="table-header-dark">📊 Livro Razão de Títulos e Contas a Receber</div>
+        <!-- LOG DE DADOS / EXTRATO DE CAIXA -->
+        <div class="card mt-4 shadow-sm">
+            <div class="card-header bg-secondary text-white fw-semibold"><i class="bi bi-list-task"></i> Fluxo Recente de Caixa & Operações Recentes</div>
             <div class="table-responsive">
-                <table>
-                    <thead>
+                <table class="table table-hover table-striped m-0 align-middle">
+                    <thead class="table-light text-muted uppercase fs-7">
                         <tr>
-                            <th>ID / Cliente</th>
-                            <th>Descrição / Data</th>
-                            <th>Condição</th>
-                            <th>Valor Nominal</th>
-                            <th style="text-align: center;">Liquidação (Caixa)</th>
+                            <th>ID Transação</th>
+                            <th>Descrição / Origem</th>
+                            <th>Tipo</th>
+                            <th>Valor Líquido</th>
+                            <th>Data Operação</th>
                         </tr>
                     </thead>
-                    <tbody id="tabela_financeiro" class="divide-y text-gray-700">
-                        <tr><td colspan="5" style="text-align: center; padding: 16px; color: #94a3b8;">Carregando títulos...</td></tr>
+                    <tbody id="tabela-caixa">
+                        <tr><td colspan="5" class="text-center py-4 text-muted">Carregando transações do banco Supabase...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
-
-         <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
-        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
-            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
-            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
-            <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
-            <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
-        </footer>
     </div>
 
-    <script src="/static/global_metrics.js"></script>
-    <script src="/financeiro/financeiro.js"></script>
+    <!-- Scripts de Lógica e Bootstrap -->
+    <script src="https://jsdelivr.net"></script>
+    <script src="/static/js/financeiro.js"></script>
 </body>
 </html>
