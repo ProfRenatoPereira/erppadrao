@@ -145,13 +145,7 @@ def api_obter_metrics_totais():
         conexao = obter_conexao_master()
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         
-        # Garante as tabelas operacionais antes das agregações matemáticas
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS configuracao_equipes (
-                id SERIAL PRIMARY KEY, equipe_id TEXT NOT NULL UNIQUE,
-                capital_inicial REAL NOT NULL DEFAULT 0.00
-            )
-        ''')
+        # Garante as tabelas do fluxo e razão antes do processamento matemático
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS razao_financeiro (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
@@ -167,12 +161,26 @@ def api_obter_metrics_totais():
             )
         ''')
         
-        # Busca estrita do capital inicial associado ao ID exclusivo da equipe logada
+        # 🚀 ALOCAÇÃO DINÂMICA DO CAPITAL SOCIAL INTEGRALIZADO
+        # Tenta varrer as estruturas de tabelas prováveis que a tela de constituição usa
         capital_fundacao = 0.0
-        cursor.execute('SELECT capital_inicial FROM configuracao_equipes WHERE equipe_id = %s', (str(id_equipe),))
-        reg_conf = cursor.fetchone()
-        if reg_conf:
-            capital_fundacao = float(reg_conf['capital_inicial'])
+        tabelas_teste = [
+            ("configuracao_equipes", "capital_inicial", "equipe_id"),
+            ("configuracao_equipes", "capital_social", "equipe_id"),
+            ("inicializacao_negocio", "capital_inicial", "equipe_id"),
+            ("inicializacao_negocio", "capital_social", "equipe_id")
+        ]
+        
+        for tabela, coluna, coluna_filtro in tabelas_teste:
+            try:
+                cursor.execute(f"SELECT {coluna} FROM {tabela} WHERE {coluna_filtro} = %s", (str(id_equipe),))
+                reg = cursor.fetchone()
+                if reg and reg[coluna] is not None:
+                    capital_fundacao = float(reg[coluna])
+                    break
+            except Exception:
+                conexao.rollback()
+                continue
 
         faturamento_bruto = 0.0
         fluxo_movimentado = 0.0
