@@ -1,4 +1,4 @@
-<!-- erppadrao - financeiro/financeiro.html - VERSÃO APRIMORADA COM ALOCAÇÃO SETORIAL -->
+<!-- erppadrao - financeiro/financeiro.html - VERSÃO COMPACTA PARTE 1 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -13,8 +13,8 @@
         .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
         
         .card { background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-        .label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
-        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; }
+        .label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; margin-bottom: 12px; }
         .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
         .btn-submit:hover { background-color: #15803d; }
         .btn-secondary { width: 100%; background-color: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
@@ -25,7 +25,7 @@
         .bg-emerald-metric { background-color: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
         
         .grid-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-        .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; }
+        .grid-main { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 24px; align-items: start; margin-bottom: 24px; }
         @media (min-width: 1024px) { .grid-main { grid-template-columns: 1fr 1fr 1fr; } }
         
         .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; }
@@ -36,39 +36,47 @@
         th, td { padding: 12px; }
         tr { border-bottom: 1px solid #e5e7eb; }
         
-        .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; }
+        .corporate-header { background-color: #0f172a; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1e3a8a; position: relative; z-index: 100; }
         .logo-area { display: flex; align-items: center; gap: 14px; }
+        .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
+        .nav-item { position: relative; }
+        .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; cursor: pointer; }
+        .nav-link:hover { color: #38bdf8; }
+        
+        .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #1e293b; min-width: 200px; list-style: none; padding: 4px 0; margin: 0; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .dropdown-menu li a { display: block; padding: 8px 12px; color: #cbd5e1; text-decoration: none; font-size: 11px; }
+        .dropdown-menu li a:hover { background-color: #334155; color: white; }
+        .nav-item:hover .dropdown-menu { display: block; }
+        
+        #menu-toggle { display: none; }
+        .menu-toggle-label { display: none; cursor: pointer; flex-direction: column; gap: 4px; }
+        .menu-toggle-label span { width: 20px; height: 2px; background-color: white; }
         
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
         body.dark-mode .card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
-        body.dark-mode .table-container { background-color: #1e293b !important; border-color: #334155 !important; }
-        body.dark-mode tr { border-bottom: 1px solid #334155 !important; }
-        body.dark-mode thead { background-color: #0f172a !important; color: #cbd5e1 !important; }
-        
         .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; }
         
         .barra-percentual-setor { height: 16px; background-color: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 4px; border: 1px solid #cbd5e1; }
         .preenchimento-barra { height: 100%; background: linear-gradient(to right, #0284c7, #38bdf8); width: 0%; transition: width 0.2s; }
+        @media (max-width: 768px) { .menu-toggle-label { display: flex; } .nav-corporate-menu { display: none; } }
     </style>
 </head>
 <body style="transition: all 0.2s ease;">
 
-    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA -->
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white;">
         <div style="display: flex; align-items: center;">
             <img src="/static/Logo.svg" alt="Logo Corporativo" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
             <span style="font-weight: bold; color: #94a3b8; margin-right: 4px;">♿ Acessibilidade:</span>
-            <button type="button" onclick="mudarFonte(1)" class="btn-top" title="Aumentar Fonte">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="btn-top" title="Diminuir Fonte">A-</button>
+            <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
+            <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
             <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Alto Contraste</button>
             <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Modo Escuro</button>
             <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color: #0284c7; color: white; border: none;">🔊 Ativar Leitor</button>
         </div>
     </div>
-
     <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL -->
     <header class="corporate-header">
         <div class="logo-area">
@@ -79,6 +87,56 @@
                 <span style="font-size: 10px; color: #94a3b8; font-weight: bold;">Fluxo de Caixa com Alocação Setorial</span>
             </div>
         </div>
+
+        <input type="checkbox" id="menu-toggle">
+        <label for="menu-toggle" class="menu-toggle-label"><span></span><span></span><span></span></label>
+        <nav>
+            <ul class="nav-corporate-menu">
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">📁 Administrativo ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/configuracao/inicializacao">01. Fundação de Capital</a></li>
+                        <li><a href="/estrutura">02. Imobiliário e Custos</a></li>
+                        <li><a href="/orcamentos">03. Limites Orçamentários</a></li>
+                        <li><a href="/rh">04. Organograma e RH</a></li>
+                        <li><a href="/folha_pagamento">05. Folha de Pagamento</a></li>
+                        <li><a href="/requisicoes">06. Requisições Internas</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">🛠️ Engenharia ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/maquinas">07. Gerenciador de Máquinas</a></li>
+                        <li><a href="/materiais">08. Catálogo de Materiais</a></li>
+                        <li><a href="/processos">09. Fluxos de Processos</a></li>
+                        <li><a href="/produtos">10. Fichas Técnicas (BOM)</a></li>
+                        <li><a href="/manutencao">11. Plano de Manutenção</a></li>
+                        <li><a href="/precificacao">12. Formação de Preço</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">🏭 Produção ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/compras_insumos">13. Compras de Insumos</a></li>
+                        <li><a href="/pcp">14. Planejamento (PCP)</a></li>
+                        <li><a href="/engenharia_producao">15. Execução de Fábrica</a></li>
+                        <li><a href="/estoque">16. Almoxarifado Central</a></li>
+                        <li><a href="/nota_fiscal">17. Emissão de Notas NF-e</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item">
+                    <span class="nav-link" tabindex="0">📈 Vendas & BI ▾</span>
+                    <ul class="dropdown-menu">
+                        <li><a href="/clientes">18. Carteira de Clientes</a></li>
+                        <li><a href="/vendas">19. Módulo de Vendas</a></li>
+                        <li><a href="/financeiro">20. Fluxo de Caixa Geral</a></li>
+                        <li><a href="/roi">21. Retorno sobre Investimento</a></li>
+                        <li><a href="/professor_painel_secreto" style="color: #38bdf8;">22. Painel do Professor</a></li>
+                        <li><a href="/logout" style="color: #ef4444;">23. Encerrar Turno (Sair)</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </nav>
     </header>
 
     <div class="container">
@@ -105,8 +163,7 @@
                 <h3 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0;" id="top_custo_fixo">R$ 0,00</h3>
             </div>
         </div>
-
-        <!-- ⚙️ CONTEÚDO PRINCIPAL EM 3 QUADROS LADO A LADO -->
+        <!-- ⚙️ CONTEÚDO PRINCIPAL EM PAINÉIS OPERACIONAIS -->
         <div class="grid-main">
             
             <!-- QUADRO 1: FATURAMENTO -->
@@ -126,7 +183,10 @@
                         <input type="number" step="0.01" id="fat_valor" class="input-form" required placeholder="0,00">
                     </div>
                     <button type="submit" class="btn-submit" style="margin-top: 8px;">🚀 Executar Faturamento</button>
-            <!-- QUADRO 2: ALOCAÇÃO DE QUOTA SETORIAL (20 DEPARTAMENTOS DO MENU) -->
+                </form>
+            </div>
+
+            <!-- QUADRO 2: ALOCAÇÃO DE QUOTA SETORIAL (6 DEPARTAMENTOS ORIGINAIS) -->
             <div class="card">
                 <h3 style="font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">🎯 Alocação de Quota - Recursos por Departamento</h3>
                 <form id="formAlocacao" onsubmit="salvarAlocacaoSetorial(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
@@ -135,38 +195,12 @@
                         <label class="label-form">Selecionar Departamento:</label>
                         <select id="departamento_selecionado" class="select-form" onchange="atualizarDetalhesSetor()" required>
                             <option value="">-- Escolha o Departamento --</option>
-                            <optgroup label="Administrativo & RH">
-                                <option value="adm_geral">01. Administração Geral</option>
-                                <option value="rec_humanos">02. Recursos Humanos</option>
-                                <option value="compras">03. Compras & Suprimentos</option>
-                                <option value="juridico">10. Jurídico & Compliance</option>
-                                <option value="planejamento">16. Planejamento Estratégico</option>
-                            </optgroup>
-                            <optgroup label="Engenharia & Produtos">
-                                <option value="tecnologia">08. Tecnologia da Informação</option>
-                                <option value="pesquisa_p_d">12. Pesquisa e Desenvolvimento (P&D)</option>
-                                <option value="qualidade">14. Qualidade & Processos</option>
-                            </optgroup>
-                            <optgroup label="Produção & PCP">
-                                <option value="producao_oper">04. Produção & Operações</option>
-                                <option value="logistica">07. Logística & Distribuição</option>
-                                <option value="manutencao">13. Manutenção & Infraestrutura</option>
-                                <option value="seg_trabalho">18. Segurança do Trabalho & SESMT</option>
-                            </optgroup>
-                            <optgroup label="Vendas & Comercial">
-                                <option value="vendas_com">05. Vendas & Comercial</option>
-                                <option value="marketing">06. Marketing & Comunicação</option>
-                                <option value="atendimento">11. Atendimento ao Cliente / SAC</option>
-                                <option value="exportacao">17. Exportação / Comércio Exterior</option>
-                            </optgroup>
-                            <optgroup label="Financeiro & Controladoria">
-                                <option value="controladoria">09. Controladoria & Auditoria</option>
-                                <option value="faturamento_cob">15. Faturamento & Cobrança</option>
-                                <option value="rel_invest">19. Relacionamento com Investidores</option>
-                            </optgroup>
-                            <optgroup label="Imobiliário & Suporte">
-                                <option value="gestao_contratos">20. Gestão de Contratos</option>
-                            </optgroup>
+                            <option value="administrativo">📁 Administrativo & RH</option>
+                            <option value="engenharia">🛠️ Engenharia & Produtos</option>
+                            <option value="producao">🏭 Produção & PCP</option>
+                            <option value="vendas">📈 Vendas & Comercial</option>
+                            <option value="financeiro">💰 Financeiro & Controladoria</option>
+                            <option value="estrutura">🏢 Imobiliário & Suporte</option>
                         </select>
                     </div>
 
@@ -226,11 +260,12 @@
             </div>
         </div>
 
-        <!-- RODAPÉ INSTITUCIONAL -->
-        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: center;">
-            <p style="margin: 0 0 4px 0; font-weight: bold;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
-            <p style="margin: 0 0 4px 0; font-weight: 900; color: #1e3a8a;">© Copyright Física Renato Pereira ®ψΣ.</p>
-            <p style="color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026 - Versão Financeiro Aprimorado.</p>
+        <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
+        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
+            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
+            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
+            <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
         </footer>
     </div>
 
