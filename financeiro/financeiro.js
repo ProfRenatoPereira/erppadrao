@@ -1,5 +1,6 @@
 /**
  * TERADMAS ERP v2.6 - Controlador Financeiro e Gestão de Quotas Reativas (20 Módulos)
+ * ARQUIVO: financeiro/financeiro.js (COMPLETO E SEPARADO)
  */
 
 let capitalDisponivelGlobal = 0.00;
@@ -10,46 +11,42 @@ const formatarBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', curren
 
 async function carregarDashboardFinanceiro() {
     try {
-        const response = await fetch('/api/financeiro/metrics');
+        const response = await fetch('/api/financeiro/metricas');
         const metrics = await response.json();
         
-        // Atribui valores coletados, tratando nulos ou indefinidos de forma segura
-        capitalDisponivelGlobal = parseFloat(metrics.capital_total) || 0;
-        faturamentoTotalGlobal = parseFloat(metrics.faturamento_consolidado) || 0;
-        
-        document.getElementById('top_capital_total').innerText = formatarBRL(capitalDisponivelGlobal);
-        document.getElementById('top_giro_global').innerText = formatarBRL(faturamentoTotalGlobal);
+        capitalDisponivelGlobal = parseFloat(metrics.capital_disponivel_total) || 0;
+        faturamentoTotalGlobal = parseFloat(metrics.patrimonio_ativo_total) || 0;
         
         recalcularMétricasPainel();
         await renderizarResumoQuotas();
         await carregarLivroRazao();
     } catch (e) {
-        console.error("Erro na carga inicial das métricas corporativas:", e);
+        console.error("Erro na carga local de sincronia com a API:", e);
     }
 }
 
 function atualizarVisualizacaoQuota(valor) {
     document.getElementById('percentual_valor').value = valor;
+    document.getElementById('percentual_quota').value = valor;
     recalcularMétricasPainel();
 }
 
 function atualizarSliderQuota(valor) {
     document.getElementById('percentual_quota').value = valor;
+    document.getElementById('percentual_valor').value = valor;
     recalcularMétricasPainel();
 }
 
 function recalcularMétricasPainel() {
     const pct = parseFloat(document.getElementById('percentual_valor').value) || 0;
-    // Calcula o valor real da cota; se capital total for 0, o retorno será R$ 0,00 mantendo estabilidade
     const valorAlocado = capitalDisponivelGlobal * (pct / 100);
     
     document.getElementById('valor_alocado_reais').value = formatarBRL(valorAlocado);
-    document.getElementById('top_quota_calculada').innerText = formatarBRL(valorAlocado);
     
-    // Cálculo do Custo Operacional Líquido Reativo baseado na variável injetada
-    const custoFixoFicticioBase = 4200.00;
-    const custoCalculado = custoFixoFicticioBase - (valorAlocado * 0.15);
-    document.getElementById('top_custo_fixo').innerText = formatarBRL(custoCalculado < 0 ? 0 : custoCalculado);
+    const topQuotaCalculadaElem = document.getElementById('top_quota_calculada');
+    if (topQuotaCalculadaElem) {
+        topQuotaCalculadaElem.innerText = formatarBRL(valorAlocado);
+    }
 }
 
 async function atualizarDetalhesSetor() {
@@ -70,12 +67,12 @@ async function atualizarDetalhesSetor() {
         document.getElementById('percentual_quota').value = pctSalva;
         document.getElementById('percentual_valor').value = pctSalva;
         
-        infoTxt.innerHTML = `Módulo destino <strong>/${deptoAtual}</strong> selecionado. Defina e salve a quota percentual desejada.`;
+        infoTxt.innerHTML = `Módulo destino <strong>/${deptoAtual}</strong> selecionado para rateio. Defina a quota e confirme a alocação setorial.`;
         infoBox.style.display = "block";
         
         recalcularMétricasPainel();
     } catch (err) {
-        console.error("Erro ao sincronizar dados da cota do módulo:", err);
+        console.error("Erro ao sincronizar dados da cota setorial:", err);
     }
 }
 
@@ -83,7 +80,7 @@ async function efetuarFaturamento(event) {
     event.preventDefault();
     const payload = {
         cliente_id: parseInt(document.getElementById('fat_cliente_id').value) || 0,
-        cliente_nome_suporte: document.getElementById('fat_cliente_nome').value,
+        cliente_nome_suporte: document.getElementById('fat_cliente_name').value,
         financeiro_descricao: document.getElementById('fat_descricao').value,
         financeiro_valor: parseFloat(document.getElementById('fat_valor').value),
         financeiro_condicao: document.getElementById('fat_condicao').value,
@@ -97,9 +94,10 @@ async function efetuarFaturamento(event) {
     });
     
     if(response.ok) {
-        alert("Título gerado e registrado no Razão com sucesso!");
+        alert("Título de faturamento registrado com sucesso no Razão!");
         document.getElementById('formFaturamento').reset();
         await carregarDashboardFinanceiro();
+        if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
     }
 }
 
@@ -112,14 +110,15 @@ async function liquidarTitulo(idReg) {
     });
     
     if(response.ok) {
-        alert("Título liquidado! Recurso injetado no Caixa de Giro.");
+        alert("Título liquidado com sucesso! Saldo injetado no Caixa de Giro.");
         await carregarDashboardFinanceiro();
+        if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
     }
 }
 
 async function salvarAlocacaoSetorial(event) {
     event.preventDefault();
-    if(!deptoAtual) return alert("Selecione um módulo alvo primeiro.");
+    if(!deptoAtual) return alert("Por favor, selecione um módulo de destino alvo.");
     
     const payload = {
         departamento_id: deptoAtual,
@@ -133,7 +132,7 @@ async function salvarAlocacaoSetorial(event) {
     });
     
     if(response.ok) {
-        alert("Quota parametrizada salva com sucesso!");
+        alert("Quota setorial parametrizada e salva no Supabase!");
         await carregarDashboardFinanceiro();
     }
 }
@@ -146,14 +145,14 @@ async function renderizarResumoQuotas() {
         container.innerHTML = "";
         
         if (distribuicao.length === 0) {
-            container.innerHTML = `<div style="padding:8px;background-color:#f3f4f6;font-size:11px;">Sem quotas setoriais parametrizadas.</div>`;
+            container.innerHTML = `<div style="padding:8px;background-color:#f3f4f6;border-radius:6px;">Sem quotas setoriais parametrizadas.</div>`;
             return;
         }
         
         distribuicao.forEach(setor => {
             const valorMonetario = capitalDisponivelGlobal * (setor.porcentagem_quota / 100);
             container.innerHTML += `
-                <div style="padding: 6px 8px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px;">
+                <div style="padding: 6px 8px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 4px;">
                     <div style="display:flex; justify-content: space-between; font-weight: bold;">
                         <span>📍 /${setor.departamento_id}</span>
                         <span style="color:#16a34a;">${setor.porcentagem_quota}% (${formatarBRL(valorMonetario)})</span>
@@ -165,7 +164,7 @@ async function renderizarResumoQuotas() {
             `;
         });
     } catch (e) {
-        console.error("Erro ao renderizar painel de sumário:", e);
+        console.error("Erro ao montar sumário de distribuição:", e);
     }
 }
 
@@ -177,7 +176,7 @@ async function carregarLivroRazao() {
         tbody.innerHTML = "";
         
         if(dados.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:12px;color:#94a3b8;">Nenhum título localizado no razão contábil.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px;color:#94a3b8;">Nenhum título localizado no razão contábil.</td></tr>`;
             return;
         }
         
@@ -191,7 +190,7 @@ async function carregarLivroRazao() {
 
             tbody.innerHTML += `
                 <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="font-weight: bold; padding:10px;">FT-00${item.id}<br><small style="color:#6b7280;">ID Clie: ${item.cliente_id}</small></td>
+                    <td style="font-weight: bold; padding:10px;">FT-00${item.id}<br><small style="color:#6b7280;">ID: ${item.cliente_id}</small></td>
                     <td style="padding:10px;"><strong>${item.cliente_nome_suporte}</strong><br><small style="color:#94a3b8;">${item.financeiro_descricao}</small></td>
                     <td style="padding:10px;"><span style="${badgeColor}padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">${item.status_titulo.toUpperCase()}</span></td>
                     <td style="font-weight:900;color:#1e3a8a;padding:10px;">${formatarBRL(parseFloat(item.financeiro_valor))}<br><small style="color:#6b7280;">${item.financeiro_condicao} | ${item.financeiro_data}</small></td>
@@ -204,4 +203,7 @@ async function carregarLivroRazao() {
     }
 }
 
-document.addEventListener("DOMContentLoaded", carregarDashboardFinanceiro);
+document.addEventListener("DOMContentLoaded", () => {
+    carregarDashboardFinanceiro();
+    setInterval(carregarDashboardFinanceiro, 5000);
+});
