@@ -1,4 +1,4 @@
-<!-- erppadrao - financeiro/financeiro.html - VERSÃO COMPACTA PARTE 1 -->
+<!-- erppadrao - financeiro/financeiro.html - VERSÃO FINAL BLUEPRINT PARTE 1 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -44,8 +44,8 @@
         .nav-link:hover { color: #38bdf8; }
         
         .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #1e293b; min-width: 200px; list-style: none; padding: 4px 0; margin: 0; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .dropdown-menu li a { display: block; padding: 8px 12px; color: #cbd5e1; text-decoration: none; font-size: 11px; }
-        .dropdown-menu li a:hover { background-color: #334155; color: white; }
+        .dropdown-menu li a { display: block; padding: 8px 12px; color: #cbd5e1; text-decoration: none; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .dropdown-menu li a:hover { background-color: #334155; color: #38bdf8; }
         .nav-item:hover .dropdown-menu { display: block; }
         
         #menu-toggle { display: none; }
@@ -59,11 +59,17 @@
         
         .barra-percentual-setor { height: 16px; background-color: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 4px; border: 1px solid #cbd5e1; }
         .preenchimento-barra { height: 100%; background: linear-gradient(to right, #0284c7, #38bdf8); width: 0%; transition: width 0.2s; }
-        @media (max-width: 768px) { .menu-toggle-label { display: flex; } .nav-corporate-menu { display: none; } }
+        @media (max-width: 1024px) { 
+            .menu-toggle-label { display: flex; } 
+            .nav-corporate-menu { display: none; position: absolute; top: 100%; left: 0; width: 100%; background-color: #0f172a; flex-direction: column; padding: 10px; } 
+            #menu-toggle:checked ~ nav .nav-corporate-menu { display: flex; }
+            .dropdown-menu { position: relative; background-color: #0f172a; box-shadow: none; display: block; padding-left: 15px; }
+        }
     </style>
 </head>
 <body style="transition: all 0.2s ease;">
 
+    <!-- ♿ BARRA TOP DE ACESSIBILIDADE CORPORATIVA -->
     <div id="barra-acessibilidade" style="background-color: #0f172a; padding: 6px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; color: white;">
         <div style="display: flex; align-items: center;">
             <img src="/static/Logo.svg" alt="Logo Corporativo" style="height: 22px; width: auto; display: block;" onerror="this.style.display='none';">
@@ -78,13 +84,13 @@
         </div>
     </div>
     <!-- 🏆 HEADER DE NAVEGAÇÃO INTER-DEPARTAMENTAL -->
-    <header class="corporate-header">
+    <header class="corporate-header" style="font-size: 0.75rem;">
         <div class="logo-area">
             <img src="/static/logo.png" alt="Logo ERP" style="height: 55px; width: auto; border-radius: 6px; background-color: white; padding: 3px;" onerror="this.style.display='none';">
             <div>
-                <span style="font-weight: 900; font-size: 16px; color: #38bdf8; text-transform: uppercase;">TERADMAS ERP v2.6</span>
+                <span style="font-weight: 900; font-size: 1rem; color: #38bdf8; text-transform: uppercase;">TERADMAS ERP v2.6</span>
                 <br>
-                <span style="font-size: 10px; color: #94a3b8; font-weight: bold;">Fluxo de Caixa com Alocação Setorial</span>
+                <span style="font-size: 0.65rem; color: #94a3b8; font-weight: bold;">Fluxo de Caixa com Alocação Setorial</span>
             </div>
         </div>
 
@@ -139,99 +145,110 @@
         </nav>
     </header>
 
-    <div class="container">
+    <div class="container" style="font-size: 0.75rem;">
         <div style="border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">
-            <h2 style="font-size: 18px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0;">📊 Gestão Financeira - Faturamento + Alocação Setorial de Recursos</h2>
+            <h2 style="font-size: 1.15rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0;">📊 Gestão Financeira - Faturamento + Alocação Setorial de Recursos</h2>
         </div>
 
-        <!-- 📈 SEÇÃO DE MÉTRICAS GLOBAIS NO TOPO -->
+        <!-- 📈 SEÇÃO DE MÉTRICAS GLOBAIS NO TOPO (Convertida para unidades relativas rem) -->
         <div class="grid-top">
             <div class="metric-card bg-blue-metric">
-                <p style="margin: 0; font-size: 11px;">💰 Capital Total Disponível</p>
-                <h3 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0;" id="top_capital_total">R$ 0,00</h3>
+                <p style="margin: 0; font-size: 0.7rem;">💰 Capital Total Disponível</p>
+                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="top_capital_total">R$ 0,00</h3>
             </div>
             <div class="metric-card bg-emerald-metric">
-                <p style="margin: 0; font-size: 11px;">🏦 Faturamento Consolidado</p>
-                <h3 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0;" id="top_giro_global">R$ 0,00</h3>
+                <p style="margin: 0; font-size: 0.7rem;">🏦 Faturamento Consolidado</p>
+                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="top_giro_global">R$ 0,00</h3>
             </div>
             <div class="metric-card" style="background-color: #fef3c7; border-color: #fcd34d; color: #92400e;">
-                <p style="margin: 0; font-size: 11px;">📋 Quota Alocada (Dept. Atual)</p>
-                <h3 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0;" id="top_quota_calculada">R$ 0,00</h3>
+                <p style="margin: 0; font-size: 0.7rem;">📋 Quota Alocada (Dept. Atual)</p>
+                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="top_quota_calculada">R$ 0,00</h3>
             </div>
             <div class="metric-card" style="background-color: #f5e6ff; border-color: #e9d5ff; color: #6b21a8;">
-                <p style="margin: 0; font-size: 11px;">💵 Custo Operacional Ajustado</p>
-                <h3 style="font-size: 20px; font-weight: 900; margin: 4px 0 0 0;" id="top_custo_fixo">R$ 0,00</h3>
+                <p style="margin: 0; font-size: 0.7rem;">💵 Custo Operacional Ajustado</p>
+                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="top_custo_fixo">R$ 0,00</h3>
             </div>
         </div>
         <!-- ⚙️ CONTEÚDO PRINCIPAL EM PAINÉIS OPERACIONAIS -->
         <div class="grid-main">
             
-            <!-- QUADRO 1: FATURAMENTO -->
+            <!-- QUADRO 1: FATURAMENTO (ALINHADO COM OS CAMPOS DO BLUEPRINT) -->
             <div class="card">
-                <h3 style="font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">💼 Novo Lançamento Financeiro</h3>
-                <form id="formFaturamento" onsubmit="efetuarFaturamento(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Cliente / Origem:</label>
-                        <input type="text" id="fat_cliente" class="input-form" required placeholder="Nome do Cliente ou Origem">
+                <h3 style="font-size: 0.85rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">💼 Novo Lançamento Financeiro</h3>
+                <form id="formFaturamento" onsubmit="efetuarFaturamento(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.75rem;">
+                    <div>
+                        <label class="label-form">ID do Cliente:</label>
+                        <input type="number" id="fat_cliente_id" class="input-form" required placeholder="Ex: 1042">
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Descrição da Receita:</label>
-                        <input type="text" id="fat_descricao" class="input-form" required placeholder="Ex: Prestação de Serviços, Venda de Ativos">
+                    <div>
+                        <label class="label-form">Nome do Cliente / Suporte:</label>
+                        <input type="text" id="fat_cliente_name" class="input-form" required placeholder="Nome corporativo ou razão social">
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Valor Nominal (R$):</label>
+                    <div>
+                        <label class="label-form">Descrição do Lançamento:</label>
+                        <input type="text" id="fat_descricao" class="input-form" required placeholder="Ex: Prestação de Serviços Técnicos">
+                    </div>
+                    <div>
+                        <label class="label-form">Valor do Título (R$):</label>
                         <input type="number" step="0.01" id="fat_valor" class="input-form" required placeholder="0,00">
+                    </div>
+                    <div>
+                        <label class="label-form">Condição de Pagamento:</label>
+                        <select id="fat_condicao" class="select-form" required>
+                            <option value="À Vista">À Vista</option>
+                            <option value="30 Dias">30 Dias</option>
+                            <option value="60 Dias">60 Dias</option>
+                            <option value="Parcelado">Parcelado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label-form">Data de Competência:</label>
+                        <input type="date" id="fat_data" class="input-form" required>
                     </div>
                     <button type="submit" class="btn-submit" style="margin-top: 8px;">🚀 Executar Faturamento</button>
                 </form>
             </div>
 
-            <!-- QUADRO 2: ALOCAÇÃO DE QUOTA SETORIAL (6 DEPARTAMENTOS ORIGINAIS) -->
+            <!-- QUADRO 2: ALOCAÇÃO DE QUOTA (20 PÁGINAS OPERACIONAIS VALIDADAS) -->
             <div class="card">
-                <h3 style="font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">🎯 Alocação de Quota - Recursos por Departamento</h3>
-                <form id="formAlocacao" onsubmit="salvarAlocacaoSetorial(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
+                <h3 style="font-size: 0.85rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">🎯 Alocação de Quota - Recursos por Departamento</h3>
+                <form id="formAlocacao" onsubmit="salvarAlocacaoSetorial(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.75rem;">
                     
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-    <label class="label-form">Selecionar Módulo/Página Destino:</label>
-    <select id="departamento_selecionado" class="select-form" onchange="atualizarDetalhesSetor()" required>
-        <option value="">-- Escolha o Módulo para Alocação --</option>
-        
-        <optgroup label="📁 Administrativo">
-            <option value="estrutura">02. Imobiliário e Custos</option>
-            <option value="orcamentos">03. Limites Orçamentários</option>
-            <option value="rh">04. Organograma e RH</option>
-            <option value="folha_pagamento">05. Folha de Pagamento</option>
-            <option value="requisicoes">06. Requisições Internas</option>
-        </optgroup>
-
-        <optgroup label="🛠️ Engenharia">
-            <option value="maquinas">07. Gerenciador de Máquinas</option>
-            <option value="materiais">08. Catálogo de Materiais</option>
-            <option value="processos">09. Fluxos de Processos</option>
-            <option value="produtos">10. Fichas Técnicas (BOM)</option>
-            <option value="manutencao">11. Plano de Manutenção</option>
-            <option value="precificacao">12. Formação de Preço</option>
-        </optgroup>
-
-        <optgroup label="🏭 Produção">
-            <option value="compras_insumos">13. Compras de Insumos</option>
-            <option value="pcp">14. Planejamento (PCP)</option>
-            <option value="engenharia_producao">15. Execução de Fábrica</option>
-            <option value="estoque">16. Almoxarifado Central</option>
-            <option value="nota_fiscal">17. Emissão de Notas NF-e</option>
-        </optgroup>
-
-        <optgroup label="📈 Vendas & BI">
-            <option value="clientes">18. Carteira de Clientes</option>
-            <option value="vendas">19. Módulo de Vendas</option>
-            <option value="financeiro">20. Fluxo de Caixa Geral</option>
-            <option value="roi">21. Retorno sobre Investimento</option>
-        </optgroup>
-    </select>
-</div>
-
-
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <div>
+                        <label class="label-form">Selecionar Módulo Alvo:</label>
+                        <select id="departamento_selecionado" class="select-form" onchange="atualizarDetalhesSetor()" required>
+                            <option value="">-- Escolha o Módulo Operacional --</option>
+                            <optgroup label="📁 Administrativo">
+                                <option value="estrutura">02. Imobiliário e Custos</option>
+                                <option value="orcamentos">03. Limites Orçamentários</option>
+                                <option value="rh">04. Organograma e RH</option>
+                                <option value="folha_pagamento">05. Folha de Pagamento</option>
+                                <option value="requisicoes">06. Requisições Internas</option>
+                            </optgroup>
+                            <optgroup label="🛠️ Engenharia">
+                                <option value="maquinas">07. Gerenciador de Máquinas</option>
+                                <option value="materiais">08. Catálogo de Materiais</option>
+                                <option value="processos">09. Fluxos de Processos</option>
+                                <option value="produtos">10. Fichas Técnicas (BOM)</option>
+                                <option value="manutencao">11. Plano de Manutenção</option>
+                                <option value="precificacao">12. Formação de Preço</option>
+                            </optgroup>
+                            <optgroup label="🏭 Produção">
+                                <option value="compras_insumos">13. Compras de Insumos</option>
+                                <option value="pcp">14. Planejamento (PCP)</option>
+                                <option value="engenharia_producao">15. Execução de Fábrica</option>
+                                <option value="estoque">16. Almoxarifado Central</option>
+                                <option value="nota_fiscal">17. Emissão de Notas NF-e</option>
+                            </optgroup>
+                            <optgroup label="📈 Vendas & BI">
+                                <option value="clientes">18. Carteira de Clientes</option>
+                                <option value="vendas">19. Módulo de Vendas</option>
+                                <option value="financeiro">20. Fluxo de Caixa Geral</option>
+                                <option value="roi">21. Retorno sobre Investimento</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div>
                         <label class="label-form">Quota em Porcentagem (%) do Capital Total:</label>
                         <div style="display: flex; gap: 4px; align-items: center;">
                             <input type="range" id="percentual_quota" min="0" max="100" value="0" class="input-form" style="height: 8px; padding: 0;" oninput="atualizarVisualizacaoQuota(this.value)">
@@ -240,12 +257,12 @@
                         </div>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Valor Alocado (R$):</label>
-                        <input type="text" id="valor_alocado_reais" readonly class="input-form" style="background-color: #f3f4f6; font-weight: bold; color: #16a34a; font-size: 14px;" value="R$ 0,00">
+                    <div>
+                        <label class="label-form">Valor Alocado Convertido:</label>
+                        <input type="text" id="valor_alocado_reais" readonly class="input-form" style="background-color: #f3f4f6; font-weight: bold; color: #16a34a; font-size: 0.9rem;" value="R$ 0,00">
                     </div>
 
-                    <div id="info_setor" style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 8px; font-size: 11px; color: #065f46; display: none;">
+                    <div id="info_setor" style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 8px; font-size: 0.7rem; color: #065f46; display: none;">
                         <p style="margin: 0; font-weight: bold;">ℹ️ Informações do Setor Selecionado:</p>
                         <p style="margin: 2px 0 0 0;" id="info_setor_texto">Selecione um departamento...</p>
                     </div>
@@ -256,9 +273,9 @@
 
             <!-- QUADRO 3: DISTRIBUIÇÃO DE QUOTAS (RESUMO ATUAL) -->
             <div class="card">
-                <h3 style="font-size: 13px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">📊 Distribuição Atual de Quotas Setoriais</h3>
-                <div id="tabela_quotas_resumo" style="display: flex; flex-direction: column; gap: 8px; max-height: 290px; overflow-y: auto; padding-right: 2px;">
-                    <div style="padding: 8px; background-color: #f3f4f6; border-radius: 6px; font-size: 11px;">
+                <h3 style="font-size: 0.85rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">📊 Distribuição Atual de Quotas Setoriais</h3>
+                <div id="tabela_quotas_resumo" style="display: flex; flex-direction: column; gap: 8px; max-height: 290px; overflow-y: auto; padding-right: 2px; font-size: 0.7rem;">
+                    <div style="padding: 8px; background-color: #f3f4f6; border-radius: 6px;">
                         <p style="margin: 0; font-weight: bold;">Carregando distribuição de setores...</p>
                     </div>
                 </div>
@@ -266,43 +283,42 @@
 
         </div>
 
-        <!-- TABELA COMPLETA: LIVRO RAZÃO E CAIXA -->
+        <!-- TABELA COMPLETA: LIVRO RAZÃO FINANCEIRO -->
         <div class="table-container" style="margin-top: 24px;">
             <div class="table-header-dark">📊 Livro Razão de Títulos e Contas a Receber</div>
             <div class="table-responsive">
-                <table>
+                <table style="font-size: 0.75rem;">
                     <thead>
                         <tr>
                             <th>ID / Cliente</th>
-                            <th>Descrição / Data</th>
+                            <th>Descrição / Competência</th>
                             <th>Condição</th>
                             <th>Valor Nominal</th>
                             <th style="text-align: center;">Liquidação (Caixa)</th>
                         </tr>
                     </thead>
                     <tbody id="tabela_financeiro">
-                        <tr><td colspan="5" style="text-align: center; padding: 16px; color: #94a3b8;">Carregando títulos do Supabase...</td></tr>
+                        <tr><td colspan="5" style="text-align: center; padding: 16px; color: #94a3b8;">Carregando títulos contábeis...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
-        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
-            <p style="margin: 0 0 16px 0;"><strong>CRÉDITOS & HOMENAGEM:</strong> Autoras e autores de códigos, imagens, sons e conhecimentos multiplicados neste projeto aberto. Uma construção que reflete a contínua interação entre o <em>Homo sapiens</em> tecnológico e a IA. Sobretudo, toda gratidão por gentis críticas e generosa motivação creditadas por estimadas e valorosos estudantes.</p>
-            <p style="text-align: center; font-weight: bold; margin: 0 0 4px 0;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
-            <p style="text-align: center; font-weight: 900; color: #1e3a8a; margin: 0 0 4px 0;">© Copyright Física Renato Pereira ®ψΣ.</p>
-            <p style="text-align: center; color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026.</p>
+        <!-- RODAPÉ INSTITUCIONAL -->
+        <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 0.65rem; color: #6b7280; text-align: center;">
+            <p style="margin: 0 0 4px 0; font-weight: bold;">Desenvolvido focado em diretrizes de acessibilidade web (WCAG).</p>
+            <p style="margin: 0 0 4px 0; font-weight: 900; color: #1e3a8a;">© Copyright Física Renato Pereira ®ψΣ.</p>
+            <p style="color: #94a3b8; margin: 0;">Ed. 00-10/2024. Rev. 01-05/2026 - Versão Financeiro Aprimorado.</p>
         </footer>
     </div>
 
-    <!-- SCRIPTS CORE -->
+    <!-- SCRIPTS CORE E CORREÇÃO DE ACESSIBILIDADE INTEGRAL -->
     <script>
         let tamanhoFonteAtual = 16;
         function mudarFonte(direcao) {
             tamanhoFonteAtual += direcao;
             if (tamanhoFonteAtual < 12) tamanhoFonteAtual = 12;
-            if (tamanhoFonteAtual > 22) tamanhoFonteAtual = 22;
+            if (tamanhoFonteAtual > 24) tamanhoFonteAtual = 24;
             document.documentElement.style.fontSize = tamanhoFonteAtual + 'px';
         }
         function alternarModoEscuro() {
