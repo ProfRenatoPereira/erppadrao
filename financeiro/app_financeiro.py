@@ -43,13 +43,13 @@ def api_faturar_titulo():
                 financeiro_valor REAL, financeiro_condicao TEXT,
                 financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
             )
-        ''');
+        ''')
         
         cursor.execute('''
             INSERT INTO razao_financeiro (equipe_id, cliente_id, cliente_nome_suporte, 
             financeiro_descricao, financeiro_valor, financeiro_condicao, financeiro_data)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-        ''', (id_equipe, int(dados.get('cliente_id', 0)), dados.get('cliente_nome_suporte'), dados.get('financeiro_descricao'),
+        ''', (str(id_equipe), int(dados.get('cliente_id', 0)), dados.get('cliente_nome_suporte'), dados.get('financeiro_descricao'),
               float(dados.get('financeiro_valor', 0.0)), dados.get('financeiro_condicao'), dados.get('financeiro_data')))
               
         conexao.commit()
@@ -69,7 +69,6 @@ def api_listar_titulos():
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
         id_equipe = session.get('id_equipe', 'equipe_alfa')
         
-        # Correção Crítica: Cria a tabela ANTES do SELECT para evitar o erro UndefinedTable
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS razao_financeiro (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
@@ -77,7 +76,7 @@ def api_listar_titulos():
                 financeiro_valor REAL, financeiro_condicao TEXT,
                 financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
             )
-        ''');
+        ''')
         
         cursor.execute('SELECT * FROM razao_financeiro WHERE equipe_id = %s ORDER BY id DESC', (str(id_equipe),))
         linhas = cursor.fetchall()
@@ -106,7 +105,7 @@ def api_liquidar_titulo_id(id_reg):
                 financeiro_valor REAL, financeiro_condicao TEXT,
                 financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
             )
-        ''');
+        ''')
         
         cursor.execute('SELECT * FROM razao_financeiro WHERE id = %s AND equipe_id = %s AND status_titulo = \'Aberto\'', (int(id_reg), str(id_equipe)))
         titulo = cursor.fetchone()
@@ -138,6 +137,9 @@ def api_liquidar_titulo_id(id_reg):
 
 @financeiro_blueprint.route('/api/financeiro/metricas', methods=['GET'])
 def api_obter_metrics_totais():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
     try:
         id_equipe = session.get('id_equipe', 'equipe_alfa')
         conexao = obter_conexao_master()
@@ -145,13 +147,19 @@ def api_obter_metrics_totais():
         
         # Garante as tabelas operacionais antes das agregações matemáticas
         cursor.execute('''
+            CREATE TABLE IF NOT EXISTS configuracao_equipes (
+                id SERIAL PRIMARY KEY, equipe_id TEXT NOT NULL UNIQUE,
+                capital_inicial REAL NOT NULL DEFAULT 0.00
+            )
+        ''')
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS razao_financeiro (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
                 cliente_nome_suporte TEXT, financeiro_descricao TEXT,
                 financeiro_valor REAL, financeiro_condicao TEXT,
                 financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
             )
-        ''');
+        ''')
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS fluxo_caixa (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, departamento TEXT,
@@ -159,30 +167,25 @@ def api_obter_metrics_totais():
             )
         ''')
         
+        # Busca estrita do capital inicial associado ao ID exclusivo da equipe logada
         capital_fundacao = 0.0
-        try:
-            cursor.execute('SELECT capital_inicial FROM configuracao_equipes WHERE equipe_id = %s', (str(id_equipe),))
-            reg_conf = cursor.fetchone()
-            if reg_conf:
-                capital_fundacao = float(reg_conf['capital_inicial'])
-        except Exception:
-            pass
+        cursor.execute('SELECT capital_inicial FROM configuracao_equipes WHERE equipe_id = %s', (str(id_equipe),))
+        reg_conf = cursor.fetchone()
+        if reg_conf:
+            capital_fundacao = float(reg_conf['capital_inicial'])
 
         faturamento_bruto = 0.0
         fluxo_movimentado = 0.0
         
-        try:
-            cursor.execute('SELECT financeiro_valor FROM razao_financeiro WHERE equipe_id = %s AND status_titulo = \'Liquidado\'', (str(id_equipe),))
-            titulos_pagos = cursor.fetchall()
-            for t in titulos_pagos:
-                faturamento_bruto += float(t['financeiro_valor'])
-                
-            cursor.execute('SELECT valor FROM fluxo_caixa WHERE equipe_id = %s', (str(id_equipe),))
-            movimentacoes = cursor.fetchall()
-            for m in movimentacoes:
-                fluxo_movimentado += (float(m['valor']) * -1)
-        except Exception:
-            pass
+        cursor.execute('SELECT financeiro_valor FROM razao_financeiro WHERE equipe_id = %s AND status_titulo = \'Liquidado\'', (str(id_equipe),))
+        titulos_pagos = cursor.fetchall()
+        for t in titulos_pagos:
+            faturamento_bruto += float(t['financeiro_valor'])
+            
+        cursor.execute('SELECT valor FROM fluxo_caixa WHERE equipe_id = %s', (str(id_equipe),))
+        movimentacoes = cursor.fetchall()
+        for m in movimentacoes:
+            fluxo_movimentado += (float(m['valor']) * -1)
             
         capital_disponivel_total = capital_fundacao + fluxo_movimentado
         
@@ -207,7 +210,7 @@ def api_obter_metrics_totais():
         }), 200
     except Exception as e:
         return jsonify({
-            'capital_total': 50000.0,
+            'capital_total': 0.0,
             'capital_disponivel_total': 0.0,
             'patrimonio_ativo_total': 0.0,
             'custo_fixo_geral_empresa': 0.0,
