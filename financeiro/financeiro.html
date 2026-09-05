@@ -1,4 +1,4 @@
-<!-- erppadrao - financeiro/financeiro.html - VERSÃO FINAL BLUEPRINT PARTE 1 -->
+<!-- erppadrao - financeiro/financeiro.html - VERSÃO COMPACTA PARTE 1 -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -13,11 +13,11 @@
         .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
         
         .card { background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-        .label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 12px; background-color: #ffffff; color: #1f2937; margin-bottom: 12px; }
-        .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .label-form { font-size: 0.7rem; font-weight: bold; color: #4b5563; text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; font-size: 0.75rem; background-color: #ffffff; color: #1f2937; margin-bottom: 12px; }
+        .btn-submit { width: 100%; background-color: #16a34a; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; }
         .btn-submit:hover { background-color: #15803d; }
-        .btn-secondary { width: 100%; background-color: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .btn-secondary { width: 100%; background-color: #0284c7; color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.75rem; }
         .btn-secondary:hover { background-color: #0369a1; }
         
         .metric-card { padding: 14px; border-radius: 12px; border: 1px solid; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); text-align: left; }
@@ -29,9 +29,9 @@
         @media (min-width: 1024px) { .grid-main { grid-template-columns: 1fr 1fr 1fr; } }
         
         .table-container { border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden; background-color: #ffffff; }
-        .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: #ffffff; text-transform: uppercase; text-align: left; }
+        .table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 0.7rem; color: #ffffff; text-transform: uppercase; text-align: left; }
         .table-responsive { width: 100%; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: left; }
         thead { background-color: #f3f4f6; text-transform: uppercase; font-weight: bold; color: #4b5563; border-bottom: 1px solid #e5e7eb; }
         th, td { padding: 12px; }
         tr { border-bottom: 1px solid #e5e7eb; }
@@ -40,11 +40,11 @@
         .logo-area { display: flex; align-items: center; gap: 14px; }
         .nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 4px; }
         .nav-item { position: relative; }
-        .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 11px; text-transform: uppercase; cursor: pointer; }
+        .nav-link { display: block; padding: 12px 14px; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 0.7rem; text-transform: uppercase; cursor: pointer; }
         .nav-link:hover { color: #38bdf8; }
         
         .dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background-color: #1e293b; min-width: 200px; list-style: none; padding: 4px 0; margin: 0; border-radius: 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .dropdown-menu li a { display: block; padding: 8px 12px; color: #cbd5e1; text-decoration: none; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+        .dropdown-menu li a { display: block; padding: 8px 12px; color: #cbd5e1; text-decoration: none; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .dropdown-menu li a:hover { background-color: #334155; color: #38bdf8; }
         .nav-item:hover .dropdown-menu { display: block; }
         
@@ -55,7 +55,7 @@
         body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
         body.dark-mode .card { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
         body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
-        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; margin-right: 4px; color: #1f2937; }
+        .btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.7rem; margin-right: 4px; color: #1f2937; }
         
         .barra-percentual-setor { height: 16px; background-color: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 4px; border: 1px solid #cbd5e1; }
         .preenchimento-barra { height: 100%; background: linear-gradient(to right, #0284c7, #38bdf8); width: 0%; transition: width 0.2s; }
@@ -144,34 +144,38 @@
             </ul>
         </nav>
     </header>
-
     <div class="container" style="font-size: 0.75rem;">
         <div style="border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 16px;">
             <h2 style="font-size: 1.15rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0;">📊 Gestão Financeira - Faturamento + Alocação Setorial de Recursos</h2>
         </div>
 
-        <!-- 📈 SEÇÃO DE MÉTRICAS GLOBAIS NO TOPO (Convertida para unidades relativas rem) -->
+        <!-- 📈 SEÇÃO DE MÉTRICAS GLOBAIS NO TOPO (IDs CONECTADOS COM GLOBAL_METRICS.JS) -->
         <div class="grid-top">
             <div class="metric-card bg-blue-metric">
-                <p style="margin: 0; font-size: 0.7rem;">💰 Capital Total Disponível</p>
-                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="top_capital_total">R$ 0,00</h3>
+                <p style="margin: 0; font-size: 0.7rem;">💰 Capital Fundação (Total)</p>
+                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="global-capital-total">R$ 0,00</h3>
+                <small id="global-porcento-capital" style="font-weight: bold; font-size: 0.65rem;"></small>
             </div>
             <div class="metric-card bg-emerald-metric">
-                <p style="margin: 0; font-size: 0.7rem;">🏦 Faturamento Consolidado</p>
-                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="top_giro_global">R$ 0,00</h3>
+                <p style="margin: 0; font-size: 0.7rem;">🏦 Capital Disponível (Giro)</p>
+                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="global-capital-disponivel">R$ 0,00</h3>
+                <small id="global-porcento-disponivel" style="font-weight: bold; font-size: 0.65rem;"></small>
             </div>
             <div class="metric-card" style="background-color: #fef3c7; border-color: #fcd34d; color: #92400e;">
-                <p style="margin: 0; font-size: 0.7rem;">📋 Quota Alocada (Dept. Atual)</p>
-                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="top_quota_calculada">R$ 0,00</h3>
+                <p style="margin: 0; font-size: 0.7rem;">🏢 Patrimônio / Faturamento Ativo</p>
+                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="global-patrimonio">R$ 0,00</h3>
+                <small id="global-porcento-patrimonio" style="font-weight: bold; font-size: 0.65rem;"></small>
             </div>
             <div class="metric-card" style="background-color: #f5e6ff; border-color: #e9d5ff; color: #6b21a8;">
-                <p style="margin: 0; font-size: 0.7rem;">💵 Custo Operacional Ajustado</p>
-                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="top_custo_fixo">R$ 0,00</h3>
+                <p style="margin: 0; font-size: 0.7rem;">📉 Custo Fixo Operacional Geral</p>
+                <h3 style="font-size: 1.25rem; font-weight: 900; margin: 4px 0 0 0;" id="global-custo-fixo">R$ 0,00</h3>
+                <span id="global-last-update" style="font-size: 0.6rem; display: block; margin-top: 4px; color: #6b21a8; font-weight: bold;">🔄 Sincronizando...</span>
+                <span id="global-custo-variavel" style="display: none;"></span>
             </div>
         </div>
+
         <!-- ⚙️ CONTEÚDO PRINCIPAL EM PAINÉIS OPERACIONAIS -->
         <div class="grid-main">
-            
             <!-- QUADRO 1: FATURAMENTO (ALINHADO COM OS CAMPOS DO BLUEPRINT) -->
             <div class="card">
                 <h3 style="font-size: 0.85rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">💼 Novo Lançamento Financeiro</h3>
@@ -213,7 +217,6 @@
             <div class="card">
                 <h3 style="font-size: 0.85rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">🎯 Alocação de Quota - Recursos por Departamento</h3>
                 <form id="formAlocacao" onsubmit="salvarAlocacaoSetorial(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 0.75rem;">
-                    
                     <div>
                         <label class="label-form">Selecionar Módulo Alvo:</label>
                         <select id="departamento_selecionado" class="select-form" onchange="atualizarDetalhesSetor()" required>
@@ -248,7 +251,7 @@
                             </optgroup>
                         </select>
                     </div>
-                                       <div>
+                    <div>
                         <label class="label-form">Quota em Porcentagem (%) do Capital Total:</label>
                         <div style="display: flex; gap: 4px; align-items: center;">
                             <input type="range" id="percentual_quota" min="0" max="100" value="0" class="input-form" style="height: 8px; padding: 0;" oninput="atualizarVisualizacaoQuota(this.value)">
@@ -256,21 +259,17 @@
                             <span style="font-weight: bold; color: #16a34a;">%</span>
                         </div>
                     </div>
-
                     <div>
                         <label class="label-form">Valor Alocado Convertido:</label>
                         <input type="text" id="valor_alocado_reais" readonly class="input-form" style="background-color: #f3f4f6; font-weight: bold; color: #16a34a; font-size: 0.9rem;" value="R$ 0,00">
                     </div>
-
                     <div id="info_setor" style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 8px; font-size: 0.7rem; color: #065f46; display: none;">
                         <p style="margin: 0; font-weight: bold;">ℹ️ Informações do Setor Selecionado:</p>
                         <p style="margin: 2px 0 0 0;" id="info_setor_texto">Selecione um departamento...</p>
                     </div>
-
                     <button type="submit" class="btn-secondary" style="margin-top: 8px;">💾 Confirmar Alocação Setorial</button>
                 </form>
             </div>
-
             <!-- QUADRO 3: DISTRIBUIÇÃO DE QUOTAS (RESUMO ATUAL) -->
             <div class="card">
                 <h3 style="font-size: 0.85rem; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid #e5e7eb;">📊 Distribuição Atual de Quotas Setoriais</h3>
@@ -346,247 +345,7 @@
             if (txt && leitorAtivo) { window.speechSynthesis.cancel(); let f = new SpeechSynthesisUtterance(txt); f.lang = 'pt-BR'; window.speechSynthesis.speak(f); }
         }
     </script>
-
-    <!-- LÓGICA DE EVENTOS FINANCEIROS INTEGRADA v2.6 (PARTE 1 DE 2) -->
-    <script>
-        let capitalDisponivelGlobal = 0.00;
-        let faturamentoTotalGlobal = 0.00;
-        let deptoAtual = "";
-
-        const formatarBRL = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-        /**
-         * Inicializa o painel financeiro local coletando as informações estruturadas
-         * processadas em paralelo pelo motor reativo do global_metrics.js
-         */
-        async function carregarDashboardFinanceiro() {
-            try {
-                const response = await fetch('/api/financeiro/metricas');
-                const metrics = await response.json();
-                
-                // Mapeia os saldos monetários reais retornados pelo backend
-                capitalDisponivelGlobal = parseFloat(metrics.capital_disponivel_total) || 0;
-                faturamentoTotalGlobal = parseFloat(metrics.patrimonio_ativo_total) || 0;
-                
-                recalcularMétricasPainel();
-                await renderizarResumoQuotas();
-                await carregarLivroRazao();
-            } catch (e) {
-                console.error("Erro na carga local de sincronia com a API:", e);
-            }
-        }
-
-        /**
-         * Eventos de controle acionados pelos sliders reativos de porcentagem
-         */
-        function atualizarVisualizacaoQuota(valor) {
-            document.getElementById('percentual_valor').value = valor;
-            document.getElementById('percentual_quota').value = valor;
-            recalcularMétricasPainel();
-        }
-
-        function atualizarSliderQuota(valor) {
-            document.getElementById('percentual_quota').value = valor;
-            document.getElementById('percentual_valor').value = valor;
-            recalcularMétricasPainel();
-        }
-
-        /**
-         * Executa equações financeiras e expõe o valor da quota em reais do departamento atual
-         */
-        function recalcularMétricasPainel() {
-            const pct = parseFloat(document.getElementById('percentual_valor').value) || 0;
-            // O capital endereçado reflete o capital de giro mesmo que comece zerado (0)
-            const valorAlocado = capitalDisponivelGlobal * (pct / 100);
-            
-            document.getElementById('valor_alocado_reais').value = formatarBRL(valorAlocado);
-            
-            // Injeta o valor nos cartões locais que não sofrem injeção externa do global_metrics
-            const topQuotaCalculadaElem = document.getElementById('top_quota_calculada');
-            if (topQuotaCalculadaElem) {
-                topQuotaCalculadaElem.innerText = formatarBRL(valorAlocado);
-            }
-        }
-
-        /**
-         * Busca e atualiza a quota de alocação ativa do banco de dados para o departamento selecionado
-         */
-        async function atualizarDetalhesSetor() {
-            deptoAtual = document.getElementById('departamento_selecionado').value;
-            const infoBox = document.getElementById('info_setor');
-            const infoTxt = document.getElementById('info_setor_texto');
-            
-            if(!deptoAtual) {
-                infoBox.style.display = "none";
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/financeiro/quota/${deptoAtual}`);
-                const data = await response.json();
-                const pctSalva = data.porcentagem_quota || 0;
-                
-                document.getElementById('percentual_quota').value = pctSalva;
-                document.getElementById('percentual_valor').value = pctSalva;
-                
-                infoTxt.innerHTML = `Módulo destino <strong>/${deptoAtual}</strong> selecionado para rateio. Defina a quota e confirme a alocação setorial.`;
-                infoBox.style.display = "block";
-                
-                recalcularMétricasPainel();
-            } catch (err) {
-                console.error("Erro ao sincronizar dados da cota setorial:", err);
-            }
-        }
-        /**
-         * Envia e processa um novo título de faturamento de duplicata no banco de dados
-         */
-        async function efetuarFaturamento(event) {
-            event.preventDefault();
-            const payload = {
-                cliente_id: parseInt(document.getElementById('fat_cliente_id').value) || 0,
-                cliente_nome_suporte: document.getElementById('fat_cliente_name').value,
-                financeiro_descricao: document.getElementById('fat_descricao').value,
-                financeiro_valor: parseFloat(document.getElementById('fat_valor').value),
-                financeiro_condicao: document.getElementById('fat_condicao').value,
-                financeiro_data: document.getElementById('fat_data').value
-            };
-            
-            const response = await fetch('/api/financeiro/faturar', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            
-            if(response.ok) {
-                alert("Título de faturamento registrado com sucesso no Razão!");
-                document.getElementById('formFaturamento').reset();
-                await carregarDashboardFinanceiro();
-                // Força a atualização do topo de tela se o global_metrics.js estiver ativo
-                if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            }
-        }
-
-        /**
-         * Processa a liquidação e entrada física do recurso financeiro em caixa
-         */
-        async function liquidarTitulo(idReg) {
-            if(!confirm(`Confirmar liquidação e entrada física em caixa do título FT-00${idReg}?`)) return;
-            
-            const response = await fetch(`/api/financeiro/liquidar/${idReg}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'}
-            });
-            
-            if(response.ok) {
-                alert("Título liquidado com sucesso! Saldo injetado no Caixa de Giro.");
-                await carregarDashboardFinanceiro();
-                if (window.forcarAtualizacaoMetricasTopboard) window.forcarAtualizacaoMetricasTopboard();
-            }
-        }
-
-        /**
-         * Grava de forma estável o percentual da quota setorial no banco Supabase
-         */
-        async function salvarAlocacaoSetorial(event) {
-            event.preventDefault();
-            if(!deptoAtual) return alert("Por favor, selecione um módulo de destino alvo.");
-            
-            const payload = {
-                departamento_id: deptoAtual,
-                porcentagem_quota: parseFloat(document.getElementById('percentual_valor').value)
-            };
-            
-            const response = await fetch('/api/financeiro/quota', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            
-            if(response.ok) {
-                alert("Quota setorial parametrizada e salva no Supabase!");
-                await carregarDashboardFinanceiro();
-            }
-        }
-
-        /**
-         * Renderiza o Quadro 3 com o sumário de distribuição atual das quotas em porcentagem
-         */
-        async function renderizarResumoQuotas() {
-            try {
-                const response = await fetch('/api/financeiro/quotas/summary');
-                const distribuicao = await response.json();
-                const container = document.getElementById('tabela_quotas_resumo');
-                container.innerHTML = "";
-                
-                if (distribuicao.length === 0) {
-                    container.innerHTML = `<div style="padding:8px;background-color:#f3f4f6;border-radius:6px;">Sem quotas setoriais parametrizadas.</div>`;
-                    return;
-                }
-                
-                distribuicao.forEach(setor => {
-                    const valorMonetario = capitalDisponivelGlobal * (setor.porcentagem_quota / 100);
-                    container.innerHTML += `
-                        <div style="padding: 6px 8px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 4px;">
-                            <div style="display:flex; justify-content: space-between; font-weight: bold;">
-                                <span>📍 /${setor.departamento_id}</span>
-                                <span style="color:#16a34a;">${setor.porcentagem_quota}% (${formatarBRL(valorMonetario)})</span>
-                            </div>
-                            <div class="barra-percentual-setor">
-                                <div class="preenchimento-barra" style="width: ${setor.porcentagem_quota}%"></div>
-                            </div>
-                        </div>
-                    `;
-                });
-            } catch (e) {
-                console.error("Erro ao montar sumário de distribuição:", e);
-            }
-        }
-
-        /**
-         * Alimenta as linhas da tabela inferior com o histórico de duplicatas do Razão
-         */
-        async function carregarLivroRazao() {
-            try {
-                const response = await fetch('/api/financeiro/listar');
-                const dados = await response.json();
-                const tbody = document.getElementById('tabela_financeiro');
-                tbody.innerHTML = "";
-                
-                if(dados.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:16px;color:#94a3b8;">Nenhum título localizado no razão contábil.</td></tr>`;
-                    return;
-                }
-                
-                dados.forEach(item => {
-                    const ehAberto = item.status_titulo === 'Aberto';
-                    const badgeColor = ehAberto ? 'background-color:#fef3c7;color:#d97706;' : 'background-color:#dcfce7;color:#15803d;';
-                    
-                    const botaoAcao = ehAberto 
-                        ? `<button onclick="liquidarTitulo(${item.id})" class="btn-submit" style="padding:4px 8px;font-size:10px;width:auto;display:inline-block;">⚡ Liquidar</button>`
-                        : `<span style="color:#16a34a;font-weight:bold;">✓ Em Caixa</span>`;
-
-                    tbody.innerHTML += `
-                        <tr style="border-bottom: 1px solid #e5e7eb;">
-                            <td style="font-weight: bold; padding:10px;">FT-00${item.id}<br><small style="color:#6b7280;">ID: ${item.cliente_id}</small></td>
-                            <td style="padding:10px;"><strong>${item.cliente_nome_suporte}</strong><br><small style="color:#94a3b8;">${item.financeiro_descricao}</small></td>
-                            <td style="padding:10px;"><span style="${badgeColor}padding:2px 6px;border-radius:4px;font-size:10px;font-weight:bold;">${item.status_titulo.toUpperCase()}</span></td>
-                            <td style="font-weight:900;color:#1e3a8a;padding:10px;">${formatarBRL(parseFloat(item.financeiro_valor))}<br><small style="color:#6b7280;">${item.financeiro_condicao} | ${item.financeiro_data}</small></td>
-                            <td style="text-align:center;padding:10px;">${botaoAcao}</td>
-                        </tr>
-                    `;
-                });
-            } catch (err) {
-                console.error("Erro ao preencher o livro razão:", err);
-            }
-        }
-
-        // Inicializa o painel financeiro local de forma síncrona
-        document.addEventListener("DOMContentLoaded", () => {
-            carregarDashboardFinanceiro();
-            // Adiciona uma escuta paralela para se adequar ao ciclo de checagem do global_metrics
-            setInterval(carregarDashboardFinanceiro, 5000);
-        });
-    </script>
+    <!-- CHAMADA DO ARQUIVO SEPARADO VIA BLUEPRINT PYTHON -->
+    <script src="/financeiro/financeiro.js"></script>
 </body>
 </html>
-
