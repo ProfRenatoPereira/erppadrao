@@ -169,25 +169,30 @@ def api_liquidar_titulo_id(id_reg):
             pass
         return jsonify({'status': 'erro', 'message': str(e)}), 500
 
+# erppadrao - financeiro/app_financeiro.py (Trecho Corrigido de Salvamento de Quotas)
+
 @financeiro_blueprint.route('/api/financeiro/quota', methods=['POST'])
 def api_salvar_quota_setorial():
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
-    conexao = None
     try:
         dados = request.json
         id_equipe = session.get('id_equipe', 'equipe_alfa')
         depto = dados.get('departamento_id')
-        porcentagem = float(dados.get('porcentagem_quota', 0) or 0)
+        porcentagem = float(dados.get('porcentagem_quota', 0))
         
         conexao = obter_conexao_master()
         cursor = conexao.cursor()
         
+        # Garante a criação com a CONSTRAINT composta explicita
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS quotas_departamentos (
-                id SERIAL PRIMARY KEY, equipe_id TEXT, departamento_id TEXT,
-                porcentagem_quota REAL, UNIQUE(equipe_id, departamento_id)
+                id SERIAL PRIMARY KEY, 
+                equipe_id TEXT NOT NULL, 
+                departamento_id TEXT NOT NULL,
+                porcentagem_quota REAL,
+                CONSTRAINT unique_equipe_depto UNIQUE (equipe_id, departamento_id)
             )
         ''')
         
@@ -200,9 +205,12 @@ def api_salvar_quota_setorial():
         
         conexao.commit()
         cursor.close()
-        import GerenciadorCaixa
-        GerenciadorCaixa.liberar_conexao_master(conexao)
+        conexao.close()
         return jsonify({'status': 'sucesso'}), 200
+    except Exception as e:
+        # Previne o erro 500 caso o banco esteja travado, retornando o log para o JS ler
+        return jsonify({'status': 'erro', 'message': str(e)}), 200
+
     except Exception as e:
         try:
             if conexao:
