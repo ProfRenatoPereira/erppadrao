@@ -1,8 +1,7 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - APP MASTER (NÚCLEO PRINCIPAL DA APLICAÇÃO)
-# ARQUIVO: app_master.py - PARTE 1 DE 2 (ESTRUTURA INTEGRADA FINAL)
+# ARQUIVO: app_master.py
 # ==========================================================================
-
 import os
 from flask import Flask, session, jsonify, request, redirect, render_template_string
 from datetime import timedelta
@@ -25,7 +24,7 @@ app.wsgi_app = WhiteNoise(
 )
 
 # Configurações estritas de sessão transacional
-app.secret_key = "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
+app.secret_key = os.environ.get("APP_SECRET_KEY", "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO")
 app.permanent_session_lifetime = timedelta(days=7)
 
 # Importação blindada do gerenciador de caixas e motor de métricas
@@ -82,12 +81,8 @@ app.register_blueprint(manutencao_blueprint)
 app.register_blueprint(requisicoes_blueprint)
 app.register_blueprint(roi_blueprint)
 # ==========================================================================
-# TERADMAS ERP v2.6 - APP MASTER (NÚCLEO PRINCIPAL DA APLICAÇÃO)
-# ARQUIVO: app_master.py - PARTE 2 DE 2 (MIDDLEWARE, APIs E EXECUTOR)
-# ==========================================================================
 
 # ========== MIDDLEWARE DE AUTENTICAÇÃO E FLUXO ==========
-
 @app.before_request
 def verificar_fluxo_de_aula():
     """Middleware que valida sessão e autorização em cada request"""
@@ -109,7 +104,6 @@ def verificar_fluxo_de_aula():
             return redirect('/configuracao/inicializacao')
 
 # ========== ROTAS PRINCIPAIS DE REDIRECIONAMENTO ==========
-
 @app.route('/')
 def rota_raiz_direta():
     """Rota raiz com redirecionamento inteligente"""
@@ -135,7 +129,6 @@ def rota_encerrar_turno():
     return redirect('/login')
 
 # ========== API DE MÉTRICAS GLOBAIS E REATIVAS ==========
-
 @app.route('/api/financeiro/metricas', methods=['GET'])
 def api_global_metricas_calculadas():
     """Endpoint central de métricas consolidadas de toda a empresa"""
@@ -169,7 +162,6 @@ def api_kpis_resumidos():
     })
 
 # ========== TRATAMENTO GLOBAL DE ERROS (SINCRO/ASSINCRO) ==========
-
 @app.errorhandler(404)
 def erro_nao_encontrado(erro):
     if request.is_json:
@@ -192,7 +184,6 @@ def erro_servidor(erro):
     """), 500
 
 # ========== EXECUTOR DO SERVIDOR INTEGRADO EM PRODUÇÃO ==========
-
 if __name__ == '__main__':
     porta = int(os.environ.get("PORT", 5000))
     debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
