@@ -192,17 +192,44 @@
                 <form id="formAlocacao" onsubmit="salvarAlocacaoSetorial(event)" style="display: flex; flex-direction: column; gap: 12px; font-size: 12px;">
                     
                     <div style="display: flex; flex-direction: column; gap: 4px;">
-                        <label class="label-form">Selecionar Departamento:</label>
-                        <select id="departamento_selecionado" class="select-form" onchange="atualizarDetalhesSetor()" required>
-                            <option value="">-- Escolha o Departamento --</option>
-                            <option value="administrativo">📁 Administrativo & RH</option>
-                            <option value="engenharia">🛠️ Engenharia & Produtos</option>
-                            <option value="producao">🏭 Produção & PCP</option>
-                            <option value="vendas">📈 Vendas & Comercial</option>
-                            <option value="financeiro">💰 Financeiro & Controladoria</option>
-                            <option value="estrutura">🏢 Imobiliário & Suporte</option>
-                        </select>
-                    </div>
+    <label class="label-form">Selecionar Módulo/Página Destino:</label>
+    <select id="departamento_selecionado" class="select-form" onchange="atualizarDetalhesSetor()" required>
+        <option value="">-- Escolha o Módulo para Alocação --</option>
+        
+        <optgroup label="📁 Administrativo">
+            <option value="estrutura">02. Imobiliário e Custos</option>
+            <option value="orcamentos">03. Limites Orçamentários</option>
+            <option value="rh">04. Organograma e RH</option>
+            <option value="folha_pagamento">05. Folha de Pagamento</option>
+            <option value="requisicoes">06. Requisições Internas</option>
+        </optgroup>
+
+        <optgroup label="🛠️ Engenharia">
+            <option value="maquinas">07. Gerenciador de Máquinas</option>
+            <option value="materiais">08. Catálogo de Materiais</option>
+            <option value="processos">09. Fluxos de Processos</option>
+            <option value="produtos">10. Fichas Técnicas (BOM)</option>
+            <option value="manutencao">11. Plano de Manutenção</option>
+            <option value="precificacao">12. Formação de Preço</option>
+        </optgroup>
+
+        <optgroup label="🏭 Produção">
+            <option value="compras_insumos">13. Compras de Insumos</option>
+            <option value="pcp">14. Planejamento (PCP)</option>
+            <option value="engenharia_producao">15. Execução de Fábrica</option>
+            <option value="estoque">16. Almoxarifado Central</option>
+            <option value="nota_fiscal">17. Emissão de Notas NF-e</option>
+        </optgroup>
+
+        <optgroup label="📈 Vendas & BI">
+            <option value="clientes">18. Carteira de Clientes</option>
+            <option value="vendas">19. Módulo de Vendas</option>
+            <option value="financeiro">20. Fluxo de Caixa Geral</option>
+            <option value="roi">21. Retorno sobre Investimento</option>
+        </optgroup>
+    </select>
+</div>
+
 
                     <div style="display: flex; flex-direction: column; gap: 4px;">
                         <label class="label-form">Quota em Porcentagem (%) do Capital Total:</label>
