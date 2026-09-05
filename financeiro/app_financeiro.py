@@ -11,6 +11,10 @@ def obter_conexao_master():
 
 @financeiro_blueprint.route('/financeiro')
 def pagina_financeiro():
+    if not session.get('logado'):
+        # Redireciona de forma segura se o token de turno expirou
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
     with open('financeiro/financeiro.html', 'r', encoding='utf-8') as f:
         html = f.read()
     return render_template_string(html)
@@ -26,6 +30,7 @@ def api_faturar_titulo():
     conexao = obter_conexao_master()
     cursor = conexao.cursor()
     
+    # Cria a estrutura do razão no banco Supabase se ainda não houver
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS razao_financeiro (
             id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
@@ -81,7 +86,6 @@ def api_liquidar_titulo_id(id_reg):
         valor_recebimento = float(titulo['financeiro_valor'])
         descricao_caixa = f"Recebimento Duplicata FT-00{id_reg} - {titulo['financeiro_descricao']}"
         
-        # Cria a tabela de fluxo de caixa caso não exista
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS fluxo_caixa (
                 id SERIAL PRIMARY KEY, equipe_id TEXT, departamento TEXT,
@@ -100,12 +104,12 @@ def api_liquidar_titulo_id(id_reg):
     return jsonify({'status': 'sucesso'})
 
 # =========================================================================
-# 🚀 NOVAS ROTAS IMPLEMENTADAS: FUNDAÇÃO, CÁLCULO DE METRICS E QUOTAS (20 DEPTS)
+# LÓGICA DE INTEGRAÇÃO DAS MÉTRICAS REATIVAS (UNIFICAÇÃO COM FUNDAÇÃO DE CAPITAL)
 # =========================================================================
 
 @financeiro_blueprint.route('/api/financeiro/metrics', methods=['GET'])
 def api_obter_metrics_totais():
-    """Calcula dinamicamente os cards superiores unificando com o capital de inicialização"""
+    """Calcula e retorna os valores dos cards do topo unificando com o capital inicial"""
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
@@ -113,7 +117,7 @@ def api_obter_metrics_totais():
     conexao = obter_conexao_master()
     cursor = conexao.cursor(cursor_factory=RealDictCursor)
     
-    # 1. Captura o Capital Inicial injetado na Fundação de Capital (da tabela de configuração de equipe)
+    # 1. Captura o Capital de Fundação direto da tabela de equipes vinculada
     capital_inicial = 0.0
     try:
         cursor.execute('SELECT capital_inicial FROM configuracao_equipes WHERE equipe_id = %s', (id_equipe,))
@@ -123,7 +127,7 @@ def api_obter_metrics_totais():
     except Exception:
         pass
 
-    # 2. Captura o Faturamento Consolidado dos Títulos Líquidos e o fluxo operacional
+    # 2. Consolida o Faturamento total bruto com base em liquidações físicas em caixa
     faturamento_consolidado = 0.0
     fluxo_movimentado = 0.0
     
@@ -136,7 +140,7 @@ def api_obter_metrics_totais():
         cursor.execute('SELECT valor FROM fluxo_caixa WHERE equipe_id = %s', (id_equipe,))
         movimentacoes = cursor.fetchall()
         for m in movimentacoes:
-            # Multiplicado por -1 devido à convenção de inversão de sinal da liquidação original
+            # Multiplicado por -1 devido à inversão de sinal padronizada do caixa original
             fluxo_movimentado += (float(m['valor']) * -1)
     except Exception:
         pass
@@ -152,7 +156,7 @@ def api_obter_metrics_totais():
 
 @financeiro_blueprint.route('/api/financeiro/quota', methods=['POST'])
 def api_salvar_quota_setorial():
-    """Persiste ou atualiza no Supabase a alocação de quota para os 20 departamentos"""
+    """Grava as alocações em porcentagem das 20 rotas funcionais ativas"""
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
@@ -216,7 +220,7 @@ def api_obter_resumo_quotas():
     try:
         cursor.execute('SELECT departamento_id, porcentagem_quota FROM quotas_departamentos WHERE equipe_id = %s AND porcentagem_quota > 0 ORDER BY porcentagem_quota DESC', (id_equipe,))
         linhas = cursor.fetchall()
-        return jsonify([dict(l) for l in  linhas]), 200
+        return jsonify([dict(l) for l in linhas]), 200
     except Exception:
         return jsonify([]), 200
     finally:
