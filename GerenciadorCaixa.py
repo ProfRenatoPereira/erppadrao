@@ -1,324 +1,1331 @@
 # ==========================================================================
-# TERADMAS ERP v2.6 - MOTOR FINANCEIRO CENTRAL (GerenciadorCaixa.py)
-# Atualizado: fallback de leitura de capital inicial e ajuste na interpretação do fluxo_caixa
+# TERADMAS ERP v2.6
+# MOTOR FINANCEIRO CENTRAL - GerenciadorCaixa.py
+#
+# PRINCÍPIOS:
+# 1. Conexão exclusivamente pelo pool central.
+# 2. Conexão obtida com obter_conexao_master()
+#    deve ser devolvida com liberar_conexao_master().
+# 3. public.quotas_departamentos é a fonte oficial das quotas.
+# 4. Capital disponível:
+#
+#       CAPITAL INICIAL
+#       + RECEITAS
+#       - DESPESAS
+#
+# 5. Nenhuma divisão automática 40/30/30.
+# 6. Os setores passam a consumir a quota persistida no Supabase.
 # ==========================================================================
- 
+
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from psycopg2.pool import SimpleConnectionPool
 import logging
- 
-# Configuração de logging
+import psycopg2
+
+from psycopg2.pool import SimpleConnectionPool
+from psycopg2.extras import RealDictCursor
+
+
+# ==========================================================================
+# LOG
+# ==========================================================================
+
 logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
- 
-# Pool de conexões global (evita reconexões repetidas)
+
+
+# ==========================================================================
+# POOL CENTRAL
+# ==========================================================================
+
 _connection_pool = None
- 
+
+
 def obter_pool_conexoes():
-    """Retorna ou cria um pool de conexões reutilizável"""
+    """
+    Cria ou retorna o pool central de conexões PostgreSQL.
+
+    O pool é único para o processo da aplicação.
+    """
+
     global _connection_pool
-    
-    if _connection_pool is None:
-        database_url = os.environ.get(
-            "DATABASE_URL",
-            "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
-        )
+
+    if _connection_pool is not None:
+        return _connection_pool
+
+    database_url = os.environ.get("DATABASE_URL")
+
+    if not database_url:
         try:
-            _connection_pool = SimpleConnectionPool(1, 5, database_url)
-            logger.info("✅ Pool de conexões criado com sucesso")
-        except psycopg2.Error as e:
-            logger.error(f"❌ Erro ao criar pool de conexões: {e}")
-            return None
-    
-    return _connection_pool
- 
-def obter_conexao_master():
-    """Obtém uma conexão do pool com fallback seguro"""
-    try:
-        pool = obter_pool_conexoes()
-        if pool:
-            return pool.getconn()
-        
-        # Fallback: conexão direta
-        database_url = os.environ.get("DATABASE_URL")
-        if database_url:
-            return psycopg2.connect(database_url)
-        
-        raise psycopg2.DatabaseError("Não foi possível ler as credenciais do banco no ambiente atual.")
-    
-    except psycopg2.Error as e:
-        logger.error(f"❌ Erro ao obter conexão: {e}")
+            from app_master import URL_SUPABASE
+            database_url = URL_SUPABASE
+        except Exception:
+            database_url = None
+
+    if not database_url:
+        logger.error(
+            "❌ DATABASE_URL/URL_SUPABASE não encontrada."
+        )
         return None
- 
-def liberar_conexao_master(conexao):
-    """Libera conexão de volta ao pool"""
+
+    try:
+        _connection_pool = SimpleConnectionPool(
+            minconn=1,
+            maxconn=5,
+            dsn=database_url
+        )
+
+        logger.info(
+            "✅ Pool central PostgreSQL/Supabase criado."
+        )
+
+        return _connection_pool
+
+    except psycopg2.Error as erro:
+        logger.error(
+            f"❌ Falha ao criar pool PostgreSQL: {erro}"
+        )
+        return None
+
+
+def obter_conexao_master():
+    """
+    Obtém uma conexão do pool central.
+
+    IMPORTANTE:
+    Quem obtiver a conexão deve obrigatoriamente devolvê-la
+    através de liberar_conexao_master().
+    """
+
     try:
         pool = obter_pool_conexoes()
-        if pool and conexao:
-            try:
-                pool.putconn(conexao)
-            except Exception:
-                # se falhar ao devolver ao pool, fecha
-                conexao.close()
-        elif conexao:
-            conexao.close()
-    except Exception as e:
-        logger.warning(f"⚠️ Erro ao liberar conexão: {e}")
-        if conexao:
-            conexao.close()
- 
-def calcular_metricas_totais_equipe(id_equipe, departamento_atual=None):
+
+        if pool is None:
+            logger.error(
+                "❌ Pool central indisponível."
+            )
+            return None
+
+        conexao = pool.getconn()
+
+        if conexao is None:
+            logger.error(
+                "❌ Pool não forneceu conexão."
+            )
+            return None
+
+        return conexao
+
+    except psycopg2.Error as erro:
+        logger.error(
+            f"❌ Erro ao obter conexão do pool: {erro}"
+        )
+        return None
+
+
+def liberar_conexao_master(conexao):
     """
-    Motor central unificado que calcula o balanço patrimonial e despesas correntes
-    de forma combinada e isolada, corrigindo a duplicidade na computação de ativos.
+    Devolve a conexão ao pool.
+
+    Não utiliza conexao.close() em condições normais.
     """
-    conexao = obter_conexao_master()
-    cursor = None
-    
-    # Parâmetros padrão de inicialização segura do ecossistema
-    capital_total = 5000000.00
+
+    if conexao is None:
+        return
+
+    try:
+        pool = obter_pool_conexoes()
+
+        if pool is not None:
+            pool.putconn(conexao)
+            return
+
+        # Somente contingência caso o pool não exista.
+        conexao.close()
+
+    except Exception as erro:
+        logger.warning(
+            f"⚠️ Erro ao devolver conexão ao pool: {erro}"
+        )
+
+        # Se a conexão não pôde ser devolvida ao pool,
+        # o fechamento é permitido para evitar vazamento.
+        try:
+            conexao.close()
+        except Exception:
+            pass
+
+
+# ==========================================================================
+# CONVERSÃO SEGURA
+# ==========================================================================
+
+def _float_seguro(valor, padrao=0.0):
+    """
+    Converte valores PostgreSQL/JSON para float sem derrubar o motor.
+    """
+
+    if valor is None:
+        return padrao
+
+    try:
+        return float(valor)
+    except (ValueError, TypeError):
+        return padrao
+
+
+# ==========================================================================
+# IDENTIFICAÇÃO DAS COLUNAS DA TABELA DE QUOTAS
+# ==========================================================================
+
+def _obter_colunas_quotas(cursor):
+    """
+    Lê a estrutura real de public.quotas_departamentos.
+
+    Não pressupõe nomes de colunas que não foram informados no
+    checkpoint arquitetural.
+    """
+
+    try:
+        cursor.execute(
+            """
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'quotas_departamentos'
+            ORDER BY ordinal_position
+            """
+        )
+
+        registros = cursor.fetchall()
+
+        return {
+            registro["column_name"]
+            for registro in registros
+        }
+
+    except Exception as erro:
+        logger.warning(
+            f"⚠️ Não foi possível inspecionar quotas_departamentos: {erro}"
+        )
+
+        return set()
+
+
+# ==========================================================================
+# LEITURA DAS QUOTAS OFICIAIS
+# ==========================================================================
+
+def _ler_quotas_departamentos(cursor, id_equipe):
+    """
+    Lê as quotas persistidas para a equipe.
+
+    A tabela oficial é:
+
+        public.quotas_departamentos
+
+    Chave:
+
+        UNIQUE (equipe_id, departamento_id)
+
+    O método tenta reconhecer automaticamente colunas comuns
+    de percentual e valor monetário, sem alterar a estrutura do banco.
+    """
+
+    colunas = _obter_colunas_quotas(cursor)
+
+    if not colunas:
+        return {
+            "existente": False,
+            "registros": [],
+            "percentual_total": 0.0,
+            "valor_total": 0.0
+        }
+
+    if "equipe_id" not in colunas or "departamento_id" not in colunas:
+        logger.error(
+            "❌ quotas_departamentos não possui equipe_id/departamento_id."
+        )
+
+        return {
+            "existente": False,
+            "registros": [],
+            "percentual_total": 0.0,
+            "valor_total": 0.0
+        }
+
+    # ----------------------------------------------------------------------
+    # Detecta possíveis nomes de percentual
+    # ----------------------------------------------------------------------
+
+    candidatos_percentual = [
+        "percentual",
+        "percentual_quota",
+        "percentual_capital",
+        "porcentagem",
+        "porcentual",
+        "percent"
+    ]
+
+    coluna_percentual = next(
+        (
+            coluna
+            for coluna in candidatos_percentual
+            if coluna in colunas
+        ),
+        None
+    )
+
+    # ----------------------------------------------------------------------
+    # Detecta possíveis nomes de valor monetário
+    # ----------------------------------------------------------------------
+
+    candidatos_valor = [
+        "valor",
+        "valor_quota",
+        "valor_cota",
+        "valor_alocado",
+        "valor_liberado",
+        "quota_valor",
+        "orcamento_liberado"
+    ]
+
+    coluna_valor = next(
+        (
+            coluna
+            for coluna in candidatos_valor
+            if coluna in colunas
+        ),
+        None
+    )
+
+    campos = [
+        "departamento_id"
+    ]
+
+    if coluna_percentual:
+        campos.append(coluna_percentual)
+
+    if coluna_valor:
+        campos.append(coluna_valor)
+
+    campos_sql = ", ".join(
+        f'"{campo}"'
+        for campo in campos
+    )
+
+    try:
+        cursor.execute(
+            f"""
+            SELECT {campos_sql}
+            FROM public.quotas_departamentos
+            WHERE equipe_id = %s
+            ORDER BY departamento_id
+            """,
+            (id_equipe,)
+        )
+
+        registros_brutos = cursor.fetchall()
+
+    except psycopg2.Error as erro:
+        logger.warning(
+            f"⚠️ Falha ao ler public.quotas_departamentos: {erro}"
+        )
+
+        return {
+            "existente": True,
+            "registros": [],
+            "percentual_total": 0.0,
+            "valor_total": 0.0
+        }
+
+    registros = []
+
+    percentual_total = 0.0
+    valor_total = 0.0
+
+    for registro in registros_brutos:
+
+        percentual = 0.0
+        valor = 0.0
+
+        if coluna_percentual:
+            percentual = _float_seguro(
+                registro.get(coluna_percentual)
+            )
+
+        if coluna_valor:
+            valor = _float_seguro(
+                registro.get(coluna_valor)
+            )
+
+        registros.append(
+            {
+                "departamento_id": registro.get("departamento_id"),
+                "percentual": percentual,
+                "valor": valor
+            }
+        )
+
+        percentual_total += percentual
+        valor_total += valor
+
+    return {
+        "existente": True,
+        "registros": registros,
+        "percentual_total": percentual_total,
+        "valor_total": valor_total
+    }
+
+
+# ==========================================================================
+# CAPITAL INICIAL
+# ==========================================================================
+
+def _ler_configuracao_empresa(cursor, id_equipe):
+    """
+    Obtém o capital inicial e o nome da empresa.
+
+    Fonte principal:
+
+        config_simulacao
+
+    Mantém fallback para estruturas antigas do ERP.
+    """
+
+    capital_total = 0.0
     valor_aluguel_global = 0.0
     nome_empresa = "GRUPO ACADÊMICO"
-    total_movimentacoes_fluxo = 0.0
-    
-    # Acumuladores de Empresa Completa (Soma matricial de todos os setores)
-    patrimonio_ativo_total = 0.0
-    custo_fixo_total_global = 0.0
-    custo_variavel_total_global = 0.0
-    
-    # Indicadores Isolados do Setor Requisitante
-    patrimonio_isolado_setor = 0.0
-    custo_fixo_isolado_setor = 0.0
-    custo_variavel_isolado_setor = 0.0
 
-    if not conexao:
-        logger.error("❌ Falha ao obter conexão com banco de dados")
-        return {
-            'nome_empresa': "MODO SEGURANÇA", 
-            'capital_total': 5000000.00,
-            'capital_disponivel_total': 0.0,
-            'capital_disponivel_departamento': 0.0,
-            'patrimonio_ativo_total': 0.0,
-            'custo_fixo_total': 21350.00,
-            'custo_variavel_total': 0.0,
-            'custo_fixo_geral_empresa': 21350.00,
-            'patrimonio_isolado_setor': 0.0,
-            'custo_fixo_isolado_setor': 0.0,
-            'custo_variavel_isolado_setor': 0.0,
-            'erro': 'Conexão com banco de dados indisponível'
-        }
+    config = None
+
+    # ----------------------------------------------------------------------
+    # Fonte oficial atual
+    # ----------------------------------------------------------------------
 
     try:
-        cursor = conexao.cursor(cursor_factory=RealDictCursor)
-        
-        # 1. Recupera os parâmetros estáveis da fundação do negócio
-        try:
-            cursor.execute("SELECT nome_empresa, capital_total, valor_aluguel FROM config_simulacao WHERE equipe_id = %s LIMIT 1", (id_equipe,))
-            config = cursor.fetchone()
-            if config:
-                capital_total = float(config.get('capital_total') or capital_total)
-                valor_aluguel_global = float(config.get('valor_aluguel') or 0)
-                nome_empresa = config.get('nome_empresa') or nome_empresa
-        except psycopg2.ProgrammingError:
-            logger.info("ℹ️ Tabela config_simulacao indisponível (esperado em primeira execução)")
-        except Exception as e:
-            logger.warning(f"⚠️ Erro ao consultar config_simulacao: {e}")
+        cursor.execute(
+            """
+            SELECT
+                nome_empresa,
+                capital_total,
+                valor_aluguel
+            FROM public.config_simulacao
+            WHERE equipe_id = %s
+            LIMIT 1
+            """,
+            (id_equipe,)
+        )
 
-        # Se não encontrou em config_simulacao, faz fallback nas tabelas que o front pode usar
-        if not config:
-            tabelas_teste = [
-                ("configuracao_equipes", "capital_inicial", "equipe_id"),
-                ("configuracao_equipes", "capital_social", "equipe_id"),
-                ("inicializacao_negocio", "capital_inicial", "equipe_id"),
-                ("inicializacao_negocio", "capital_social", "equipe_id")
-            ]
-            for tabela, coluna, coluna_filtro in tabelas_teste:
-                try:
-                    cursor.execute(f"SELECT {coluna} as valor FROM {tabela} WHERE {coluna_filtro} = %s LIMIT 1", (id_equipe,))
-                    reg = cursor.fetchone()
-                    if reg and reg.get('valor') is not None:
-                        capital_total = float(reg['valor'])
-                        logger.info(f"ℹ️ Capital inicial obtido de {tabela}.{coluna}")
-                        break
-                except Exception:
-                    # tabela/coluna não existe, ignora e segue
-                    continue
+        config = cursor.fetchone()
 
-        # 2. Computa o somatório histórico de movimentações no Livro de Fluxo de Caixa
-        try:
-            cursor.execute("SELECT COALESCE(SUM(valor), 0) as total FROM fluxo_caixa WHERE equipe_id = %s", (id_equipe,))
-            resultado_fluxo = cursor.fetchone()
-            if resultado_fluxo and resultado_fluxo.get('total') is not None:
-                total_movimentacoes_fluxo = float(resultado_fluxo['total'])
-        except psycopg2.ProgrammingError:
-            logger.info("ℹ️ Tabela fluxo_caixa indisponível")
-        except Exception as e:
-            logger.warning(f"⚠️ Erro ao consultar fluxo_caixa: {e}")
+    except psycopg2.Error:
+        config = None
 
-        # ==================================================================
-        # 🏢 COMPUTAÇÃO DO PATRIMÔNIO ATIVO TOTAL
-        # ==================================================================
-        
-        # A) Módulo Imobiliário (Tabela: imoveis_simulacao)
-        imob_aluguel_setor = 0.0
-        imob_condo_setor = 0.0
-        try:
-            cursor.execute("SELECT COALESCE(SUM(valor_aluguel), 0) as aluguel, COALESCE(SUM(valor_condominio), 0) as condo FROM imoveis_simulacao WHERE equipe_id = %s", (id_equipe,))
-            res_imob = cursor.fetchone()
-            if res_imob:
-                imob_aluguel_setor = float(res_imob.get('aluguel') or 0)
-                imob_condo_setor = float(res_imob.get('condo') or 0)
-                patrimonio_ativo_total += imob_aluguel_setor
-                if departamento_atual == 'estrutura':
-                    patrimonio_isolado_setor += imob_aluguel_setor
-        except psycopg2.ProgrammingError:
-            logger.info("ℹ️ Tabela imoveis_simulacao indisponível")
-        except Exception as e:
-            logger.warning(f"⚠️ Erro em imoveis_simulacao: {e}")
+    if config:
+        capital_total = _float_seguro(
+            config.get("capital_total")
+        )
 
-        # Máquinas por departamento (erp_maquinas)
-        try:
-            cursor.execute('SELECT COALESCE(SUM(preco_compra), 0) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = %s', (id_equipe, 'PRODUCAO'))
-            total_producao = float(cursor.fetchone().get('total') or 0)
-            cursor.execute('SELECT COALESCE(SUM(preco_compra), 0) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = %s', (id_equipe, 'ESTRUTURA'))
-            total_estrutura = float(cursor.fetchone().get('total') or 0)
-            cursor.execute('SELECT COALESCE(SUM(preco_compra), 0) as total FROM erp_maquinas WHERE equipe_id = %s AND departamento = %s', (id_equipe, 'UTENSILIOS'))
-            total_utensilios = float(cursor.fetchone().get('total') or 0)
-            patrimonio_ativo_total += total_producao + total_estrutura + total_utensilios
-            if departamento_atual == 'estrutura':
-                patrimonio_isolado_setor += total_estrutura
-            elif departamento_atual == 'maquinas' or departamento_atual == 'producao':
-                patrimonio_isolado_setor += total_producao
-        except psycopg2.ProgrammingError:
-            logger.info("ℹ️ Tabela erp_maquinas indisponível")
-        except Exception as e:
-            logger.warning(f"⚠️ Erro no isolamento de erp_maquinas: {e}")
+        valor_aluguel_global = _float_seguro(
+            config.get("valor_aluguel")
+        )
 
-        # Materiais/almoxarifado
-        try:
-            cursor.execute("SELECT COALESCE(SUM(quantidade_estoque * preco_unitario), 0) as total FROM ativos_materials WHERE equipe_id = %s", (id_equipe,))
-            res_mat = cursor.fetchone()
-            if res_mat and res_mat.get('total'):
-                patrimonio_ativo_total += float(res_mat['total'])
-                if departamento_atual == 'materiais':
-                    patrimonio_isolado_setor += float(res_mat['total'])
-        except psycopg2.ProgrammingError:
-            logger.info("ℹ️ Tabela ativos_materials indisponível")
-        except Exception as e:
-            logger.warning(f"⚠️ Erro em ativos_materials: {e}")
-                
-        # 🔒 CONSOLIDAÇÃO DE CUSTOS FIXOS
-        custo_fixo_total_global = imob_aluguel_setor + imob_condo_setor
-        if departamento_atual == 'estrutura':
-            custo_fixo_isolado_setor = imob_aluguel_setor + imob_condo_setor
+        nome_empresa = (
+            config.get("nome_empresa")
+            or nome_empresa
+        )
 
-        # Folha CLT
-        try:
-            cursor.execute("SELECT COALESCE(SUM(salario_base), 0) as total FROM folha_funcionarios WHERE equipe_id = %s", (id_equipe,))
-            res_rh_global = cursor.fetchone()
-            if res_rh_global and res_rh_global.get('total'):
-                custo_fixo_total_global += float(res_rh_global['total'])
-        except psycopg2.ProgrammingError:
-            logger.info("ℹ️ Tabela folha_funcionarios indisponível")
-        except Exception as e:
-            logger.warning(f"⚠️ Erro em folha_funcionarios: {e}")
+        return (
+            capital_total,
+            valor_aluguel_global,
+            nome_empresa
+        )
+
+    # ----------------------------------------------------------------------
+    # Fallbacks de versões anteriores
+    # ----------------------------------------------------------------------
+
+    tabelas_fallback = [
+        (
+            "configuracao_equipes",
+            "capital_inicial"
+        ),
+        (
+            "configuracao_equipes",
+            "capital_social"
+        ),
+        (
+            "inicializacao_negocio",
+            "capital_inicial"
+        ),
+        (
+            "inicializacao_negocio",
+            "capital_social"
+        )
+    ]
+
+    for tabela, coluna in tabelas_fallback:
 
         try:
-            cursor.execute("SELECT COALESCE(SUM(subtotal), 0) as total FROM estrutura_rh WHERE equipe_id = %s", (id_equipe,))
-            res_rh_imob = cursor.fetchone()
-            if res_rh_imob:
-                rh_setor_valor = float(res_rh_imob.get('total') or 0)
-                custo_fixo_total_global += rh_setor_valor
-                if departamento_atual == 'estrutura':
-                    custo_fixo_isolado_setor += rh_setor_valor
-        except psycopg2.ProgrammingError:
-            logger.info("ℹ️ Tabela estrutura_rh indisponível")
-        except Exception as e:
-            logger.warning(f"⚠️ Erro em estrutura_rh: {e}")
+            cursor.execute(
+                f"""
+                SELECT "{coluna}" AS valor
+                FROM public."{tabela}"
+                WHERE equipe_id = %s
+                LIMIT 1
+                """,
+                (id_equipe,)
+            )
 
-        # CUSTOS VARIÁVEIS
-        try:
-            cursor.execute("SELECT COALESCE(SUM(COALESCE(encargos_patronais, 0) + COALESCE(valor_horas_extras, 0)), 0) as total FROM livro_razonete_folha WHERE equipe_id = %s", (id_equipe,))
-            res_folha_var = cursor.fetchone()
-            if res_folha_var and res_folha_var.get('total'):
-                custo_variavel_total_global += float(res_folha_var['total'])
-                if departamento_atual == 'rh' or departamento_atual == 'folha_pagamento':
-                    custo_variavel_isolado_setor += float(res_folha_var['total'])
-        except psycopg2.ProgrammingError:
-            logger.info("ℹ️ Tabela livro_razonete_folha indisponível")
-        except Exception as e:
-            logger.warning(f"⚠️ Falha ao ler livro_razonete_folha: {e}")
+            registro = cursor.fetchone()
 
-        # ORÇAMENTO E GASTOS ESPECÍFICOS DO SETOR
-        orcamento_liberado_setor = 0.0
-        gastos_especificos_setor = 0.0
-        
-        if departamento_atual:
-            try:
-                cursor.execute("SELECT orcamento_liberado FROM departamentos_orcamento WHERE equipe_id = %s AND departamento = %s", (id_equipe, departamento_atual))
-                dept_orc = cursor.fetchone()
-                if dept_orc:
-                    orcamento_liberado_setor = float(dept_orc.get('orcamento_liberado') or 0)
-            except psycopg2.ProgrammingError:
-                logger.info(f"ℹ️ Tabela departamentos_orcamento indisponível para {departamento_atual}")
-            except Exception as e:
-                logger.warning(f"⚠️ Erro em departamentos_orcamento: {e}")
+            if registro:
+                capital_total = _float_seguro(
+                    registro.get("valor")
+                )
 
-            try:
-                cursor.execute("SELECT COALESCE(SUM(valor), 0) as total FROM fluxo_caixa WHERE equipe_id = %s AND departamento = %s", (id_equipe, departamento_atual))
-                res_gastos = cursor.fetchone()
-                if res_gastos and res_gastos.get('total') is not None:
-                    gastos_especificos_setor = float(res_gastos.get('total') or 0)
-            except psycopg2.ProgrammingError:
-                logger.info(f"ℹ️ Tabela fluxo_caixa indisponível para {departamento_atual}")
-            except Exception as e:
-                logger.warning(f"⚠️ Erro ao filtrar fluxo_caixa: {e}")
+                if capital_total > 0:
+                    logger.info(
+                        f"ℹ️ Capital recuperado de "
+                        f"{tabela}.{coluna}"
+                    )
+                    break
 
-        # Interpretação consistente do fluxo_caixa:
-        # - assumimos que 'valor' positivo = entrada (receita), negativo = saída (despesa)
-        # capital_disponivel_total = capital_total + sum(valor) - valor_aluguel_global
-        capital_disponivel_total = capital_total + total_movimentacoes_fluxo - valor_aluguel_global
-        capital_disponivel_departamento = orcamento_liberado_setor - gastos_especificos_setor
+        except psycopg2.Error:
+            continue
+
+    return (
+        capital_total,
+        valor_aluguel_global,
+        nome_empresa
+    )
+
+
+# ==========================================================================
+# FLUXO DE CAIXA
+# ==========================================================================
+
+def _ler_fluxo_caixa(cursor, id_equipe):
+    """
+    Calcula o fluxo financeiro real.
+
+    Regra:
+
+        RECEITAS = entradas
+        DESPESAS = saídas
+
+        SALDO DO FLUXO =
+            RECEITAS - DESPESAS
+
+    O código reconhece tanto tipos textuais quanto sinais numéricos.
+
+    Isso evita o erro conceitual de simplesmente somar todas as linhas.
+    """
+
+    receitas = 0.0
+    despesas = 0.0
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                tipo,
+                COALESCE(SUM(valor), 0) AS total
+            FROM public.fluxo_caixa
+            WHERE equipe_id = %s
+            GROUP BY tipo
+            """,
+            (id_equipe,)
+        )
+
+        registros = cursor.fetchall()
+
+    except psycopg2.Error:
+        logger.info(
+            "ℹ️ public.fluxo_caixa ainda não disponível."
+        )
 
         return {
-            'nome_empresa': nome_empresa.upper() if nome_empresa else "GRUPO ACADÊMICO",
-            'capital_total': capital_total,
-            'capital_disponivel_total': max(0.0, capital_disponivel_total),
-            'capital_disponivel_departamento': max(0.0, capital_disponivel_departamento),
-            
-            # Métricas Consolidadas Universais (Toda a Empresa)
-            'patrimonio_ativo_total': patrimonio_ativo_total,
-            'custo_fixo_total': custo_fixo_total_global,
-            'custo_variavel_total': custo_variavel_total_global,
-            'custo_fixo_geral_empresa': custo_fixo_total_global,
-            
-            # Métricas Isoladas Específicas do Setor Requisitante
-            'patrimonio_isolado_setor': patrimonio_isolado_setor,
-            'custo_fixo_isolado_setor': custo_fixo_isolado_setor,
-            'custo_variavel_isolado_setor': custo_variavel_isolado_setor
+            "receitas": 0.0,
+            "despesas": 0.0,
+            "saldo": 0.0
         }
 
-    except Exception as e:
-        logger.error(f"❌ Erro Crítico no Motor de Métricas de Caixa: {e}")
+    for registro in registros:
+
+        tipo = str(
+            registro.get("tipo") or ""
+        ).strip().lower()
+
+        total = _float_seguro(
+            registro.get("total")
+        )
+
+        # --------------------------------------------------------------
+        # Entradas / receitas
+        # --------------------------------------------------------------
+
+        if tipo in {
+            "receita",
+            "receitas",
+            "entrada",
+            "entradas",
+            "credito",
+            "crédito",
+            "venda",
+            "faturamento",
+            "recebimento",
+            "recebimentos"
+        }:
+
+            receitas += abs(total)
+
+        # --------------------------------------------------------------
+        # Saídas / despesas
+        # --------------------------------------------------------------
+
+        elif tipo in {
+            "despesa",
+            "despesas",
+            "saida",
+            "saída",
+            "saidas",
+            "saídas",
+            "debito",
+            "débito",
+            "pagamento",
+            "pagamentos",
+            "custo"
+        }:
+
+            despesas += abs(total)
+
+        # --------------------------------------------------------------
+        # Tipos desconhecidos:
+        #
+        # Preserva o sinal do valor.
+        #
+        # positivo = entrada
+        # negativo = saída
+        # --------------------------------------------------------------
+
+        else:
+
+            if total >= 0:
+                receitas += total
+            else:
+                despesas += abs(total)
+
+    saldo = receitas - despesas
+
+    return {
+        "receitas": receitas,
+        "despesas": despesas,
+        "saldo": saldo
+    }
+
+
+# ==========================================================================
+# DESPESAS FIXAS
+# ==========================================================================
+
+def _calcular_custos(cursor, id_equipe):
+    """
+    Consolida os custos já existentes no ERP.
+    """
+
+    custo_fixo = 0.0
+    custo_variavel = 0.0
+
+    # ----------------------------------------------------------------------
+    # Imóveis
+    # ----------------------------------------------------------------------
+
+    imob_aluguel = 0.0
+    imob_condominio = 0.0
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(SUM(valor_aluguel), 0) AS aluguel,
+                COALESCE(SUM(valor_condominio), 0) AS condominio
+            FROM public.imoveis_simulacao
+            WHERE equipe_id = %s
+            """,
+            (id_equipe,)
+        )
+
+        registro = cursor.fetchone()
+
+        if registro:
+            imob_aluguel = _float_seguro(
+                registro.get("aluguel")
+            )
+
+            imob_condominio = _float_seguro(
+                registro.get("condominio")
+            )
+
+            custo_fixo += (
+                imob_aluguel +
+                imob_condominio
+            )
+
+    except psycopg2.Error:
+        pass
+
+    # ----------------------------------------------------------------------
+    # Folha
+    # ----------------------------------------------------------------------
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(SUM(subtotal_oneroso), 0) AS total
+            FROM public.folha_funcionarios
+            WHERE equipe_id = %s
+            """,
+            (id_equipe,)
+        )
+
+        registro = cursor.fetchone()
+
+        if registro:
+            custo_fixo += _float_seguro(
+                registro.get("total")
+            )
+
+    except psycopg2.Error:
+
+        # Compatibilidade com versões onde existe salario_base
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(SUM(salario_base), 0) AS total
+                FROM public.folha_funcionarios
+                WHERE equipe_id = %s
+                """,
+                (id_equipe,)
+            )
+
+            registro = cursor.fetchone()
+
+            if registro:
+                custo_fixo += _float_seguro(
+                    registro.get("total")
+                )
+
+        except psycopg2.Error:
+            pass
+
+    # ----------------------------------------------------------------------
+    # Estrutura RH
+    # ----------------------------------------------------------------------
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(SUM(subtotal), 0) AS total
+            FROM public.estrutura_rh
+            WHERE equipe_id = %s
+            """,
+            (id_equipe,)
+        )
+
+        registro = cursor.fetchone()
+
+        if registro:
+            custo_fixo += _float_seguro(
+                registro.get("total")
+            )
+
+    except psycopg2.Error:
+        pass
+
+    # ----------------------------------------------------------------------
+    # Variáveis da folha
+    # ----------------------------------------------------------------------
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(
+                    SUM(
+                        COALESCE(encargos_patronais, 0)
+                        +
+                        COALESCE(valor_horas_extras, 0)
+                    ),
+                    0
+                ) AS total
+            FROM public.livro_razonete_folha
+            WHERE equipe_id = %s
+            """,
+            (id_equipe,)
+        )
+
+        registro = cursor.fetchone()
+
+        if registro:
+            custo_variavel += _float_seguro(
+                registro.get("total")
+            )
+
+    except psycopg2.Error:
+        pass
+
+    return {
+        "custo_fixo": custo_fixo,
+        "custo_variavel": custo_variavel,
+        "aluguel": imob_aluguel,
+        "condominio": imob_condominio
+    }
+
+
+# ==========================================================================
+# PATRIMÔNIO
+# ==========================================================================
+
+def _calcular_patrimonio(cursor, id_equipe):
+    """
+    Soma os ativos já existentes no ecossistema.
+    """
+
+    patrimonio = 0.0
+
+    # ----------------------------------------------------------------------
+    # Máquinas
+    #
+    # Usa public.ativos_maquinas como fonte física definida no checkpoint.
+    # ----------------------------------------------------------------------
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(SUM(preco_compra), 0) AS total
+            FROM public.ativos_maquinas
+            WHERE equipe_id = %s
+            """,
+            (id_equipe,)
+        )
+
+        registro = cursor.fetchone()
+
+        if registro:
+            patrimonio += _float_seguro(
+                registro.get("total")
+            )
+
+    except psycopg2.Error:
+        # Compatibilidade com instalação antiga
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(SUM(preco_compra), 0) AS total
+                FROM public.erp_maquinas
+                WHERE equipe_id = %s
+                """,
+                (id_equipe,)
+            )
+
+            registro = cursor.fetchone()
+
+            if registro:
+                patrimonio += _float_seguro(
+                    registro.get("total")
+                )
+
+        except psycopg2.Error:
+            pass
+
+    # ----------------------------------------------------------------------
+    # Materiais
+    # ----------------------------------------------------------------------
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(
+                    SUM(
+                        COALESCE(quantidade_estoque, 0)
+                        *
+                        COALESCE(preco_unitario, 0)
+                    ),
+                    0
+                ) AS total
+            FROM public.ativos_materials
+            WHERE equipe_id = %s
+            """,
+            (id_equipe,)
+        )
+
+        registro = cursor.fetchone()
+
+        if registro:
+            patrimonio += _float_seguro(
+                registro.get("total")
+            )
+
+    except psycopg2.Error:
+        pass
+
+    # ----------------------------------------------------------------------
+    # Imóveis
+    # ----------------------------------------------------------------------
+
+    try:
+        cursor.execute(
+            """
+            SELECT
+                COALESCE(SUM(valor_aluguel), 0) AS total
+            FROM public.imoveis_simulacao
+            WHERE equipe_id = %s
+            """,
+            (id_equipe,)
+        )
+
+        registro = cursor.fetchone()
+
+        if registro:
+            patrimonio += _float_seguro(
+                registro.get("total")
+            )
+
+    except psycopg2.Error:
+        pass
+
+    return patrimonio
+
+
+# ==========================================================================
+# MÉTRICA CENTRAL
+# ==========================================================================
+
+def calcular_metricas_totais_equipe(
+    id_equipe,
+    departamento_atual=None
+):
+    """
+    MOTOR FINANCEIRO CENTRAL DO TERADMAS.
+
+    Fórmula principal:
+
+        capital_disponivel_total =
+            capital_total
+            + receitas
+            - despesas
+
+    As quotas NÃO são tratadas como despesas.
+
+    Quota é uma alocação interna do capital para os departamentos.
+    """
+
+    conexao = obter_conexao_master()
+
+    if not conexao:
+
         return {
-            'nome_empresa': "MODO SEGURANÇA", 
-            'capital_total': 5000000.00,
-            'capital_disponivel_total': 0.0,
-            'capital_disponivel_departamento': 0.0,
-            'patrimonio_ativo_total': 0.0,
-            'custo_fixo_total': 21350.00,
-            'custo_variavel_total': 0.0,
-            'custo_fixo_geral_empresa': 21350.00,
-            'patrimonio_isolado_setor': 0.0,
-            'custo_fixo_isolado_setor': 0.0,
-            'custo_variavel_isolado_setor': 0.0,
-            'erro': str(e)
+            "status": "erro",
+            "nome_empresa": "MODO SEGURANÇA",
+            "capital_total": 0.0,
+            "receitas_total": 0.0,
+            "despesas_total": 0.0,
+            "capital_disponivel_total": 0.0,
+            "capital_disponivel_departamento": 0.0,
+            "patrimonio_ativo_total": 0.0,
+            "custo_fixo_total": 0.0,
+            "custo_variavel_total": 0.0,
+            "custo_fixo_geral_empresa": 0.0,
+            "quotas": [],
+            "erro": "Conexão com banco indisponível"
+        }
+
+    cursor = None
+
+    try:
+
+        cursor = conexao.cursor(
+            cursor_factory=RealDictCursor
+        )
+
+        # ==================================================================
+        # 1. CONFIGURAÇÃO DA EMPRESA
+        # ==================================================================
+
+        (
+            capital_total,
+            valor_aluguel_global,
+            nome_empresa
+        ) = _ler_configuracao_empresa(
+            cursor,
+            id_equipe
+        )
+
+        # ==================================================================
+        # 2. FLUXO FINANCEIRO REAL
+        # ==================================================================
+
+        fluxo = _ler_fluxo_caixa(
+            cursor,
+            id_equipe
+        )
+
+        receitas_total = fluxo["receitas"]
+        despesas_fluxo = fluxo["despesas"]
+
+        # ==================================================================
+        # 3. CUSTOS ESTRUTURAIS
+        # ==================================================================
+
+        custos = _calcular_custos(
+            cursor,
+            id_equipe
+        )
+
+        custo_fixo_total = custos["custo_fixo"]
+        custo_variavel_total = custos["custo_variavel"]
+
+        # ==================================================================
+        # 4. PATRIMÔNIO
+        # ==================================================================
+
+        patrimonio_total = _calcular_patrimonio(
+            cursor,
+            id_equipe
+        )
+
+        # ==================================================================
+        # 5. QUOTAS OFICIAIS
+        # ==================================================================
+
+        quotas = _ler_quotas_departamentos(
+            cursor,
+            id_equipe
+        )
+
+        # ==================================================================
+        # 6. CAPITAL DISPONÍVEL
+        # ==================================================================
+        #
+        # AQUI ESTÁ A CORREÇÃO PRINCIPAL.
+        #
+        # Quota NÃO reduz o capital disponível.
+        #
+        # Ela somente determina quanto do capital disponível está
+        # reservado/alocado para cada departamento.
+        #
+        # O caixa real é:
+        #
+        # capital inicial + receitas - despesas
+        #
+        # ==================================================================
+
+        capital_disponivel_total = (
+            capital_total
+            + receitas_total
+            - despesas_fluxo
+        )
+
+        # Nunca deixa o indicador visual entrar em valor negativo.
+        capital_disponivel_total = max(
+            0.0,
+            capital_disponivel_total
+        )
+
+        # ==================================================================
+        # 7. QUOTA DO SETOR
+        # ==================================================================
+
+        capital_disponivel_departamento = 0.0
+        quota_percentual_departamento = 0.0
+        quota_valor_departamento = 0.0
+
+        if departamento_atual:
+
+            departamento_texto = str(
+                departamento_atual
+            ).strip()
+
+            for quota in quotas["registros"]:
+
+                departamento_id = str(
+                    quota.get("departamento_id")
+                ).strip()
+
+                if departamento_id == departamento_texto:
+
+                    quota_percentual_departamento = (
+                        quota.get("percentual") or 0.0
+                    )
+
+                    quota_valor_departamento = (
+                        quota.get("valor") or 0.0
+                    )
+
+                    break
+
+            # --------------------------------------------------------------
+            # Se a tabela possui percentual, calcula dinamicamente a quota
+            # sobre o capital disponível atual.
+            # --------------------------------------------------------------
+
+            if quota_percentual_departamento > 0:
+
+                capital_disponivel_departamento = (
+                    capital_disponivel_total
+                    *
+                    quota_percentual_departamento
+                    /
+                    100.0
+                )
+
+            # --------------------------------------------------------------
+            # Caso exista somente valor persistido, usa o valor.
+            # --------------------------------------------------------------
+
+            elif quota_valor_departamento > 0:
+
+                capital_disponivel_departamento = (
+                    quota_valor_departamento
+                )
+
+        # ==================================================================
+        # 8. RETORNO UNIFICADO
+        # ==================================================================
+
+        return {
+
+            "status": "sucesso",
+
+            # --------------------------------------------------------------
+            # Empresa
+            # --------------------------------------------------------------
+
+            "nome_empresa": (
+                nome_empresa.upper()
+                if nome_empresa
+                else "GRUPO ACADÊMICO"
+            ),
+
+            # --------------------------------------------------------------
+            # Caixa
+            # --------------------------------------------------------------
+
+            "capital_total": capital_total,
+
+            "receitas_total": receitas_total,
+
+            "despesas_total": despesas_fluxo,
+
+            "saldo_fluxo_caixa": (
+                receitas_total -
+                despesas_fluxo
+            ),
+
+            "capital_disponivel_total": (
+                capital_disponivel_total
+            ),
+
+            # --------------------------------------------------------------
+            # Quotas
+            # --------------------------------------------------------------
+
+            "quotas": quotas["registros"],
+
+            "quotas_percentual_total": (
+                quotas["percentual_total"]
+            ),
+
+            "quotas_valor_total": (
+                quotas["valor_total"]
+            ),
+
+            "quota_percentual_departamento": (
+                quota_percentual_departamento
+            ),
+
+            "quota_valor_departamento": (
+                quota_valor_departamento
+            ),
+
+            "capital_disponivel_departamento": (
+                max(
+                    0.0,
+                    capital_disponivel_departamento
+                )
+            ),
+
+            # --------------------------------------------------------------
+            # Patrimônio
+            # --------------------------------------------------------------
+
+            "patrimonio_ativo_total": (
+                patrimonio_total
+            ),
+
+            # --------------------------------------------------------------
+            # Custos
+            # --------------------------------------------------------------
+
+            "custo_fixo_total": (
+                custo_fixo_total
+            ),
+
+            "custo_variavel_total": (
+                custo_variavel_total
+            ),
+
+            "custo_fixo_geral_empresa": (
+                custo_fixo_total
+            )
+        }
+
+    except Exception as erro:
+
+        logger.exception(
+            "❌ Erro crítico no Motor Financeiro TERADMAS"
+        )
+
+        try:
+            conexao.rollback()
+        except Exception:
+            pass
+
+        return {
+
+            "status": "erro",
+
+            "nome_empresa": "MODO SEGURANÇA",
+
+            "capital_total": 0.0,
+
+            "receitas_total": 0.0,
+
+            "despesas_total": 0.0,
+
+            "saldo_fluxo_caixa": 0.0,
+
+            "capital_disponivel_total": 0.0,
+
+            "capital_disponivel_departamento": 0.0,
+
+            "patrimonio_ativo_total": 0.0,
+
+            "custo_fixo_total": 0.0,
+
+            "custo_variavel_total": 0.0,
+
+            "custo_fixo_geral_empresa": 0.0,
+
+            "quotas": [],
+
+            "erro": str(erro)
         }
 
     finally:
-        if cursor: 
-            cursor.close()
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
         if conexao:
-            liberar_conexao_master(conexao)
+
+            liberar_conexao_master(
+                conexao
+            )
+
+
+# ==========================================================================
+# FUNÇÃO AUXILIAR PARA OBTER SOMENTE AS QUOTAS
+# ==========================================================================
+
+def obter_quotas_equipe(id_equipe):
+    """
+    API interna para módulos financeiros/didáticos que precisem
+    consultar somente a matriz de quotas.
+    """
+
+    conexao = obter_conexao_master()
+
+    if not conexao:
+        return []
+
+    cursor = None
+
+    try:
+
+        cursor = conexao.cursor(
+            cursor_factory=RealDictCursor
+        )
+
+        resultado = _ler_quotas_departamentos(
+            cursor,
+            id_equipe
+        )
+
+        return resultado["registros"]
+
+    except Exception as erro:
+
+        logger.error(
+            f"❌ Erro ao obter quotas da equipe: {erro}"
+        )
+
+        return []
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conexao:
+
+            liberar_conexao_master(
+                conexao
+            )
+
+
+# ==========================================================================
+# FECHAMENTO CONTROLADO DO POOL
+# ==========================================================================
+
+def fechar_pool_conexoes():
+    """
+    Deve ser utilizado somente no encerramento controlado da aplicação.
+    """
+
+    global _connection_pool
+
+    if _connection_pool is not None:
+
+        try:
+            _connection_pool.closeall()
+
+            logger.info(
+                "🔒 Pool central PostgreSQL encerrado."
+            )
+
+        except Exception as erro:
+
+            logger.warning(
+                f"⚠️ Erro ao encerrar pool: {erro}"
+            )
+
+        finally:
+
+            _connection_pool = None
