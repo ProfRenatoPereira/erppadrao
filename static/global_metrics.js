@@ -50,7 +50,7 @@ const GlobalMetrics = {
         if (!this.dataCache) return;
         
         const data = this.dataCache;
-        const capitalTotal = data.capital_total || 5000000;
+        const capitalTotal = data.capital_total || 10000000;
         const capitalDisponivel = data.capital_disponivel_total || 0;
         const patrimonioTotal = data.patrimonio_ativo_total || 0;
         const custoFixoTotal = data.custo_fixo_geral_empresa || 0;
