@@ -11,7 +11,6 @@ def obter_conexao_master():
     and consistent configuration (DATABASE_URL).
     """
     try:
-        # Import locally to avoid circular import at module import time
         import GerenciadorCaixa
         conexao = GerenciadorCaixa.obter_conexao_master()
         if conexao is None:
@@ -53,7 +52,7 @@ def api_faturar_titulo():
                 financeiro_valor REAL, financeiro_condicao TEXT,
                 financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
             )
-        ''')
+        ''');
         
         cursor.execute('''
             INSERT INTO razao_financeiro (equipe_id, cliente_id, cliente_nome_suporte, 
