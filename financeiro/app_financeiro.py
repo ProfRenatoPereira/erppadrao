@@ -64,7 +64,6 @@ def api_faturar_titulo():
               
         conexao.commit()
         cursor.close()
-        # Return connection to pool
         import GerenciadorCaixa
         GerenciadorCaixa.liberar_conexao_master(conexao)
         return jsonify({'status': 'sucesso'}), 200
@@ -72,6 +71,8 @@ def api_faturar_titulo():
         try:
             if conexao:
                 conexao.rollback()
+                import GerenciadorCaixa
+                GerenciadorCaixa.liberar_conexao_master(conexao)
         except Exception:
             pass
         return jsonify({'status': 'erro', 'message': str(e)}), 500
@@ -111,7 +112,6 @@ def api_listar_titulos():
         except Exception:
             pass
         return jsonify({'status': 'erro', 'message': str(e)}), 500
-
 @financeiro_blueprint.route('/api/financeiro/liquidar/<int:id_reg>', methods=['POST'])
 def api_liquidar_titulo_id(id_reg):
     if not session.get('logado'):
@@ -148,7 +148,6 @@ def api_liquidar_titulo_id(id_reg):
                 )
             ''')
             
-            # Inserir como entrada positiva (convenção: entrada = valor positivo)
             cursor.execute('''
                 INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor, tipo)
                 VALUES (%s, 'financeiro', %s, %s, 'LIQUIDAÇÃO')
@@ -169,13 +168,12 @@ def api_liquidar_titulo_id(id_reg):
             pass
         return jsonify({'status': 'erro', 'message': str(e)}), 500
 
-# erppadrao - financeiro/app_financeiro.py (Trecho Corrigido de Salvamento de Quotas)
-
 @financeiro_blueprint.route('/api/financeiro/quota', methods=['POST'])
 def api_salvar_quota_setorial():
     if not session.get('logado'):
         return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
         
+    conexao = None
     try:
         dados = request.json
         id_equipe = session.get('id_equipe', 'equipe_alfa')
@@ -185,7 +183,6 @@ def api_salvar_quota_setorial():
         conexao = obter_conexao_master()
         cursor = conexao.cursor()
         
-        # Garante a criação com a CONSTRAINT composta explicita
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS quotas_departamentos (
                 id SERIAL PRIMARY KEY, 
@@ -205,12 +202,9 @@ def api_salvar_quota_setorial():
         
         conexao.commit()
         cursor.close()
-        conexao.close()
+        import GerenciadorCaixa
+        GerenciadorCaixa.liberar_conexao_master(conexao)
         return jsonify({'status': 'sucesso'}), 200
-    except Exception as e:
-        # Previne o erro 500 caso o banco esteja travado, retornando o log para o JS ler
-        return jsonify({'status': 'erro', 'message': str(e)}), 200
-
     except Exception as e:
         try:
             if conexao:
@@ -220,7 +214,6 @@ def api_salvar_quota_setorial():
         except Exception:
             pass
         return jsonify({'status': 'erro', 'message': str(e)}), 500
-
 @financeiro_blueprint.route('/api/financeiro/quota/<string:depto_id>', methods=['GET'])
 def api_buscar_quota_depto(depto_id):
     if not session.get('logado'):
@@ -291,3 +284,83 @@ def api_obter_resumo_quotas():
         except Exception:
             pass
         return jsonify([]), 200
+@financeiro_blueprint.route('/api/financeiro/metricas', methods=['GET'])
+def api_obter_metricas_globais():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    conexao = None
+    try:
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor()
+        
+        # 1. Busca Capital Inicial da tabela configuracao_equipes
+        try:
+            cursor.execute("SELECT COALESCE(capital_inicial, 5000000.00) FROM public.configuracao_equipes WHERE equipe_id = %s", (str(id_equipe),))
+            res = cursor.fetchone()
+            capital_total = float(res[0]) if res else 5000000.00
+        except Exception:
+            capital_total = 5000000.00
+            
+        # 2. Soma Patrimônio da tabela ativos_maquinas (ativo_imobilizado = True)
+        try:
+            cursor.execute("SELECT COALESCE(SUM(preco_compra), 0.00) FROM public.ativos_maquinas WHERE equipe_id = %s AND ativo_imobilizado = TRUE", (str(id_equipe),))
+            res = cursor.fetchone()
+            patrimonio = float(res[0]) if res else 0.00
+        except Exception:
+            patrimonio = 0.00
+            
+        # 3. Calcula Custo Fixo (Contratos Imobiliários + Folha de Funcionários)
+        try:
+            cursor.execute("SELECT COALESCE(SUM(custo_locacao), 0.00) FROM public.contratos_imobiliarios WHERE equipe_id = %s", (str(id_equipe),))
+            res_loc = cursor.fetchone()
+            v_loc = float(res_loc[0]) if res_loc else 0.00
+            
+            cursor.execute("SELECT COALESCE(SUM(subtotal_oneroso), 0.00) FROM public.folha_funcionarios WHERE equipe_id = %s", (str(id_equipe),))
+            res_folha = cursor.fetchone()
+            v_folha = float(res_folha[0]) if res_folha else 0.00
+            
+            custo_fixo = v_loc + v_folha
+        except Exception:
+            custo_fixo = 0.00
+            
+        # 4. Calcula Custo Variável (Soma do custo_operacional_total_integrado de ativos_materials)
+        try:
+            cursor.execute("SELECT COALESCE(SUM(custo_operacional_total_integrado), 0.00) FROM public.ativos_materials WHERE equipe_id = %s", (str(id_equipe),))
+            res_mat = cursor.fetchone()
+            custo_variavel = float(res_mat[0]) if res_mat else 0.00
+        except Exception:
+            custo_variavel = 0.00
+            
+        # 5. Calcula Capital Disponível (Capital Total - Quotas Alocadas)
+        try:
+            cursor.execute("SELECT COALESCE(SUM(porcentagem_quota), 0.00) FROM public.quotas_departamentos WHERE equipe_id = %s", (str(id_equipe),))
+            res_q = cursor.fetchone()
+            porcentagem_total_alocada = float(res_q[0]) if res_q else 0.00
+            
+            valor_quotas_reservadas = (porcentagem_total_alocada / 100.0) * capital_total
+            capital_disponivel = capital_total - valor_quotas_reservadas
+        except Exception:
+            capital_disponivel = capital_total
+            
+        cursor.close()
+        import GerenciadorCaixa
+        GerenciadorCaixa.liberar_conexao_master(conexao)
+        
+        return jsonify({
+            'status': 'success',
+            'capital_total': capital_total,
+            'capital_disponivel': capital_disponivel,
+            'patrimonio': patrimonio,
+            'custo_fixo': custo_fixo,
+            'custo_variavel': custo_variavel
+        }), 200
+    except Exception as e:
+        try:
+            if conexao:
+                import GerenciadorCaixa
+                GerenciadorCaixa.liberar_conexao_master(conexao)
+        except Exception:
+            pass
+        return jsonify({'status': 'erro', 'message': str(e)}), 500
