@@ -1,194 +1,293 @@
-# ==========================================================================
-# TERADMAS ERP v2.6 - APP MASTER (NÚCLEO PRINCIPAL DA APLICAÇÃO)
-# ARQUIVO: app_master.py
-# ==========================================================================
+# erppadrao - financeiro/app_financeiro.py
+from flask import Blueprint, request, render_template_string, session, jsonify, send_from_directory
+from psycopg2.extras import RealDictCursor
 import os
-from flask import Flask, session, jsonify, request, redirect, render_template_string
-from datetime import timedelta
-from whitenoise import WhiteNoise
 
-# URL de conexão estável com o pool PostgreSQL do Supabase
-URL_SUPABASE = os.environ.get(
-    "DATABASE_URL", 
-    "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
-)
+financeiro_blueprint = Blueprint('financeiro_blueprint', __name__)
 
-# Inicialização do aplicativo Flask centralizado
-app = Flask(__name__, static_folder='static', static_url_path='/static')
-
-# Configuração do WhiteNoise para servir arquivos estáticos sem latência
-app.wsgi_app = WhiteNoise(
-    app.wsgi_app, 
-    root=os.path.join(os.path.dirname(__file__), 'static'), 
-    prefix='static/'
-)
-
-# Configurações estritas de sessão transacional
-app.secret_key = os.environ.get("APP_SECRET_KEY", "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO")
-app.permanent_session_lifetime = timedelta(days=7)
-
-# Importação blindada do gerenciador de caixas e motor de métricas
-import GerenciadorCaixa
-
-# ========== IMPORTAÇÃO DE BLUEPRINTS MODULARES ==========
-try:
-    from login.app_login import login_blueprint
-    from configuracao.app_configuracao import configuracao_blueprint
-    from estrutura.app_estrutura import estrutura_blueprint
-    from maquinas.app_maquinas import maquinas_blueprint
-    from materiais.app_materiais import materiais_blueprint
-    from processos.app_processos import processos_blueprint
-    from produtos.app_produtos import produtos_blueprint
-    from precificacao.app_precificacao import precificacao_blueprint
-    from clientes.app_clientes import clientes_blueprint
-    from vendas.app_vendas import vendas_blueprint
-    from estoque.app_estoque import estoque_blueprint
-    from financeiro.app_financeiro import financeiro_blueprint
-    from nota_fiscal.app_nota_fiscal import nota_fiscal_blueprint
-    from rh.app_rh import rh_blueprint
-    from pcp.app_pcp import pcp_blueprint
-    from orcamentos.app_orcamentos import orcamentos_blueprint
-    from compras_insumos.app_compras import compras_blueprint
-    from engenharia_producao.app_producao import producao_blueprint
-    from folha_pagamento.app_folha import folha_blueprint
-    from manutencao.app_manutencao import manutencao_blueprint
-    from requisicoes.app_requisicoes import requisicoes_blueprint
-    from roi.app_roi import roi_blueprint
-except ImportError as e:
-    print(f"⚠️ Checklist ERP: Alguns módulos operam em modo contingência: {e}")
-
-# ========== REGISTRO DE BLUEPRINTS NO CORE DO FLASK ==========
-app.register_blueprint(login_blueprint)
-app.register_blueprint(configuracao_blueprint)
-app.register_blueprint(estrutura_blueprint)
-app.register_blueprint(maquinas_blueprint)
-app.register_blueprint(materiais_blueprint)
-app.register_blueprint(processos_blueprint)
-app.register_blueprint(produtos_blueprint)
-app.register_blueprint(precificacao_blueprint)
-app.register_blueprint(clientes_blueprint)
-app.register_blueprint(vendas_blueprint)
-app.register_blueprint(estoque_blueprint)
-app.register_blueprint(financeiro_blueprint)
-app.register_blueprint(nota_fiscal_blueprint)
-app.register_blueprint(rh_blueprint)
-app.register_blueprint(pcp_blueprint)
-app.register_blueprint(orcamentos_blueprint)
-app.register_blueprint(compras_blueprint)
-app.register_blueprint(producao_blueprint)
-app.register_blueprint(folha_blueprint)
-app.register_blueprint(manutencao_blueprint)
-app.register_blueprint(requisicoes_blueprint)
-app.register_blueprint(roi_blueprint)
-# ==========================================================================
-
-# ========== MIDDLEWARE DE AUTENTICAÇÃO E FLUXO ==========
-@app.before_request
-def verificar_fluxo_de_aula():
-    """Middleware que valida sessão e autorização em cada request"""
-    if request.path.startswith('/static') or request.path.startswith('/login') or request.path == '/logout':
-        return
-
-    if not session.get('logado'):
-        if request.is_json:
-            return jsonify({'status': 'erro', 'message': 'Sessão expirada'}), 401
-        return redirect('/login')
-
-    if session.get('professor_master'):
-        return
-
-    if not session.get('empresa_inicializada') and request.endpoint != 'configuracao_blueprint.api_inicializar_empresa':
-        if not request.path.startswith('/configuracao'):
-            if request.is_json:
-                return jsonify({'status': 'erro', 'message': 'Empresa não inicializada'}), 400
-            return redirect('/configuracao/inicializacao')
-
-# ========== ROTAS PRINCIPAIS DE REDIRECIONAMENTO ==========
-@app.route('/')
-def rota_raiz_direta():
-    """Rota raiz com redirecionamento inteligente"""
-    if not session.get('logado'):
-        return redirect('/login')
-    
-    if session.get('empresa_inicializada'):
-        return redirect('/estrutura')
-    else:
-        return redirect('/configuracao/inicializacao')
-
-@app.route('/grid')
-def rota_contingencia_grid():
-    """Rota de contingência para links residuais do front-end"""
-    if not session.get('logado'):
-        return redirect('/login')
-    return redirect('/estrutura')
-
-@app.route('/logout')
-def rota_encerrar_turno():
-    """Limpa a sessão atual do banco de dados na memória do servidor"""
-    session.clear()
-    return redirect('/login')
-
-# ========== API DE MÉTRICAS GLOBAIS E REATIVAS ==========
-@app.route('/api/financeiro/metricas', methods=['GET'])
-def api_global_metricas_calculadas():
-    """Endpoint central de métricas consolidadas de toda a empresa"""
-    if not session.get('logado'):
-        return jsonify({'status': 'erro', 'message': 'Acesso negado'}), 401
-        
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    departamento = request.args.get('dept', '')
-    
+def obter_conexao_master():
+    """
+    Delegates connection handling to the central GerenciadorCaixa to use the shared pool
+    and consistent configuration (DATABASE_URL).
+    """
     try:
-        metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, departamento)
-        return jsonify(metricas)
+        # Import locally to avoid circular import at module import time
+        import GerenciadorCaixa
+        conexao = GerenciadorCaixa.obter_conexao_master()
+        if conexao is None:
+            raise RuntimeError("Não foi possível obter conexão com o banco via GerenciadorCaixa")
+        return conexao
     except Exception as e:
-        print(f"❌ Erro na API de métricas: {e}")
+        raise
+
+@financeiro_blueprint.route('/financeiro')
+def pagina_financeiro():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    with open('financeiro/financeiro.html', 'r', encoding='utf-8') as f:
+        html = f.read()
+    return render_template_string(html)
+
+@financeiro_blueprint.route('/financeiro/financeiro.js')
+def servir_js_financeiro():
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    return send_from_directory(diretorio_atual, 'financeiro.js', mimetype='application/javascript')
+
+@financeiro_blueprint.route('/api/financeiro/faturar', methods=['POST'])
+def api_faturar_titulo():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    conexao = None
+    try:
+        dados = request.json
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS razao_financeiro (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
+                cliente_nome_suporte TEXT, financeiro_descricao TEXT,
+                financeiro_valor REAL, financeiro_condicao TEXT,
+                financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
+            )
+        ''')
+        
+        cursor.execute('''
+            INSERT INTO razao_financeiro (equipe_id, cliente_id, cliente_nome_suporte, 
+            financeiro_descricao, financeiro_valor, financeiro_condicao, financeiro_data)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ''', (str(id_equipe), int(dados.get('cliente_id', 0) or 0), dados.get('cliente_nome_suporte'), dados.get('financeiro_descricao'),
+              float(dados.get('financeiro_valor', 0.0) or 0.0), dados.get('financeiro_condicao'), dados.get('financeiro_data')))
+              
+        conexao.commit()
+        cursor.close()
+        # Return connection to pool
+        import GerenciadorCaixa
+        GerenciadorCaixa.liberar_conexao_master(conexao)
+        return jsonify({'status': 'sucesso'}), 200
+    except Exception as e:
+        try:
+            if conexao:
+                conexao.rollback()
+        except Exception:
+            pass
         return jsonify({'status': 'erro', 'message': str(e)}), 500
 
-@app.route('/api/financeiro/kpis', methods=['GET'])
-def api_kpis_resumidos():
-    """Endpoint de KPIs simplificados para dashboard rapido"""
+@financeiro_blueprint.route('/api/financeiro/listar', methods=['GET'])
+def api_listar_titulos():
     if not session.get('logado'):
-        return jsonify({'status': 'erro'}), 401
-    
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe)
-    
-    return jsonify({
-        'capital_total': metricas.get('capital_total'),
-        'patrimonio_ativo': metricas.get('patrimonio_ativo_total'),
-        'custo_fixo': metricas.get('custo_fixo_geral_empresa'),
-        'capital_disponivel': metricas.get('capital_disponivel_total')
-    })
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    conexao = None
+    try:
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS razao_financeiro (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
+                cliente_nome_suporte TEXT, financeiro_descricao TEXT,
+                financeiro_valor REAL, financeiro_condicao TEXT,
+                financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
+            )
+        ''')
+        
+        cursor.execute('SELECT * FROM razao_financeiro WHERE equipe_id = %s ORDER BY id DESC', (str(id_equipe),))
+        linhas = cursor.fetchall()
+        
+        cursor.close()
+        import GerenciadorCaixa
+        GerenciadorCaixa.liberar_conexao_master(conexao)
+        return jsonify([dict(linha) for linha in linhas]), 200
+    except Exception as e:
+        try:
+            if conexao:
+                import GerenciadorCaixa
+                GerenciadorCaixa.liberar_conexao_master(conexao)
+        except Exception:
+            pass
+        return jsonify({'status': 'erro', 'message': str(e)}), 500
 
-# ========== TRATAMENTO GLOBAL DE ERROS (SINCRO/ASSINCRO) ==========
-@app.errorhandler(404)
-def erro_nao_encontrado(erro):
-    if request.is_json:
-        return jsonify({'status': 'erro', 'message': 'Recurso não encontrado'}), 404
-    return render_template_string("""
-        <h1>❌ Página não encontrada</h1>
-        <p>O recurso solicitado não existe no sistema TERADMAS.</p>
-        <a href="/">Voltar ao início</a>
-    """), 404
+@financeiro_blueprint.route('/api/financeiro/liquidar/<int:id_reg>', methods=['POST'])
+def api_liquidar_titulo_id(id_reg):
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    conexao = None
+    try:
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS razao_financeiro (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, cliente_id INTEGER,
+                cliente_nome_suporte TEXT, financeiro_descricao TEXT,
+                financeiro_valor REAL, financeiro_condicao TEXT,
+                financeiro_data TEXT, status_titulo TEXT DEFAULT 'Aberto'
+            )
+        ''')
+        
+        cursor.execute("SELECT * FROM razao_financeiro WHERE id = %s AND equipe_id = %s AND status_titulo = 'Aberto'", (int(id_reg), str(id_equipe)))
+        titulo = cursor.fetchone()
+        
+        if titulo:
+            cursor.execute("UPDATE razao_financeiro SET status_titulo = 'Liquidado' WHERE id = %s", (int(id_reg),))
+            
+            valor_recebimento = float(titulo['financeiro_valor'] or 0)
+            descricao_caixa = f"Recebimento Duplicata FT-00{id_reg} - {titulo.get('financeiro_descricao', '')}"
+            
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS fluxo_caixa (
+                    id SERIAL PRIMARY KEY, equipe_id TEXT, departamento TEXT,
+                    descricao TEXT, valor REAL, tipo TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            ''')
+            
+            # Inserir como entrada positiva (convenção: entrada = valor positivo)
+            cursor.execute('''
+                INSERT INTO fluxo_caixa (equipe_id, departamento, descricao, valor, tipo)
+                VALUES (%s, 'financeiro', %s, %s, 'LIQUIDAÇÃO')
+            ''', (str(id_equipe), descricao_caixa, valor_recebimento))
+            
+        conexao.commit()
+        cursor.close()
+        import GerenciadorCaixa
+        GerenciadorCaixa.liberar_conexao_master(conexao)
+        return jsonify({'status': 'sucesso'}), 200
+    except Exception as e:
+        try:
+            if conexao:
+                conexao.rollback()
+                import GerenciadorCaixa
+                GerenciadorCaixa.liberar_conexao_master(conexao)
+        except Exception:
+            pass
+        return jsonify({'status': 'erro', 'message': str(e)}), 500
 
-@app.errorhandler(500)
-def erro_servidor(erro):
-    print(f"❌ ERRO 500 DE COMPILAÇÃO OU RUNTIME: {erro}")
-    if request.is_json:
-        return jsonify({'status': 'erro', 'message': 'Erro interno do servidor'}), 500
-    return render_template_string("""
-        <h1>❌ Erro Interno</h1>
-        <p>Ocorreu um erro crítico ao processar no servidor.</p>
-        <a href="/">Voltar ao início</a>
-    """), 500
+# erppadrao - financeiro/app_financeiro.py (Trecho Corrigido de Salvamento de Quotas)
 
-# ========== EXECUTOR DO SERVIDOR INTEGRADO EM PRODUÇÃO ==========
-if __name__ == '__main__':
-    porta = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
-    
-    print(f"🚀 Servidor Central TERADMAS ERP v2.6 Iniciado com Sucesso")
-    print(f"📍 Porta de Escuta: {porta}")
-    
-    app.run(host='0.0.0.0', port=porta, debug=debug_mode)
+@financeiro_blueprint.route('/api/financeiro/quota', methods=['POST'])
+def api_salvar_quota_setorial():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    try:
+        dados = request.json
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        depto = dados.get('departamento_id')
+        porcentagem = float(dados.get('porcentagem_quota', 0))
+        
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor()
+        
+        # Garante a criação com a CONSTRAINT composta explicita
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS quotas_departamentos (
+                id SERIAL PRIMARY KEY, 
+                equipe_id TEXT NOT NULL, 
+                departamento_id TEXT NOT NULL,
+                porcentagem_quota REAL,
+                CONSTRAINT unique_equipe_depto UNIQUE (equipe_id, departamento_id)
+            )
+        ''')
+        
+        cursor.execute('''
+            INSERT INTO quotas_departamentos (equipe_id, departamento_id, porcentagem_quota)
+            VALUES (%s, %s, %s)
+            ON CONFLICT (equipe_id, departamento_id) 
+            DO UPDATE SET porcentagem_quota = EXCLUDED.porcentagem_quota
+        ''', (str(id_equipe), str(depto), porcentagem))
+        
+        conexao.commit()
+        cursor.close()
+        conexao.close()
+        return jsonify({'status': 'sucesso'}), 200
+    except Exception as e:
+        # Previne o erro 500 caso o banco esteja travado, retornando o log para o JS ler
+        return jsonify({'status': 'erro', 'message': str(e)}), 200
+
+    except Exception as e:
+        try:
+            if conexao:
+                conexao.rollback()
+                import GerenciadorCaixa
+                GerenciadorCaixa.liberar_conexao_master(conexao)
+        except Exception:
+            pass
+        return jsonify({'status': 'erro', 'message': str(e)}), 500
+
+@financeiro_blueprint.route('/api/financeiro/quota/<string:depto_id>', methods=['GET'])
+def api_buscar_quota_depto(depto_id):
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    conexao = None
+    try:
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS quotas_departamentos (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, departamento_id TEXT,
+                porcentagem_quota REAL, UNIQUE(equipe_id, departamento_id)
+            )
+        ''')
+        
+        cursor.execute('SELECT porcentagem_quota FROM quotas_departamentos WHERE equipe_id = %s AND departamento_id = %s', (str(id_equipe), str(depto_id)))
+        registro = cursor.fetchone()
+        
+        cursor.close()
+        import GerenciadorCaixa
+        GerenciadorCaixa.liberar_conexao_master(conexao)
+        
+        if registro:
+            return jsonify(dict(registro)), 200
+        return jsonify({'porcentagem_quota': 0}), 200
+    except Exception as e:
+        try:
+            if conexao:
+                import GerenciadorCaixa
+                GerenciadorCaixa.liberar_conexao_master(conexao)
+        except Exception:
+            pass
+        return jsonify({'porcentagem_quota': 0}), 200
+
+@financeiro_blueprint.route('/api/financeiro/quotas/summary', methods=['GET'])
+def api_obter_resumo_quotas():
+    if not session.get('logado'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+        
+    conexao = None
+    try:
+        id_equipe = session.get('id_equipe', 'equipe_alfa')
+        conexao = obter_conexao_master()
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS quotas_departamentos (
+                id SERIAL PRIMARY KEY, equipe_id TEXT, departamento_id TEXT,
+                porcentagem_quota REAL, UNIQUE(equipe_id, departamento_id)
+            )
+        ''')
+        
+        cursor.execute('SELECT departamento_id, porcentagem_quota FROM quotas_departamentos WHERE equipe_id = %s AND porcentagem_quota > 0 ORDER BY porcentagem_quota DESC', (str(id_equipe),))
+        linhas = cursor.fetchall()
+        
+        cursor.close()
+        import GerenciadorCaixa
+        GerenciadorCaixa.liberar_conexao_master(conexao)
+        return jsonify([dict(l) for l in linhas]), 200
+    except Exception:
+        try:
+            if conexao:
+                import GerenciadorCaixa
+                GerenciadorCaixa.liberar_conexao_master(conexao)
+        except Exception:
+            pass
+        return jsonify([]), 200
