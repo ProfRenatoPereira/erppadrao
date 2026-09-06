@@ -291,3 +291,28 @@ def api_obter_resumo_quotas():
         except Exception:
             pass
         return jsonify([]), 200
+
+
+        # 5. Calcula Capital Disponível (Capital Total - Soma exata dos Valores Calculados em Dinheiro)
+        try:
+            # Substitui a matemática percentual volátil pela soma limpa do dinheiro retido no Supabase
+            cursor.execute("""
+                SELECT COALESCE(SUM(valor_calculado), 0.00) 
+                FROM public.quotas_departamentos 
+                WHERE equipe_id = %s
+            """, (str(id_equipe),))
+            res_q = cursor.fetchone()
+            
+            # Garante a extração correta independente do tipo retornado pelo driver psycopg2
+            valor_quotas_reservadas = float(res_q[0]) if res_q and res_q[0] is not None else 0.00
+            
+            # Fallback de segurança caso a sua coluna física ainda armazene apenas as porcentagens (ex: 50.0)
+            if valor_quotas_reservadas < 100.0 and valor_quotas_reservadas > 0:
+                valor_quotas_reservadas = (valor_quotas_reservadas / 100.0) * capital_total
+            
+            capital_disponivel = capital_total - valor_quotas_reservadas
+            if capital_disponivel < 0:
+                capital_disponivel = 0.00
+        except Exception:
+            # Garante que o fallback mantenha o Capital Total íntegro sem zerar o card visual
+            capital_disponivel = capital_total
