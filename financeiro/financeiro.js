@@ -1,5 +1,5 @@
 /**
- * TERADMAS ERP v2.6 - Controlador Financeiro e Gestão de Quotas Reativas
+ * TERADMAS ERP v2.6 -  Controlador Financeiro e Gestão de Quotas Reativas
  * ARQUIVO: financeiro/financeiro.js (corrigido)
  */
 
