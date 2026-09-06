@@ -186,7 +186,7 @@ async function renderizarResumoQuotas() {
             return;
         }
         
-        distribuicao.forEach(setor => {
+               distribuicao.forEach(setor => {
             const pct = Number(setor.porcentagem_quota) || 0;
             const valorMonetario = capitalDisponivelGlobal * (pct / 100);
             container.innerHTML += `
@@ -196,11 +196,13 @@ async function renderizarResumoQuotas() {
                         <span style="color:#16a34a;">${pct}% (${formatarBRL(valorMonetario)})</span>
                     </div>
                     <div class="barra-percentual-setor">
-                        <div class="preenchimento-barra" style="width: ${pct}%"></div>
+                        <!-- O !important força o navegador a aplicar o tamanho calculado pelo JavaScript -->
+                        <div class="preenchimento-barra" style="width: ${pct}% !important;"></div>
                     </div>
                 </div>
             `;
         });
+
     } catch (e) {
         console.error("Erro ao montar sumário de distribuição:", e);
     }
