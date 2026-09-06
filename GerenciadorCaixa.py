@@ -1,29 +1,22 @@
 # ==========================================================================
 # TERADMAS ERP v2.6
-# GERENCIADORCAIXA.PY - MOTOR FINANCEIRO CENTRAL
-# ==========================================================================
+# MOTOR FINANCEIRO CENTRAL - GerenciadorCaixa.py
 #
-# RESPONSABILIDADES:
-#   1. Ler o capital inicial da equipe.
-#   2. Ler receitas e despesas reais do fluxo financeiro.
-#   3. Calcular o CAPITAL DE GIRO.
-#   4. Ler as QUOTAS reais salvas no Supabase.
-#   5. Calcular a disponibilidade global e por departamento.
-#   6. Consolidar patrimônio e custos dos módulos reais do ERP.
-#
-# REGRA CENTRAL:
-#   CAPITAL DE GIRO =
-#       CAPITAL INICIAL
-#       + RECEITAS
-#       - DESPESAS
-#
-# QUOTAS NÃO SÃO DESPESAS.
-# Elas representam a distribuição/alocação interna do capital.
-#
+# CORREÇÕES PRINCIPAIS:
+# - Capital inicial vem de configuracao_equipes.capital_inicial
+# - config_simulacao funciona como fonte complementar
+# - Não utiliza mais capital fictício de R$ 5.000.000
+# - Não utiliza mais custo fixo fictício de R$ 21.350
+# - Corrige variável config não inicializada
+# - Mantém isolamento por equipe
+# - Mantém orçamento por departamento
+# - Evita duplicação do capital no fluxo_caixa
+# - Compatível com PostgreSQL / Supabase
 # ==========================================================================
 
 import os
 import logging
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import SimpleConnectionPool
@@ -34,11 +27,12 @@ from psycopg2.pool import SimpleConnectionPool
 # ==========================================================================
 
 logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 
 # ==========================================================================
-# POOL CENTRAL DE CONEXÕES
+# POOL DE CONEXÕES
 # ==========================================================================
 
 _connection_pool = None
@@ -46,663 +40,304 @@ _connection_pool = None
 
 def obter_pool_conexoes():
     """
-    Cria e mantém o pool central de conexões PostgreSQL/Supabase.
+    Cria e reutiliza um pool PostgreSQL.
 
-    IMPORTANTE:
-    Nenhum módulo deve criar seu próprio pool.
+    A conexão utiliza DATABASE_URL do ambiente.
     """
 
     global _connection_pool
 
-    if _connection_pool is None:
+    if _connection_pool is not None:
+        return _connection_pool
 
-        database_url = os.environ.get("DATABASE_URL")
+    database_url = os.environ.get("DATABASE_URL")
 
-        if not database_url:
-            logger.error(
-                "❌ DATABASE_URL não configurada no ambiente."
-            )
-            return None
-
-        try:
-            _connection_pool = SimpleConnectionPool(
-                1,
-                5,
-                database_url
-            )
-
-            logger.info(
-                "✅ Pool central PostgreSQL/Supabase criado."
-            )
-
-        except psycopg2.Error as erro:
-            logger.error(
-                f"❌ Erro ao criar pool PostgreSQL: {erro}"
-            )
-            return None
-
-    return _connection_pool
-
-
-def obter_conexao_master():
-    """
-    Retira uma conexão do pool central.
-
-    A conexão NÃO deve ser fechada pelo módulo consumidor.
-    Deve ser devolvida através de liberar_conexao_master().
-    """
-
-    pool = obter_pool_conexoes()
-
-    if not pool:
-        return None
-
-    try:
-        return pool.getconn()
-
-    except psycopg2.Error as erro:
+    if not database_url:
         logger.error(
-            f"❌ Erro ao obter conexão do pool: {erro}"
+            "❌ DATABASE_URL não está configurada."
         )
         return None
 
+    try:
+
+        _connection_pool = SimpleConnectionPool(
+            1,
+            5,
+            database_url
+        )
+
+        logger.info(
+            "✅ Pool PostgreSQL criado com sucesso."
+        )
+
+        return _connection_pool
+
+    except psycopg2.Error as erro:
+
+        logger.error(
+            f"❌ Erro ao criar pool PostgreSQL: {erro}"
+        )
+
+        _connection_pool = None
+
+        return None
+
+
+# ==========================================================================
+# OBTÉM CONEXÃO
+# ==========================================================================
+
+def obter_conexao_master():
+    """
+    Obtém uma conexão do pool.
+    """
+
+    try:
+
+        pool = obter_pool_conexoes()
+
+        if not pool:
+            return None
+
+        return pool.getconn()
+
+    except psycopg2.Error as erro:
+
+        logger.error(
+            f"❌ Erro ao obter conexão PostgreSQL: {erro}"
+        )
+
+        return None
+
+
+# ==========================================================================
+# DEVOLVE CONEXÃO AO POOL
+# ==========================================================================
 
 def liberar_conexao_master(conexao):
     """
-    Devolve a conexão ao pool central.
-
-    Nunca utilizar conexao.close() como fluxo normal.
+    Devolve a conexão ao pool.
     """
 
     if not conexao:
         return
 
-    pool = obter_pool_conexoes()
-
-    if not pool:
-        logger.warning(
-            "⚠️ Pool indisponível ao devolver conexão."
-        )
-        return
-
     try:
-        pool.putconn(conexao)
 
-    except Exception as erro:
-        logger.error(
-            f"❌ Erro ao devolver conexão ao pool: {erro}"
-        )
+        pool = obter_pool_conexoes()
 
+        if pool:
 
-# ==========================================================================
-# UTILITÁRIOS
-# ==========================================================================
-
-def _float(valor):
-    """
-    Conversão segura para valores monetários.
-    """
-
-    try:
-        return float(valor or 0)
-    except (ValueError, TypeError):
-        return 0.0
-
-
-def _tabela_existe(cursor, tabela):
-    """
-    Verifica se uma tabela existe no schema public.
-    """
-
-    cursor.execute(
-        """
-        SELECT EXISTS (
-            SELECT 1
-            FROM information_schema.tables
-            WHERE table_schema = 'public'
-              AND table_name = %s
-        ) AS existe
-        """,
-        (tabela,)
-    )
-
-    resultado = cursor.fetchone()
-
-    return bool(resultado and resultado["existe"])
-
-
-# ==========================================================================
-# CAPITAL INICIAL
-# ==========================================================================
-
-def obter_capital_inicial(cursor, id_equipe):
-    """
-    Recupera o capital inicial da equipe.
-
-    A fonte principal é config_simulacao, criada pela inicialização.
-
-    Não existe mais capital artificial de R$ 5 milhões ou R$ 10 milhões
-    como valor operacional.
-    """
-
-    capital = 0.0
-    nome_empresa = "GRUPO ACADÊMICO"
-
-    if not _tabela_existe(cursor, "config_simulacao"):
-        return capital, nome_empresa
-
-    cursor.execute(
-        """
-        SELECT
-            nome_empresa,
-            capital_total
-        FROM public.config_simulacao
-        WHERE equipe_id = %s
-        LIMIT 1
-        """,
-        (id_equipe,)
-    )
-
-    registro = cursor.fetchone()
-
-    if registro:
-
-        capital = _float(
-            registro.get("capital_total")
-        )
-
-        nome_empresa = (
-            registro.get("nome_empresa")
-            or nome_empresa
-        )
-
-    return capital, nome_empresa
-
-
-# ==========================================================================
-# FLUXO DE CAIXA
-# ==========================================================================
-
-def obter_movimentacao_financeira(cursor, id_equipe):
-    """
-    Lê o fluxo real da equipe.
-
-    REGRA:
-
-        RECEITA  -> aumenta o caixa
-        DESPESA  -> reduz o caixa
-
-    O método não considera a simples soma de 'valor', porque isso poderia
-    inverter despesas caso algum módulo grave despesas como valores positivos.
-
-    Também suporta o cenário em que valores de despesas já estejam negativos.
-    """
-
-    receitas = 0.0
-    despesas = 0.0
-
-    if not _tabela_existe(cursor, "fluxo_caixa"):
-        return receitas, despesas
-
-    cursor.execute(
-        """
-        SELECT
-            COALESCE(tipo, '') AS tipo,
-            COALESCE(valor, 0) AS valor
-        FROM public.fluxo_caixa
-        WHERE equipe_id = %s
-        """,
-        (id_equipe,)
-    )
-
-    registros = cursor.fetchall()
-
-    tipos_receita = {
-        "receita",
-        "entrada",
-        "credito",
-        "crédito",
-        "faturamento",
-        "venda"
-    }
-
-    tipos_despesa = {
-        "despesa",
-        "saida",
-        "saída",
-        "debito",
-        "débito",
-        "pagamento",
-        "custo"
-    }
-
-    for registro in registros:
-
-        valor = _float(
-            registro.get("valor")
-        )
-
-        tipo = str(
-            registro.get("tipo") or ""
-        ).strip().lower()
-
-        if tipo in tipos_receita:
-
-            # Receita positiva aumenta o caixa.
-            receitas += abs(valor)
-
-        elif tipo in tipos_despesa:
-
-            # Despesa positiva ou negativa representa saída.
-            despesas += abs(valor)
+            pool.putconn(
+                conexao,
+                close=False
+            )
 
         else:
 
-            # Compatibilidade com registros antigos:
-            # positivo = entrada
-            # negativo = saída
-            if valor >= 0:
-                receitas += valor
-            else:
-                despesas += abs(valor)
+            conexao.close()
 
-    return receitas, despesas
+    except Exception as erro:
 
-
-# ==========================================================================
-# QUOTAS DOS DEPARTAMENTOS
-# ==========================================================================
-
-def obter_quotas_equipe(cursor, id_equipe):
-    """
-    Recupera as quotas reais da equipe.
-
-    Tabela física:
-        public.quotas_departamentos
-
-    Chave:
-        UNIQUE (equipe_id, departamento_id)
-
-    ATENÇÃO:
-    Este método NÃO cria percentuais.
-    Este método NÃO inventa departamentos.
-    Este método apenas lê o que foi definido pelos estudantes/professor
-    e salvo no Supabase.
-    """
-
-    quotas = []
-    total_quotas = 0.0
-
-    if not _tabela_existe(cursor, "quotas_departamentos"):
-        return quotas, total_quotas
-
-    cursor.execute(
-        """
-        SELECT *
-        FROM public.quotas_departamentos
-        WHERE equipe_id = %s
-        ORDER BY departamento_id
-        """,
-        (id_equipe,)
-    )
-
-    registros = cursor.fetchall()
-
-    for registro in registros:
-
-        # Compatibilidade com diferentes nomes possíveis da coluna
-        valor = (
-            registro.get("valor_quota")
-            if registro.get("valor_quota") is not None
-            else registro.get("quota_valor")
+        logger.warning(
+            f"⚠️ Erro ao devolver conexão ao pool: {erro}"
         )
 
-        if valor is None:
-            valor = registro.get("valor")
-
-        if valor is None:
-            valor = registro.get("dotacao")
-
-        valor = _float(valor)
-
-        percentual = registro.get("percentual")
-
-        if percentual is None:
-            percentual = registro.get("percentual_quota")
-
-        percentual = _float(percentual)
-
-        departamento_id = registro.get(
-            "departamento_id"
-        )
-
-        quota = {
-            "departamento_id": departamento_id,
-            "valor": valor,
-            "percentual": percentual
-        }
-
-        quotas.append(quota)
-
-        total_quotas += valor
-
-    return quotas, total_quotas
-
-
-def obter_quota_departamento(
-    cursor,
-    id_equipe,
-    departamento_id
-):
-    """
-    Recupera a dotação de um departamento específico.
-    """
-
-    if not _tabela_existe(
-        cursor,
-        "quotas_departamentos"
-    ):
-        return 0.0
-
-    cursor.execute(
-        """
-        SELECT *
-        FROM public.quotas_departamentos
-        WHERE equipe_id = %s
-          AND departamento_id = %s
-        LIMIT 1
-        """,
-        (
-            id_equipe,
-            departamento_id
-        )
-    )
-
-    registro = cursor.fetchone()
-
-    if not registro:
-        return 0.0
-
-    valor = registro.get("valor_quota")
-
-    if valor is None:
-        valor = registro.get("quota_valor")
-
-    if valor is None:
-        valor = registro.get("valor")
-
-    if valor is None:
-        valor = registro.get("dotacao")
-
-    return _float(valor)
+        try:
+            conexao.close()
+        except Exception:
+            pass
 
 
 # ==========================================================================
-# PATRIMÔNIO - MÁQUINAS
+# CONVERSÃO SEGURA DE VALORES
 # ==========================================================================
 
-def obter_patrimonio_maquinas(
-    cursor,
-    id_equipe,
-    departamento_atual=None
-):
+def valor_float(valor, padrao=0.0):
     """
-    Fonte física:
-
-        public.ativos_maquinas
-
-    Campos contábeis:
-        preco_compra
-        depreciacao_mes
-        valor_residual
-        custo_mod_min
-        jornada
-        turnos
-        ativo_imobilizado
-        custo_minuto_maquina
+    Converte Decimal, int, float ou string para float.
     """
 
-    total = 0.0
+    if valor is None:
+        return float(padrao)
 
-    if not _tabela_existe(
-        cursor,
-        "ativos_maquinas"
-    ):
-        return total
+    try:
+        return float(valor)
 
-    if departamento_atual:
+    except (ValueError, TypeError):
+        return float(padrao)
+
+
+# ==========================================================================
+# BUSCA CONFIGURAÇÃO DA EQUIPE
+# ==========================================================================
+
+def obter_configuracao_equipe(cursor, id_equipe):
+    """
+    Obtém a configuração financeira da equipe.
+
+    PRIORIDADE:
+
+    1. configuracao_equipes.capital_inicial
+    2. config_simulacao.capital_total
+
+    Isso é importante porque o Supabase atual do TERADMAS
+    possui o capital em:
+
+        configuracao_equipes
+            equipe_id
+            capital_inicial
+
+    """
+
+    configuracao = {
+        "capital_total": 0.0,
+        "nome_empresa": "GRUPO ACADÊMICO",
+        "valor_aluguel": 0.0,
+        "origem_capital": None
+    }
+
+    # ----------------------------------------------------------------------
+    # 1. FONTE PRINCIPAL:
+    #    configuracao_equipes.capital_inicial
+    # ----------------------------------------------------------------------
+
+    try:
+
         cursor.execute(
             """
             SELECT
-                COALESCE(
-                    SUM(preco_compra),
-                    0
-                ) AS total
-            FROM public.ativos_maquinas
+                equipe_id,
+                capital_inicial
+            FROM configuracao_equipes
             WHERE equipe_id = %s
-              AND LOWER(COALESCE(departamento, ''))
-                  = LOWER(%s)
-            """,
-            (
-                id_equipe,
-                departamento_atual
-            )
-        )
-    else:
-        cursor.execute(
-            """
-            SELECT
-                COALESCE(
-                    SUM(preco_compra),
-                    0
-                ) AS total
-            FROM public.ativos_maquinas
-            WHERE equipe_id = %s
+            LIMIT 1
             """,
             (id_equipe,)
         )
 
-    registro = cursor.fetchone()
+        registro = cursor.fetchone()
 
-    if registro:
-        total = _float(
-            registro.get("total")
+        if registro:
+
+            capital = registro.get(
+                "capital_inicial"
+            )
+
+            if capital is not None:
+
+                configuracao["capital_total"] = (
+                    valor_float(capital)
+                )
+
+                configuracao["origem_capital"] = (
+                    "configuracao_equipes"
+                )
+
+                logger.info(
+                    "💰 Capital encontrado em "
+                    f"configuracao_equipes: "
+                    f"equipe={id_equipe} "
+                    f"capital={configuracao['capital_total']:.2f}"
+                )
+
+    except psycopg2.Error as erro:
+
+        logger.warning(
+            "⚠️ Não foi possível consultar "
+            f"configuracao_equipes: {erro}"
         )
 
-    return total
+        try:
+            cursor.connection.rollback()
+        except Exception:
+            pass
 
+    # ----------------------------------------------------------------------
+    # 2. FONTE COMPLEMENTAR:
+    #    config_simulacao
+    # ----------------------------------------------------------------------
 
-# ==========================================================================
-# PATRIMÔNIO - MATERIAIS
-# ==========================================================================
+    try:
 
-def obter_patrimonio_materiais(
-    cursor,
-    id_equipe
-):
-    """
-    Fonte física:
+        cursor.execute(
+            """
+            SELECT
+                nome_empresa,
+                capital_total,
+                valor_aluguel
+            FROM config_simulacao
+            WHERE equipe_id = %s
+            LIMIT 1
+            """,
+            (id_equipe,)
+        )
 
-        public.ativos_materials
-    """
+        registro_simulacao = cursor.fetchone()
 
-    if not _tabela_existe(
-        cursor,
-        "ativos_materials"
-    ):
-        return 0.0
+        if registro_simulacao:
 
-    cursor.execute(
-        """
-        SELECT
-            COALESCE(
-                SUM(
-                    COALESCE(quantidade_estoque, 0)
-                    *
-                    COALESCE(preco_unitario, 0)
-                ),
-                0
-            ) AS total
-        FROM public.ativos_materials
-        WHERE equipe_id = %s
-        """,
-        (id_equipe,)
-    )
+            nome_empresa = registro_simulacao.get(
+                "nome_empresa"
+            )
 
-    registro = cursor.fetchone()
+            if nome_empresa:
+                configuracao["nome_empresa"] = str(
+                    nome_empresa
+                ).strip()
 
-    return _float(
-        registro.get("total")
-        if registro
-        else 0
-    )
+            configuracao["valor_aluguel"] = valor_float(
+                registro_simulacao.get(
+                    "valor_aluguel"
+                )
+            )
 
+            # Somente usa config_simulacao se
+            # configuracao_equipes não possuir capital.
+            if configuracao["capital_total"] <= 0:
 
-# ==========================================================================
-# CUSTO IMOBILIÁRIO
-# ==========================================================================
-
-def obter_custo_imobiliario(
-    cursor,
-    id_equipe
-):
-    """
-    Fonte física:
-
-        public.contratos_imobiliarios
-
-    Campo:
-        custo_locacao
-    """
-
-    if not _tabela_existe(
-        cursor,
-        "contratos_imobiliarios"
-    ):
-        return 0.0
-
-    cursor.execute(
-        """
-        SELECT
-            COALESCE(
-                SUM(custo_locacao),
-                0
-            ) AS total
-        FROM public.contratos_imobiliarios
-        WHERE equipe_id = %s
-        """,
-        (id_equipe,)
-    )
-
-    registro = cursor.fetchone()
-
-    return _float(
-        registro.get("total")
-        if registro
-        else 0
-    )
-
-
-# ==========================================================================
-# CUSTO DE RH
-# ==========================================================================
-
-def obter_custo_rh(
-    cursor,
-    id_equipe
-):
-    """
-    Fonte física:
-
-        public.folha_funcionarios
-
-    Campo financeiro definido pelo checkpoint:
-
-        subtotal_oneroso
-    """
-
-    if not _tabela_existe(
-        cursor,
-        "folha_funcionarios"
-    ):
-        return 0.0
-
-    cursor.execute(
-        """
-        SELECT
-            COALESCE(
-                SUM(subtotal_oneroso),
-                0
-            ) AS total
-        FROM public.folha_funcionarios
-        WHERE equipe_id = %s
-        """,
-        (id_equipe,)
-    )
-
-    registro = cursor.fetchone()
-
-    return _float(
-        registro.get("total")
-        if registro
-        else 0
-    )
-
-
-# ==========================================================================
-# CUSTO DOS PROCESSOS
-# ==========================================================================
-
-def obter_custo_processos(
-    cursor,
-    id_equipe
-):
-    """
-    Fonte:
-
-        public.engenharia_processos
-
-    O banco já possui trigger de cálculo automático.
-
-    Portanto o GerenciadorCaixa NÃO recria a fórmula do trigger.
-    Ele apenas lê o resultado persistido.
-    """
-
-    if not _tabela_existe(
-        cursor,
-        "engenharia_processos"
-    ):
-        return 0.0
-
-    cursor.execute(
-        """
-        SELECT
-            COALESCE(
-                SUM(
-                    COALESCE(
-                        custo_direto_operacao_unidade,
-                        0
+                capital_simulacao = (
+                    registro_simulacao.get(
+                        "capital_total"
                     )
-                ),
-                0
-            ) AS total
-        FROM public.engenharia_processos
-        WHERE equipe_id = %s
-        """,
-        (id_equipe,)
-    )
+                )
 
-    registro = cursor.fetchone()
+                if capital_simulacao is not None:
 
-    return _float(
-        registro.get("total")
-        if registro
-        else 0
-    )
+                    configuracao["capital_total"] = (
+                        valor_float(
+                            capital_simulacao
+                        )
+                    )
+
+                    configuracao["origem_capital"] = (
+                        "config_simulacao"
+                    )
+
+                    logger.info(
+                        "💰 Capital encontrado em "
+                        f"config_simulacao: "
+                        f"equipe={id_equipe} "
+                        f"capital={configuracao['capital_total']:.2f}"
+                    )
+
+    except psycopg2.Error as erro:
+
+        logger.warning(
+            "⚠️ Não foi possível consultar "
+            f"config_simulacao: {erro}"
+        )
+
+        try:
+            cursor.connection.rollback()
+        except Exception:
+            pass
+
+    return configuracao
 
 
 # ==========================================================================
-# MOTOR CENTRAL DE MÉTRICAS
+# MÉTRICAS FINANCEIRAS PRINCIPAIS
 # ==========================================================================
 
 def calcular_metricas_totais_equipe(
@@ -710,22 +345,43 @@ def calcular_metricas_totais_equipe(
     departamento_atual=None
 ):
     """
-    Motor financeiro central do TERADMAS.
+    Calcula as métricas financeiras consolidadas da equipe.
 
-    Retorna simultaneamente:
+    Retorna:
 
-        capital_total
-        receitas_total
-        despesas_total
-        capital_giro
-        total_quotas
-        capital_disponivel_total
-        capital_disponivel_departamento
-        patrimonio_ativo_total
-        custos fixos
-        custos variáveis
-        quotas da equipe
+    - capital_total
+    - capital_disponivel_total
+    - capital_disponivel_departamento
+    - patrimônio
+    - custos fixos
+    - custos variáveis
+    - métricas isoladas do departamento
     """
+
+    if not id_equipe:
+
+        logger.error(
+            "❌ calcular_metricas_totais_equipe recebeu "
+            "id_equipe vazio."
+        )
+
+        return {
+            "status": "erro",
+            "nome_empresa": "EQUIPE NÃO IDENTIFICADA",
+            "capital_total": 0.0,
+            "capital_disponivel_total": 0.0,
+            "capital_disponivel_departamento": 0.0,
+            "patrimonio_ativo_total": 0.0,
+            "custo_fixo_total": 0.0,
+            "custo_variavel_total": 0.0,
+            "custo_fixo_geral_empresa": 0.0,
+            "patrimonio_isolado_setor": 0.0,
+            "custo_fixo_isolado_setor": 0.0,
+            "custo_variavel_isolado_setor": 0.0,
+            "erro": "Equipe não identificada"
+        }
+
+    id_equipe = str(id_equipe).strip()
 
     conexao = obter_conexao_master()
 
@@ -733,18 +389,18 @@ def calcular_metricas_totais_equipe(
 
         return {
             "status": "erro",
-            "erro": "Conexão com banco de dados indisponível",
+            "nome_empresa": "BANCO INDISPONÍVEL",
             "capital_total": 0.0,
-            "receitas_total": 0.0,
-            "despesas_total": 0.0,
-            "capital_giro": 0.0,
-            "total_quotas": 0.0,
             "capital_disponivel_total": 0.0,
             "capital_disponivel_departamento": 0.0,
             "patrimonio_ativo_total": 0.0,
-            "custo_fixo_geral_empresa": 0.0,
+            "custo_fixo_total": 0.0,
             "custo_variavel_total": 0.0,
-            "quotas_departamentos": []
+            "custo_fixo_geral_empresa": 0.0,
+            "patrimonio_isolado_setor": 0.0,
+            "custo_fixo_isolado_setor": 0.0,
+            "custo_variavel_isolado_setor": 0.0,
+            "erro": "Conexão com banco de dados indisponível"
         }
 
     cursor = None
@@ -755,282 +411,666 @@ def calcular_metricas_totais_equipe(
             cursor_factory=RealDictCursor
         )
 
-        # ==============================================================
-        # 1. CAPITAL INICIAL
-        # ==============================================================
+        # ==================================================================
+        # 1. CONFIGURAÇÃO DA EMPRESA
+        # ==================================================================
 
-        capital_total, nome_empresa = (
-            obter_capital_inicial(
-                cursor,
-                id_equipe
-            )
-        )
-
-        # ============================================================== 
-        # 2. RECEITAS E DESPESAS
-        # ==============================================================
-
-        receitas_total, despesas_total = (
-            obter_movimentacao_financeira(
-                cursor,
-                id_equipe
-            )
-        )
-
-        # ============================================================== 
-        # 3. CAPITAL DE GIRO
-        # ==============================================================
-
-        capital_giro = (
-            capital_total
-            + receitas_total
-            - despesas_total
-        )
-
-        # ============================================================== 
-        # 4. QUOTAS REAIS
-        # ==============================================================
-
-        quotas, total_quotas = (
-            obter_quotas_equipe(
-                cursor,
-                id_equipe
-            )
-        )
-
-        # ============================================================== 
-        # 5. QUOTA DO DEPARTAMENTO
-        # ==============================================================
-
-        quota_departamento = 0.0
-
-        if departamento_atual:
-
-            quota_departamento = (
-                obter_quota_departamento(
-                    cursor,
-                    id_equipe,
-                    departamento_atual
-                )
-            )
-
-        # ============================================================== 
-        # 6. CAPITAL DISPONÍVEL GLOBAL
-        # ==============================================================
-
-        # A quota representa capital já destinado aos setores.
-        #
-        # Portanto:
-        #
-        # capital disponível =
-        # capital de giro - total das dotações
-        #
-        # Nunca usamos quotas como despesa.
-
-        capital_disponivel_total = (
-            capital_giro
-            - total_quotas
-        )
-
-        # ============================================================== 
-        # 7. CAPITAL DISPONÍVEL DO DEPARTAMENTO
-        # ==============================================================
-
-        # Neste ponto a quota representa o orçamento disponível
-        # para aquele departamento.
-        #
-        # O consumo efetivo deverá ser registrado no fluxo financeiro.
-        #
-        gastos_departamento = 0.0
-
-        if departamento_atual and _tabela_existe(
+        configuracao = obter_configuracao_equipe(
             cursor,
-            "fluxo_caixa"
-        ):
+            id_equipe
+        )
+
+        capital_total = valor_float(
+            configuracao.get(
+                "capital_total"
+            )
+        )
+
+        nome_empresa = (
+            configuracao.get(
+                "nome_empresa"
+            )
+            or "GRUPO ACADÊMICO"
+        )
+
+        valor_aluguel_global = valor_float(
+            configuracao.get(
+                "valor_aluguel"
+            )
+        )
+
+        # ==================================================================
+        # 2. FLUXO DE CAIXA
+        # ==================================================================
+
+        total_movimentacoes_fluxo = 0.0
+
+        try:
 
             cursor.execute(
                 """
                 SELECT
-                    COALESCE(tipo, '') AS tipo,
-                    COALESCE(valor, 0) AS valor
-                FROM public.fluxo_caixa
+                    COALESCE(
+                        SUM(valor),
+                        0
+                    ) AS total
+                FROM fluxo_caixa
                 WHERE equipe_id = %s
-                  AND departamento = %s
                 """,
-                (
-                    id_equipe,
-                    departamento_atual
+                (id_equipe,)
+            )
+
+            resultado_fluxo = cursor.fetchone()
+
+            if resultado_fluxo:
+
+                total_movimentacoes_fluxo = valor_float(
+                    resultado_fluxo.get(
+                        "total"
+                    )
                 )
+
+        except psycopg2.Error as erro:
+
+            logger.warning(
+                f"⚠️ Erro ao consultar fluxo_caixa: {erro}"
             )
 
-            movimentos_dept = cursor.fetchall()
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
 
-            for movimento in movimentos_dept:
+        # ==================================================================
+        # 3. ACUMULADORES
+        # ==================================================================
 
-                valor = _float(
-                    movimento.get("valor")
-                )
+        patrimonio_ativo_total = 0.0
 
-                tipo = str(
-                    movimento.get("tipo") or ""
-                ).strip().lower()
+        custo_fixo_total_global = 0.0
 
-                if tipo in {
-                    "despesa",
-                    "saida",
-                    "saída",
-                    "debito",
-                    "débito",
-                    "pagamento",
-                    "custo"
-                }:
-                    gastos_departamento += abs(valor)
-
-                elif tipo not in {
-                    "receita",
-                    "entrada",
-                    "credito",
-                    "crédito",
-                    "faturamento",
-                    "venda"
-                } and valor < 0:
-
-                    gastos_departamento += abs(valor)
-
-        capital_disponivel_departamento = (
-            quota_departamento
-            - gastos_departamento
-        )
-
-        # ============================================================== 
-        # 8. PATRIMÔNIO
-        # ==============================================================
-
-        patrimonio_maquinas = (
-            obter_patrimonio_maquinas(
-                cursor,
-                id_equipe
-            )
-        )
-
-        patrimonio_materiais = (
-            obter_patrimonio_materiais(
-                cursor,
-                id_equipe
-            )
-        )
-
-        patrimonio_ativo_total = (
-            patrimonio_maquinas
-            + patrimonio_materiais
-        )
-
-        # ============================================================== 
-        # 9. CUSTOS FIXOS
-        # ==============================================================
-
-        custo_imobiliario = (
-            obter_custo_imobiliario(
-                cursor,
-                id_equipe
-            )
-        )
-
-        custo_rh = (
-            obter_custo_rh(
-                cursor,
-                id_equipe
-            )
-        )
-
-        custo_fixo_geral_empresa = (
-            custo_imobiliario
-            + custo_rh
-        )
-
-        # ============================================================== 
-        # 10. CUSTO VARIÁVEL / PROCESSOS
-        # ==============================================================
-
-        custo_processos = (
-            obter_custo_processos(
-                cursor,
-                id_equipe
-            )
-        )
-
-        # ============================================================== 
-        # 11. MÉTRICAS ISOLADAS
-        # ==============================================================
+        custo_variavel_total_global = 0.0
 
         patrimonio_isolado_setor = 0.0
+
         custo_fixo_isolado_setor = 0.0
+
         custo_variavel_isolado_setor = 0.0
+
+        # ==================================================================
+        # 4. IMÓVEIS
+        # ==================================================================
+
+        imob_aluguel_setor = 0.0
+
+        imob_condo_setor = 0.0
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(
+                        SUM(valor_aluguel),
+                        0
+                    ) AS aluguel,
+
+                    COALESCE(
+                        SUM(valor_condominio),
+                        0
+                    ) AS condo
+
+                FROM imoveis_simulacao
+
+                WHERE equipe_id = %s
+                """,
+                (id_equipe,)
+            )
+
+            res_imob = cursor.fetchone()
+
+            if res_imob:
+
+                imob_aluguel_setor = valor_float(
+                    res_imob.get(
+                        "aluguel"
+                    )
+                )
+
+                imob_condo_setor = valor_float(
+                    res_imob.get(
+                        "condo"
+                    )
+                )
+
+                # O imóvel entra como ativo conforme
+                # a lógica existente do ERP.
+                patrimonio_ativo_total += (
+                    imob_aluguel_setor
+                )
+
+                if departamento_atual == "estrutura":
+
+                    patrimonio_isolado_setor += (
+                        imob_aluguel_setor
+                    )
+
+        except psycopg2.Error as erro:
+
+            logger.warning(
+                f"⚠️ Erro em imoveis_simulacao: {erro}"
+            )
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
+
+        # ==================================================================
+        # 5. MÁQUINAS
+        # ==================================================================
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(
+                        SUM(preco_compra),
+                        0
+                    ) AS total
+
+                FROM erp_maquinas
+
+                WHERE equipe_id = %s
+                  AND UPPER(departamento) = 'PRODUCAO'
+                """,
+                (id_equipe,)
+            )
+
+            total_producao = valor_float(
+                cursor.fetchone().get(
+                    "total"
+                )
+            )
+
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(
+                        SUM(preco_compra),
+                        0
+                    ) AS total
+
+                FROM erp_maquinas
+
+                WHERE equipe_id = %s
+                  AND UPPER(departamento) = 'ESTRUTURA'
+                """,
+                (id_equipe,)
+            )
+
+            total_estrutura = valor_float(
+                cursor.fetchone().get(
+                    "total"
+                )
+            )
+
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(
+                        SUM(preco_compra),
+                        0
+                    ) AS total
+
+                FROM erp_maquinas
+
+                WHERE equipe_id = %s
+                  AND UPPER(departamento) = 'UTENSILIOS'
+                """,
+                (id_equipe,)
+            )
+
+            total_utensilios = valor_float(
+                cursor.fetchone().get(
+                    "total"
+                )
+            )
+
+            patrimonio_ativo_total += (
+                total_producao
+                + total_estrutura
+                + total_utensilios
+            )
+
+            if departamento_atual == "estrutura":
+
+                patrimonio_isolado_setor += (
+                    total_estrutura
+                )
+
+            elif departamento_atual in (
+                "maquinas",
+                "producao"
+            ):
+
+                patrimonio_isolado_setor += (
+                    total_producao
+                )
+
+        except psycopg2.Error as erro:
+
+            logger.warning(
+                f"⚠️ Erro em erp_maquinas: {erro}"
+            )
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
+
+        # ==================================================================
+        # 6. MATERIAIS / ALMOXARIFADO
+        # ==================================================================
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(
+                        SUM(
+                            COALESCE(
+                                quantidade_estoque,
+                                0
+                            )
+                            *
+                            COALESCE(
+                                preco_unitario,
+                                0
+                            )
+                        ),
+                        0
+                    ) AS total
+
+                FROM ativos_materials
+
+                WHERE equipe_id = %s
+                """,
+                (id_equipe,)
+            )
+
+            res_mat = cursor.fetchone()
+
+            if res_mat:
+
+                total_materiais = valor_float(
+                    res_mat.get(
+                        "total"
+                    )
+                )
+
+                patrimonio_ativo_total += (
+                    total_materiais
+                )
+
+                if departamento_atual == "materiais":
+
+                    patrimonio_isolado_setor += (
+                        total_materiais
+                    )
+
+        except psycopg2.Error as erro:
+
+            logger.warning(
+                f"⚠️ Erro em ativos_materials: {erro}"
+            )
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
+
+        # ==================================================================
+        # 7. CUSTOS FIXOS - IMÓVEL
+        # ==================================================================
+
+        custo_fixo_total_global += (
+            imob_aluguel_setor
+            + imob_condo_setor
+        )
+
+        if departamento_atual == "estrutura":
+
+            custo_fixo_isolado_setor += (
+                imob_aluguel_setor
+                + imob_condo_setor
+            )
+
+        # ==================================================================
+        # 8. FOLHA CLT
+        # ==================================================================
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(
+                        SUM(salario_base),
+                        0
+                    ) AS total
+
+                FROM folha_funcionarios
+
+                WHERE equipe_id = %s
+                """,
+                (id_equipe,)
+            )
+
+            res_rh_global = cursor.fetchone()
+
+            if res_rh_global:
+
+                custo_fixo_total_global += (
+                    valor_float(
+                        res_rh_global.get(
+                            "total"
+                        )
+                    )
+                )
+
+        except psycopg2.Error as erro:
+
+            logger.warning(
+                f"⚠️ Erro em folha_funcionarios: {erro}"
+            )
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
+
+        # ==================================================================
+        # 9. ESTRUTURA RH
+        # ==================================================================
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(
+                        SUM(subtotal),
+                        0
+                    ) AS total
+
+                FROM estrutura_rh
+
+                WHERE equipe_id = %s
+                """,
+                (id_equipe,)
+            )
+
+            res_rh_imob = cursor.fetchone()
+
+            if res_rh_imob:
+
+                rh_setor_valor = valor_float(
+                    res_rh_imob.get(
+                        "total"
+                    )
+                )
+
+                custo_fixo_total_global += (
+                    rh_setor_valor
+                )
+
+                if departamento_atual == "estrutura":
+
+                    custo_fixo_isolado_setor += (
+                        rh_setor_valor
+                    )
+
+        except psycopg2.Error as erro:
+
+            logger.warning(
+                f"⚠️ Erro em estrutura_rh: {erro}"
+            )
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
+
+        # ==================================================================
+        # 10. CUSTOS VARIÁVEIS DA FOLHA
+        # ==================================================================
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT
+                    COALESCE(
+                        SUM(
+                            COALESCE(
+                                encargos_patronais,
+                                0
+                            )
+                            +
+                            COALESCE(
+                                valor_horas_extras,
+                                0
+                            )
+                        ),
+                        0
+                    ) AS total
+
+                FROM livro_razonete_folha
+
+                WHERE equipe_id = %s
+                """,
+                (id_equipe,)
+            )
+
+            res_folha_var = cursor.fetchone()
+
+            if res_folha_var:
+
+                valor_variavel_folha = valor_float(
+                    res_folha_var.get(
+                        "total"
+                    )
+                )
+
+                custo_variavel_total_global += (
+                    valor_variavel_folha
+                )
+
+                if departamento_atual in (
+                    "rh",
+                    "folha_pagamento"
+                ):
+
+                    custo_variavel_isolado_setor += (
+                        valor_variavel_folha
+                    )
+
+        except psycopg2.Error as erro:
+
+            logger.warning(
+                f"⚠️ Erro em livro_razonete_folha: {erro}"
+            )
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
+
+        # ==================================================================
+        # 11. ORÇAMENTO DO DEPARTAMENTO
+        # ==================================================================
+
+        orcamento_liberado_setor = 0.0
+
+        gastos_especificos_setor = 0.0
 
         if departamento_atual:
 
-            departamento_normalizado = (
-                str(departamento_atual)
-                .strip()
-                .lower()
-            )
+            try:
 
-            if departamento_normalizado in {
-                "maquinas",
-                "produção",
-                "producao"
-            }:
+                cursor.execute(
+                    """
+                    SELECT
+                        COALESCE(
+                            orcamento_liberado,
+                            0
+                        ) AS orcamento
 
-                patrimonio_isolado_setor = (
-                    obter_patrimonio_maquinas(
-                        cursor,
+                    FROM departamentos_orcamento
+
+                    WHERE equipe_id = %s
+                      AND LOWER(departamento) =
+                          LOWER(%s)
+
+                    LIMIT 1
+                    """,
+                    (
                         id_equipe,
                         departamento_atual
                     )
                 )
 
-            elif departamento_normalizado in {
-                "materiais",
-                "almoxarifado"
-            }:
+                dept_orc = cursor.fetchone()
 
-                patrimonio_isolado_setor = (
-                    patrimonio_materiais
+                if dept_orc:
+
+                    orcamento_liberado_setor = (
+                        valor_float(
+                            dept_orc.get(
+                                "orcamento"
+                            )
+                        )
+                    )
+
+            except psycopg2.Error as erro:
+
+                logger.warning(
+                    "⚠️ Erro em "
+                    f"departamentos_orcamento: {erro}"
                 )
 
-            elif departamento_normalizado in {
-                "estrutura",
-                "imobiliario",
-                "imobiliário"
-            }:
+                try:
+                    conexao.rollback()
+                except Exception:
+                    pass
 
-                custo_fixo_isolado_setor = (
-                    custo_imobiliario
+            # --------------------------------------------------------------
+            # GASTOS DO SETOR
+            # --------------------------------------------------------------
+
+            try:
+
+                cursor.execute(
+                    """
+                    SELECT
+                        COALESCE(
+                            SUM(valor),
+                            0
+                        ) AS total
+
+                    FROM fluxo_caixa
+
+                    WHERE equipe_id = %s
+                      AND LOWER(
+                          COALESCE(
+                              departamento,
+                              ''
+                          )
+                      ) = LOWER(%s)
+                    """,
+                    (
+                        id_equipe,
+                        departamento_atual
+                    )
                 )
 
-            elif departamento_normalizado in {
-                "rh",
-                "recursos_humanos",
-                "recursos humanos",
-                "folha_pagamento"
-            }:
+                res_gastos = cursor.fetchone()
 
-                custo_fixo_isolado_setor = (
-                    custo_rh
+                if res_gastos:
+
+                    gastos_especificos_setor = (
+                        valor_float(
+                            res_gastos.get(
+                                "total"
+                            )
+                        )
+                    )
+
+            except psycopg2.Error as erro:
+
+                logger.warning(
+                    "⚠️ Erro ao consultar gastos "
+                    f"do setor: {erro}"
                 )
 
-            elif departamento_normalizado in {
-                "processos",
-                "engenharia"
-            }:
+                try:
+                    conexao.rollback()
+                except Exception:
+                    pass
 
-                custo_variavel_isolado_setor = (
-                    custo_processos
-                )
+        # ==================================================================
+        # 12. CAPITAL DISPONÍVEL
+        # ==================================================================
+        #
+        # capital_total
+        #     + entradas
+        #     - saídas
+        #
+        # O fluxo_caixa deve utilizar:
+        #
+        #     valor positivo = entrada
+        #     valor negativo = saída
+        #
+        # O capital inicial NÃO é inserido novamente no fluxo_caixa.
+        #
+        # Portanto não ocorre duplicação do capital.
+        # ==================================================================
 
-        # ============================================================== 
-        # 12. PROTEÇÃO CONTRA RESULTADO NEGATIVO ARTIFICIAL
-        # ==============================================================
+        capital_disponivel_total = (
+            capital_total
+            + total_movimentacoes_fluxo
+        )
+
+        # Se houver aluguel global explicitamente
+        # configurado em config_simulacao e ele ainda
+        # não tiver sido registrado no fluxo, mantém
+        # a compatibilidade com a regra anterior.
+        #
+        # Porém, não descontamos automaticamente o valor
+        # do imóvel aqui se ele já estiver registrado no
+        # fluxo_caixa, evitando duplicidade.
+        #
+        # A partir desta versão o fluxo_caixa é a fonte
+        # efetiva das movimentações.
+        #
+        # Portanto:
+        # capital disponível = capital + fluxo.
+
+        capital_disponivel_departamento = (
+            orcamento_liberado_setor
+            + (
+                -gastos_especificos_setor
+                if gastos_especificos_setor > 0
+                else gastos_especificos_setor
+            )
+        )
+
+        # ==================================================================
+        # 13. PROTEÇÃO CONTRA SALDOS NEGATIVOS NA INTERFACE
+        # ==================================================================
 
         capital_disponivel_total = max(
             0.0,
@@ -1042,115 +1082,147 @@ def calcular_metricas_totais_equipe(
             capital_disponivel_departamento
         )
 
-        # ============================================================== 
-        # 13. RESPOSTA CENTRAL
-        # ==============================================================
+        # ==================================================================
+        # 14. RESULTADO FINAL
+        # ==================================================================
 
-        return {
+        resultado = {
 
             "status": "sucesso",
 
-            "nome_empresa": (
-                nome_empresa.upper()
-                if nome_empresa
-                else "GRUPO ACADÊMICO"
+            "nome_empresa": str(
+                nome_empresa
+            ).upper(),
+
+            "capital_total": round(
+                capital_total,
+                2
             ),
 
-            # ----------------------------------------------------------
-            # CAPITAL
-            # ----------------------------------------------------------
-
-            "capital_total": capital_total,
-
-            "receitas_total": receitas_total,
-
-            "despesas_total": despesas_total,
-
-            "capital_giro": capital_giro,
-
-            # ----------------------------------------------------------
-            # QUOTAS
-            # ----------------------------------------------------------
-
-            "total_quotas": total_quotas,
-
-            "quotas_departamentos": quotas,
-
-            "quota_departamento": (
-                quota_departamento
-                if departamento_atual
-                else 0.0
-            ),
-
-            # ----------------------------------------------------------
-            # DISPONIBILIDADE
-            # ----------------------------------------------------------
-
-            "capital_disponivel_total":
+            "capital_disponivel_total": round(
                 capital_disponivel_total,
+                2
+            ),
 
-            "capital_disponivel_departamento":
+            "capital_disponivel_departamento": round(
                 capital_disponivel_departamento,
+                2
+            ),
 
-            "gastos_departamento":
-                gastos_departamento,
-
-            # ----------------------------------------------------------
-            # PATRIMÔNIO
-            # ----------------------------------------------------------
-
-            "patrimonio_ativo_total":
+            "patrimonio_ativo_total": round(
                 patrimonio_ativo_total,
+                2
+            ),
 
-            "patrimonio_isolado_setor":
+            "custo_fixo_total": round(
+                custo_fixo_total_global,
+                2
+            ),
+
+            "custo_variavel_total": round(
+                custo_variavel_total_global,
+                2
+            ),
+
+            "custo_fixo_geral_empresa": round(
+                custo_fixo_total_global,
+                2
+            ),
+
+            "patrimonio_isolado_setor": round(
                 patrimonio_isolado_setor,
+                2
+            ),
 
-            # ----------------------------------------------------------
-            # CUSTOS
-            # ----------------------------------------------------------
-
-            "custo_fixo_total":
-                custo_fixo_geral_empresa,
-
-            "custo_fixo_geral_empresa":
-                custo_fixo_geral_empresa,
-
-            "custo_fixo_isolado_setor":
+            "custo_fixo_isolado_setor": round(
                 custo_fixo_isolado_setor,
+                2
+            ),
 
-            "custo_variavel_total":
-                custo_processos,
+            "custo_variavel_isolado_setor": round(
+                custo_variavel_isolado_setor,
+                2
+            ),
 
-            "custo_variavel_isolado_setor":
-                custo_variavel_isolado_setor
+            # Informações auxiliares para diagnóstico.
+            "equipe_id": id_equipe,
+
+            "origem_capital": (
+                configuracao.get(
+                    "origem_capital"
+                )
+            ),
+
+            "movimentacoes_fluxo": round(
+                total_movimentacoes_fluxo,
+                2
+            ),
+
+            "orcamento_departamento": round(
+                orcamento_liberado_setor,
+                2
+            ),
+
+            "gastos_departamento": round(
+                gastos_especificos_setor,
+                2
+            )
         }
+
+        logger.info(
+            "📊 MÉTRICAS | "
+            f"equipe={id_equipe} | "
+            f"capital={capital_total:.2f} | "
+            f"disponível={capital_disponivel_total:.2f} | "
+            f"patrimônio={patrimonio_ativo_total:.2f} | "
+            f"fixo={custo_fixo_total_global:.2f} | "
+            f"variável={custo_variavel_total_global:.2f}"
+        )
+
+        return resultado
 
     except Exception as erro:
 
         logger.exception(
-            "❌ Erro crítico no motor financeiro: %s",
-            erro
+            "❌ Erro crítico no Motor de Métricas:"
         )
 
         try:
-            conexao.rollback()
+
+            if conexao:
+                conexao.rollback()
+
         except Exception:
             pass
 
         return {
+
             "status": "erro",
-            "erro": str(erro),
+
+            "nome_empresa":
+                "ERRO DE PROCESSAMENTO",
+
             "capital_total": 0.0,
-            "receitas_total": 0.0,
-            "despesas_total": 0.0,
-            "capital_giro": 0.0,
-            "total_quotas": 0.0,
+
             "capital_disponivel_total": 0.0,
+
             "capital_disponivel_departamento": 0.0,
+
             "patrimonio_ativo_total": 0.0,
-            "custo_fixo_geral_empresa": 0.0,
+
+            "custo_fixo_total": 0.0,
+
             "custo_variavel_total": 0.0,
-            "quotas_departamentos": []
+
+            "custo_fixo_geral_empresa": 0.0,
+
+            "patrimonio_isolado_setor": 0.0,
+
+            "custo_fixo_isolado_setor": 0.0,
+
+            "custo_variavel_isolado_setor": 0.0,
+
+            "erro": str(erro)
         }
 
     finally:
@@ -1162,19 +1234,8 @@ def calcular_metricas_totais_equipe(
             except Exception:
                 pass
 
-        # ==============================================================
-        # DEVOLVE AO POOL
-        # ==============================================================
-        #
-        # NÃO fazer:
-        #
-        #     conexao.close()
-        #
-        # porque esta conexão pertence ao pool central.
-        #
-        liberar_conexao_master(conexao)
+        if conexao:
 
-
-# ==========================================================================
-# FIM DO GERENCIADORCAIXA.PY
-# ==========================================================================
+            liberar_conexao_master(
+                conexao
+            )
