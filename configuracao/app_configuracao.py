@@ -1,18 +1,7 @@
 # ==========================================================================
 # TERADMAS ERP v2.6
 # ARQUIVO: configuracao/app_configuracao.py
-#
-# RESPONSABILIDADE:
-# - Constituição da empresa/equipe
-# - Registro do capital inicial
-#
-# NÃO RESPONSABILIDADE:
-# - Distribuição de quotas
-# - Criação de departamentos
-# - Definição automática de percentuais
-#
-# Fluxo:
-# Constituição → Financeiro → Quotas → Setores
+# FUNÇÃO: Inicialização da empresa + preparação das quotas financeiras
 # ==========================================================================
 
 import os
@@ -28,13 +17,30 @@ from flask import (
 
 import psycopg2
 
-import GerenciadorCaixa
-
 
 configuracao_blueprint = Blueprint(
     'configuracao_blueprint',
     __name__
 )
+
+
+# ==========================================================================
+# CONEXÃO CENTRAL
+# ==========================================================================
+# NÃO fechar diretamente uma conexão pertencente ao pool.
+# A arquitetura definitiva utiliza GerenciadorCaixa.
+# ==========================================================================
+
+def obtener_conexao_master():
+    from GerenciadorCaixa import obter_conexao_master
+
+    return obter_conexao_master()
+
+
+def liberar_conexao_master(conexao):
+    from GerenciadorCaixa import liberar_conexao_master
+
+    liberar_conexao_master(conexao)
 
 
 # ==========================================================================
@@ -65,9 +71,9 @@ def rota_inicializacao_html():
             caminho_html,
             'r',
             encoding='utf-8'
-        ) as f:
+        ) as arquivo:
 
-            html = f.read()
+            html = arquivo.read()
 
         return render_template_string(html)
 
@@ -75,8 +81,7 @@ def rota_inicializacao_html():
 
         return (
             "Erro Crítico: Arquivo "
-            "'inicializacao.html' não encontrado "
-            "no servidor.",
+            "'inicializacao.html' não encontrado no servidor.",
             404
         )
 
@@ -106,16 +111,16 @@ def rota_inicializacao_js():
             caminho_js,
             'r',
             encoding='utf-8'
-        ) as f:
+        ) as arquivo:
 
-            js_conteudo = f.read()
+            js_conteudo = arquivo.read()
 
         return (
             js_conteudo,
             200,
             {
                 'Content-Type':
-                    'application/javascript'
+                'application/javascript; charset=utf-8'
             }
         )
 
@@ -123,15 +128,27 @@ def rota_inicializacao_js():
 
         return (
             "console.error("
-            "'Erro Crítico: Arquivo "
-            "inicializacao.js não encontrado.'"
+            "'Erro Crítico: arquivo inicializacao.js não encontrado.'"
             ");",
             404
         )
 
 
 # ==========================================================================
-# API DE CONSTITUIÇÃO DA EMPRESA
+# API — INICIALIZAÇÃO DA EMPRESA
+# ==========================================================================
+#
+# FLUXO CORRETO:
+#
+# 1. estudante informa nome fantasia
+# 2. estudante informa capital inicial
+# 3. grava configuração da empresa
+# 4. NÃO distribui automaticamente 40/30/30
+# 5. utiliza public.quotas_departamentos
+# 6. cria/atualiza as quotas da equipe
+# 7. capital fica disponível para definição didática no Financeiro
+# 8. redireciona para /financeiro
+#
 # ==========================================================================
 
 @configuracao_blueprint.route(
@@ -148,9 +165,10 @@ def api_inicializar_empresa():
 
         return jsonify({
             'status': 'erro',
-            'message':
+            'message': (
                 'Não autenticado. '
                 'Efetue o login novamente.'
+            )
         }), 401
 
     dados = request.get_json(
@@ -161,8 +179,7 @@ def api_inicializar_empresa():
 
         return jsonify({
             'status': 'erro',
-            'message':
-                'Dados de requisição ausentes.'
+            'message': 'Dados de requisição ausentes.'
         }), 400
 
     # ----------------------------------------------------------------------
@@ -175,20 +192,24 @@ def api_inicializar_empresa():
     )
 
     # ----------------------------------------------------------------------
-    # NOME
+    # NOME DA EMPRESA
     # ----------------------------------------------------------------------
 
     nome_empresa = str(
-        dados.get('nome_empresa', '')
+        dados.get(
+            'nome_empresa',
+            ''
+        )
     ).strip()
 
     if not nome_empresa:
 
         return jsonify({
             'status': 'erro',
-            'message':
-                'O nome da empresa simulada '
+            'message': (
+                'O nome fantasia da empresa '
                 'não pode ficar em branco.'
+            )
         }), 400
 
     # ----------------------------------------------------------------------
@@ -197,36 +218,41 @@ def api_inicializar_empresa():
 
     try:
 
+        valor_capital = dados.get(
+            'capital_total',
+            0
+        )
+
         capital_total = float(
-            str(
-                dados.get(
-                    'capital_total',
-                    0
-                )
-            )
+            str(valor_capital)
             .replace(',', '.')
             .strip()
         )
 
-    except (ValueError, TypeError):
+    except (
+        ValueError,
+        TypeError
+    ):
 
         return jsonify({
             'status': 'erro',
-            'message':
+            'message': (
                 'Formato de Capital Inicial inválido.'
+            )
         }), 400
 
     if capital_total <= 0:
 
         return jsonify({
             'status': 'erro',
-            'message':
+            'message': (
                 'O capital total integralizado '
                 'deve ser maior que zero.'
+            )
         }), 400
 
     # ----------------------------------------------------------------------
-    # CONEXÃO PELO GERENCIADOR CENTRAL
+    # CONEXÃO
     # ----------------------------------------------------------------------
 
     conexao = None
@@ -234,138 +260,326 @@ def api_inicializar_empresa():
 
     try:
 
-        conexao = (
-            GerenciadorCaixa
-            .obter_conexao_master()
-        )
+        conexao = obtener_conexao_master()
 
         if not conexao:
 
-            return jsonify({
-                'status': 'erro',
-                'message':
-                    'Não foi possível obter conexão '
-                    'com o banco de dados.'
-            }), 500
+            raise psycopg2.DatabaseError(
+                'Não foi possível obter conexão com o banco.'
+            )
 
         cursor = conexao.cursor()
 
-        # ------------------------------------------------------------------
-        # CONFIGURAÇÃO DA SIMULAÇÃO
+        # ==================================================================
+        # 1. CONFIGURAÇÃO DA EMPRESA
+        # ==================================================================
         #
-        # A tabela continua sendo a fonte da constituição.
-        # ------------------------------------------------------------------
+        # Mantemos config_simulacao porque o restante do ERP já utiliza
+        # essa origem para recuperar capital_total e nome_empresa.
+        #
+        # ==================================================================
 
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS config_simulacao (
+        cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS public.config_simulacao (
                 id SERIAL PRIMARY KEY,
-                equipe_id TEXT UNIQUE,
-                nome_empresa TEXT,
-                capital_total NUMERIC(18,2),
-                valor_aluguel NUMERIC(18,2) DEFAULT 0
+                equipe_id TEXT UNIQUE NOT NULL,
+                nome_empresa TEXT NOT NULL,
+                capital_total NUMERIC(18,2) NOT NULL DEFAULT 0,
+                valor_aluguel NUMERIC(18,2) NOT NULL DEFAULT 0
             )
-        """)
+            '''
+        )
 
-        cursor.execute("""
-            INSERT INTO config_simulacao (
-                equipe_id,
-                nome_empresa,
-                capital_total
-            )
-            VALUES (%s, %s, %s)
+        cursor.execute(
+            '''
+            INSERT INTO public.config_simulacao
+                (
+                    equipe_id,
+                    nome_empresa,
+                    capital_total
+                )
+            VALUES
+                (
+                    %s,
+                    %s,
+                    %s
+                )
             ON CONFLICT (equipe_id)
             DO UPDATE SET
                 nome_empresa = EXCLUDED.nome_empresa,
                 capital_total = EXCLUDED.capital_total
-        """, (
-            id_equipe,
-            nome_empresa,
-            capital_total
-        ))
+            ''',
+            (
+                id_equipe,
+                nome_empresa,
+                capital_total
+            )
+        )
+
+        # ==================================================================
+        # 2. NÃO EXISTE MAIS DIVISÃO AUTOMÁTICA 40/30/30
+        # ==================================================================
+        #
+        # A antiga lógica:
+        #
+        # máquinas  -> 40%
+        # rh        -> 30%
+        # materiais -> 30%
+        #
+        # foi removida.
+        #
+        # O orçamento deve nascer das QUOTAS DOS DEPARTAMENTOS.
+        #
+        # ==================================================================
 
         # ------------------------------------------------------------------
-        # IMPORTANTE:
-        #
-        # NÃO criar departamentos_orcamento.
-        # NÃO gerar 40/30/30.
-        # NÃO inserir quotas aqui.
-        #
-        # O Financeiro será responsável pela alocação.
+        # Verificação da estrutura real de quotas
         # ------------------------------------------------------------------
+
+        cursor.execute(
+            '''
+            SELECT
+                departamento_id,
+                percentual,
+                valor_quota
+            FROM public.quotas_departamentos
+            WHERE equipe_id = %s
+            ORDER BY departamento_id
+            ''',
+            (id_equipe,)
+        )
+
+        quotas_existentes = cursor.fetchall()
+
+        # ==================================================================
+        # 3. PRIMEIRA INICIALIZAÇÃO DA EQUIPE
+        # ==================================================================
+        #
+        # Se os 20 departamentos ainda não possuírem quota para a equipe,
+        # criamos os registros com percentual ZERO.
+        #
+        # IMPORTANTE:
+        # Não inventamos percentuais.
+        #
+        # O estudante poderá fazer a distribuição posteriormente no Financeiro.
+        #
+        # ==================================================================
+
+        if not quotas_existentes:
+
+            cursor.execute(
+                '''
+                SELECT
+                    id,
+                    nome
+                FROM public.departamentos
+                ORDER BY id
+                '''
+            )
+
+            departamentos = cursor.fetchall()
+
+            for departamento_id, nome_departamento in departamentos:
+
+                cursor.execute(
+                    '''
+                    INSERT INTO public.quotas_departamentos
+                        (
+                            equipe_id,
+                            departamento_id,
+                            percentual,
+                            valor_quota
+                        )
+                    VALUES
+                        (
+                            %s,
+                            %s,
+                            0,
+                            0
+                        )
+                    ON CONFLICT
+                        (
+                            equipe_id,
+                            departamento_id
+                        )
+                    DO NOTHING
+                    ''',
+                    (
+                        id_equipe,
+                        departamento_id
+                    )
+                )
+
+        # ==================================================================
+        # 4. GARANTE CONSISTÊNCIA DAS QUOTAS
+        # ==================================================================
+        #
+        # O valor monetário é derivado do capital e do percentual.
+        #
+        # Não utilizamos uma tabela paralela
+        # departamentos_orcamento.
+        #
+        # ==================================================================
+
+        cursor.execute(
+            '''
+            UPDATE public.quotas_departamentos
+            SET valor_quota =
+                ROUND(
+                    (
+                        %s *
+                        COALESCE(percentual, 0)
+                        / 100
+                    )::numeric,
+                    2
+                )
+            WHERE equipe_id = %s
+            ''',
+            (
+                capital_total,
+                id_equipe
+            )
+        )
+
+        # ==================================================================
+        # 5. REMOVE A DEPENDÊNCIA DA ANTIGA TABELA DIDÁTICA
+        # ==================================================================
+        #
+        # Não apagamos a tabela para não quebrar instalações antigas.
+        #
+        # Porém, ela deixa de ser a fonte oficial.
+        #
+        # Fonte oficial:
+        #
+        # public.quotas_departamentos
+        #
+        # ==================================================================
+
+        # ==================================================================
+        # 6. GARANTE O REGISTRO DE FLUXO DE CAIXA
+        # ==================================================================
+
+        cursor.execute(
+            '''
+            CREATE TABLE IF NOT EXISTS public.fluxo_caixa (
+                id SERIAL PRIMARY KEY,
+                equipe_id TEXT NOT NULL,
+                departamento TEXT,
+                descricao TEXT,
+                valor NUMERIC(18,2),
+                tipo TEXT
+            )
+            '''
+        )
+
+        # ==================================================================
+        # 7. COMMIT ATÔMICO
+        # ==================================================================
 
         conexao.commit()
 
-        # ------------------------------------------------------------------
-        # SESSÃO
-        # ------------------------------------------------------------------
+        # ==================================================================
+        # 8. ATUALIZA A SESSÃO
+        # ==================================================================
 
-        session['nome_empresa'] = (
-            nome_empresa.upper()
-        )
+        session['nome_empresa'] = nome_empresa.upper()
 
-        session['capital_inicial'] = (
-            capital_total
-        )
+        session['capital_inicial'] = capital_total
 
         session['empresa_inicializada'] = True
 
-        # Marca que a etapa de quotas ainda deverá
-        # ser tratada pelo Financeiro.
-        session['quotas_configuradas'] = False
+        session.modified = True
+
+        # ==================================================================
+        # 9. RESPOSTA PARA O FRONT-END
+        # ==================================================================
+        #
+        # O JS deverá redirecionar para /financeiro.
+        #
+        # Não mais para /grid -> /estrutura.
+        #
+        # ==================================================================
 
         return jsonify({
             'status': 'sucesso',
-            'message':
-                'Empresa constituída. '
-                'Encaminhando para o Financeiro.'
+            'message': (
+                'Empresa inicializada. '
+                'Defina agora as quotas dos departamentos '
+                'no Financeiro.'
+            ),
+            'redirect': '/financeiro',
+            'equipe_id': id_equipe,
+            'capital_total': capital_total
         })
 
-    except psycopg2.DatabaseError as e:
+    # ======================================================================
+    # ERRO DE BANCO
+    # ======================================================================
+
+    except psycopg2.DatabaseError as erro:
 
         if conexao:
-            conexao.rollback()
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
 
         print(
-            "Erro crítico no banco de dados "
-            f"Supabase: {e}"
+            '❌ Erro crítico no banco de dados '
+            f'durante inicialização: {erro}'
         )
 
         return jsonify({
             'status': 'erro',
-            'message':
-                'Falha interna ao persistir '
-                'dados no banco de dados.'
+            'message': (
+                'Falha interna ao persistir a '
+                'inicialização no Supabase.'
+            )
         }), 500
 
-    except Exception as e:
+    # ======================================================================
+    # ERRO GERAL
+    # ======================================================================
+
+    except Exception as erro:
 
         if conexao:
-            conexao.rollback()
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
 
         print(
-            "Erro inesperado na inicialização: "
-            f"{e}"
+            '❌ Erro inesperado na inicialização: '
+            f'{erro}'
         )
 
         return jsonify({
             'status': 'erro',
-            'message':
-                'Falha inesperada durante '
-                'a inicialização.'
+            'message': (
+                'Erro inesperado durante a '
+                'inicialização da empresa.'
+            )
         }), 500
+
+    # ======================================================================
+    # LIBERAÇÃO DA CONEXÃO
+    # ======================================================================
 
     finally:
 
         if cursor:
-            cursor.close()
 
-        # --------------------------------------------------------------
-        # DEVOLVE AO POOL.
-        #
-        # Não usar conexao.close() aqui.
-        # --------------------------------------------------------------
+            try:
+                cursor.close()
+            except Exception:
+                pass
 
         if conexao:
-            GerenciadorCaixa.liberar_conexao_master(
+
+            liberar_conexao_master(
                 conexao
             )
