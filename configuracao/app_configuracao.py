@@ -1,147 +1,371 @@
-# erppadrao - configuracao/app_configuracao.py
+# ==========================================================================
+# TERADMAS ERP v2.6
+# ARQUIVO: configuracao/app_configuracao.py
+#
+# RESPONSABILIDADE:
+# - Constituição da empresa/equipe
+# - Registro do capital inicial
+#
+# NÃO RESPONSABILIDADE:
+# - Distribuição de quotas
+# - Criação de departamentos
+# - Definição automática de percentuais
+#
+# Fluxo:
+# Constituição → Financeiro → Quotas → Setores
+# ==========================================================================
+
 import os
-from flask import Blueprint, request, render_template_string, session, jsonify, redirect
+
+from flask import (
+    Blueprint,
+    request,
+    render_template_string,
+    session,
+    jsonify,
+    redirect
+)
+
 import psycopg2
 
-configuracao_blueprint = Blueprint('configuracao_blueprint', __name__)
+import GerenciadorCaixa
 
-def obtener_conexao_master():
-    # Puxa dinamicamente a string do Supabase unificada no app_master
-    from app_master import URL_SUPABASE
-    return psycopg2.connect(URL_SUPABASE)
 
-# 📄 ROTA PARA ENTREGAR O HTML DE INICIALIZAÇÃO / CONFIGURAÇÃO
-@configuracao_blueprint.route('/configuracao/inicializacao', methods=['GET'])
+configuracao_blueprint = Blueprint(
+    'configuracao_blueprint',
+    __name__
+)
+
+
+# ==========================================================================
+# ROTA HTML
+# ==========================================================================
+
+@configuracao_blueprint.route(
+    '/configuracao/inicializacao',
+    methods=['GET']
+)
 def rota_inicializacao_html():
+
     if not session.get('logado'):
         return redirect('/login')
-        
-    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta da pasta do módulo
-    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-    caminho_html = os.path.join(diretorio_atual, 'inicializacao.html')
-    
+
+    diretorio_atual = os.path.dirname(
+        os.path.abspath(__file__)
+    )
+
+    caminho_html = os.path.join(
+        diretorio_atual,
+        'inicializacao.html'
+    )
+
     try:
-        with open(caminho_html, 'r', encoding='utf-8') as f:
+
+        with open(
+            caminho_html,
+            'r',
+            encoding='utf-8'
+        ) as f:
+
             html = f.read()
+
         return render_template_string(html)
-    except FileNotFoundError:
-        return "Erro Crítico: Arquivo 'inicializacao.html' não encontrado no servidor.", 404
 
-# ⚡ ROTA PARA ENTREGAR O JAVASCRIPT DE INICIALIZAÇÃO
-@configuracao_blueprint.route('/configuracao/inicializacao.js', methods=['GET'])
+    except FileNotFoundError:
+
+        return (
+            "Erro Crítico: Arquivo "
+            "'inicializacao.html' não encontrado "
+            "no servidor.",
+            404
+        )
+
+
+# ==========================================================================
+# ROTA JAVASCRIPT
+# ==========================================================================
+
+@configuracao_blueprint.route(
+    '/configuracao/inicializacao.js',
+    methods=['GET']
+)
 def rota_inicializacao_js():
-    # 🌟 CORREÇÃO DE AMBIENTE: Localização dinâmica absoluta para o arquivo JS do módulo
-    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-    caminho_js = os.path.join(diretorio_atual, 'inicializacao.js')
-    
-    try:
-        with open(caminho_js, 'r', encoding='utf-8') as f:
-            js_conteudo = f.read()
-        return js_conteudo, 200, {'Content-Type': 'application/javascript'}
-    except FileNotFoundError:
-        return "console.error('Erro Crítico: Arquivo inicializacao.js não encontrado.');", 404
-# 🔐 API REST: EXECUTOR DA INICIALIZAÇÃO DAS EQUIPES
-@configuracao_blueprint.route('/api/configuracao/inicializar', methods=['POST'])
-def api_inicializar_empresa():
-    # 1. Validação estrita de autenticação de sessão
-    if not session.get('logado'):
-        return jsonify({'status': 'erro', 'message': 'Não autenticado. Efetue o login novamente.'}), 401
-        
-    dados = request.json
-    if not dados:
-        return jsonify({'status': 'erro', 'message': 'Dados de requisição ausentes.'}), 400
-        
-    nome_empresa = dados.get('nome_empresa', '').strip()
-    id_equipe = session.get('id_equipe')
-    
-    # 2. Validação de consistência do Nome da Empresa
-    if not nome_empresa:
-        return jsonify({'status': 'erro', 'message': 'O nome da empresa simulada não pode ficar em branco.'}), 400
 
-    # 3. Conversão segura de tipo para evitar travamento com ValueError (Conversão de Strings inválidas)
+    diretorio_atual = os.path.dirname(
+        os.path.abspath(__file__)
+    )
+
+    caminho_js = os.path.join(
+        diretorio_atual,
+        'inicializacao.js'
+    )
+
     try:
-        capital_total = float(str(dados.get('capital_total', 0)).replace(',', '.').strip())
-        if capital_total <= 0:
-            return jsonify({'status': 'erro', 'message': 'O capital total integralizado deve ser maior que zero.'}), 400
+
+        with open(
+            caminho_js,
+            'r',
+            encoding='utf-8'
+        ) as f:
+
+            js_conteudo = f.read()
+
+        return (
+            js_conteudo,
+            200,
+            {
+                'Content-Type':
+                    'application/javascript'
+            }
+        )
+
+    except FileNotFoundError:
+
+        return (
+            "console.error("
+            "'Erro Crítico: Arquivo "
+            "inicializacao.js não encontrado.'"
+            ");",
+            404
+        )
+
+
+# ==========================================================================
+# API DE CONSTITUIÇÃO DA EMPRESA
+# ==========================================================================
+
+@configuracao_blueprint.route(
+    '/api/configuracao/inicializar',
+    methods=['POST']
+)
+def api_inicializar_empresa():
+
+    # ----------------------------------------------------------------------
+    # AUTENTICAÇÃO
+    # ----------------------------------------------------------------------
+
+    if not session.get('logado'):
+
+        return jsonify({
+            'status': 'erro',
+            'message':
+                'Não autenticado. '
+                'Efetue o login novamente.'
+        }), 401
+
+    dados = request.get_json(
+        silent=True
+    )
+
+    if not dados:
+
+        return jsonify({
+            'status': 'erro',
+            'message':
+                'Dados de requisição ausentes.'
+        }), 400
+
+    # ----------------------------------------------------------------------
+    # TENANT
+    # ----------------------------------------------------------------------
+
+    id_equipe = session.get(
+        'id_equipe',
+        'equipe_alfa'
+    )
+
+    # ----------------------------------------------------------------------
+    # NOME
+    # ----------------------------------------------------------------------
+
+    nome_empresa = str(
+        dados.get('nome_empresa', '')
+    ).strip()
+
+    if not nome_empresa:
+
+        return jsonify({
+            'status': 'erro',
+            'message':
+                'O nome da empresa simulada '
+                'não pode ficar em branco.'
+        }), 400
+
+    # ----------------------------------------------------------------------
+    # CAPITAL
+    # ----------------------------------------------------------------------
+
+    try:
+
+        capital_total = float(
+            str(
+                dados.get(
+                    'capital_total',
+                    0
+                )
+            )
+            .replace(',', '.')
+            .strip()
+        )
+
     except (ValueError, TypeError):
-        return jsonify({'status': 'erro', 'message': 'Formato de Capital Inicial inválido.'}), 400
-    
+
+        return jsonify({
+            'status': 'erro',
+            'message':
+                'Formato de Capital Inicial inválido.'
+        }), 400
+
+    if capital_total <= 0:
+
+        return jsonify({
+            'status': 'erro',
+            'message':
+                'O capital total integralizado '
+                'deve ser maior que zero.'
+        }), 400
+
+    # ----------------------------------------------------------------------
+    # CONEXÃO PELO GERENCIADOR CENTRAL
+    # ----------------------------------------------------------------------
+
     conexao = None
+    cursor = None
+
     try:
-        conexao = obtener_conexao_master()
+
+        conexao = (
+            GerenciadorCaixa
+            .obter_conexao_master()
+        )
+
+        if not conexao:
+
+            return jsonify({
+                'status': 'erro',
+                'message':
+                    'Não foi possível obter conexão '
+                    'com o banco de dados.'
+            }), 500
+
         cursor = conexao.cursor()
-        
-        # 1. Cria e Atualiza a Tabela Coringa de Configuração da Simulação
-        cursor.execute('''
+
+        # ------------------------------------------------------------------
+        # CONFIGURAÇÃO DA SIMULAÇÃO
+        #
+        # A tabela continua sendo a fonte da constituição.
+        # ------------------------------------------------------------------
+
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS config_simulacao (
-                id SERIAL PRIMARY KEY, 
-                equipe_id TEXT UNIQUE, 
-                nome_empresa TEXT, 
-                capital_total REAL, 
-                valor_aluguel REAL DEFAULT 0
+                id SERIAL PRIMARY KEY,
+                equipe_id TEXT UNIQUE,
+                nome_empresa TEXT,
+                capital_total NUMERIC(18,2),
+                valor_aluguel NUMERIC(18,2) DEFAULT 0
             )
-        ''')
-        
-        cursor.execute('''
-            INSERT INTO config_simulacao (equipe_id, nome_empresa, capital_total) 
+        """)
+
+        cursor.execute("""
+            INSERT INTO config_simulacao (
+                equipe_id,
+                nome_empresa,
+                capital_total
+            )
             VALUES (%s, %s, %s)
-            ON CONFLICT (equipe_id) DO UPDATE SET nome_empresa=%s, capital_total=%s
-        ''', (id_equipe, nome_empresa, capital_total, nome_empresa, capital_total))
-        
-        # 2. Cria e Injeta a Distribuição Orçamentária por Departamento (Budget Didático)
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS departamentos_orcamento (
-                id SERIAL PRIMARY KEY, 
-                equipe_id TEXT, 
-                departamento TEXT, 
-                orcamento_liberado REAL,
-                UNIQUE(equipe_id, departamento)
-            )
-        ''')
-        
-        # Divisão e Alocação Estratégica de Capital de Custo:
-        # 40% Engenharia (Máquinas), 30% Recursos Humanos (RH), 30% Almoxarifado (Materiais)
-        orcamentos = [
-            (id_equipe, 'maquinas', capital_total * 0.40),
-            (id_equipe, 'rh', capital_total * 0.30),
-            (id_equipe, 'materiais', capital_total * 0.30)
-        ]
-        
-        cursor.executemany('''
-            INSERT INTO departamentos_orcamento (equipe_id, departamento, orcamento_liberado)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (equipe_id, departamento) DO UPDATE SET orcamento_liberado = EXCLUDED.orcamento_liberado
-        ''', orcamentos)
-        
-        # 3. Inicializa a tabela de fluxo de caixa para controle de capabilidade de aula para aula
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS fluxo_caixa (
-                id SERIAL PRIMARY KEY, 
-                equipe_id TEXT, 
-                departamento TEXT, 
-                descricao TEXT, 
-                valor REAL, 
-                tipo TEXT
-            )
-        ''')
-        
+            ON CONFLICT (equipe_id)
+            DO UPDATE SET
+                nome_empresa = EXCLUDED.nome_empresa,
+                capital_total = EXCLUDED.capital_total
+        """, (
+            id_equipe,
+            nome_empresa,
+            capital_total
+        ))
+
+        # ------------------------------------------------------------------
+        # IMPORTANTE:
+        #
+        # NÃO criar departamentos_orcamento.
+        # NÃO gerar 40/30/30.
+        # NÃO inserir quotas aqui.
+        #
+        # O Financeiro será responsável pela alocação.
+        # ------------------------------------------------------------------
+
         conexao.commit()
-        cursor.close()
-        
-        # Atualiza a sessão corrente de forma estável com strings normatizadas em caixa alta
-        session['nome_empresa'] = nome_empresa.upper()
-        session['capital_inicial'] = capital_total
+
+        # ------------------------------------------------------------------
+        # SESSÃO
+        # ------------------------------------------------------------------
+
+        session['nome_empresa'] = (
+            nome_empresa.upper()
+        )
+
+        session['capital_inicial'] = (
+            capital_total
+        )
+
         session['empresa_inicializada'] = True
-        
-        return jsonify({'status': 'sucesso'})
+
+        # Marca que a etapa de quotas ainda deverá
+        # ser tratada pelo Financeiro.
+        session['quotas_configuradas'] = False
+
+        return jsonify({
+            'status': 'sucesso',
+            'message':
+                'Empresa constituída. '
+                'Encaminhando para o Financeiro.'
+        })
 
     except psycopg2.DatabaseError as e:
+
         if conexao:
             conexao.rollback()
-        print(f"Erro crítico no banco de dados Supabase: {e}")
-        return jsonify({'status': 'erro', 'message': 'Falha interna ao persistir dados no banco de dados.'}), 500
-        
-    finally:
-        # 🛡️ PROTEÇÃO DO POOL: Garante o fechamento do slot de conexão mesmo diante de erros
+
+        print(
+            "Erro crítico no banco de dados "
+            f"Supabase: {e}"
+        )
+
+        return jsonify({
+            'status': 'erro',
+            'message':
+                'Falha interna ao persistir '
+                'dados no banco de dados.'
+        }), 500
+
+    except Exception as e:
+
         if conexao:
-            conexao.close()
+            conexao.rollback()
+
+        print(
+            "Erro inesperado na inicialização: "
+            f"{e}"
+        )
+
+        return jsonify({
+            'status': 'erro',
+            'message':
+                'Falha inesperada durante '
+                'a inicialização.'
+        }), 500
+
+    finally:
+
+        if cursor:
+            cursor.close()
+
+        # --------------------------------------------------------------
+        # DEVOLVE AO POOL.
+        #
+        # Não usar conexao.close() aqui.
+        # --------------------------------------------------------------
+
+        if conexao:
+            GerenciadorCaixa.liberar_conexao_master(
+                conexao
+            )
