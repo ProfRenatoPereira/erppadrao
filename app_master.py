@@ -1,37 +1,78 @@
 # ==========================================================================
-# TERADMAS ERP v2.6 - APP MASTER (NÚCLEO PRINCIPAL DA APLICAÇÃO)
-# ARQUIVO: app_master.py
+# TERADMAS ERP v2.6
+# APP MASTER - NÚCLEO PRINCIPAL
 # ==========================================================================
+
 import os
-from flask import Flask, session, jsonify, request, redirect, render_template_string
+
+from flask import (
+    Flask,
+    session,
+    jsonify,
+    request,
+    redirect,
+    render_template_string
+)
+
 from datetime import timedelta
+
 from whitenoise import WhiteNoise
 
-# URL de conexão estável com o pool PostgreSQL do Supabase
+
+# ==========================================================================
+# SUPABASE
+# ==========================================================================
+
 URL_SUPABASE = os.environ.get(
-    "DATABASE_URL", 
+    "DATABASE_URL",
     "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
 )
 
-# Inicialização do aplicativo Flask centralizado
-app = Flask(__name__, static_folder='static', static_url_path='/static')
 
-# Configuração do WhiteNoise para servir arquivos estáticos sem latência
+# ==========================================================================
+# FLASK
+# ==========================================================================
+
+app = Flask(
+    __name__,
+    static_folder='static',
+    static_url_path='/static'
+)
+
+
 app.wsgi_app = WhiteNoise(
-    app.wsgi_app, 
-    root=os.path.join(os.path.dirname(__file__), 'static'), 
+    app.wsgi_app,
+    root=os.path.join(
+        os.path.dirname(__file__),
+        'static'
+    ),
     prefix='static/'
 )
 
-# Configurações estritas de sessão transacional
-app.secret_key = os.environ.get("APP_SECRET_KEY", "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO")
-app.permanent_session_lifetime = timedelta(days=7)
 
-# Importação blindada do gerenciador de caixas e motor de métricas
+app.secret_key = os.environ.get(
+    "APP_SECRET_KEY",
+    "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
+)
+
+app.permanent_session_lifetime = timedelta(
+    days=7
+)
+
+
+# ==========================================================================
+# MOTOR FINANCEIRO CENTRAL
+# ==========================================================================
+
 import GerenciadorCaixa
 
-# ========== IMPORTAÇÃO DE BLUEPRINTS MODULARES ==========
+
+# ==========================================================================
+# BLUEPRINTS
+# ==========================================================================
+
 try:
+
     from login.app_login import login_blueprint
     from configuracao.app_configuracao import configuracao_blueprint
     from estrutura.app_estrutura import estrutura_blueprint
@@ -54,10 +95,19 @@ try:
     from manutencao.app_manutencao import manutencao_blueprint
     from requisicoes.app_requisicoes import requisicoes_blueprint
     from roi.app_roi import roi_blueprint
-except ImportError as e:
-    print(f"⚠️ Checklist ERP: Alguns módulos operam em modo contingência: {e}")
 
-# ========== REGISTRO DE BLUEPRINTS NO CORE DO FLASK ==========
+except ImportError as e:
+
+    print(
+        "⚠️ Checklist ERP: "
+        f"Alguns módulos operam em contingência: {e}"
+    )
+
+
+# ==========================================================================
+# REGISTRO
+# ==========================================================================
+
 app.register_blueprint(login_blueprint)
 app.register_blueprint(configuracao_blueprint)
 app.register_blueprint(estrutura_blueprint)
@@ -80,115 +130,294 @@ app.register_blueprint(folha_blueprint)
 app.register_blueprint(manutencao_blueprint)
 app.register_blueprint(requisicoes_blueprint)
 app.register_blueprint(roi_blueprint)
+
+
+# ==========================================================================
+# MIDDLEWARE
 # ==========================================================================
 
-# ========== MIDDLEWARE DE AUTENTICAÇÃO E FLUXO ==========
 @app.before_request
 def verificar_fluxo_de_aula():
-    """Middleware que valida sessão e autorização em cada request"""
-    if request.path.startswith('/static') or request.path.startswith('/login') or request.path == '/logout':
+
+    if (
+        request.path.startswith('/static')
+        or request.path.startswith('/login')
+        or request.path == '/logout'
+    ):
         return
 
     if not session.get('logado'):
+
         if request.is_json:
-            return jsonify({'status': 'erro', 'message': 'Sessão expirada'}), 401
+            return jsonify({
+                'status': 'erro',
+                'message': 'Sessão expirada'
+            }), 401
+
         return redirect('/login')
 
+    # Professor master não passa pela trava didática.
     if session.get('professor_master'):
         return
 
-    if not session.get('empresa_inicializada') and request.endpoint != 'configuracao_blueprint.api_inicializar_empresa':
-        if not request.path.startswith('/configuracao'):
-            if request.is_json:
-                return jsonify({'status': 'erro', 'message': 'Empresa não inicializada'}), 400
-            return redirect('/configuracao/inicializacao')
+    # --------------------------------------------------------------
+    # Empresa ainda não constituída
+    # --------------------------------------------------------------
 
-# ========== ROTAS PRINCIPAIS DE REDIRECIONAMENTO ==========
+    if (
+        not session.get('empresa_inicializada')
+        and request.endpoint !=
+        'configuracao_blueprint.api_inicializar_empresa'
+    ):
+
+        if not request.path.startswith(
+            '/configuracao'
+        ):
+
+            if request.is_json:
+
+                return jsonify({
+                    'status': 'erro',
+                    'message':
+                        'Empresa não inicializada'
+                }), 400
+
+            return redirect(
+                '/configuracao/inicializacao'
+            )
+
+
+# ==========================================================================
+# ROTA RAIZ
+# ==========================================================================
+
 @app.route('/')
 def rota_raiz_direta():
-    """Rota raiz com redirecionamento inteligente"""
+
     if not session.get('logado'):
         return redirect('/login')
-    
-    if session.get('empresa_inicializada'):
-        return redirect('/estrutura')
-    else:
-        return redirect('/configuracao/inicializacao')
+
+    if not session.get('empresa_inicializada'):
+        return redirect(
+            '/configuracao/inicializacao'
+        )
+
+    # --------------------------------------------------------------
+    # NOVO FLUXO
+    #
+    # Após constituição, o ponto central é Financeiro.
+    # --------------------------------------------------------------
+
+    return redirect('/financeiro')
+
+
+# ==========================================================================
+# GRID LEGADO / CONTINGÊNCIA
+# ==========================================================================
 
 @app.route('/grid')
 def rota_contingencia_grid():
-    """Rota de contingência para links residuais do front-end"""
+
     if not session.get('logado'):
         return redirect('/login')
-    return redirect('/estrutura')
+
+    # O grid não deve furar a etapa financeira.
+    return redirect('/financeiro')
+
+
+# ==========================================================================
+# LOGOUT
+# ==========================================================================
 
 @app.route('/logout')
 def rota_encerrar_turno():
-    """Limpa a sessão atual do banco de dados na memória do servidor"""
+
     session.clear()
+
     return redirect('/login')
 
-# ========== API DE MÉTRICAS GLOBAIS E REATIVAS ==========
-@app.route('/api/financeiro/metricas', methods=['GET'])
-def api_global_metricas_calculadas():
-    """Endpoint central de métricas consolidadas de toda a empresa"""
-    if not session.get('logado'):
-        return jsonify({'status': 'erro', 'message': 'Acesso negado'}), 401
-        
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    departamento = request.args.get('dept', '')
-    
-    try:
-        metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe, departamento)
-        return jsonify(metricas)
-    except Exception as e:
-        print(f"❌ Erro na API de métricas: {e}")
-        return jsonify({'status': 'erro', 'message': str(e)}), 500
 
-@app.route('/api/financeiro/kpis', methods=['GET'])
-def api_kpis_resumidos():
-    """Endpoint de KPIs simplificados para dashboard rapido"""
+# ==========================================================================
+# MÉTRICAS GLOBAIS
+# ==========================================================================
+
+@app.route(
+    '/api/financeiro/metricas',
+    methods=['GET']
+)
+def api_global_metricas_calculadas():
+
     if not session.get('logado'):
-        return jsonify({'status': 'erro'}), 401
-    
-    id_equipe = session.get('id_equipe', 'equipe_alfa')
-    metricas = GerenciadorCaixa.calcular_metricas_totais_equipe(id_equipe)
-    
+
+        return jsonify({
+            'status': 'erro',
+            'message': 'Acesso negado'
+        }), 401
+
+    id_equipe = session.get(
+        'id_equipe',
+        'equipe_alfa'
+    )
+
+    departamento = request.args.get(
+        'dept',
+        ''
+    )
+
+    try:
+
+        metricas = (
+            GerenciadorCaixa
+            .calcular_metricas_totais_equipe(
+                id_equipe,
+                departamento
+            )
+        )
+
+        return jsonify(metricas)
+
+    except Exception as e:
+
+        print(
+            "❌ Erro na API de métricas: "
+            f"{e}"
+        )
+
+        return jsonify({
+            'status': 'erro',
+            'message': str(e)
+        }), 500
+
+
+# ==========================================================================
+# KPIs
+# ==========================================================================
+
+@app.route(
+    '/api/financeiro/kpis',
+    methods=['GET']
+)
+def api_kpis_resumidos():
+
+    if not session.get('logado'):
+        return jsonify({
+            'status': 'erro'
+        }), 401
+
+    id_equipe = session.get(
+        'id_equipe',
+        'equipe_alfa'
+    )
+
+    metricas = (
+        GerenciadorCaixa
+        .calcular_metricas_totais_equipe(
+            id_equipe
+        )
+    )
+
     return jsonify({
-        'capital_total': metricas.get('capital_total'),
-        'patrimonio_ativo': metricas.get('patrimonio_ativo_total'),
-        'custo_fixo': metricas.get('custo_fixo_geral_empresa'),
-        'capital_disponivel': metricas.get('capital_disponivel_total')
+        'capital_total':
+            metricas.get('capital_total'),
+
+        'patrimonio_ativo':
+            metricas.get(
+                'patrimonio_ativo_total'
+            ),
+
+        'custo_fixo':
+            metricas.get(
+                'custo_fixo_geral_empresa'
+            ),
+
+        'capital_disponivel':
+            metricas.get(
+                'capital_disponivel_total'
+            )
     })
 
-# ========== TRATAMENTO GLOBAL DE ERROS (SINCRO/ASSINCRO) ==========
+
+# ==========================================================================
+# ERROS
+# ==========================================================================
+
 @app.errorhandler(404)
 def erro_nao_encontrado(erro):
+
     if request.is_json:
-        return jsonify({'status': 'erro', 'message': 'Recurso não encontrado'}), 404
+
+        return jsonify({
+            'status': 'erro',
+            'message':
+                'Recurso não encontrado'
+        }), 404
+
     return render_template_string("""
         <h1>❌ Página não encontrada</h1>
-        <p>O recurso solicitado não existe no sistema TERADMAS.</p>
+        <p>
+            O recurso solicitado não existe
+            no sistema TERADMAS.
+        </p>
         <a href="/">Voltar ao início</a>
     """), 404
 
+
 @app.errorhandler(500)
 def erro_servidor(erro):
-    print(f"❌ ERRO 500 DE COMPILAÇÃO OU RUNTIME: {erro}")
+
+    print(
+        f"❌ ERRO 500: {erro}"
+    )
+
     if request.is_json:
-        return jsonify({'status': 'erro', 'message': 'Erro interno do servidor'}), 500
+
+        return jsonify({
+            'status': 'erro',
+            'message':
+                'Erro interno do servidor'
+        }), 500
+
     return render_template_string("""
         <h1>❌ Erro Interno</h1>
-        <p>Ocorreu um erro crítico ao processar no servidor.</p>
+        <p>
+            Ocorreu um erro crítico ao
+            processar no servidor TERADMAS.
+        </p>
         <a href="/">Voltar ao início</a>
     """), 500
 
-# ========== EXECUTOR DO SERVIDOR INTEGRADO EM PRODUÇÃO ==========
+
+# ==========================================================================
+# EXECUÇÃO
+# ==========================================================================
+
 if __name__ == '__main__':
-    porta = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("DEBUG", "False").lower() == "true"
-    
-    print(f"🚀 Servidor Central TERADMAS ERP v2.6 Iniciado com Sucesso")
-    print(f"📍 Porta de Escuta: {porta}")
-    
-    app.run(host='0.0.0.0', port=porta, debug=debug_mode)
+
+    porta = int(
+        os.environ.get(
+            "PORT",
+            5000
+        )
+    )
+
+    debug_mode = (
+        os.environ
+        .get("DEBUG", "False")
+        .lower() == "true"
+    )
+
+    print(
+        "🚀 Servidor Central "
+        "TERADMAS ERP v2.6 "
+        "Iniciado com Sucesso"
+    )
+
+    print(
+        f"📍 Porta de Escuta: {porta}"
+    )
+
+    app.run(
+        host='0.0.0.0',
+        port=porta,
+        debug=debug_mode
+    )
