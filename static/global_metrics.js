@@ -1,153 +1,499 @@
 // ==========================================================================
- // TERADMAS ERP v2.6 - PAINEL GLOBAL DE MÉTRICAS CONSOLIDADAS
- // ARQUIVO: metrics.js - PARTE 1 DE 2 (SINCRO E PROCESSAMENTO FINANCEIRO)
- // ==========================================================================
- 
+// TERADMAS ERP v2.6
+// PAINEL GLOBAL DE MÉTRICAS CONSOLIDADAS
+// ARQUIVO: metrics.js
+//
+// RESPONSABILIDADES:
+// 1. Consumir /api/financeiro/metricas a cada 5 segundos.
+// 2. Exibir os valores calculados pelo backend.
+// 3. NÃO calcular orçamento ou capital disponível no frontend.
+// 4. Permitir que o backend seja a fonte única da verdade financeira.
+// ==========================================================================
+
 const GlobalMetrics = {
+
     dataCache: null,
     lastUpdate: null,
-    updateInterval: 5000, // Atualização reativa a cada 5 segundos
-    
+    updateInterval: 5000,
+    intervalId: null,
+
     /**
-     * Inicializa o motor de métricas globais do ecossistema TERADMAS
+     * Inicializa o motor global de métricas.
      */
     async init() {
         "use strict";
+
         try {
-            console.log('🚀 Inicializando GlobalMetrics de Ocupação e Ativos...');
+            console.log("🚀 Inicializando GlobalMetrics...");
+
             await this.loadMetrics();
-            
-            // Ativa o ciclo reativo automático em background
-            setInterval(() => this.loadMetrics(), this.updateInterval);
-            console.log('✅ GlobalMetrics ativado com sucesso.');
-        } catch (err) {
-            console.error('❌ Erro no ciclo de partida das métricas:', err);
+
+            // Evita criar múltiplos setInterval caso init()
+            // seja chamado mais de uma vez.
+            if (!this.intervalId) {
+                this.intervalId = setInterval(() => {
+                    this.loadMetrics();
+                }, this.updateInterval);
+            }
+
+            console.log("✅ GlobalMetrics ativado. Ciclo: 5 segundos.");
+
+        } catch (erro) {
+            console.error(
+                "❌ Erro na inicialização das métricas:",
+                erro
+            );
         }
     },
-    
+
     /**
-     * Consome os dados totalizados diretamente do GerenciadorCaixa no Flask
+     * Consulta o motor financeiro central.
+     *
+     * IMPORTANTE:
+     * O frontend não calcula capital disponível.
+     * O backend é responsável por:
+     *
+     * capital inicial
+     * + receitas
+     * - despesas
+     * = capital disponível
+     *
+     * E, quando aplicável, pelas quotas dos departamentos.
      */
     async loadMetrics() {
         "use strict";
+
         try {
-            const response = await fetch('/api/financeiro/metricas?dept=global');
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            
-            this.dataCache = await response.json();
+
+            const response = await fetch(
+                "/api/financeiro/metricas?dept=global",
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept": "application/json"
+                    },
+                    cache: "no-store"
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    `HTTP ${response.status}: ${response.statusText}`
+                );
+            }
+
+            const data = await response.json();
+
+            if (!data || typeof data !== "object") {
+                throw new Error(
+                    "Resposta inválida do motor financeiro."
+                );
+            }
+
+            this.dataCache = data;
             this.lastUpdate = new Date();
+
             this.renderDashboard();
-        } catch (err) {
-            console.error('❌ Erro de comunicação com o GerenciadorCaixa:', err);
+
+        } catch (erro) {
+
+            console.error(
+                "❌ Falha na sincronização financeira:",
+                erro
+            );
+
+            this.renderErrorState();
         }
     },
-    
+
     /**
-     * Descarrega e renderiza as métricas e taxas nos elementos ativos do DOM
+     * Renderiza os valores recebidos do backend.
+     *
+     * Nenhuma regra contábil é executada aqui.
      */
     renderDashboard() {
         "use strict";
-        if (!this.dataCache) return;
-        
+
+        if (!this.dataCache) {
+            return;
+        }
+
         const data = this.dataCache;
-        const capitalTotal = data.capital_total || 10000000;
-        const capitalDisponivel = data.capital_disponivel_total || 0;
-        const patrimonioTotal = data.patrimonio_ativo_total || 0;
-        const custoFixoTotal = data.custo_fixo_geral_empresa || 0;
-        const custoVariavelTotal = data.custo_variavel_total || 0;
-        
-        // Equações e proporções matriciais com tratamento de dízimas
-        const porcCapital = capitalTotal > 0 ? (custoFixoTotal / capitalTotal) * 100 : 0;
-        const porcPatrimonio = capitalTotal > 0 ? (patrimonioTotal / capitalTotal) * 100 : 0;
-        const porcDisponivel = capitalTotal > 0 ? ((capitalTotal - capitalDisponivel) / capitalTotal) * 100 : 0;
-        
-        // Atualiza os blocos da matriz superior mapeados
-        this.updateElement('global-capital-total', capitalTotal, 'currency');
-        this.updateElement('global-capital-disponivel', capitalDisponivel, 'currency');
-        this.updateElement('global-patrimonio', patrimonioTotal, 'currency');
-        this.updateElement('global-custo-fixo', custoFixoTotal, 'currency');
-        this.updateElement('global-custo-variavel', custoVariavelTotal, 'currency');
-        this.updateElement('global-porcento-capital', porcCapital, 'percent');
-        this.updateElement('global-porcento-patrimonio', porcPatrimonio, 'percent');
-        this.updateElement('global-porcento-disponivel', porcDisponivel, 'percent');
-        
-        // Atualiza carimbo temporal WCAG de auditoria do Professor
-        const timestampElem = document.getElementById('global-last-update');
+
+        // ==============================================================
+        // FONTE ÚNICA DOS VALORES
+        // ==============================================================
+
+        const capitalTotal = this.numeroSeguro(
+            data.capital_total
+        );
+
+        const capitalDisponivel = this.numeroSeguro(
+            data.capital_disponivel_total
+        );
+
+        const patrimonioTotal = this.numeroSeguro(
+            data.patrimonio_ativo_total
+        );
+
+        const custoFixoTotal = this.numeroSeguro(
+            data.custo_fixo_geral_empresa ??
+            data.custo_fixo_total
+        );
+
+        const custoVariavelTotal = this.numeroSeguro(
+            data.custo_variavel_total
+        );
+
+        // ==============================================================
+        // PERCENTUAIS APENAS PARA APRESENTAÇÃO
+        // ==============================================================
+        //
+        // Estes percentuais não alteram o capital.
+        // São indicadores visuais.
+        //
+
+        const percentualCustoFixo =
+            capitalTotal > 0
+                ? (custoFixoTotal / capitalTotal) * 100
+                : 0;
+
+        const percentualPatrimonio =
+            capitalTotal > 0
+                ? (patrimonioTotal / capitalTotal) * 100
+                : 0;
+
+        const percentualCapitalUtilizado =
+            capitalTotal > 0
+                ? ((capitalTotal - capitalDisponivel) / capitalTotal) * 100
+                : 0;
+
+        // ==============================================================
+        // PAINEL FINANCEIRO
+        // ==============================================================
+
+        this.updateElement(
+            "global-capital-total",
+            capitalTotal,
+            "currency"
+        );
+
+        this.updateElement(
+            "global-capital-disponivel",
+            capitalDisponivel,
+            "currency"
+        );
+
+        this.updateElement(
+            "global-patrimonio",
+            patrimonioTotal,
+            "currency"
+        );
+
+        this.updateElement(
+            "global-custo-fixo",
+            custoFixoTotal,
+            "currency"
+        );
+
+        this.updateElement(
+            "global-custo-variavel",
+            custoVariavelTotal,
+            "currency"
+        );
+
+        // ==============================================================
+        // INDICADORES
+        // ==============================================================
+
+        this.updateElement(
+            "global-porcento-capital",
+            percentualCustoFixo,
+            "percent"
+        );
+
+        this.updateElement(
+            "global-porcento-patrimonio",
+            percentualPatrimonio,
+            "percent"
+        );
+
+        this.updateElement(
+            "global-porcento-disponivel",
+            percentualCapitalUtilizado,
+            "percent"
+        );
+
+        // ==============================================================
+        // DADOS FINANCEIROS OPCIONAIS
+        // ==============================================================
+        //
+        // Se o backend já fornecer receitas e despesas,
+        // podemos exibi-las sem alterar versões antigas do frontend.
+        //
+
+        if (data.receita_total !== undefined) {
+            this.updateElement(
+                "global-receita-total",
+                this.numeroSeguro(data.receita_total),
+                "currency"
+            );
+        }
+
+        if (data.despesa_total !== undefined) {
+            this.updateElement(
+                "global-despesa-total",
+                this.numeroSeguro(data.despesa_total),
+                "currency"
+            );
+        }
+
+        if (data.resultado_caixa !== undefined) {
+            this.updateElement(
+                "global-resultado-caixa",
+                this.numeroSeguro(data.resultado_caixa),
+                "currency"
+            );
+        }
+
+        // ==============================================================
+        // QUOTAS
+        // ==============================================================
+
+        // Caso o backend forneça a soma das quotas da equipe.
+        if (data.percentual_quotas_total !== undefined) {
+
+            this.updateElement(
+                "global-percentual-quotas",
+                this.numeroSeguro(data.percentual_quotas_total),
+                "percent"
+            );
+        }
+
+        // ==============================================================
+        // MARCADOR DE SINCRONIZAÇÃO
+        // ==============================================================
+
+        const timestampElem =
+            document.getElementById("global-last-update");
+
         if (timestampElem) {
-            timestampElem.innerText = `🔄 Sincronizado às ${this.lastUpdate.toLocaleTimeString('pt-BR')}`;
+
+            timestampElem.innerText =
+                `🔄 Sincronizado às ${
+                    this.lastUpdate.toLocaleTimeString("pt-BR")
+                }`;
         }
     },
-// ==========================================================================
- // TERADMAS ERP v2.6 - PAINEL GLOBAL DE MÉTRICAS CONSOLIDADAS
- // ARQUIVO: metrics.js - PARTE 2 DE 2 (FORMATADORES E CÁLCULO IMOBILIÁRIO)
- // ==========================================================================
- 
+
     /**
-     * Auxiliar de injeção e formatação de valores monetários e decimais
+     * Converte valores vindos do Flask/PostgreSQL
+     * para número sem produzir NaN.
+     */
+    numeroSeguro(valor) {
+
+        "use strict";
+
+        if (
+            valor === null ||
+            valor === undefined ||
+            valor === ""
+        ) {
+            return 0;
+        }
+
+        const numero = Number(valor);
+
+        return Number.isFinite(numero)
+            ? numero
+            : 0;
+    },
+
+    /**
+     * Formatação centralizada.
      */
     updateElement(elementId, value, format) {
+
         "use strict";
-        const elem = document.getElementById(elementId);
-        if (!elem) return;
-        
-        let formatted = value;
-        
-        if (format === 'currency') {
-            formatted = value.toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        } else if (format === 'percent') {
-            formatted = `${value.toFixed(2)}%`;
-        } else if (format === 'number') {
-            formatted = value.toLocaleString('pt-BR');
+
+        const elem =
+            document.getElementById(elementId);
+
+        if (!elem) {
+            return;
         }
-        
+
+        let formatted = value;
+
+        if (format === "currency") {
+
+            formatted =
+                this.numeroSeguro(value).toLocaleString(
+                    "pt-BR",
+                    {
+                        style: "currency",
+                        currency: "BRL",
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }
+                );
+
+        } else if (format === "percent") {
+
+            formatted =
+                `${this.numeroSeguro(value).toFixed(2)}%`;
+
+        } else if (format === "number") {
+
+            formatted =
+                this.numeroSeguro(value).toLocaleString(
+                    "pt-BR"
+                );
+        }
+
         elem.innerText = formatted;
     },
- 
+
     /**
-     * Retorna um resumo estruturado para relatórios rápidos
+     * Mostra estado seguro quando a API não responde.
+     *
+     * Não inventa valores financeiros.
+     */
+    renderErrorState() {
+
+        "use strict";
+
+        const ids = [
+            "global-capital-total",
+            "global-capital-disponivel",
+            "global-patrimonio",
+            "global-custo-fixo",
+            "global-custo-variavel"
+        ];
+
+        ids.forEach(id => {
+
+            const elem =
+                document.getElementById(id);
+
+            if (elem) {
+                elem.innerText = "—";
+            }
+        });
+
+        const timestampElem =
+            document.getElementById("global-last-update");
+
+        if (timestampElem) {
+
+            timestampElem.innerText =
+                "⚠️ Falha na sincronização financeira";
+        }
+    },
+
+    /**
+     * Retorna resumo textual das métricas atuais.
      */
     getSummary() {
+
         "use strict";
-        if (!this.dataCache) return 'Sem dados disponíveis no momento.';
-        
+
+        if (!this.dataCache) {
+            return "Sem dados disponíveis no momento.";
+        }
+
         const data = this.dataCache;
+
         return `
-            Capital Fundação: R$ ${(data.capital_total || 0).toLocaleString('pt-BR')}
-            Patrimônio Imobilizado: R$ ${(data.patrimonio_ativo_total || 0).toLocaleString('pt-BR')}
-            Despesa Fixa Global: R$ ${(data.custo_fixo_geral_empresa || 0).toLocaleString('pt-BR')}
-            Despesa Variável: R$ ${(data.custo_variavel_total || 0).toLocaleString('pt-BR')}
-        `;
+Capital Inicial: ${this.formatCurrency(data.capital_total)}
+Capital Disponível: ${this.formatCurrency(data.capital_disponivel_total)}
+Patrimônio: ${this.formatCurrency(data.patrimonio_ativo_total)}
+Custo Fixo: ${this.formatCurrency(data.custo_fixo_geral_empresa)}
+Custo Variável: ${this.formatCurrency(data.custo_variavel_total)}
+        `.trim();
     },
- 
+
     /**
-     * Força a atualização manual instantânea
+     * Formatação utilizada pelo resumo.
      */
-    forceRefresh() {
+    formatCurrency(valor) {
+
+        return this.numeroSeguro(valor).toLocaleString(
+            "pt-BR",
+            {
+                style: "currency",
+                currency: "BRL",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+    },
+
+    /**
+     * Força uma atualização imediata.
+     */
+    async forceRefresh() {
+
         "use strict";
-        console.log('🔄 Sincronização forçada sob demanda disparada...');
-        this.loadMetrics();
+
+        console.log(
+            "🔄 Sincronização financeira manual..."
+        );
+
+        await this.loadMetrics();
     }
 };
- 
-/**
- * ==========================================================================
- * MATRIZES E PARÂMETROS COMPLEMENTARES DE ENGENHARIA ECONÔMICA
- * ==========================================================================
- */
+
+
+// ==========================================================================
+// MATRIZ DE LOCAÇÃO
+// ==========================================================================
+
 const MATRIZ_LOCACAO_RMC = {
-    "Curitiba": { valor_m2: 32.50, condominio_base: 350.00, cap_rate: 0.0055, igpm: 0.0425 },
-    "São José dos Pinhais": { valor_m2: 24.00, condominio_base: 280.00, cap_rate: 0.0048, igpm: 0.0425 },
-    "Pinhais": { valor_m2: 26.50, condominio_base: 300.00, cap_rate: 0.0052, igpm: 0.0425 },
-    "Araucária": { valor_m2: 22.00, condominio_base: 250.00, cap_rate: 0.0045, igpm: 0.0425 },
-    "Campo Largo": { valor_m2: 19.50, condominio_base: 220.00, cap_rate: 0.0042, igpm: 0.0425 }
+
+    "Curitiba": {
+        valor_m2: 32.50,
+        condominio_base: 350.00,
+        cap_rate: 0.0055,
+        igpm: 0.0425
+    },
+
+    "São José dos Pinhais": {
+        valor_m2: 24.00,
+        condominio_base: 280.00,
+        cap_rate: 0.0048,
+        igpm: 0.0425
+    },
+
+    "Pinhais": {
+        valor_m2: 26.50,
+        condominio_base: 300.00,
+        cap_rate: 0.0052,
+        igpm: 0.0425
+    },
+
+    "Araucária": {
+        valor_m2: 22.00,
+        condominio_base: 250.00,
+        cap_rate: 0.0045,
+        igpm: 0.0425
+    },
+
+    "Campo Largo": {
+        valor_m2: 19.50,
+        condominio_base: 220.00,
+        cap_rate: 0.0042,
+        igpm: 0.0425
+    }
 };
- 
+
+
+// ==========================================================================
+// TABELA DE SALÁRIOS
+// ==========================================================================
+
 const TABELA_SALARIOS_AQUECIMENTO = {
+
     "Gerente de Infraestrutura": 8500.00,
     "Supervisor Predial": 5200.00,
     "Técnico de Manutenção Industrial": 3800.00,
@@ -157,85 +503,218 @@ const TABELA_SALARIOS_AQUECIMENTO = {
     "Motorista": 2400.00,
     "Segurança Patrimonial": 2300.00
 };
- 
-/**
- * Motor reativo unificado para cálculo patrimonial imobiliário
- */
+
+
+// ==========================================================================
+// CÁLCULO IMOBILIÁRIO REATIVO
+// ==========================================================================
+
 function executarCalculoLocacaoReativa() {
+
     "use strict";
+
     try {
-        const areaUtil = parseFloat(document.getElementById('txt_area_util')?.value || document.getElementById('area_util')?.value) || 0;
-        const cidade = document.getElementById('sel_cidade_municipio')?.value || document.getElementById('cidade')?.value || "Curitiba";
-        const paramCidade = MATRIZ_LOCACAO_RMC[cidade] || MATRIZ_LOCACAO_RMC["Curitiba"];
-        
-        if (areaUtil <= 0) return;
-        
-        const aluguelCalculado = areaUtil * paramCidade.valor_m2;
-        const condominioInformado = parseFloat(
-            document.getElementById('txt_taxa_condominio')?.value || document.getElementById('valor_condominio')?.value
-        ) || paramCidade.condominio_base;
-        
-        const taxaAnualCalculada = (aluguelCalculado * 12) + (condominioInformado * 12);
-        
-        // Sincronização cruzada para evitar quebra em templates alternativos
+
+        const areaUtil =
+            parseFloat(
+                document.getElementById("txt_area_util")?.value ||
+                document.getElementById("area_util")?.value
+            ) || 0;
+
+        const cidade =
+            document.getElementById("sel_cidade_municipio")?.value ||
+            document.getElementById("cidade")?.value ||
+            "Curitiba";
+
+        const paramCidade =
+            MATRIZ_LOCACAO_RMC[cidade] ||
+            MATRIZ_LOCACAO_RMC["Curitiba"];
+
+        if (areaUtil <= 0) {
+            return;
+        }
+
+        const aluguelCalculado =
+            areaUtil * paramCidade.valor_m2;
+
+        const condominioInformado =
+            parseFloat(
+                document.getElementById(
+                    "txt_taxa_condominio"
+                )?.value ||
+                document.getElementById(
+                    "valor_condominio"
+                )?.value
+            ) || paramCidade.condominio_base;
+
+        const taxaAnualCalculada =
+            (aluguelCalculado * 12) +
+            (condominioInformado * 12);
+
         const mapeamentoInputs = {
-            'txt_aluguel_calculado': aluguelCalculado,
-            'valor_aluguel': aluguelCalculado,
-            'txt_taxa_anual': taxaAnualCalculada,
-            'taxa_anual': taxaAnualCalculada
+
+            "txt_aluguel_calculado":
+                aluguelCalculado,
+
+            "valor_aluguel":
+                aluguelCalculado,
+
+            "txt_taxa_anual":
+                taxaAnualCalculada,
+
+            "taxa_anual":
+                taxaAnualCalculada
         };
-        
+
         Object.keys(mapeamentoInputs).forEach(id => {
-            const input = document.getElementById(id);
-            if (input) input.value = mapeamentoInputs[id].toFixed(2);
+
+            const input =
+                document.getElementById(id);
+
+            if (input) {
+                input.value =
+                    mapeamentoInputs[id].toFixed(2);
+            }
         });
-        
-        const projecaoIgpmAnual = aluguelCalculado * 12 * paramCidade.igpm;
-        const valorMercadoEstimado = paramCidade.cap_rate > 0 ? (aluguelCalculado * 12) / (paramCidade.cap_rate * 12) : 0;
-        const tempoAmortizacaoMeses = 120; // Regulamentar padrão do ERP
-        const capRateMensalPercentual = paramCidade.cap_rate * 100;
-        
-        // Injeção de textos didáticos nos mosaicos matemáticos
+
+        const projecaoIgpmAnual =
+            aluguelCalculado *
+            12 *
+            paramCidade.igpm;
+
+        const valorMercadoEstimado =
+            paramCidade.cap_rate > 0
+                ? (aluguelCalculado * 12) /
+                  (paramCidade.cap_rate * 12)
+                : 0;
+
+        const tempoAmortizacaoMeses = 120;
+
+        const capRateMensalPercentual =
+            paramCidade.cap_rate * 100;
+
         const updatesTexto = {
-            'txt_igpm_correcao': projecaoIgpmAnual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-            'txt_valor_mercado_real': valorMercadoEstimado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-            'txt_tempo_meses': `${tempoAmortizacaoMeses} meses`,
-            'txt_taxa_capitalizacao': `${capRateMensalPercentual.toFixed(2)}% a.m.`
+
+            "txt_igpm_correcao":
+                projecaoIgpmAnual.toLocaleString(
+                    "pt-BR",
+                    {
+                        style: "currency",
+                        currency: "BRL"
+                    }
+                ),
+
+            "txt_valor_mercado_real":
+                valorMercadoEstimado.toLocaleString(
+                    "pt-BR",
+                    {
+                        style: "currency",
+                        currency: "BRL"
+                    }
+                ),
+
+            "txt_tempo_meses":
+                `${tempoAmortizacaoMeses} meses`,
+
+            "txt_taxa_capitalizacao":
+                `${capRateMensalPercentual.toFixed(2)}% a.m.`
         };
-        
+
         Object.keys(updatesTexto).forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.innerText = updatesTexto[id];
+
+            const el =
+                document.getElementById(id);
+
+            if (el) {
+                el.innerText =
+                    updatesTexto[id];
+            }
         });
-        
+
     } catch (erro) {
-        console.error("❌ Erro no processamento matemático patrimonial:", erro);
+
+        console.error(
+            "❌ Erro no cálculo patrimonial imobiliário:",
+            erro
+        );
     }
 }
- 
-// Vinculação de gatilhos imediatos nos inputs de simulação
+
+
+// ==========================================================================
+// GATILHOS IMOBILIÁRIOS
+// ==========================================================================
+
 function configurarGatilhosImobiliarios() {
+
     "use strict";
-    const inputs = ['txt_area_util', 'sel_cidade_municipio', 'txt_taxa_condominio', 'area_util', 'cidade', 'valor_condominio'];
+
+    const inputs = [
+
+        "txt_area_util",
+        "sel_cidade_municipio",
+        "txt_taxa_condominio",
+
+        "area_util",
+        "cidade",
+        "valor_condominio"
+    ];
+
     inputs.forEach(id => {
-        const elemento = document.getElementById(id);
+
+        const elemento =
+            document.getElementById(id);
+
         if (elemento) {
-            elemento.addEventListener('input', executarCalculoLocacaoReativa);
-            elemento.addEventListener('change', executarCalculoLocacaoReativa);
+
+            elemento.addEventListener(
+                "input",
+                executarCalculoLocacaoReativa
+            );
+
+            elemento.addEventListener(
+                "change",
+                executarCalculoLocacaoReativa
+            );
         }
     });
 }
- 
-// Inicialização segura atrelada ao ciclo de vida do DOM
-document.addEventListener('DOMContentLoaded', () => {
-    "use strict";
-    if (document.getElementById('global-capital-total') || document.querySelector('[data-metric]')) {
-        GlobalMetrics.init();
+
+
+// ==========================================================================
+// INICIALIZAÇÃO
+// ==========================================================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+
+        "use strict";
+
+        if (
+            document.getElementById(
+                "global-capital-total"
+            ) ||
+            document.querySelector(
+                "[data-metric]"
+            )
+        ) {
+
+            GlobalMetrics.init();
+        }
+
+        configurarGatilhosImobiliarios();
+
+        executarCalculoLocacaoReativa();
     }
-    configurarGatilhosImobiliarios();
-    executarCalculoLocacaoReativa();
-});
- 
+);
+
+
+// ==========================================================================
+// EXPOSIÇÃO GLOBAL
+// ==========================================================================
+
 window.GlobalMetrics = GlobalMetrics;
-// expose a helper expected by a few modules:
-window.forcarAtualizacaoMetricasTopboard = () => GlobalMetrics.forceRefresh();
+
+window.forcarAtualizacaoMetricasTopboard =
+    () => GlobalMetrics.forceRefresh();
