@@ -1,36 +1,39 @@
 /* ==========================================================================
    TERADMAS ERP v2.6
-   METRICS.JS
-   --------------------------------------------------------------------------
-   CONTROLADOR UNIVERSAL DE MÉTRICAS
+   metrics.js
+   ==========================================================================
+
+   MOTOR DE APRESENTAÇÃO DAS MÉTRICAS
 
    RESPONSABILIDADE:
 
-       master.py
-           ↓
-       /api/metrics
-           ↓
-       GerenciadorCaixa.py
-           ↓
        PostgreSQL
-           ↓
-       metrics.js
-           ↓
-       HTML
+            ↓
+       GerenciadorCaixa.py
+            ↓
+          master.py
+            ↓
+        metrics.js
+            ↓
+           HTML
 
-   PRINCÍPIO:
-
-   Este arquivo NÃO calcula capital, patrimônio ou custos.
+   O metrics.js NÃO calcula:
+       - capital
+       - patrimônio
+       - custos
+       - caixa
+       - orçamento
 
    Ele somente:
-       - identifica o contexto;
-       - consulta o master;
-       - recebe as métricas;
+       - identifica a equipe;
+       - identifica o departamento;
+       - consulta a API central;
+       - recebe os dados;
        - atualiza a interface;
-       - formata valores;
-       - mantém a página sincronizada.
+       - apresenta erros de forma segura.
 
-   A lógica financeira existe exclusivamente no servidor.
+   ARQUITETURA MULTIEMPRESA
+   Cada equipe opera somente os dados de sua própria empresa.
 
    ========================================================================== */
 
@@ -39,10 +42,10 @@
 
 
 /* ==========================================================================
-   CONFIGURAÇÃO
+   CONFIGURAÇÃO CENTRAL
    ========================================================================== */
 
-const METRICS_CONFIG = {
+const ERP_METRICS_CONFIG = {
 
     endpoint: "/api/metrics",
 
@@ -52,6 +55,8 @@ const METRICS_CONFIG = {
 
     intervaloAtualizacao: 30000,
 
+    timeout: 10000,
+
     moeda: "BRL",
 
     locale: "pt-BR"
@@ -60,984 +65,349 @@ const METRICS_CONFIG = {
 
 
 /* ==========================================================================
-   ESTADO GLOBAL DA PÁGINA
+   ESTADO DO MÓDULO
    ========================================================================== */
 
-const MetricsState = {
+const ERP_METRICS = {
+
+    equipeId: null,
+
+    departamento: null,
+
+    nomeEmpresa: null,
+
+    dados: {},
 
     carregando: false,
 
-    ultimaAtualizacao: null,
+    erro: null,
 
-    contexto: {
-
-        equipe_id: null,
-
-        nome_empresa: null,
-
-        departamento: null
-
-    },
-
-    dados: {
-
-        capital_total: 0,
-
-        capital_disponivel_total: 0,
-
-        capital_disponivel_departamento: 0,
-
-        patrimonio_ativo_total: 0,
-
-        patrimonio_isolado_setor: 0,
-
-        custo_fixo_total: 0,
-
-        custo_variavel_total: 0,
-
-        custo_fixo_geral_empresa: 0,
-
-        custo_fixo_isolado_setor: 0,
-
-        custo_variavel_isolado_setor: 0,
-
-        total_movimentacoes_fluxo: 0,
-
-        total_entradas_fluxo: 0,
-
-        total_saidas_fluxo: 0,
-
-        patrimonio_imoveis: 0,
-
-        patrimonio_maquinas: 0,
-
-        patrimonio_materiais: 0,
-
-        valor_aluguel_global: 0
-
-    }
+    timer: null
 
 };
 
 
 /* ==========================================================================
-   UTILITÁRIOS
+   FORMATAÇÃO MONETÁRIA
    ========================================================================== */
 
+function formatarMoeda(valor) {
 
-/**
- * Converte qualquer valor recebido do servidor para número.
- */
-function numeroSeguro(valor, padrao = 0) {
+    const numero = Number(valor);
+
+    if (!Number.isFinite(numero)) {
+        return "R$ 0,00";
+    }
+
+    return new Intl.NumberFormat(
+        ERP_METRICS_CONFIG.locale,
+        {
+            style: "currency",
+            currency: ERP_METRICS_CONFIG.moeda,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }
+    ).format(numero);
+
+}
+
+
+/* ==========================================================================
+   FORMATAÇÃO NUMÉRICA
+   ========================================================================== */
+
+function formatarNumero(valor) {
+
+    const numero = Number(valor);
+
+    if (!Number.isFinite(numero)) {
+        return "0";
+    }
+
+    return new Intl.NumberFormat(
+        ERP_METRICS_CONFIG.locale,
+        {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2
+        }
+    ).format(numero);
+
+}
+
+
+/* ==========================================================================
+   CONVERSÃO SEGURA
+   ========================================================================== */
+
+function numeroSeguro(valor) {
 
     const numero = Number(valor);
 
     return Number.isFinite(numero)
         ? numero
-        : padrao;
-}
-
-
-/**
- * Formata valores monetários brasileiros.
- */
-function formatarMoeda(valor) {
-
-    const numero = numeroSeguro(valor);
-
-    return new Intl.NumberFormat(
-        METRICS_CONFIG.locale,
-        {
-            style: "currency",
-            currency: METRICS_CONFIG.moeda,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        }
-    ).format(numero);
-}
-
-
-/**
- * Formata números comuns.
- */
-function formatarNumero(valor, casas = 2) {
-
-    const numero = numeroSeguro(valor);
-
-    return new Intl.NumberFormat(
-        METRICS_CONFIG.locale,
-        {
-            minimumFractionDigits: casas,
-            maximumFractionDigits: casas
-        }
-    ).format(numero);
-}
-
-
-/**
- * Formata percentual.
- */
-function formatarPercentual(valor) {
-
-    const numero = numeroSeguro(valor);
-
-    return `${formatarNumero(numero, 1)}%`;
+        : 0;
 
 }
 
 
 /* ==========================================================================
-   DOM
+   OBTÉM EQUIPE_ID DA URL
    ========================================================================== */
 
+function obterEquipeDaURL() {
 
-/**
- * Localiza um elemento sem gerar erro caso ele não exista.
- */
-function elemento(id) {
-
-    return document.getElementById(id);
-
-}
-
-
-/**
- * Atualiza texto de um elemento.
- */
-function definirTexto(id, valor) {
-
-    const el = elemento(id);
-
-    if (!el) {
-        return;
-    }
-
-    el.textContent = valor;
-
-}
-
-
-/**
- * Atualiza valor de input.
- */
-function definirValor(id, valor) {
-
-    const el = elemento(id);
-
-    if (!el) {
-        return;
-    }
-
-    el.value = valor;
-
-}
-
-
-/**
- * Atualiza barra de progresso.
- */
-function definirProgresso(id, percentual) {
-
-    const el = elemento(id);
-
-    if (!el) {
-        return;
-    }
-
-    const valor = Math.max(
-        0,
-        Math.min(
-            100,
-            numeroSeguro(percentual)
-        )
+    const parametros = new URLSearchParams(
+        window.location.search
     );
 
-    el.style.width = `${valor}%`;
-
-    el.setAttribute(
-        "aria-valuenow",
-        String(valor)
+    return (
+        parametros.get("equipe_id") ||
+        parametros.get("equipe") ||
+        null
     );
 
 }
 
 
 /* ==========================================================================
-   CONTEXTO
+   OBTÉM DEPARTAMENTO DA URL
    ========================================================================== */
 
+function obterDepartamentoDaURL() {
 
-/**
- * Obtém o contexto operacional do master.py.
- *
- * Não usamos equipe_id gravado no JavaScript como fonte de verdade.
- *
- * A identificação deve vir da sessão/backend.
- */
+    const parametros = new URLSearchParams(
+        window.location.search
+    );
+
+    return (
+        parametros.get("departamento") ||
+        null
+    );
+
+}
+
+
+/* ==========================================================================
+   OBTÉM CONTEXTO DA EMPRESA
+   ========================================================================== */
+
 async function carregarContexto() {
 
     try {
 
         const resposta = await fetch(
-            METRICS_CONFIG.contextoEndpoint,
+            ERP_METRICS_CONFIG.contextoEndpoint,
             {
                 method: "GET",
+
                 credentials: "same-origin",
+
                 headers: {
                     "Accept": "application/json"
                 }
             }
         );
 
+
         if (!resposta.ok) {
-
-            throw new Error(
-                `Erro HTTP ${resposta.status}`
-            );
-
+            return false;
         }
+
 
         const dados = await resposta.json();
 
+
         if (!dados.sucesso) {
-
-            throw new Error(
-                dados.erro ||
-                "Não foi possível obter o contexto."
-            );
-
+            return false;
         }
 
-        MetricsState.contexto = {
 
-            equipe_id:
-                dados.equipe_id ?? null,
+        ERP_METRICS.equipeId =
+            dados.equipe_id ||
+            ERP_METRICS.equipeId;
 
-            nome_empresa:
-                dados.nome_empresa ?? null,
 
-            departamento:
-                dados.departamento ?? null
+        ERP_METRICS.nomeEmpresa =
+            dados.nome_empresa ||
+            ERP_METRICS.nomeEmpresa;
 
-        };
 
-        atualizarIdentificacaoEmpresa();
+        ERP_METRICS.departamento =
+            dados.departamento ||
+            ERP_METRICS.departamento;
 
-        return MetricsState.contexto;
+
+        return true;
 
     }
 
     catch (erro) {
 
-        console.error(
-            "Erro ao carregar contexto:",
+        console.warn(
+            "Não foi possível carregar o contexto:",
             erro
         );
 
-        return null;
-
+        return false;
     }
 
 }
 
 
 /* ==========================================================================
-   IDENTIFICAÇÃO DA EMPRESA
+   PREPARA CONTEXTO
    ========================================================================== */
 
+async function prepararContexto() {
 
-/**
- * Atualiza o cabeçalho das páginas.
- *
- * Os elementos são opcionais para que o mesmo metrics.js
- * possa ser utilizado em diferentes pastas.
- */
-function atualizarIdentificacaoEmpresa() {
+    /*
+       Primeiro tenta obter o contexto da sessão.
 
-    const contexto =
-        MetricsState.contexto;
+       Isso é o comportamento esperado em produção:
+       a equipe autenticada determina a empresa.
 
-    definirTexto(
-        "nome-empresa",
-        contexto.nome_empresa || "GRUPO ACADÊMICO"
-    );
+       Os parâmetros da URL permanecem como compatibilidade
+       para testes e desenvolvimento.
+    */
 
-    definirTexto(
-        "empresa-nome",
-        contexto.nome_empresa || "GRUPO ACADÊMICO"
-    );
+    ERP_METRICS.equipeId =
+        obterEquipeDaURL();
 
-    definirTexto(
-        "equipe-id",
-        contexto.equipe_id ?? "—"
-    );
 
-    definirTexto(
-        "departamento-atual",
-        contexto.departamento || "GERAL"
-    );
+    ERP_METRICS.departamento =
+        obterDepartamentoDaURL();
+
+
+    await carregarContexto();
+
+
+    /*
+       Se ainda não houver equipe, interrompe a consulta.
+
+       NÃO inventamos uma equipe padrão.
+    */
+
+    if (!ERP_METRICS.equipeId) {
+
+        mostrarErro(
+            "Equipe não identificada."
+        );
+
+        return false;
+    }
+
+
+    return true;
 
 }
 
 
 /* ==========================================================================
-   MONTAGEM DA URL
+   MONTA URL DA API
    ========================================================================== */
 
+function montarURLMetricas() {
 
-/**
- * Monta a consulta ao endpoint de métricas.
- *
- * Normalmente o equipe_id não precisa ser enviado:
- * o master utiliza a sessão.
+    const parametros = new URLSearchParams();
 
- * O departamento pode ser informado porque representa
- * a página atualmente aberta.
- */
-function montarUrlMetricas() {
 
-    const params =
-        new URLSearchParams();
+    /*
+       Se a sessão já identificar a equipe,
+       o servidor poderá utilizar a sessão.
 
-    const departamento =
-        MetricsState.contexto.departamento;
+       Mesmo assim, durante a fase de desenvolvimento,
+       mantemos equipe_id compatível.
+    */
 
-    if (departamento) {
+    if (ERP_METRICS.equipeId) {
 
-        params.set(
-            "departamento",
-            departamento
+        parametros.set(
+            "equipe_id",
+            ERP_METRICS.equipeId
         );
 
     }
 
+
+    if (ERP_METRICS.departamento) {
+
+        parametros.set(
+            "departamento",
+            ERP_METRICS.departamento
+        );
+
+    }
+
+
     const query =
-        params.toString();
+        parametros.toString();
+
 
     if (!query) {
 
-        return METRICS_CONFIG.endpoint;
+        return ERP_METRICS_CONFIG.endpoint;
 
     }
 
-    return `${METRICS_CONFIG.endpoint}?${query}`;
 
-}
-
-
-/* ==========================================================================
-   CONSULTA AO MASTER
-   ========================================================================== */
-
-
-/**
- * Consulta o motor financeiro através do master.py.
- */
-async function buscarMetricas() {
-
-    const url =
-        montarUrlMetricas();
-
-    const resposta =
-        await fetch(
-            url,
-            {
-                method: "GET",
-                credentials: "same-origin",
-                cache: "no-store",
-                headers: {
-                    "Accept": "application/json"
-                }
-            }
-        );
-
-    if (!resposta.ok) {
-
-        throw new Error(
-            `Erro HTTP ${resposta.status}`
-        );
-
-    }
-
-    const resultado =
-        await resposta.json();
-
-    if (!resultado.sucesso) {
-
-        throw new Error(
-            resultado.erro ||
-            "O servidor recusou a consulta."
-        );
-
-    }
-
-    return resultado;
-
-}
-
-
-/* ==========================================================================
-   NORMALIZAÇÃO DOS DADOS
-   ========================================================================== */
-
-
-/**
- * Garante que a interface sempre receba uma estrutura previsível.
- */
-function normalizarMetricas(dados) {
-
-    const camposNumericos = [
-
-        "capital_total",
-
-        "capital_disponivel_total",
-
-        "capital_disponivel_departamento",
-
-        "patrimonio_ativo_total",
-
-        "patrimonio_isolado_setor",
-
-        "custo_fixo_total",
-
-        "custo_variavel_total",
-
-        "custo_fixo_geral_empresa",
-
-        "custo_fixo_isolado_setor",
-
-        "custo_variavel_isolado_setor",
-
-        "total_movimentacoes_fluxo",
-
-        "total_entradas_fluxo",
-
-        "total_saidas_fluxo",
-
-        "patrimonio_imoveis",
-
-        "patrimonio_maquinas",
-
-        "patrimonio_materiais",
-
-        "valor_aluguel_global"
-
-    ];
-
-    const resultado = {
-
-        ...MetricsState.dados
-
-    };
-
-
-    camposNumericos.forEach(
-        campo => {
-
-            if (
-                Object.prototype.hasOwnProperty.call(
-                    dados,
-                    campo
-                )
-            ) {
-
-                resultado[campo] =
-                    numeroSeguro(
-                        dados[campo]
-                    );
-
-            }
-
-        }
-    );
-
-
-    resultado.nome_empresa =
-        dados.nome_empresa ||
-        MetricsState.contexto.nome_empresa ||
-        "GRUPO ACADÊMICO";
-
-
-    return resultado;
-
-}
-
-
-/* ==========================================================================
-   ATUALIZAÇÃO DO ESTADO
-   ========================================================================== */
-
-
-/**
- * Recebe os dados do servidor.
- */
-function atualizarEstado(dados) {
-
-    MetricsState.dados =
-        normalizarMetricas(dados);
-
-    MetricsState.ultimaAtualizacao =
-        new Date();
-
-}
-
-
-/* ==========================================================================
-   ATUALIZAÇÃO DOS KPIs
-   ========================================================================== */
-
-
-/**
- * Atualiza os principais indicadores.
- *
- * Vários IDs são suportados deliberadamente.
- *
- * Isso permite que o mesmo metrics.js seja usado
- * em páginas diferentes sem obrigar todas elas
- * a terem exatamente o mesmo HTML.
- */
-function atualizarKPIs() {
-
-    const d =
-        MetricsState.dados;
-
-
-    /* ----------------------------------------------------------------------
-       CAPITAL
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        "capital-total",
-        formatarMoeda(
-            d.capital_total
-        )
-    );
-
-    definirTexto(
-        "capital-disponivel",
-        formatarMoeda(
-            d.capital_disponivel_total
-        )
-    );
-
-    definirTexto(
-        "capital-disponivel-total",
-        formatarMoeda(
-            d.capital_disponivel_total
-        )
-    );
-
-    definirTexto(
-        "capital-disponivel-departamento",
-        formatarMoeda(
-            d.capital_disponivel_departamento
-        )
-    );
-
-
-    /* ----------------------------------------------------------------------
-       PATRIMÔNIO
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        "patrimonio-total",
-        formatarMoeda(
-            d.patrimonio_ativo_total
-        )
-    );
-
-    definirTexto(
-        "patrimonio-ativo-total",
-        formatarMoeda(
-            d.patrimonio_ativo_total
-        )
-    );
-
-    definirTexto(
-        "patrimonio-setor",
-        formatarMoeda(
-            d.patrimonio_isolado_setor
-        )
-    );
-
-
-    /* ----------------------------------------------------------------------
-       CUSTOS
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        "custo-fixo-total",
-        formatarMoeda(
-            d.custo_fixo_total
-        )
-    );
-
-    definirTexto(
-        "custo-variavel-total",
-        formatarMoeda(
-            d.custo_variavel_total
-        )
-    );
-
-    definirTexto(
-        "custo-fixo-geral",
-        formatarMoeda(
-            d.custo_fixo_geral_empresa
-        )
-    );
-
-    definirTexto(
-        "custo-fixo-setor",
-        formatarMoeda(
-            d.custo_fixo_isolado_setor
-        )
-    );
-
-    definirTexto(
-        "custo-variavel-setor",
-        formatarMoeda(
-            d.custo_variavel_isolado_setor
-        )
-    );
-
-
-    /* ----------------------------------------------------------------------
-       FLUXO DE CAIXA
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        "entradas-total",
-        formatarMoeda(
-            d.total_entradas_fluxo
-        )
-    );
-
-    definirTexto(
-        "saidas-total",
-        formatarMoeda(
-            d.total_saidas_fluxo
-        )
-    );
-
-    definirTexto(
-        "movimentacoes-total",
-        formatarMoeda(
-            d.total_movimentacoes_fluxo
-        )
-    );
-
-
-    /* ----------------------------------------------------------------------
-       ATIVOS
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        "patrimonio-imoveis",
-        formatarMoeda(
-            d.patrimonio_imoveis
-        )
-    );
-
-    definirTexto(
-        "patrimonio-maquinas",
-        formatarMoeda(
-            d.patrimonio_maquinas
-        )
-    );
-
-    definirTexto(
-        "patrimonio-materiais",
-        formatarMoeda(
-            d.patrimonio_materiais
-        )
-    );
-
-
-    /* ----------------------------------------------------------------------
-       ALUGUEL
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        "valor-aluguel",
-        formatarMoeda(
-            d.valor_aluguel_global
-        )
-    );
-
-
-    /* ----------------------------------------------------------------------
-       EMPRESA
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        "nome-empresa",
-        d.nome_empresa
-    );
-
-    definirTexto(
-        "empresa-nome",
-        d.nome_empresa
-    );
-
-
-    /* ----------------------------------------------------------------------
-       PROGRESSO DO CAPITAL
-       ---------------------------------------------------------------------- */
-
-    const capital =
-        d.capital_total;
-
-    const disponivel =
-        d.capital_disponivel_total;
-
-    let percentualCapital = 0;
-
-    if (capital > 0) {
-
-        percentualCapital =
-            (disponivel / capital) * 100;
-
-    }
-
-    definirProgresso(
-        "capital-progress",
-        percentualCapital
-    );
-
-    definirProgresso(
-        "progresso-capital",
-        percentualCapital
-    );
-
-
-    /* ----------------------------------------------------------------------
-       ÚLTIMA ATUALIZAÇÃO
-       ---------------------------------------------------------------------- */
-
-    if (
-        MetricsState.ultimaAtualizacao
-    ) {
-
-        definirTexto(
-            "metrics-atualizado-em",
-            MetricsState
-                .ultimaAtualizacao
-                .toLocaleTimeString(
-                    METRICS_CONFIG.locale
-                )
-        );
-
-    }
-
-}
-
-
-/* ==========================================================================
-   ESTADOS VISUAIS
-   ========================================================================== */
-
-
-/**
- * Indica carregamento.
- */
-function indicarCarregamento(ativo) {
-
-    const elementos =
-        document.querySelectorAll(
-            "[data-metrics-loading]"
-        );
-
-    elementos.forEach(
-        el => {
-
-            el.hidden = !ativo;
-
-        }
-    );
-
-}
-
-
-/**
- * Indica erro.
- */
-function indicarErro(mensagem) {
-
-    const elementos =
-        document.querySelectorAll(
-            "[data-metrics-error]"
-        );
-
-    elementos.forEach(
-        el => {
-
-            el.hidden = false;
-
-            el.textContent =
-                mensagem;
-
-        }
-    );
-
-}
-
-
-/**
- * Limpa mensagens de erro.
- */
-function limparErro() {
-
-    const elementos =
-        document.querySelectorAll(
-            "[data-metrics-error]"
-        );
-
-    elementos.forEach(
-        el => {
-
-            el.hidden = true;
-
-        }
+    return (
+        ERP_METRICS_CONFIG.endpoint +
+        "?" +
+        query
     );
 
 }
 
 
 /* ==========================================================================
-   CARREGAMENTO PRINCIPAL
+   FETCH COM TIMEOUT
    ========================================================================== */
 
+async function buscarComTimeout(
+    url,
+    opcoes = {}
+) {
 
-/**
- * Fluxo principal:
- *
- *     contexto
- *        ↓
- *     métricas
- *        ↓
- *     estado
- *        ↓
- *     interface
- */
-async function carregarMetricas() {
+    const controlador =
+        new AbortController();
 
-    if (
-        MetricsState.carregando
-    ) {
 
-        return;
-
-    }
-
-    MetricsState.carregando =
-        true;
-
-    indicarCarregamento(true);
-
-    limparErro();
+    const temporizador =
+        setTimeout(
+            () => controlador.abort(),
+            ERP_METRICS_CONFIG.timeout
+        );
 
 
     try {
 
-        /*
-         * O contexto é consultado primeiro.
-         *
-         * Isso evita que uma página descubra sua empresa
-         * através de dados antigos armazenados no navegador.
-         */
-        await carregarContexto();
+        return await fetch(
+            url,
+            {
+                ...opcoes,
 
+                signal:
+                    controlador.signal,
 
-        /*
-         * Agora consultamos o único motor financeiro.
-         */
-        const resultado =
-            await buscarMetricas();
+                credentials:
+                    "same-origin",
 
+                headers: {
+                    "Accept":
+                        "application/json",
 
-        /*
-         * O servidor pode devolver nome da empresa
-         * juntamente com as métricas.
-         */
-        if (
-            resultado.nome_empresa
-        ) {
-
-            MetricsState.contexto.nome_empresa =
-                resultado.nome_empresa;
-
-        }
-
-
-        atualizarEstado(
-            resultado
-        );
-
-
-        atualizarKPIs();
-
-
-        /*
-         * Evento público para páginas que possuem
-         * componentes próprios.
-         *
-         * Assim cada pasta pode complementar a interface
-         * sem duplicar a consulta ao servidor.
-         */
-        document.dispatchEvent(
-            new CustomEvent(
-                "teradmas:metrics-atualizadas",
-                {
-                    detail: {
-                        dados:
-                            MetricsState.dados,
-
-                        contexto:
-                            MetricsState.contexto
-                    }
+                    ...(opcoes.headers || {})
                 }
-            )
-        );
-
-
-    }
-
-    catch (erro) {
-
-        console.error(
-            "Erro ao carregar métricas:",
-            erro
-        );
-
-        indicarErro(
-            erro.message ||
-            "Não foi possível carregar as métricas."
-        );
-
-
-        /*
-         * Evento para módulos que desejarem
-         * tratar o erro de maneira específica.
-         */
-        document.dispatchEvent(
-            new CustomEvent(
-                "teradmas:metrics-erro",
-                {
-                    detail: {
-                        erro
-                    }
-                }
-            )
+            }
         );
 
     }
 
     finally {
 
-        MetricsState.carregando =
-            false;
-
-        indicarCarregamento(false);
+        clearTimeout(
+            temporizador
+        );
 
     }
 
@@ -1045,108 +415,856 @@ async function carregarMetricas() {
 
 
 /* ==========================================================================
-   ATUALIZAÇÃO MANUAL
+   CARREGA MÉTRICAS
    ========================================================================== */
 
+async function carregarMetricas(
+    mostrarIndicador = true
+) {
 
-/**
- * Permite que qualquer página solicite
- * uma atualização sem conhecer a API.
- */
-window.atualizarMetricas =
-    carregarMetricas;
+    if (ERP_METRICS.carregando) {
+        return;
+    }
+
+
+    ERP_METRICS.carregando = true;
+
+
+    if (mostrarIndicador) {
+        mostrarCarregando();
+    }
+
+
+    try {
+
+        const contextoOK =
+            await prepararContexto();
+
+
+        if (!contextoOK) {
+            return;
+        }
+
+
+        const url =
+            montarURLMetricas();
+
+
+        const resposta =
+            await buscarComTimeout(
+                url,
+                {
+                    method: "GET"
+                }
+            );
+
+
+        let dados;
+
+
+        try {
+
+            dados =
+                await resposta.json();
+
+        }
+
+        catch (erro) {
+
+            throw new Error(
+                "A API retornou uma resposta inválida."
+            );
+
+        }
+
+
+        if (!resposta.ok) {
+
+            throw new Error(
+                dados.erro ||
+                "Erro ao consultar as métricas."
+            );
+
+        }
+
+
+        if (!dados.sucesso) {
+
+            throw new Error(
+                dados.erro ||
+                "Não foi possível carregar as métricas."
+            );
+
+        }
+
+
+        ERP_METRICS.dados =
+            dados;
+
+
+        ERP_METRICS.erro =
+            null;
+
+
+        atualizarInterface(
+            dados
+        );
+
+
+        atualizarNomeEmpresa(
+            dados.nome_empresa ||
+            ERP_METRICS.nomeEmpresa
+        );
+
+
+        atualizarIdentificacaoEquipe(
+            dados.equipe_id ||
+            ERP_METRICS.equipeId
+        );
+
+
+        atualizarDepartamento(
+            dados.departamento ||
+            ERP_METRICS.departamento
+        );
+
+
+        ocultarErro();
+
+
+    }
+
+    catch (erro) {
+
+        console.error(
+            "Erro no carregamento das métricas:",
+            erro
+        );
+
+
+        ERP_METRICS.erro =
+            erro.message ||
+            "Erro desconhecido.";
+
+
+        mostrarErro(
+            ERP_METRICS.erro
+        );
+
+    }
+
+    finally {
+
+        ERP_METRICS.carregando =
+            false;
+
+        ocultarCarregando();
+
+    }
+
+}
 
 
 /* ==========================================================================
-   ACESSO AO ESTADO
+   ATUALIZA INTERFACE
    ========================================================================== */
 
+function atualizarInterface(dados) {
 
-/**
- * Permite que módulos específicos consultem
- * os dados já carregados.
- *
- * Não modifica os dados.
- */
-window.obterMetricas =
-    function () {
+    /*
+       CAPITAL
+    */
 
-        return {
-            ...MetricsState.dados
-        };
+    definirValor(
+        [
+            "capital_total",
+            "capital-inicial",
+            "capitalInicial"
+        ],
+        formatarMoeda(
+            dados.capital_total
+        )
+    );
 
-    };
+
+    /*
+       CAPITAL DISPONÍVEL
+    */
+
+    definirValor(
+        [
+            "capital_disponivel_total",
+            "capital-disponivel",
+            "capitalDisponivel"
+        ],
+        formatarMoeda(
+            dados.capital_disponivel_total
+        )
+    );
 
 
-window.obterContextoERP =
-    function () {
+    /*
+       PATRIMÔNIO
+    */
 
-        return {
-            ...MetricsState.contexto
-        };
+    definirValor(
+        [
+            "patrimonio_ativo_total",
+            "patrimonio-total",
+            "patrimonio"
+        ],
+        formatarMoeda(
+            dados.patrimonio_ativo_total
+        )
+    );
 
-    };
+
+    /*
+       CUSTO FIXO
+    */
+
+    definirValor(
+        [
+            "custo_fixo_total",
+            "custo-fixo",
+            "custoFixo"
+        ],
+        formatarMoeda(
+            dados.custo_fixo_total
+        )
+    );
+
+
+    /*
+       CUSTO VARIÁVEL
+    */
+
+    definirValor(
+        [
+            "custo_variavel_total",
+            "custo-variavel",
+            "custoVariavel"
+        ],
+        formatarMoeda(
+            dados.custo_variavel_total
+        )
+    );
+
+
+    /*
+       FLUXO DE CAIXA
+    */
+
+    definirValor(
+        [
+            "total_movimentacoes_fluxo",
+            "fluxo-caixa",
+            "fluxoCaixa"
+        ],
+        formatarMoeda(
+            dados.total_movimentacoes_fluxo
+        )
+    );
+
+
+    /*
+       ENTRADAS
+    */
+
+    definirValor(
+        [
+            "total_entradas_fluxo",
+            "total-entradas",
+            "entradas"
+        ],
+        formatarMoeda(
+            dados.total_entradas_fluxo
+        )
+    );
+
+
+    /*
+       SAÍDAS
+    */
+
+    definirValor(
+        [
+            "total_saidas_fluxo",
+            "total-saidas",
+            "saidas"
+        ],
+        formatarMoeda(
+            dados.total_saidas_fluxo
+        )
+    );
+
+
+    /*
+       ATIVOS INDIVIDUAIS
+    */
+
+    definirValor(
+        [
+            "patrimonio_imoveis",
+            "patrimonio-imoveis"
+        ],
+        formatarMoeda(
+            dados.patrimonio_imoveis
+        )
+    );
+
+
+    definirValor(
+        [
+            "patrimonio_maquinas",
+            "patrimonio-maquinas"
+        ],
+        formatarMoeda(
+            dados.patrimonio_maquinas
+        )
+    );
+
+
+    definirValor(
+        [
+            "patrimonio_materiais",
+            "patrimonio-materiais"
+        ],
+        formatarMoeda(
+            dados.patrimonio_materiais
+        )
+    );
+
+
+    /*
+       ALUGUEL
+    */
+
+    definirValor(
+        [
+            "valor_aluguel_global",
+            "valor-aluguel",
+            "aluguel"
+        ],
+        formatarMoeda(
+            dados.valor_aluguel_global
+        )
+    );
+
+
+    /*
+       MÉTRICAS DO DEPARTAMENTO
+    */
+
+    definirValor(
+        [
+            "capital_disponivel_departamento",
+            "capital-departamento"
+        ],
+        formatarMoeda(
+            dados.capital_disponivel_departamento
+        )
+    );
+
+
+    definirValor(
+        [
+            "patrimonio_isolado_setor",
+            "patrimonio-setor"
+        ],
+        formatarMoeda(
+            dados.patrimonio_isolado_setor
+        )
+    );
+
+
+    definirValor(
+        [
+            "custo_fixo_isolado_setor",
+            "custo-fixo-setor"
+        ],
+        formatarMoeda(
+            dados.custo_fixo_isolado_setor
+        )
+    );
+
+
+    definirValor(
+        [
+            "custo_variavel_isolado_setor",
+            "custo-variavel-setor"
+        ],
+        formatarMoeda(
+            dados.custo_variavel_isolado_setor
+        )
+    );
+
+
+    /*
+       BARRAS DE PROGRESSO
+    */
+
+    atualizarProgressos(
+        dados
+    );
+
+}
+
+
+/* ==========================================================================
+   DEFINE VALOR EM ELEMENTOS
+   ========================================================================== */
+
+function definirValor(
+    ids,
+    valor
+) {
+
+    if (!Array.isArray(ids)) {
+        ids = [ids];
+    }
+
+
+    ids.forEach(
+        id => {
+
+            const elemento =
+                document.getElementById(id);
+
+
+            if (elemento) {
+
+                elemento.textContent =
+                    valor;
+
+            }
+
+        }
+    );
+
+}
+
+
+/* ==========================================================================
+   ATUALIZA NOME DA EMPRESA
+   ========================================================================== */
+
+function atualizarNomeEmpresa(
+    nome
+) {
+
+    if (!nome) {
+        return;
+    }
+
+
+    const nomeNormalizado =
+        String(nome).trim();
+
+
+    if (!nomeNormalizado) {
+        return;
+    }
+
+
+    document
+        .querySelectorAll(
+            "[data-empresa], " +
+            "#nome_empresa, " +
+            "#nome-empresa, " +
+            ".nome-empresa"
+        )
+        .forEach(
+            elemento => {
+
+                elemento.textContent =
+                    nomeNormalizado;
+
+            }
+        );
+
+}
+
+
+/* ==========================================================================
+   ATUALIZA EQUIPE
+   ========================================================================== */
+
+function atualizarIdentificacaoEquipe(
+    equipeId
+) {
+
+    if (
+        equipeId === null ||
+        equipeId === undefined ||
+        equipeId === ""
+    ) {
+        return;
+    }
+
+
+    document
+        .querySelectorAll(
+            "[data-equipe], " +
+            "#equipe_id, " +
+            "#equipe-id"
+        )
+        .forEach(
+            elemento => {
+
+                elemento.textContent =
+                    equipeId;
+
+            }
+        );
+
+}
+
+
+/* ==========================================================================
+   ATUALIZA DEPARTAMENTO
+   ========================================================================== */
+
+function atualizarDepartamento(
+    departamento
+) {
+
+    if (!departamento) {
+        return;
+    }
+
+
+    document
+        .querySelectorAll(
+            "[data-departamento], " +
+            "#departamento-atual, " +
+            "#departamento"
+        )
+        .forEach(
+            elemento => {
+
+                elemento.textContent =
+                    String(
+                        departamento
+                    ).toUpperCase();
+
+            }
+        );
+
+}
+
+
+/* ==========================================================================
+   BARRAS DE PROGRESSO
+   ========================================================================== */
+
+function atualizarProgressos(
+    dados
+) {
+
+    const capital =
+        numeroSeguro(
+            dados.capital_total
+        );
+
+
+    const disponivel =
+        numeroSeguro(
+            dados.capital_disponivel_total
+        );
+
+
+    if (capital <= 0) {
+        return;
+    }
+
+
+    const percentualDisponivel =
+        Math.max(
+            0,
+            Math.min(
+                100,
+                (
+                    disponivel /
+                    capital
+                ) * 100
+            )
+        );
+
+
+    document
+        .querySelectorAll(
+            "[data-progress='capital-disponivel']"
+        )
+        .forEach(
+            barra => {
+
+                barra.style.width =
+                    percentualDisponivel + "%";
+
+            }
+        );
+
+
+    document
+        .querySelectorAll(
+            ".progress-bar-fill"
+        )
+        .forEach(
+            barra => {
+
+                /*
+                   Somente atualiza barras explicitamente
+                   marcadas como pertencentes ao capital disponível.
+                */
+
+                if (
+                    barra.dataset.progress ===
+                    "capital-disponivel"
+                ) {
+
+                    barra.style.width =
+                        percentualDisponivel + "%";
+
+                }
+
+            }
+        );
+
+}
+
+
+/* ==========================================================================
+   INDICADOR DE CARREGAMENTO
+   ========================================================================== */
+
+function mostrarCarregando() {
+
+    document
+        .querySelectorAll(
+            "[data-metric-loading]"
+        )
+        .forEach(
+            elemento => {
+
+                elemento.hidden =
+                    false;
+
+            }
+        );
+
+}
+
+
+/* ==========================================================================
+   OCULTA INDICADOR
+   ========================================================================== */
+
+function ocultarCarregando() {
+
+    document
+        .querySelectorAll(
+            "[data-metric-loading]"
+        )
+        .forEach(
+            elemento => {
+
+                elemento.hidden =
+                    true;
+
+            }
+        );
+
+}
+
+
+/* ==========================================================================
+   ERRO
+   ========================================================================== */
+
+function mostrarErro(
+    mensagem
+) {
+
+    const mensagemFinal =
+        mensagem ||
+        "Não foi possível carregar os dados.";
+
+
+    document
+        .querySelectorAll(
+            "[data-metric-error]"
+        )
+        .forEach(
+            elemento => {
+
+                elemento.textContent =
+                    mensagemFinal;
+
+                elemento.hidden =
+                    false;
+
+            }
+        );
+
+
+    /*
+       Compatibilidade com páginas que possuam
+       um elemento padrão de erro.
+    */
+
+    const erroPadrao =
+        document.getElementById(
+            "metric-error"
+        );
+
+
+    if (erroPadrao) {
+
+        erroPadrao.textContent =
+            mensagemFinal;
+
+        erroPadrao.hidden =
+            false;
+
+    }
+
+}
+
+
+/* ==========================================================================
+   OCULTA ERRO
+   ========================================================================== */
+
+function ocultarErro() {
+
+    document
+        .querySelectorAll(
+            "[data-metric-error]"
+        )
+        .forEach(
+            elemento => {
+
+                elemento.hidden =
+                    true;
+
+            }
+        );
+
+
+    const erroPadrao =
+        document.getElementById(
+            "metric-error"
+        );
+
+
+    if (erroPadrao) {
+
+        erroPadrao.hidden =
+            true;
+
+    }
+
+}
+
+
+/* ==========================================================================
+   ATUALIZAÇÃO AUTOMÁTICA
+   ========================================================================== */
+
+function iniciarAtualizacaoAutomatica() {
+
+    pararAtualizacaoAutomatica();
+
+
+    ERP_METRICS.timer =
+        window.setInterval(
+            () => {
+
+                carregarMetricas(
+                    false
+                );
+
+            },
+            ERP_METRICS_CONFIG.intervaloAtualizacao
+        );
+
+}
+
+
+/* ==========================================================================
+   PARA ATUALIZAÇÃO AUTOMÁTICA
+   ========================================================================== */
+
+function pararAtualizacaoAutomatica() {
+
+    if (
+        ERP_METRICS.timer
+    ) {
+
+        clearInterval(
+            ERP_METRICS.timer
+        );
+
+        ERP_METRICS.timer =
+            null;
+
+    }
+
+}
 
 
 /* ==========================================================================
    EVENTOS
    ========================================================================== */
 
+function registrarEventos() {
 
-/**
- * Permite que outras partes do ERP solicitem
- * atualização depois de registrar uma operação.
- */
-document.addEventListener(
-    "teradmas:atualizar-metricas",
-    function () {
+    /*
+       Permite que outros módulos solicitem
+       uma atualização sem conhecer a implementação.
+    */
 
-        carregarMetricas();
+    document.addEventListener(
+        "erp:atualizar-metricas",
+        () => {
 
-    }
-);
+            carregarMetricas(
+                true
+            );
 
-
-/**
- * Quando uma operação financeira for concluída,
- * os módulos podem disparar:
- *
- *     document.dispatchEvent(
- *         new Event("teradmas:atualizar-metricas")
- *     );
- *
- * Não é necessário conhecer o endpoint.
- */
+        }
+    );
 
 
-/* ==========================================================================
-   INICIALIZAÇÃO
-   ========================================================================== */
+    /*
+       Quando a página volta para primeiro plano,
+       atualizamos os dados.
+    */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
+    document.addEventListener(
+        "visibilitychange",
+        () => {
 
-        carregarMetricas();
+            if (
+                document.visibilityState ===
+                "visible"
+            ) {
 
-        /*
-         * Atualização periódica.
-         *
-         * A página não calcula nada localmente.
-         * Apenas consulta novamente o estado oficial
-         * da empresa.
-         */
-        setInterval(
-            carregarMetricas,
-            METRICS_CONFIG.intervaloAtualizacao
-        );
+                carregarMetricas(
+                    false
+                );
 
-    }
-);
+            }
+
+        }
+    );
+
+}
 
 
 /* ==========================================================================
-   EXPORTAÇÃO GLOBAL
+   API PÚBLICA DO MÓDULO
    ========================================================================== */
 
 window.TeradmasMetrics = {
@@ -1157,29 +1275,68 @@ window.TeradmasMetrics = {
     atualizar:
         carregarMetricas,
 
-    obter:
-        function () {
-            return {
-                ...MetricsState.dados
-            };
-        },
+    dados:
+        () => ({
+            ...ERP_METRICS.dados
+        }),
 
-    contexto:
-        function () {
-            return {
-                ...MetricsState.contexto
-            };
-        },
+    equipe:
+        () =>
+            ERP_METRICS.equipeId,
 
-    formatarMoeda,
+    departamento:
+        () =>
+            ERP_METRICS.departamento,
 
-    formatarNumero,
+    empresa:
+        () =>
+            ERP_METRICS.nomeEmpresa,
 
-    formatarPercentual
+    parar:
+        pararAtualizacaoAutomatica,
+
+    iniciar:
+        iniciarAtualizacaoAutomatica
 
 };
 
 
 /* ==========================================================================
-   FIM DO METRICS.JS
+   INICIALIZAÇÃO
+   ========================================================================== */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        registrarEventos();
+
+
+        await carregarMetricas(
+            true
+        );
+
+
+        iniciarAtualizacaoAutomatica();
+
+    }
+);
+
+
+/* ==========================================================================
+   LIMPEZA
+   ========================================================================== */
+
+window.addEventListener(
+    "beforeunload",
+    () => {
+
+        pararAtualizacaoAutomatica();
+
+    }
+);
+
+
+/* ==========================================================================
+   FIM DO metrics.js
    ========================================================================== */
