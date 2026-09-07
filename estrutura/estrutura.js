@@ -202,10 +202,10 @@ async function carregarDadosIniciais() {
         if (!resMetricas.ok) throw new Error("Falha na sincronização.");
         const metricas = await resMetricas.json();
         
-        const capitalInicial = 5000000.00;
+        const capitalInicial = 0;
         const budgetMaximoSetor = capitalInicial * 0.40; // Trava regulamentar de 40%
         const gastoSetor = metricas.custo_fixo_isolado_setor || 0;
-        const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 21350.00;
+        const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 0;
         const patrimonioSetor = metricas.patrimonio_isolado_setor || 0;
         
         const elementos = {
