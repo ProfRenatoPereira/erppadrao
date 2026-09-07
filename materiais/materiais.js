@@ -192,7 +192,7 @@ window.carregarDadosIniciais = function() {
         .then(materiais => {
             const capitalTotalEmpresa = 5000000.00;
             const disponivelParaSetor = 2000000.00;
-            const patrimonioMaquinasFixo = 1453500.00; 
+            const patrimonioMaquinasFixo = 0; 
             let valorTotalEstoqueMateriais = 0;
             if (materiais && materiais.length > 0) {
                 materiais.forEach(mat => {
