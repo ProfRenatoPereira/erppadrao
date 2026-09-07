@@ -1,397 +1,570 @@
 # ==========================================================================
 # TERADMAS ERP v2.6
-# APP MASTER - NÚCLEO PRINCIPAL
+# MASTER.PY
+#
+# CAMADA CENTRAL DE INTEGRAÇÃO
+#
+# Responsabilidades:
+#
+#   HTML / JS
+#        ↓
+#      master.py
+#        ↓
+# GerenciadorCaixa.py
+#        ↓
+#    PostgreSQL
+#
+# O master NÃO calcula patrimônio, capital de giro ou custos.
+# Ele apenas:
+#
+#   - identifica a equipe/empresa autenticada;
+#   - recebe parâmetros;
+#   - chama o motor financeiro;
+#   - devolve JSON padronizado;
+#   - fornece informações básicas da empresa;
+#   - mantém uma interface comum para todas as pastas.
+#
 # ==========================================================================
 
 import os
+import logging
 
 from flask import (
     Flask,
-    session,
     jsonify,
     request,
-    redirect,
-    render_template_string
+    session
 )
 
-from datetime import timedelta
-
-from whitenoise import WhiteNoise
-
-
-# ==========================================================================
-# SUPABASE
-# ==========================================================================
-
-URL_SUPABASE = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://postgres:senha_ficticia_anti_alunos@localhost:5432/postgres"
+from GerenciadorCaixa import (
+    calcular_metricas_totais_equipe
 )
 
 
 # ==========================================================================
-# FLASK
+# LOG
 # ==========================================================================
 
-app = Flask(
-    __name__,
-    static_folder='static',
-    static_url_path='/static'
+logging.basicConfig(
+    level=logging.INFO
 )
 
+logger = logging.getLogger(__name__)
 
-app.wsgi_app = WhiteNoise(
-    app.wsgi_app,
-    root=os.path.join(
-        os.path.dirname(__file__),
-        'static'
-    ),
-    prefix='static/'
-)
 
+# ==========================================================================
+# APLICAÇÃO
+# ==========================================================================
+
+app = Flask(__name__)
 
 app.secret_key = os.environ.get(
-    "APP_SECRET_KEY",
-    "®ψΣ_TERADMAS_CHAVE_SECRETA_PROFESSOR_RENATO"
-)
-
-app.permanent_session_lifetime = timedelta(
-    days=7
+    "SECRET_KEY",
+    "teradmas-chave-local"
 )
 
 
 # ==========================================================================
-# MOTOR FINANCEIRO CENTRAL
+# CONFIGURAÇÃO
 # ==========================================================================
 
-import GerenciadorCaixa
+APP_VERSION = "2.6"
+
+NOME_SISTEMA = "TERADMAS ERP"
+
+NOME_ERP = "ERP PADRÃO"
 
 
 # ==========================================================================
-# BLUEPRINTS
+# AUXILIARES
 # ==========================================================================
 
-try:
+def obter_id_equipe():
+    """
+    Obtém a equipe atualmente conectada.
 
-    from login.app_login import login_blueprint
-    from configuracao.app_configuracao import configuracao_blueprint
-    from estrutura.app_estrutura import estrutura_blueprint
-    from maquinas.app_maquinas import maquinas_blueprint
-    from materiais.app_materiais import materiais_blueprint
-    from processos.app_processos import processos_blueprint
-    from produtos.app_produtos import produtos_blueprint
-    from precificacao.app_precificacao import precificacao_blueprint
-    from clientes.app_clientes import clientes_blueprint
-    from vendas.app_vendas import vendas_blueprint
-    from estoque.app_estoque import estoque_blueprint
-    from financeiro.app_financeiro import financeiro_blueprint
-    from nota_fiscal.app_nota_fiscal import nota_fiscal_blueprint
-    from rh.app_rh import rh_blueprint
-    from pcp.app_pcp import pcp_blueprint
-    from orcamentos.app_orcamentos import orcamentos_blueprint
-    from compras_insumos.app_compras import compras_blueprint
-    from engenharia_producao.app_producao import producao_blueprint
-    from folha_pagamento.app_folha import folha_blueprint
-    from manutencao.app_manutencao import manutencao_blueprint
-    from requisicoes.app_requisicoes import requisicoes_blueprint
-    from roi.app_roi import roi_blueprint
+    Prioridade:
 
-except ImportError as e:
+        1. sessão
+        2. parâmetro da requisição
 
-    print(
-        "⚠️ Checklist ERP: "
-        f"Alguns módulos operam em contingência: {e}"
+    Em produção, a sessão/autenticação deve ser a fonte principal.
+
+    O parâmetro equipe_id é mantido para compatibilidade
+    durante o desenvolvimento e testes.
+    """
+
+    equipe_id = session.get("equipe_id")
+
+    if equipe_id:
+        return equipe_id
+
+    equipe_id = request.args.get(
+        "equipe_id"
     )
 
+    if equipe_id:
+        return equipe_id
 
-# ==========================================================================
-# REGISTRO
-# ==========================================================================
-
-app.register_blueprint(login_blueprint)
-app.register_blueprint(configuracao_blueprint)
-app.register_blueprint(estrutura_blueprint)
-app.register_blueprint(maquinas_blueprint)
-app.register_blueprint(materiais_blueprint)
-app.register_blueprint(processos_blueprint)
-app.register_blueprint(produtos_blueprint)
-app.register_blueprint(precificacao_blueprint)
-app.register_blueprint(clientes_blueprint)
-app.register_blueprint(vendas_blueprint)
-app.register_blueprint(estoque_blueprint)
-app.register_blueprint(financeiro_blueprint)
-app.register_blueprint(nota_fiscal_blueprint)
-app.register_blueprint(rh_blueprint)
-app.register_blueprint(pcp_blueprint)
-app.register_blueprint(orcamentos_blueprint)
-app.register_blueprint(compras_blueprint)
-app.register_blueprint(producao_blueprint)
-app.register_blueprint(folha_blueprint)
-app.register_blueprint(manutencao_blueprint)
-app.register_blueprint(requisicoes_blueprint)
-app.register_blueprint(roi_blueprint)
-
-
-# ==========================================================================
-# MIDDLEWARE
-# ==========================================================================
-
-@app.before_request
-def verificar_fluxo_de_aula():
-
-    if (
-        request.path.startswith('/static')
-        or request.path.startswith('/login')
-        or request.path == '/logout'
-    ):
-        return
-
-    if not session.get('logado'):
-
-        if request.is_json:
-            return jsonify({
-                'status': 'erro',
-                'message': 'Sessão expirada'
-            }), 401
-
-        return redirect('/login')
-
-    # Professor master não passa pela trava didática.
-    if session.get('professor_master'):
-        return
-
-    # --------------------------------------------------------------
-    # Empresa ainda não constituída
-    # --------------------------------------------------------------
-
-    if (
-        not session.get('empresa_inicializada')
-        and request.endpoint !=
-        'configuracao_blueprint.api_inicializar_empresa'
-    ):
-
-        if not request.path.startswith(
-            '/configuracao'
-        ):
-
-            if request.is_json:
-
-                return jsonify({
-                    'status': 'erro',
-                    'message':
-                        'Empresa não inicializada'
-                }), 400
-
-            return redirect(
-                '/configuracao/inicializacao'
-            )
-
-
-# ==========================================================================
-# ROTA RAIZ
-# ==========================================================================
-
-@app.route('/')
-def rota_raiz_direta():
-
-    if not session.get('logado'):
-        return redirect('/login')
-
-    if not session.get('empresa_inicializada'):
-        return redirect(
-            '/configuracao/inicializacao'
-        )
-
-    # --------------------------------------------------------------
-    # NOVO FLUXO
-    #
-    # Após constituição, o ponto central é Financeiro.
-    # --------------------------------------------------------------
-
-    return redirect('/financeiro')
-
-
-# ==========================================================================
-# GRID LEGADO / CONTINGÊNCIA
-# ==========================================================================
-
-@app.route('/grid')
-def rota_contingencia_grid():
-
-    if not session.get('logado'):
-        return redirect('/login')
-
-    # O grid não deve furar a etapa financeira.
-    return redirect('/financeiro')
-
-
-# ==========================================================================
-# LOGOUT
-# ==========================================================================
-
-@app.route('/logout')
-def rota_encerrar_turno():
-
-    session.clear()
-
-    return redirect('/login')
-
-
-# ==========================================================================
-# MÉTRICAS GLOBAIS
-# ==========================================================================
-
-@app.route(
-    '/api/financeiro/metricas',
-    methods=['GET']
-)
-def api_global_metricas_calculadas():
-
-    if not session.get('logado'):
-
-        return jsonify({
-            'status': 'erro',
-            'message': 'Acesso negado'
-        }), 401
-
-    id_equipe = session.get(
-        'id_equipe',
-        'equipe_alfa'
+    equipe_id = request.form.get(
+        "equipe_id"
     )
+
+    return equipe_id
+
+
+# --------------------------------------------------------------------------
+# Departamento
+# --------------------------------------------------------------------------
+
+def obter_departamento():
+    """
+    Obtém o departamento atualmente visualizado.
+    """
 
     departamento = request.args.get(
-        'dept',
-        ''
+        "departamento"
     )
 
+    if not departamento:
+        departamento = request.form.get(
+            "departamento"
+        )
+
+    if not departamento:
+        return None
+
+    return (
+        str(departamento)
+        .strip()
+        .lower()
+    )
+
+
+# --------------------------------------------------------------------------
+# Conversão segura
+# --------------------------------------------------------------------------
+
+def converter_id_equipe(valor):
+    """
+    Converte equipe_id para inteiro quando possível.
+
+    Mantém strings quando o sistema eventualmente utilizar
+    identificadores não numéricos.
+    """
+
+    if valor is None:
+        return None
+
     try:
+        return int(valor)
 
-        metricas = (
-            GerenciadorCaixa
-            .calcular_metricas_totais_equipe(
-                id_equipe,
-                departamento
-            )
-        )
+    except (TypeError, ValueError):
 
-        return jsonify(metricas)
-
-    except Exception as e:
-
-        print(
-            "❌ Erro na API de métricas: "
-            f"{e}"
-        )
-
-        return jsonify({
-            'status': 'erro',
-            'message': str(e)
-        }), 500
+        return str(valor).strip()
 
 
 # ==========================================================================
-# KPIs
+# RESPOSTA PADRÃO
+# ==========================================================================
+
+def resposta_sucesso(
+    dados=None,
+    **extras
+):
+    """
+    Padroniza respostas JSON.
+    """
+
+    resposta = {
+
+        "sucesso": True,
+
+        "sistema": NOME_SISTEMA,
+
+        "erp": NOME_ERP,
+
+        "versao": APP_VERSION
+
+    }
+
+    if dados is not None:
+
+        resposta.update(dados)
+
+    resposta.update(
+        extras
+    )
+
+    return jsonify(
+        resposta
+    )
+
+
+def resposta_erro(
+    mensagem,
+    status=400
+):
+    """
+    Padroniza respostas de erro.
+    """
+
+    return jsonify({
+
+        "sucesso": False,
+
+        "sistema": NOME_SISTEMA,
+
+        "erp": NOME_ERP,
+
+        "versao": APP_VERSION,
+
+        "erro": mensagem
+
+    }), status
+
+
+# ==========================================================================
+# IDENTIFICAÇÃO DA EMPRESA
 # ==========================================================================
 
 @app.route(
-    '/api/financeiro/kpis',
-    methods=['GET']
+    "/api/empresa",
+    methods=["GET"]
 )
-def api_kpis_resumidos():
+def api_empresa():
+    """
+    Retorna a identificação básica da empresa.
 
-    if not session.get('logado'):
-        return jsonify({
-            'status': 'erro'
-        }), 401
+    Não duplica dados financeiros.
 
-    id_equipe = session.get(
-        'id_equipe',
-        'equipe_alfa'
-    )
+    Os dados financeiros continuam vindo do
+    GerenciadorCaixa.py.
+    """
 
-    metricas = (
-        GerenciadorCaixa
-        .calcular_metricas_totais_equipe(
-            id_equipe
+    equipe_id = obter_id_equipe()
+
+    if not equipe_id:
+
+        return resposta_erro(
+            "Equipe não identificada.",
+            401
         )
+
+    equipe_id = converter_id_equipe(
+        equipe_id
     )
 
-    return jsonify({
-        'capital_total':
-            metricas.get('capital_total'),
+    return resposta_sucesso({
 
-        'patrimonio_ativo':
-            metricas.get(
-                'patrimonio_ativo_total'
-            ),
+        "equipe_id": equipe_id,
 
-        'custo_fixo':
-            metricas.get(
-                'custo_fixo_geral_empresa'
-            ),
-
-        'capital_disponivel':
-            metricas.get(
-                'capital_disponivel_total'
+        "nome_empresa": (
+            session.get(
+                "nome_empresa",
+                "GRUPO ACADÊMICO"
             )
+        )
+
     })
 
 
 # ==========================================================================
-# ERROS
+# MÉTRICAS FINANCEIRAS
+# ==========================================================================
+
+@app.route(
+    "/api/metrics",
+    methods=["GET"]
+)
+def api_metrics():
+    """
+    Endpoint principal utilizado pelo metrics.js.
+
+    O master recebe a identificação da equipe
+    e delega TODO o cálculo ao GerenciadorCaixa.py.
+    """
+
+    equipe_id = obter_id_equipe()
+
+    if not equipe_id:
+
+        logger.warning(
+            "⚠️ /api/metrics solicitado sem equipe_id"
+        )
+
+        return resposta_erro(
+            "Equipe não identificada.",
+            401
+        )
+
+
+    equipe_id = converter_id_equipe(
+        equipe_id
+    )
+
+
+    departamento = obter_departamento()
+
+
+    logger.info(
+        "📊 Solicitação de métricas | "
+        f"Equipe={equipe_id} | "
+        f"Departamento={departamento}"
+    )
+
+
+    try:
+
+        metricas = (
+            calcular_metricas_totais_equipe(
+                id_equipe=equipe_id,
+                departamento_atual=departamento
+            )
+        )
+
+
+        if not isinstance(
+            metricas,
+            dict
+        ):
+
+            raise RuntimeError(
+                "Motor financeiro retornou resposta inválida."
+            )
+
+
+        return resposta_sucesso(
+            metricas,
+            equipe_id=equipe_id,
+            departamento=departamento
+        )
+
+
+    except Exception as erro:
+
+        logger.exception(
+            "❌ Erro ao obter métricas financeiras"
+        )
+
+        return resposta_erro(
+            str(erro),
+            500
+        )
+
+
+# ==========================================================================
+# RESUMO DA EMPRESA
+# ==========================================================================
+
+@app.route(
+    "/api/resumo",
+    methods=["GET"]
+)
+def api_resumo():
+    """
+    Endpoint simplificado para páginas que precisam
+    carregar o painel inicial.
+
+    Utiliza o mesmo motor financeiro.
+
+    NÃO existe um segundo cálculo.
+    """
+
+    equipe_id = obter_id_equipe()
+
+    if not equipe_id:
+
+        return resposta_erro(
+            "Equipe não identificada.",
+            401
+        )
+
+
+    equipe_id = converter_id_equipe(
+        equipe_id
+    )
+
+
+    try:
+
+        metricas = (
+            calcular_metricas_totais_equipe(
+                id_equipe=equipe_id
+            )
+        )
+
+
+        return resposta_sucesso({
+
+            "equipe_id": equipe_id,
+
+            "nome_empresa":
+                metricas.get(
+                    "nome_empresa",
+                    "GRUPO ACADÊMICO"
+                ),
+
+            "capital_total":
+                metricas.get(
+                    "capital_total",
+                    0
+                ),
+
+            "capital_disponivel_total":
+                metricas.get(
+                    "capital_disponivel_total",
+                    0
+                ),
+
+            "patrimonio_ativo_total":
+                metricas.get(
+                    "patrimonio_ativo_total",
+                    0
+                ),
+
+            "custo_fixo_total":
+                metricas.get(
+                    "custo_fixo_total",
+                    0
+                ),
+
+            "custo_variavel_total":
+                metricas.get(
+                    "custo_variavel_total",
+                    0
+                )
+
+        })
+
+
+    except Exception as erro:
+
+        logger.exception(
+            "❌ Erro no resumo da empresa"
+        )
+
+        return resposta_erro(
+            str(erro),
+            500
+        )
+
+
+# ==========================================================================
+# STATUS DO ERP
+# ==========================================================================
+
+@app.route(
+    "/api/status",
+    methods=["GET"]
+)
+def api_status():
+    """
+    Verificação simples de funcionamento.
+    """
+
+    return resposta_sucesso({
+
+        "status": "online",
+
+        "motor_financeiro":
+            "GerenciadorCaixa.py",
+
+        "arquitetura":
+            "ERP PADRÃO",
+
+        "multiempresa": True,
+
+        "versao": APP_VERSION
+
+    })
+
+
+# ==========================================================================
+# CONTEXTO DA SESSÃO
+# ==========================================================================
+
+@app.route(
+    "/api/contexto",
+    methods=["GET"]
+)
+def api_contexto():
+    """
+    Retorna o contexto operacional atual.
+
+    A página pode usar isso para saber:
+
+        - qual equipe está logada;
+        - qual empresa está sendo operada;
+        - qual departamento está aberto.
+
+    """
+
+    equipe_id = obter_id_equipe()
+
+    departamento = obter_departamento()
+
+
+    return resposta_sucesso({
+
+        "equipe_id":
+            converter_id_equipe(
+                equipe_id
+            )
+            if equipe_id
+            else None,
+
+        "nome_empresa":
+            session.get(
+                "nome_empresa"
+            ),
+
+        "departamento":
+            departamento
+
+    })
+
+
+# ==========================================================================
+# TRATAMENTO GLOBAL DE ERROS
 # ==========================================================================
 
 @app.errorhandler(404)
-def erro_nao_encontrado(erro):
+def erro_404(erro):
 
-    if request.is_json:
+    return resposta_erro(
+        "Recurso não encontrado.",
+        404
+    )
 
-        return jsonify({
-            'status': 'erro',
-            'message':
-                'Recurso não encontrado'
-        }), 404
 
-    return render_template_string("""
-        <h1>❌ Página não encontrada</h1>
-        <p>
-            O recurso solicitado não existe
-            no sistema TERADMAS.
-        </p>
-        <a href="/">Voltar ao início</a>
-    """), 404
+@app.errorhandler(405)
+def erro_405(erro):
+
+    return resposta_erro(
+        "Método não permitido.",
+        405
+    )
 
 
 @app.errorhandler(500)
-def erro_servidor(erro):
+def erro_500(erro):
 
-    print(
-        f"❌ ERRO 500: {erro}"
+    logger.exception(
+        "❌ Erro interno do servidor"
     )
 
-    if request.is_json:
-
-        return jsonify({
-            'status': 'erro',
-            'message':
-                'Erro interno do servidor'
-        }), 500
-
-    return render_template_string("""
-        <h1>❌ Erro Interno</h1>
-        <p>
-            Ocorreu um erro crítico ao
-            processar no servidor TERADMAS.
-        </p>
-        <a href="/">Voltar ao início</a>
-    """), 500
+    return resposta_erro(
+        "Erro interno do servidor.",
+        500
+    )
 
 
 # ==========================================================================
 # EXECUÇÃO
 # ==========================================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     porta = int(
         os.environ.get(
@@ -400,24 +573,38 @@ if __name__ == '__main__':
         )
     )
 
-    debug_mode = (
-        os.environ
-        .get("DEBUG", "False")
-        .lower() == "true"
+
+    logger.info(
+        "=================================================="
     )
 
-    print(
-        "🚀 Servidor Central "
-        "TERADMAS ERP v2.6 "
-        "Iniciado com Sucesso"
+    logger.info(
+        f"🚀 {NOME_SISTEMA}"
     )
 
-    print(
-        f"📍 Porta de Escuta: {porta}"
+    logger.info(
+        f"📦 {NOME_ERP}"
     )
+
+    logger.info(
+        f"🔢 Versão {APP_VERSION}"
+    )
+
+    logger.info(
+        "💰 Motor: GerenciadorCaixa.py"
+    )
+
+    logger.info(
+        "🏢 Arquitetura: multiempresa"
+    )
+
+    logger.info(
+        "=================================================="
+    )
+
 
     app.run(
-        host='0.0.0.0',
+        host="0.0.0.0",
         port=porta,
-        debug=debug_mode
+        debug=False
     )
