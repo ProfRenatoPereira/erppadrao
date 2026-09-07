@@ -1,16 +1,44 @@
 /* ==========================================================================
    TERADMAS ERP v2.6
    metrics.js
-   MOTOR VISUAL DE MÉTRICAS
+   MOTOR DE MÉTRICAS DA INTERFACE
+   ==========================================================================
+
+   PRINCÍPIO CENTRAL:
+
+   O JavaScript NÃO calcula o patrimônio financeiro da empresa.
+
+   O Python / backend é a fonte oficial dos valores.
+
+   O metrics.js:
+       1. recebe os dados financeiros;
+       2. normaliza os valores;
+       3. atualiza os KPIs;
+       4. atualiza barras de progresso;
+       5. atualiza dados globais e setoriais;
+       6. mantém todas as páginas visualmente sincronizadas.
+
    --------------------------------------------------------------------------
-   FUNÇÃO:
-   - Receber as métricas fornecidas pelo backend Python
-   - Atualizar os indicadores das páginas
-   - Não gravar dados financeiros
-   - Não inventar valores
-   - Não recalcular o patrimônio
-   - Não duplicar custos
-   - Ser reutilizável em qualquer departamento
+
+   REGRA FINANCEIRA CENTRAL:
+
+       Capital de Giro =
+           Capital Inicial
+         + Fluxo de Caixa Líquido
+         - Patrimônio Ativo Atual
+         - Custos Fixos Totais
+         - Custos Variáveis Totais
+
+   IMPORTANTE:
+
+   O patrimônio é DINÂMICO.
+
+       aquisição  -> aumenta patrimônio
+       exclusão   -> diminui patrimônio
+       nova compra -> aumenta novamente
+
+   Nenhum patrimônio histórico é mantido artificialmente pelo JS.
+
    ========================================================================== */
 
 "use strict";
@@ -22,97 +50,64 @@
 
 const TERADMAS_METRICS = {
 
+    endpoint: "/api/metrics",
+
+    refreshInterval: 15000,
+
     moeda: "BRL",
 
-    locale: "pt-BR",
+    locale: "pt-BR"
 
-    selectors: {
+};
 
-        empresa: [
-            "[data-metric='nome_empresa']",
-            "#nome-empresa",
-            "#empresa-nome"
-        ],
 
-        capitalInicial: [
-            "[data-metric='capital_total']",
-            "#capital-total"
-        ],
+/* ==========================================================================
+   ESTADO CENTRAL DA INTERFACE
+   ========================================================================== */
 
-        capitalDisponivel: [
-            "[data-metric='capital_disponivel_total']",
-            "#capital-disponivel-total"
-        ],
+const estadoMetricas = {
 
-        capitalDepartamento: [
-            "[data-metric='capital_disponivel_departamento']",
-            "#capital-disponivel-departamento"
-        ],
+    carregado: false,
 
-        patrimonio: [
-            "[data-metric='patrimonio_ativo_total']",
-            "#patrimonio-ativo-total"
-        ],
+    carregando: false,
 
-        imoveis: [
-            "[data-metric='patrimonio_imoveis']",
-            "#patrimonio-imoveis"
-        ],
+    erro: null,
 
-        maquinas: [
-            "[data-metric='patrimonio_maquinas']",
-            "#patrimonio-maquinas"
-        ],
+    dados: {
 
-        materiais: [
-            "[data-metric='patrimonio_materiais']",
-            "#patrimonio-materiais"
-        ],
+        nome_empresa: "GRUPO ACADÊMICO",
 
-        custoFixo: [
-            "[data-metric='custo_fixo_total']",
-            "#custo-fixo-total"
-        ],
+        capital_total: 0,
 
-        custoVariavel: [
-            "[data-metric='custo_variavel_total']",
-            "#custo-variavel-total"
-        ],
+        capital_disponivel_total: 0,
 
-        fluxoLiquido: [
-            "[data-metric='total_movimentacoes_fluxo']",
-            "#fluxo-liquido"
-        ],
+        capital_disponivel_departamento: 0,
 
-        entradas: [
-            "[data-metric='total_entradas_fluxo']",
-            "#total-entradas"
-        ],
+        patrimonio_ativo_total: 0,
 
-        saidas: [
-            "[data-metric='total_saidas_fluxo']",
-            "#total-saidas"
-        ],
+        custo_fixo_total: 0,
 
-        patrimonioSetor: [
-            "[data-metric='patrimonio_isolado_setor']",
-            "#patrimonio-setor"
-        ],
+        custo_variavel_total: 0,
 
-        custoFixoSetor: [
-            "[data-metric='custo_fixo_isolado_setor']",
-            "#custo-fixo-setor"
-        ],
+        custo_fixo_geral_empresa: 0,
 
-        custoVariavelSetor: [
-            "[data-metric='custo_variavel_isolado_setor']",
-            "#custo-variavel-setor"
-        ],
+        patrimonio_isolado_setor: 0,
 
-        orcamentoSetor: [
-            "[data-metric='orcamento_liberado_setor']",
-            "#orcamento-setor"
-        ]
+        custo_fixo_isolado_setor: 0,
+
+        custo_variavel_isolado_setor: 0,
+
+        total_movimentacoes_fluxo: 0,
+
+        total_entradas_fluxo: 0,
+
+        total_saidas_fluxo: 0,
+
+        patrimonio_imoveis: 0,
+
+        patrimonio_maquinas: 0,
+
+        patrimonio_materiais: 0
 
     }
 
@@ -120,100 +115,350 @@ const TERADMAS_METRICS = {
 
 
 /* ==========================================================================
-   FORMATAÇÃO
+   UTILITÁRIOS
    ========================================================================== */
 
-function formatarMoeda(valor) {
+function numero(valor, padrao = 0) {
 
-    const numero = Number(valor);
-
-    if (!Number.isFinite(numero)) {
-        return "R$ 0,00";
+    if (valor === null || valor === undefined) {
+        return padrao;
     }
 
-    return numero.toLocaleString(
+    if (typeof valor === "number") {
+
+        return Number.isFinite(valor)
+            ? valor
+            : padrao;
+
+    }
+
+    const convertido = Number(
+        String(valor)
+            .replace(/\./g, "")
+            .replace(",", ".")
+    );
+
+    return Number.isFinite(convertido)
+        ? convertido
+        : padrao;
+}
+
+
+/* --------------------------------------------------------------------------
+   Formatação monetária
+   -------------------------------------------------------------------------- */
+
+function moeda(valor) {
+
+    const numeroSeguro = numero(valor, 0);
+
+    return new Intl.NumberFormat(
         TERADMAS_METRICS.locale,
         {
             style: "currency",
-            currency: TERADMAS_METRICS.moeda
+            currency: TERADMAS_METRICS.moeda,
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
         }
-    );
+    ).format(numeroSeguro);
+
 }
 
 
-function formatarNumero(valor) {
+/* --------------------------------------------------------------------------
+   Formatação numérica
+   -------------------------------------------------------------------------- */
 
-    const numero = Number(valor);
+function decimal(valor) {
 
-    if (!Number.isFinite(numero)) {
-        return "0";
-    }
+    return new Intl.NumberFormat(
+        TERADMAS_METRICS.locale,
+        {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }
+    ).format(numero(valor));
 
-    return numero.toLocaleString(
-        TERADMAS_METRICS.locale
-    );
 }
 
 
 /* ==========================================================================
-   LEITURA SEGURA
+   ACESSO SEGURO AO DOM
    ========================================================================== */
 
-function obterElemento(selectores) {
+function elemento(id) {
 
-    if (!Array.isArray(selectores)) {
-        return null;
-    }
+    return document.getElementById(id);
 
-    for (const seletor of selectores) {
-
-        const elemento =
-            document.querySelector(seletor);
-
-        if (elemento) {
-            return elemento;
-        }
-    }
-
-    return null;
 }
 
 
-function definirTexto(selectores, valor) {
+function definirTexto(id, valor) {
 
-    const elemento =
-        obterElemento(selectores);
+    const el = elemento(id);
 
-    if (!elemento) {
+    if (!el) {
         return;
     }
 
-    elemento.textContent = valor;
+    el.textContent = valor;
+
 }
 
 
 /* ==========================================================================
-   ATUALIZAÇÃO DE UMA MÉTRICA
+   NORMALIZAÇÃO DOS DADOS RECEBIDOS DO PYTHON
    ========================================================================== */
 
-function atualizarMetricas(dados) {
+function normalizarMetricas(dados) {
 
-    if (!dados || typeof dados !== "object") {
+    dados = dados || {};
 
-        console.warn(
-            "TERADMAS metrics.js: dados financeiros ausentes."
+    return {
+
+        nome_empresa:
+            dados.nome_empresa ||
+            "GRUPO ACADÊMICO",
+
+        capital_total:
+            numero(dados.capital_total),
+
+        capital_disponivel_total:
+            numero(dados.capital_disponivel_total),
+
+        capital_disponivel_departamento:
+            numero(
+                dados.capital_disponivel_departamento
+            ),
+
+        patrimonio_ativo_total:
+            numero(
+                dados.patrimonio_ativo_total
+            ),
+
+        custo_fixo_total:
+            numero(
+                dados.custo_fixo_total
+            ),
+
+        custo_variavel_total:
+            numero(
+                dados.custo_variavel_total
+            ),
+
+        custo_fixo_geral_empresa:
+            numero(
+                dados.custo_fixo_geral_empresa
+            ),
+
+        patrimonio_isolado_setor:
+            numero(
+                dados.patrimonio_isolado_setor
+            ),
+
+        custo_fixo_isolado_setor:
+            numero(
+                dados.custo_fixo_isolado_setor
+            ),
+
+        custo_variavel_isolado_setor:
+            numero(
+                dados.custo_variavel_isolado_setor
+            ),
+
+        total_movimentacoes_fluxo:
+            numero(
+                dados.total_movimentacoes_fluxo
+            ),
+
+        total_entradas_fluxo:
+            numero(
+                dados.total_entradas_fluxo
+            ),
+
+        total_saidas_fluxo:
+            numero(
+                dados.total_saidas_fluxo
+            ),
+
+        patrimonio_imoveis:
+            numero(
+                dados.patrimonio_imoveis
+            ),
+
+        patrimonio_maquinas:
+            numero(
+                dados.patrimonio_maquinas
+            ),
+
+        patrimonio_materiais:
+            numero(
+                dados.patrimonio_materiais
+            )
+
+    };
+
+}
+
+
+/* ==========================================================================
+   CARGA DOS DADOS
+   ========================================================================== */
+
+async function carregarMetricas(opcoes = {}) {
+
+    if (estadoMetricas.carregando) {
+        return estadoMetricas.dados;
+    }
+
+    estadoMetricas.carregando = true;
+    estadoMetricas.erro = null;
+
+    try {
+
+        const parametros = new URLSearchParams();
+
+        if (opcoes.equipeId !== undefined) {
+
+            parametros.set(
+                "equipe_id",
+                opcoes.equipeId
+            );
+
+        }
+
+        if (opcoes.departamento) {
+
+            parametros.set(
+                "departamento",
+                opcoes.departamento
+            );
+
+        }
+
+        const url = parametros.toString()
+            ? `${TERADMAS_METRICS.endpoint}?${parametros}`
+            : TERADMAS_METRICS.endpoint;
+
+
+        const resposta = await fetch(
+            url,
+            {
+                method: "GET",
+                headers: {
+                    "Accept": "application/json"
+                },
+                credentials: "same-origin"
+            }
         );
 
-        return;
+
+        if (!resposta.ok) {
+
+            throw new Error(
+                `Erro HTTP ${resposta.status}`
+            );
+
+        }
+
+
+        const dados = await resposta.json();
+
+
+        estadoMetricas.dados =
+            normalizarMetricas(dados);
+
+        estadoMetricas.carregado = true;
+
+
+        atualizarInterface(
+            estadoMetricas.dados
+        );
+
+
+        document.dispatchEvent(
+            new CustomEvent(
+                "teradmas:metricas-atualizadas",
+                {
+                    detail: estadoMetricas.dados
+                }
+            )
+        );
+
+
+        return estadoMetricas.dados;
+
+
+    } catch (erro) {
+
+        estadoMetricas.erro = erro;
+
+        console.error(
+            "❌ TERADMAS: erro ao carregar métricas:",
+            erro
+        );
+
+        mostrarErroMetricas(
+            erro
+        );
+
+        return estadoMetricas.dados;
+
+
+    } finally {
+
+        estadoMetricas.carregando = false;
+
     }
 
+}
 
-    /* ----------------------------------------------------------------------
-       EMPRESA
-       ---------------------------------------------------------------------- */
+
+/* ==========================================================================
+   ATUALIZAÇÃO PRINCIPAL DA INTERFACE
+   ========================================================================== */
+
+function atualizarInterface(dados) {
+
+    atualizarIdentificacaoEmpresa(
+        dados
+    );
+
+    atualizarFinanceiroGlobal(
+        dados
+    );
+
+    atualizarFluxoCaixa(
+        dados
+    );
+
+    atualizarPatrimonio(
+        dados
+    );
+
+    atualizarCustos(
+        dados
+    );
+
+    atualizarMetricasSetoriais(
+        dados
+    );
+
+    atualizarOrcamento(
+        dados
+    );
+
+}
+
+
+/* ==========================================================================
+   IDENTIFICAÇÃO DA EMPRESA
+   ========================================================================== */
+
+function atualizarIdentificacaoEmpresa(dados) {
 
     definirTexto(
-        TERADMAS_METRICS.selectors.empresa,
+        "nome-empresa",
         String(
             dados.nome_empresa ||
             "GRUPO ACADÊMICO"
@@ -221,184 +466,439 @@ function atualizarMetricas(dados) {
     );
 
 
-    /* ----------------------------------------------------------------------
-       CAPITAL
-       ---------------------------------------------------------------------- */
+    definirTexto(
+        "empresa-nome",
+        String(
+            dados.nome_empresa ||
+            "GRUPO ACADÊMICO"
+        ).toUpperCase()
+    );
+
+}
+
+
+/* ==========================================================================
+   FINANCEIRO GLOBAL
+   ========================================================================== */
+
+function atualizarFinanceiroGlobal(dados) {
 
     definirTexto(
-        TERADMAS_METRICS.selectors.capitalInicial,
-        formatarMoeda(
+        "capital-total",
+        moeda(
             dados.capital_total
         )
     );
 
 
     definirTexto(
-        TERADMAS_METRICS.selectors.capitalDisponivel,
-        formatarMoeda(
+        "capital-disponivel",
+        moeda(
             dados.capital_disponivel_total
         )
     );
 
 
     definirTexto(
-        TERADMAS_METRICS.selectors.capitalDepartamento,
-        formatarMoeda(
-            dados.capital_disponivel_departamento
-        )
-    );
-
-
-    /* ----------------------------------------------------------------------
-       PATRIMÔNIO
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        TERADMAS_METRICS.selectors.patrimonio,
-        formatarMoeda(
-            dados.patrimonio_ativo_total
+        "capital-disponivel-total",
+        moeda(
+            dados.capital_disponivel_total
         )
     );
 
 
     definirTexto(
-        TERADMAS_METRICS.selectors.imoveis,
-        formatarMoeda(
-            dados.patrimonio_imoveis
+        "capital-giro",
+        moeda(
+            dados.capital_disponivel_total
         )
     );
 
 
     definirTexto(
-        TERADMAS_METRICS.selectors.maquinas,
-        formatarMoeda(
-            dados.patrimonio_maquinas
+        "capital-giro-total",
+        moeda(
+            dados.capital_disponivel_total
         )
     );
 
+}
+
+
+/* ==========================================================================
+   FLUXO DE CAIXA
+   ========================================================================== */
+
+function atualizarFluxoCaixa(dados) {
 
     definirTexto(
-        TERADMAS_METRICS.selectors.materiais,
-        formatarMoeda(
-            dados.patrimonio_materiais
-        )
-    );
-
-
-    /* ----------------------------------------------------------------------
-       CUSTOS
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        TERADMAS_METRICS.selectors.custoFixo,
-        formatarMoeda(
-            dados.custo_fixo_total
-        )
-    );
-
-
-    definirTexto(
-        TERADMAS_METRICS.selectors.custoVariavel,
-        formatarMoeda(
-            dados.custo_variavel_total
-        )
-    );
-
-
-    /* ----------------------------------------------------------------------
-       FLUXO DE CAIXA
-       ---------------------------------------------------------------------- */
-
-    definirTexto(
-        TERADMAS_METRICS.selectors.fluxoLiquido,
-        formatarMoeda(
+        "fluxo-liquido",
+        moeda(
             dados.total_movimentacoes_fluxo
         )
     );
 
 
     definirTexto(
-        TERADMAS_METRICS.selectors.entradas,
-        formatarMoeda(
+        "fluxo-caixa",
+        moeda(
+            dados.total_movimentacoes_fluxo
+        )
+    );
+
+
+    definirTexto(
+        "total-entradas",
+        moeda(
             dados.total_entradas_fluxo
         )
     );
 
 
     definirTexto(
-        TERADMAS_METRICS.selectors.saidas,
-        formatarMoeda(
+        "total-saidas",
+        moeda(
             dados.total_saidas_fluxo
         )
     );
 
+}
 
-    /* ----------------------------------------------------------------------
-       MÉTRICAS DO SETOR
-       ---------------------------------------------------------------------- */
+
+/* ==========================================================================
+   PATRIMÔNIO
+   ========================================================================== */
+
+function atualizarPatrimonio(dados) {
 
     definirTexto(
-        TERADMAS_METRICS.selectors.patrimonioSetor,
-        formatarMoeda(
+        "patrimonio-total",
+        moeda(
+            dados.patrimonio_ativo_total
+        )
+    );
+
+
+    definirTexto(
+        "patrimonio-ativo-total",
+        moeda(
+            dados.patrimonio_ativo_total
+        )
+    );
+
+
+    definirTexto(
+        "patrimonio-imoveis",
+        moeda(
+            dados.patrimonio_imoveis
+        )
+    );
+
+
+    definirTexto(
+        "patrimonio-maquinas",
+        moeda(
+            dados.patrimonio_maquinas
+        )
+    );
+
+
+    definirTexto(
+        "patrimonio-materiais",
+        moeda(
+            dados.patrimonio_materiais
+        )
+    );
+
+}
+
+
+/* ==========================================================================
+   CUSTOS
+   ========================================================================== */
+
+function atualizarCustos(dados) {
+
+    definirTexto(
+        "custo-fixo-total",
+        moeda(
+            dados.custo_fixo_total
+        )
+    );
+
+
+    definirTexto(
+        "custo-fixo-geral",
+        moeda(
+            dados.custo_fixo_geral_empresa
+        )
+    );
+
+
+    definirTexto(
+        "custo-variavel-total",
+        moeda(
+            dados.custo_variavel_total
+        )
+    );
+
+
+    definirTexto(
+        "custos-totais",
+        moeda(
+            dados.custo_fixo_total +
+            dados.custo_variavel_total
+        )
+    );
+
+}
+
+
+/* ==========================================================================
+   MÉTRICAS DO DEPARTAMENTO
+   ========================================================================== */
+
+function atualizarMetricasSetoriais(dados) {
+
+    definirTexto(
+        "patrimonio-setor",
+        moeda(
             dados.patrimonio_isolado_setor
         )
     );
 
 
     definirTexto(
-        TERADMAS_METRICS.selectors.custoFixoSetor,
-        formatarMoeda(
+        "patrimonio-isolado-setor",
+        moeda(
+            dados.patrimonio_isolado_setor
+        )
+    );
+
+
+    definirTexto(
+        "custo-fixo-setor",
+        moeda(
             dados.custo_fixo_isolado_setor
         )
     );
 
 
     definirTexto(
-        TERADMAS_METRICS.selectors.custoVariavelSetor,
-        formatarMoeda(
+        "custo-variavel-setor",
+        moeda(
             dados.custo_variavel_isolado_setor
         )
     );
 
 
-    /* ----------------------------------------------------------------------
-       ORÇAMENTO
-       ---------------------------------------------------------------------- */
+    definirTexto(
+        "capital-disponivel-departamento",
+        moeda(
+            dados.capital_disponivel_departamento
+        )
+    );
+
+}
+
+
+/* ==========================================================================
+   ORÇAMENTO
+   ========================================================================== */
+
+function atualizarOrcamento(dados) {
 
     definirTexto(
-        TERADMAS_METRICS.selectors.orcamentoSetor,
-        formatarMoeda(
-            dados.orcamento_liberado_setor
+        "orcamento-disponivel",
+        moeda(
+            dados.capital_disponivel_departamento
         )
     );
 
-
-    /* ----------------------------------------------------------------------
-       DISPONIBILIZA OS DADOS PARA OUTROS JS
-       ---------------------------------------------------------------------- */
-
-    window.TERADMAS_METRICAS_ATUAIS = {
-        ...dados
-    };
+}
 
 
-    /* ----------------------------------------------------------------------
-       EVENTO GLOBAL
-       ---------------------------------------------------------------------- */
+/* ==========================================================================
+   BARRAS DE PROGRESSO
+   ========================================================================== */
 
-    document.dispatchEvent(
-        new CustomEvent(
-            "teradmas:metrics-updated",
-            {
-                detail: dados
-            }
-        )
+function atualizarProgresso(
+
+    elementoId,
+    valor,
+    total
+
+) {
+
+    const barra =
+        elemento(elementoId);
+
+    if (!barra) {
+        return;
+    }
+
+
+    const valorSeguro =
+        numero(valor);
+
+
+    const totalSeguro =
+        numero(total);
+
+
+    let percentual = 0;
+
+
+    if (totalSeguro > 0) {
+
+        percentual =
+            (valorSeguro / totalSeguro) * 100;
+
+    }
+
+
+    percentual =
+        Math.max(
+            0,
+            Math.min(
+                100,
+                percentual
+            )
+        );
+
+
+    barra.style.width =
+        `${percentual}%`;
+
+
+    barra.setAttribute(
+        "aria-valuenow",
+        percentual.toFixed(1)
+    );
+
+}
+
+
+/* ==========================================================================
+   ESTADO VISUAL DE VALORES
+   ========================================================================== */
+
+function atualizarEstadoFinanceiro(
+
+    elementoId,
+    valor
+
+) {
+
+    const el =
+        elemento(elementoId);
+
+    if (!el) {
+        return;
+    }
+
+
+    el.classList.remove(
+        "valor-positivo",
+        "valor-negativo",
+        "valor-zero"
     );
 
 
-    console.info(
-        "✅ TERADMAS: métricas financeiras atualizadas."
+    const numeroValor =
+        numero(valor);
+
+
+    if (numeroValor > 0) {
+
+        el.classList.add(
+            "valor-positivo"
+        );
+
+    } else if (numeroValor < 0) {
+
+        el.classList.add(
+            "valor-negativo"
+        );
+
+    } else {
+
+        el.classList.add(
+            "valor-zero"
+        );
+
+    }
+
+}
+
+
+/* ==========================================================================
+   ERROS
+   ========================================================================== */
+
+function mostrarErroMetricas(erro) {
+
+    const elementosErro =
+        document.querySelectorAll(
+            "[data-metric-error]"
+        );
+
+
+    elementosErro.forEach(
+        el => {
+
+            el.textContent =
+                "Não foi possível atualizar os dados financeiros.";
+
+            el.hidden = false;
+
+        }
     );
+
+}
+
+
+/* ==========================================================================
+   ATUALIZAÇÃO MANUAL
+   ========================================================================== */
+
+async function atualizarMetricasAgora(opcoes = {}) {
+
+    return await carregarMetricas(
+        opcoes
+    );
+
+}
+
+
+/* ==========================================================================
+   INICIALIZAÇÃO
+   ========================================================================== */
+
+function iniciarMetricas(opcoes = {}) {
+
+    carregarMetricas(
+        opcoes
+    );
+
+
+    if (
+        TERADMAS_METRICS.refreshInterval > 0
+    ) {
+
+        window.setInterval(
+            () => {
+
+                carregarMetricas(
+                    opcoes
+                );
+
+            },
+            TERADMAS_METRICS.refreshInterval
+        );
+
+    }
+
 }
 
 
@@ -406,51 +906,43 @@ function atualizarMetricas(dados) {
    API PÚBLICA
    ========================================================================== */
 
-window.TERADMASMetrics = {
+window.TERADMAS_METRICS = {
 
-    atualizar: atualizarMetricas,
+    carregar:
+        carregarMetricas,
 
-    moeda: formatarMoeda,
+    atualizar:
+        atualizarMetricasAgora,
 
-    numero: formatarNumero,
+    obterEstado:
+        () => estadoMetricas,
 
-    obterDados: function () {
+    obterDados:
+        () => estadoMetricas.dados,
 
-        return window.TERADMAS_METRICAS_ATUAIS
-            ? {
-                ...window.TERADMAS_METRICAS_ATUAIS
-            }
-            : null;
-    }
+    moeda:
+        moeda,
+
+    decimal:
+        decimal
 
 };
 
 
 /* ==========================================================================
-   COMPATIBILIDADE COM BACKENDS QUE JÁ ENTREGAM OS DADOS NO HTML
+   AUTO START
    ========================================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
-    function () {
+    () => {
 
-        /*
-         * Caso o HTML já contenha um objeto global:
-         *
-         * window.METRICAS_FINANCEIRAS
-         *
-         * ele será utilizado automaticamente.
-         */
-
-        if (
-            window.METRICAS_FINANCEIRAS &&
-            typeof window.METRICAS_FINANCEIRAS === "object"
-        ) {
-
-            atualizarMetricas(
-                window.METRICAS_FINANCEIRAS
-            );
-        }
+        iniciarMetricas();
 
     }
 );
+
+
+/* ==========================================================================
+   FIM DO metrics.js
+   ========================================================================== */
