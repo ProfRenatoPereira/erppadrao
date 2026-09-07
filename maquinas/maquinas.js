@@ -229,10 +229,10 @@ window.carregarDadosIniciais = async function() {
         const saldoRestanteEngenharia = disponivelParaSetor - valorTotalAtivosComprados;
         let pctTetoConsumido = (valorTotalAtivosComprados / disponivelParaSetor) * 100;
 
-        if (custoFixoAcumuladoSetor === 0) custoFixoAcumuladoSetor = 34432.51;
-        if (custoVariavelAcumuladoSetor === 0) custoVariavelAcumuladoSetor = 10593.38;
+        if (custoFixoAcumuladoSetor === 0) custoFixoAcumuladoSetor = 0;
+        if (custoVariavelAcumuladoSetor === 0) custoVariavelAcumuladoSetor = 0;
 
-        const totalCustosFixosAcumulados = 21350.00 + custoFixoAcumuladoSetor;
+        const totalCustosFixosAcumulados = 0 + custoFixoAcumuladoSetor;
         const totalGeralCustosMensais = totalCustosFixosAcumulados + custoVariavelAcumuladoSetor;
 
         const denCusto = totalGeralCustosMensais || 1; const denFixo = totalCustosFixosAcumulados || 1; const denVar = custoVariavelAcumuladoSetor || 1;
