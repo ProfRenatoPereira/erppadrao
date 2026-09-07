@@ -1,145 +1,1509 @@
 /* ==========================================================================
-   TERADMAS ERP v2.6 - MALHA DE ESTILOS UNIFICADA (erppadrao_core.css)
-   PARTE 1 DE 2: CONFIGURAÇÕES CORE, ACESSIBILIDADE E TOPO CORPORATIVO
+   TERADMAS ERP v2.6
+   erppadrao_core.css
+   MALHA VISUAL CENTRAL DO ERP PADRÃO
+
+   PRINCÍPIOS:
+   - identidade visual única para todas as pastas
+   - responsivo
+   - acessibilidade
+   - componentes reutilizáveis
+   - páginas independentes
+   - dados financeiros vêm do backend
+   - CSS não contém regra financeira
+   ========================================================================== */
+
+
+/* ==========================================================================
+   1. VARIÁVEIS GERAIS
    ========================================================================== */
 
 :root {
     --bg-primary: #0b1a30;
+    --bg-secondary: #1e293b;
     --bg-body: #f3f4f6;
     --bg-card: #ffffff;
+
     --brand-navy: #1e3a8a;
     --brand-accent: #3b82f6;
+
     --brand-success: #16a34a;
     --brand-warning: #b45309;
-    --brand-danger: #ef4444;
+    --brand-danger: #dc2626;
+    --brand-info: #0369a1;
+
     --text-main: #1f2937;
     --text-muted: #6b7280;
     --text-light: #ffffff;
+
     --border-color: #e5e7eb;
-    --radius-md: 12px;
-    --radius-sm: 8px;
+    --border-dark: #cbd5e1;
+
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-sm: 5px;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+
     --transition-fast: all 0.15s ease;
 }
 
-html { font-size: 16px; transition: var(--transition-fast); box-sizing: border-box; }
-*, *:before, *:after { box-sizing: inherit; }
-body { margin: 0; padding: 0; font-family: sans-serif; background-color: var(--bg-body); color: var(--text-main); -webkit-font-smoothing: antialiased; }
-.container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 16px; }
 
-/* TOPO E MENU ESCURO CORPORATIVO (DARK NAVY) */
-.corporate-header { background-color: var(--bg-primary); color: white; padding: 12px 16px; border-bottom: 3px solid var(--brand-navy); font-family: sans-serif; }
-.accessibility-bar { display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-size: 12px; border-bottom: 1px solid #1e2d42; padding-bottom: 6px; margin-bottom: 10px; }
-.accessibility-bar span { color: #a0aec0; }
-.accessibility-bar button { background: #2d3748; color: #fff; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 11px; }
-.accessibility-bar button#btn-leitor { background: #007bff; }
-.header-main-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
-.logo-area { display: flex; align-items: center; gap: 12px; }
+/* ==========================================================================
+   2. RESET / BASE
+   ========================================================================== */
+
+html {
+    font-size: 16px;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: inherit;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background-color: var(--bg-body);
+    color: var(--text-main);
+
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: inherit;
+}
+
+
+/* ==========================================================================
+   3. CONTAINER PRINCIPAL
+   ========================================================================== */
+
+.container {
+    width: 100%;
+    max-width: 1280px;
+
+    margin: 0 auto;
+    padding: 16px;
+}
+
+.page-content {
+    width: 100%;
+}
+
+.page-section {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+
+/* ==========================================================================
+   4. CABEÇALHO CORPORATIVO
+   ========================================================================== */
+
+.corporate-header {
+    width: 100%;
+
+    background-color: var(--bg-primary);
+    color: var(--text-light);
+
+    padding: 12px 16px;
+
+    border-bottom: 3px solid var(--brand-navy);
+}
+
+
+/* --------------------------------------------------------------------------
+   Barra de acessibilidade
+   -------------------------------------------------------------------------- */
+
+.accessibility-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+
+    gap: 8px;
+
+    font-size: 12px;
+
+    border-bottom: 1px solid #1e2d42;
+
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+}
+
+.accessibility-bar span {
+    color: #a0aec0;
+}
+
+.accessibility-bar button {
+    background: #2d3748;
+    color: #ffffff;
+
+    border: none;
+    border-radius: 3px;
+
+    padding: 3px 8px;
+
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.accessibility-bar button:hover,
+.accessibility-bar button:focus {
+    background: #475569;
+    outline: 2px solid #93c5fd;
+}
+
+
+/* --------------------------------------------------------------------------
+   Linha principal do cabeçalho
+   -------------------------------------------------------------------------- */
+
+.header-main-row {
+    display: flex;
+
+    justify-content: space-between;
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap: 15px;
+}
+
+.logo-area {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+}
 
 .logo-badge {
     width: 42px;
     height: 42px;
+
     object-fit: contain;
+
     display: block;
+
     border-radius: 5px;
+
     background-color: transparent;
 }
 
-.logo-text h1 { margin: 0; font-size: 15px; letter-spacing: 0.5px; font-weight: 700; }
-.logo-text small { color: #a0aec0; font-size: 11px; display: block; }
+.logo-text h1 {
+    margin: 0;
 
-/* MECANISMO DE DROPDOWNS */
-.nav-corporate-menu { display: flex; list-style: none; margin: 0; padding: 0; gap: 16px; }
-.nav-item { position: relative; }
-.nav-link { display: block; padding: 6px 0; color: #cbd5e1; text-decoration: none; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; cursor: pointer; }
-.nav-link:hover, .nav-link:focus { color: #ffffff; outline: none; }
+    font-size: 15px;
+    font-weight: 700;
+
+    letter-spacing: 0.5px;
+}
+
+.logo-text small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #a0aec0;
+
+    font-size: 11px;
+}
+
+
 /* ==========================================================================
-   TERADMAS ERP v2.6 - MALHA DE ESTILOS UNIFICADA (erppadrao_core.css)
-   PARTE 2 DE 2: DROPDOWNS, KPIs HORIZONTAIS, FORMULÁRIOS E TABELAS
+   5. MENU CORPORATIVO
    ========================================================================== */
 
-.dropdown-menu { display: none; position: absolute; top: 100%; left: 0; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; list-style: none; padding: 0.5rem 0; min-width: 240px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); z-index: 999; }
-.dropdown-menu li a { display: block; padding: 0.5rem 1rem; color: #1e293b; text-decoration: none; font-size: 0.85rem; font-weight: 500; text-transform: none; text-align: left; }
-.dropdown-menu li a:hover, .dropdown-menu li a:focus { background-color: #f1f5f9; color: var(--brand-accent); outline: none; }
-.nav-item:hover .dropdown-menu, .nav-item:focus-within .dropdown-menu { display: block; }
+.nav-corporate-menu {
+    display: flex;
 
-/* 📊 MATRIZ SUPERIOR DE MÉTRICAS COMPACTAS EM LINHAS HORIZONTAIS COMPARATIVAS */
-.kpi-row-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(48%, 1fr)); gap: 16px; margin-bottom: 16px; width: 100%; }
-.kpi-card-horizontal { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-.kpi-comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 6px; border-top: 1px dashed #e2e8f0; padding-top: 6px; }
-.kpi-metric-block { display: flex; flex-direction: column; }
-.kpi-metric-label { font-size: 10px; font-weight: bold; color: #6b7280; text-transform: uppercase; }
-.kpi-metric-value { font-size: 13px; font-weight: 900; color: #1e3a8a; margin-top: 2px; }
-.kpi-metric-block.global-spec .kpi-metric-value { color: #3b82f6; }
-.kpi-metric-block.danger-spec .kpi-metric-value { color: #ef4444; }
-.kpi-sub-label-progress { font-size: 11px; font-weight: 600; display: block; margin-top: 4px; }
+    list-style: none;
 
-/* BARRA DE PROGRESSO */
-.progress-bar-container { background-color: #e2e8f0; border-radius: 4px; height: 6px; overflow: hidden; margin-top: 6px; width: 100%; }
-.progress-bar-fill { background-color: var(--brand-accent); height: 100%; width: 0%; transition: width 0.3s ease; }
+    margin: 0;
+    padding: 0;
 
-/* LAYOUT GRID, FORMULÁRIOS E MAPAS CARD */
-.grid-main { display: flex; flex-direction: column; gap: 16px; width: 100%; }
-.grid-form-row { display: grid; grid-template-columns: repeat(1, minmax(0, 1fr)); gap: 12px; margin-bottom: 8px; }
-@media (min-width: 576px) { .grid-form-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 992px) { .grid-form-row { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    gap: 16px;
+}
 
-.page-header { border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; margin-top: 20px; }
-.page-title { font-size: 18px; font-weight: 900; color: var(--brand-navy); text-transform: uppercase; margin: 0; }
-.card-title { font-size: 13px; font-weight: 900; color: var(--brand-navy); text-transform: uppercase; margin: 0 0 16px 0; padding-bottom: 4px; border-bottom: 1px solid var(--border-color); }
-.card { background-color: var(--bg-card); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); margin-bottom: 20px; }
-.flex-col-gap { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; text-align: left; }
-.label-form { font-size: 11px; font-weight: bold; color: #4b5563; text-transform: uppercase; }
-.input-form, .select-form { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: var(--radius-sm); font-size: 12px; background-color: var(--bg-card); color: var(--text-main); }
-.input-form-readonly { background-color: var(--bg-body); font-weight: bold; color: #475569; }
+.nav-item {
+    position: relative;
+}
 
-/* EQUAÇÕES MOSAICO */
-.equations-mosaico-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; border-top: 2px dashed #cbd5e1; padding-top: 12px; }
-.eq-box-provisao { background-color: #f0fdfa; border: 1px solid #99f6e4; padding: 10px; border-radius: 8px; }
-.eq-box-provisao label { color: #0d9488; }
-.eq-box-provisao input { font-weight: bold; color: #0f766e; border-color: #2dd4bf; }
-.eq-box-provisao span { font-size: 9px; color: #14b8a6; font-weight: bold; display: block; margin-top: 2px; }
+.nav-link {
+    display: block;
 
-.eq-box-amortizacao { background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 10px; border-radius: 8px; }
-.eq-box-amortizacao label { color: #2563eb; }
-.eq-box-amortizacao div { font-size: 11px; font-weight: 900; color: #1e40af; margin-top: 2px; }
-.eq-box-amortizacao span { font-size: 10px; color: #3b82f6; font-weight: bold; display: block; }
+    padding: 6px 0;
 
-.eq-box-rentabilidade { background-color: #fff7ed; border: 1px solid #fed7aa; padding: 10px; border-radius: 8px; }
-.eq-box-rentabilidade label { color: #ea580c; }
-.eq-box-rentabilidade div { font-size: 11px; font-weight: 900; color: #9a3412; margin-top: 2px; }
-.eq-box-rentabilidade span { font-size: 9px; color: #f97316; font-weight: bold; display: block; }
+    color: #cbd5e1;
 
-/* TABELAS RESPONSIVAS E AUXILIARES */
-.table-container { border-radius: var(--radius-md); border: 1px solid var(--border-color); overflow: hidden; background-color: var(--bg-card); margin-top: 4px; }
-.table-header-dark { padding: 12px; background-color: #1e293b; font-weight: bold; font-size: 11px; color: var(--text-light); text-transform: uppercase; }
-.table-header-slate { padding: 12px; background-color: #334155; font-weight: bold; font-size: 11px; color: var(--text-light); text-transform: uppercase; }
-.table-responsive { width: 100%; overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-thead { background-color: var(--bg-body); text-transform: uppercase; font-weight: bold; color: #4b5563; }
-th, td { padding: 12px; border-bottom: 1px solid var(--border-color); }
-.btn-top { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; }
-.btn-edit-rh { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 4px 8px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 11px; }
-.btn-edit-rh:hover { background-color: #bae6fd; }
-.btn-submit { width: 100%; background-color: var(--brand-success); color: white; border: none; padding: 10px; border-radius: var(--radius-sm); font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 11px; margin-top: 8px; }
+    text-decoration: none;
 
-/* SEXTO QUADRO EXCLUSIVO DE CONSOLIDAÇÃO FINAL (ROSADO) */
-.card-consolidation-pink { background-color: #fff0f5; border: 1px solid #ffd1dc; border-left: 5px solid #db2777; padding: 16px 20px; margin-top: 12px; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.consolidation-flex { display: flex; flex-direction: column; text-align: left; }
-.consolidation-tag { font-size: 11px; font-weight: bold; color: #9d174d; text-transform: uppercase; letter-spacing: 0.5px; }
-.consolidation-title { font-size: 14px; font-weight: 900; color: #9d174d; margin: 6px 0 4px 0; }
-.consolidation-span { font-size: 11px; font-weight: bold; color: #db2777; }
+    font-size: 12px;
+    font-weight: bold;
 
-/* REGRAS WCAG DARK E ALTO CONTRASTE */
-body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-body.dark-mode .card, body.dark-mode .metric-card, body.dark-mode .table-container, body.dark-mode table { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
-body.dark-mode input, body.dark-mode select { background-color: #0f172a !important; color: #ffffff !important; border-color: #334155 !important; }
-body.alto-contraste { background-color: #000000 !important; color: #ffff00 !important; }
-body.alto-contraste .card, body.alto-contraste .metric-card, body.alto-contraste .table-container, body.alto-contraste table { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #ffffff !important; }
+    text-transform: uppercase;
 
-/* APP FOOTER */
-.app-footer { margin-top: 40px; font-family: sans-serif; padding-bottom: 20px; }
-.footer-credits { text-align: justify; font-size: 11px; color: #718096; line-height: 1.6; max-width: 1200px; margin: 0 auto 20px auto; padding: 0 15px; }
-.footer-center-block { text-align: center; font-size: 12px; color: #4a5568; }
-.footer-paragraph { margin: 5px 0; }
-.footer-brand-title { font-weight: bold; margin: 5px 0; color: #2d3748; }
-.footer-revision-small { color: #a0aec0; font-size: 10px; display: block; margin-top: 5px; }
+    letter-spacing: 0.3px;
+}
+
+.nav-link:hover,
+.nav-link:focus {
+    color: #ffffff;
+    outline: none;
+}
+
+
+/* ==========================================================================
+   6. DROPDOWN
+   ========================================================================== */
+
+.dropdown-menu {
+    display: none;
+
+    position: absolute;
+
+    top: 100%;
+    left: 0;
+
+    min-width: 240px;
+
+    margin: 0;
+    padding: 8px 0;
+
+    background: #ffffff;
+
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+
+    list-style: none;
+
+    box-shadow: var(--shadow-lg);
+
+    z-index: 999;
+}
+
+.nav-item:hover .dropdown-menu,
+.nav-item:focus-within .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu li a {
+    display: block;
+
+    padding: 8px 16px;
+
+    color: #1e293b;
+
+    text-decoration: none;
+
+    font-size: 12px;
+    font-weight: 500;
+
+    text-align: left;
+}
+
+.dropdown-menu li a:hover,
+.dropdown-menu li a:focus {
+    background-color: #f1f5f9;
+
+    color: var(--brand-accent);
+
+    outline: none;
+}
+
+
+/* ==========================================================================
+   7. IDENTIFICAÇÃO DA EMPRESA / CONTEXTO
+   ========================================================================== */
+
+.company-context {
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+    flex-wrap: wrap;
+
+    gap: 12px;
+
+    padding: 10px 14px;
+
+    margin-bottom: 16px;
+
+    background: #ffffff;
+
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--brand-navy);
+
+    border-radius: var(--radius-md);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.company-context-label {
+    font-size: 10px;
+
+    font-weight: bold;
+
+    color: var(--text-muted);
+
+    text-transform: uppercase;
+}
+
+.company-context-value {
+    font-size: 13px;
+
+    font-weight: 900;
+
+    color: var(--brand-navy);
+}
+
+.company-context-department {
+    font-size: 11px;
+
+    font-weight: bold;
+
+    color: var(--brand-accent);
+
+    text-transform: uppercase;
+}
+
+
+/* ==========================================================================
+   8. CABEÇALHO DA PÁGINA
+   ========================================================================== */
+
+.page-header {
+    border-bottom: 1px solid var(--border-color);
+
+    padding-bottom: 8px;
+
+    margin-top: 20px;
+    margin-bottom: 16px;
+}
+
+.page-title {
+    margin: 0;
+
+    color: var(--brand-navy);
+
+    font-size: 18px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+}
+
+.page-subtitle {
+    margin: 5px 0 0;
+
+    color: var(--text-muted);
+
+    font-size: 11px;
+}
+
+
+/* ==========================================================================
+   9. CARDS
+   ========================================================================== */
+
+.card {
+    background-color: var(--bg-card);
+
+    padding: 20px;
+
+    margin-bottom: 20px;
+
+    border: 1px solid var(--border-color);
+
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.card-title {
+    margin: 0 0 16px;
+
+    padding-bottom: 5px;
+
+    color: var(--brand-navy);
+
+    border-bottom: 1px solid var(--border-color);
+
+    font-size: 13px;
+    font-weight: 900;
+
+    text-transform: uppercase;
+}
+
+.card-description {
+    margin-bottom: 14px;
+
+    color: var(--text-muted);
+
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* ==========================================================================
+   10. GRID PRINCIPAL
+   ========================================================================== */
+
+.grid-main {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 16px;
+
+    width: 100%;
+}
+
+.grid-form-row {
+    display: grid;
+
+    grid-template-columns:
+        repeat(1, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-bottom: 8px;
+}
+
+
+/* ==========================================================================
+   11. FORMULÁRIOS
+   ========================================================================== */
+
+.flex-col-gap {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 4px;
+
+    margin-bottom: 12px;
+
+    text-align: left;
+}
+
+.label-form {
+    font-size: 11px;
+
+    font-weight: bold;
+
+    color: #4b5563;
+
+    text-transform: uppercase;
+}
+
+.input-form,
+.select-form,
+.textarea-form {
+    width: 100%;
+
+    padding: 8px;
+
+    background-color: var(--bg-card);
+
+    color: var(--text-main);
+
+    border: 1px solid var(--border-dark);
+
+    border-radius: var(--radius-sm);
+
+    font-size: 12px;
+
+    outline: none;
+}
+
+.textarea-form {
+    min-height: 90px;
+
+    resize: vertical;
+}
+
+.input-form:focus,
+.select-form:focus,
+.textarea-form:focus {
+    border-color: var(--brand-accent);
+
+    box-shadow:
+        0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.input-form-readonly {
+    background-color: var(--bg-body);
+
+    color: #475569;
+
+    font-weight: bold;
+
+    cursor: not-allowed;
+}
+
+
+/* ==========================================================================
+   12. BOTÕES
+   ========================================================================== */
+
+.btn {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 6px;
+
+    padding: 8px 12px;
+
+    border: 1px solid transparent;
+
+    border-radius: var(--radius-sm);
+
+    font-size: 11px;
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    transition: var(--transition-fast);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: var(--brand-navy);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background: #172f72;
+}
+
+.btn-success {
+    background: var(--brand-success);
+    color: #ffffff;
+}
+
+.btn-warning {
+    background: var(--brand-warning);
+    color: #ffffff;
+}
+
+.btn-danger {
+    background: var(--brand-danger);
+    color: #ffffff;
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #1f2937;
+
+    border-color: #d1d5db;
+}
+
+.btn-submit {
+    width: 100%;
+
+    margin-top: 8px;
+
+    padding: 10px;
+
+    background-color: var(--brand-success);
+
+    color: #ffffff;
+
+    border: none;
+
+    border-radius: var(--radius-sm);
+
+    font-size: 11px;
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    cursor: pointer;
+}
+
+
+/* ==========================================================================
+   13. MATRIZ FINANCEIRA / KPIs
+   ========================================================================== */
+
+.kpi-row-panel {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(240px, 1fr));
+
+    gap: 16px;
+
+    width: 100%;
+
+    margin-bottom: 16px;
+}
+
+.kpi-card-horizontal {
+    background: #ffffff;
+
+    padding: 14px;
+
+    border: 1px solid #cbd5e1;
+
+    border-radius: var(--radius-md);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.kpi-card-horizontal:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.kpi-card-title {
+    margin: 0;
+
+    color: var(--text-muted);
+
+    font-size: 10px;
+    font-weight: bold;
+
+    text-transform: uppercase;
+}
+
+.kpi-card-value {
+    margin-top: 4px;
+
+    color: var(--brand-navy);
+
+    font-size: 20px;
+    font-weight: 900;
+}
+
+.kpi-card-note {
+    margin-top: 4px;
+
+    color: var(--text-muted);
+
+    font-size: 10px;
+}
+
+
+/* --------------------------------------------------------------------------
+   Comparação de métricas
+   -------------------------------------------------------------------------- */
+
+.kpi-comparison-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-top: 6px;
+
+    padding-top: 6px;
+
+    border-top: 1px dashed #e2e8f0;
+}
+
+.kpi-metric-block {
+    display: flex;
+
+    flex-direction: column;
+}
+
+.kpi-metric-label {
+    color: #6b7280;
+
+    font-size: 10px;
+    font-weight: bold;
+
+    text-transform: uppercase;
+}
+
+.kpi-metric-value {
+    margin-top: 2px;
+
+    color: var(--brand-navy);
+
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.kpi-metric-block.global-spec
+.kpi-metric-value {
+    color: var(--brand-accent);
+}
+
+.kpi-metric-block.danger-spec
+.kpi-metric-value {
+    color: var(--brand-danger);
+}
+
+
+/* ==========================================================================
+   14. PROGRESSO
+   ========================================================================== */
+
+.kpi-sub-label-progress {
+    display: block;
+
+    margin-top: 4px;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 6px;
+
+    margin-top: 6px;
+
+    overflow: hidden;
+
+    background-color: #e2e8f0;
+
+    border-radius: 4px;
+}
+
+.progress-bar-fill {
+    width: 0%;
+    height: 100%;
+
+    background-color: var(--brand-accent);
+
+    transition: width 0.3s ease;
+}
+
+
+/* ==========================================================================
+   15. PAINEL FINANCEIRO INICIAL
+   ========================================================================== */
+
+.finance-dashboard {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(220px, 1fr));
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+}
+
+.finance-card {
+    background: #ffffff;
+
+    padding: 14px;
+
+    border: 1px solid var(--border-color);
+
+    border-radius: var(--radius-md);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.finance-label {
+    display: block;
+
+    color: var(--text-muted);
+
+    font-size: 10px;
+    font-weight: bold;
+
+    text-transform: uppercase;
+}
+
+.finance-value {
+    display: block;
+
+    margin-top: 5px;
+
+    color: var(--brand-navy);
+
+    font-size: 18px;
+    font-weight: 900;
+}
+
+.finance-value.success {
+    color: var(--brand-success);
+}
+
+.finance-value.warning {
+    color: var(--brand-warning);
+}
+
+.finance-value.danger {
+    color: var(--brand-danger);
+}
+
+
+/* ==========================================================================
+   16. TABELAS
+   ========================================================================== */
+
+.table-container {
+    width: 100%;
+
+    margin-top: 4px;
+
+    overflow: hidden;
+
+    background-color: var(--bg-card);
+
+    border: 1px solid var(--border-color);
+
+    border-radius: var(--radius-lg);
+}
+
+.table-header-dark {
+    padding: 12px;
+
+    background-color: #1e293b;
+
+    color: #ffffff;
+
+    font-size: 11px;
+    font-weight: bold;
+
+    text-transform: uppercase;
+}
+
+.table-header-slate {
+    padding: 12px;
+
+    background-color: #334155;
+
+    color: #ffffff;
+
+    font-size: 11px;
+    font-weight: bold;
+
+    text-transform: uppercase;
+}
+
+.table-responsive {
+    width: 100%;
+
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    font-size: 12px;
+}
+
+thead {
+    background-color: var(--bg-body);
+
+    color: #4b5563;
+
+    font-weight: bold;
+
+    text-transform: uppercase;
+}
+
+th,
+td {
+    padding: 10px 12px;
+
+    border-bottom: 1px solid var(--border-color);
+
+    text-align: left;
+
+    vertical-align: middle;
+}
+
+tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+
+/* ==========================================================================
+   17. BOTÕES AUXILIARES DE TABELA
+   ========================================================================== */
+
+.btn-top,
+.btn-edit-rh {
+    padding: 4px 8px;
+
+    border-radius: 4px;
+
+    font-size: 11px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+.btn-top {
+    background-color: #e5e7eb;
+
+    color: #1f2937;
+
+    border: 1px solid #d1d5db;
+}
+
+.btn-edit-rh {
+    background-color: #e0f2fe;
+
+    color: #0369a1;
+
+    border: 1px solid #bae6fd;
+}
+
+.btn-edit-rh:hover {
+    background-color: #bae6fd;
+}
+
+
+/* ==========================================================================
+   18. EQUAÇÕES / QUADROS GERENCIAIS
+   ========================================================================== */
+
+.equations-mosaico-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(240px, 1fr));
+
+    gap: 12px;
+
+    margin-top: 12px;
+
+    padding-top: 12px;
+
+    border-top: 2px dashed #cbd5e1;
+}
+
+.eq-box-provisao,
+.eq-box-amortizacao,
+.eq-box-rentabilidade {
+    padding: 10px;
+
+    border-radius: var(--radius-md);
+}
+
+.eq-box-provisao {
+    background-color: #f0fdfa;
+
+    border: 1px solid #99f6e4;
+}
+
+.eq-box-provisao label {
+    color: #0d9488;
+}
+
+.eq-box-provisao input {
+    font-weight: bold;
+
+    color: #0f766e;
+
+    border-color: #2dd4bf;
+}
+
+.eq-box-provisao span {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #14b8a6;
+
+    font-size: 9px;
+    font-weight: bold;
+}
+
+.eq-box-amortizacao {
+    background-color: #eff6ff;
+
+    border: 1px solid #bfdbfe;
+}
+
+.eq-box-amortizacao label {
+    color: #2563eb;
+}
+
+.eq-box-amortizacao div {
+    margin-top: 2px;
+
+    color: #1e40af;
+
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.eq-box-amortizacao span {
+    display: block;
+
+    color: #3b82f6;
+
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.eq-box-rentabilidade {
+    background-color: #fff7ed;
+
+    border: 1px solid #fed7aa;
+}
+
+.eq-box-rentabilidade label {
+    color: #ea580c;
+}
+
+.eq-box-rentabilidade div {
+    margin-top: 2px;
+
+    color: #9a3412;
+
+    font-size: 11px;
+    font-weight: 900;
+}
+
+.eq-box-rentabilidade span {
+    display: block;
+
+    color: #f97316;
+
+    font-size: 9px;
+    font-weight: bold;
+}
+
+
+/* ==========================================================================
+   19. CONSOLIDAÇÃO
+   ========================================================================== */
+
+.card-consolidation-pink {
+    width: 100%;
+
+    margin-top: 12px;
+
+    padding: 16px 20px;
+
+    background-color: #fff0f5;
+
+    border: 1px solid #ffd1dc;
+    border-left: 5px solid #db2777;
+
+    box-shadow: var(--shadow-sm);
+}
+
+.consolidation-flex {
+    display: flex;
+
+    flex-direction: column;
+
+    text-align: left;
+}
+
+.consolidation-tag {
+    color: #9d174d;
+
+    font-size: 11px;
+    font-weight: bold;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.5px;
+}
+
+.consolidation-title {
+    margin: 6px 0 4px;
+
+    color: #9d174d;
+
+    font-size: 14px;
+    font-weight: 900;
+}
+
+.consolidation-span {
+    color: #db2777;
+
+    font-size: 11px;
+    font-weight: bold;
+}
+
+
+/* ==========================================================================
+   20. ALERTAS / STATUS
+   ========================================================================== */
+
+.alert {
+    padding: 10px 12px;
+
+    margin-bottom: 12px;
+
+    border-radius: var(--radius-sm);
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.alert-info {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+.alert-success {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.alert-warning {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.alert-danger {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+
+/* ==========================================================================
+   21. RODAPÉ
+   ========================================================================== */
+
+.app-footer {
+    margin-top: 40px;
+
+    padding-bottom: 20px;
+
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.footer-credits {
+    max-width: 1200px;
+
+    margin: 0 auto 20px;
+
+    padding: 0 15px;
+
+    color: #718096;
+
+    font-size: 11px;
+
+    line-height: 1.6;
+
+    text-align: justify;
+}
+
+.footer-center-block {
+    color: #4a5568;
+
+    font-size: 12px;
+
+    text-align: center;
+}
+
+.footer-paragraph {
+    margin: 5px 0;
+}
+
+.footer-brand-title {
+    margin: 5px 0;
+
+    color: #2d3748;
+
+    font-weight: bold;
+}
+
+.footer-revision-small {
+    display: block;
+
+    margin-top: 5px;
+
+    color: #a0aec0;
+
+    font-size: 10px;
+}
+
+
+/* ==========================================================================
+   22. ACESSIBILIDADE — MODO ESCURO
+   ========================================================================== */
+
+body.dark-mode {
+    background-color: #0f172a !important;
+
+    color: #f8fafc !important;
+}
+
+body.dark-mode .card,
+body.dark-mode .finance-card,
+body.dark-mode .kpi-card-horizontal,
+body.dark-mode .company-context,
+body.dark-mode .table-container {
+    background-color: #1e293b !important;
+
+    border-color: #334155 !important;
+
+    color: #f8fafc !important;
+}
+
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+    background-color: #0f172a !important;
+
+    color: #ffffff !important;
+
+    border-color: #334155 !important;
+}
+
+body.dark-mode .page-title,
+body.dark-mode .card-title,
+body.dark-mode .finance-value,
+body.dark-mode .kpi-metric-value,
+body.dark-mode .company-context-value {
+    color: #93c5fd !important;
+}
+
+body.dark-mode table {
+    background-color: #1e293b !important;
+
+    color: #f8fafc !important;
+}
+
+body.dark-mode thead {
+    background-color: #0f172a !important;
+
+    color: #cbd5e1 !important;
+}
+
+body.dark-mode tbody tr:hover {
+    background-color: #334155 !important;
+}
+
+
+/* ==========================================================================
+   23. ALTO CONTRASTE
+   ========================================================================== */
+
+body.alto-contraste {
+    background-color: #000000 !important;
+
+    color: #ffff00 !important;
+}
+
+body.alto-contraste .card,
+body.alto-contraste .finance-card,
+body.alto-contraste .kpi-card-horizontal,
+body.alto-contraste .company-context,
+body.alto-contraste .table-container {
+    background-color: #000000 !important;
+
+    color: #ffffff !important;
+
+    border: 2px solid #ffffff !important;
+}
+
+body.alto-contraste input,
+body.alto-contraste select,
+body.alto-contraste textarea {
+    background-color: #000000 !important;
+
+    color: #ffffff !important;
+
+    border: 2px solid #ffffff !important;
+}
+
+body.alto-contraste button {
+    border: 2px solid #ffffff !important;
+}
+
+body.alto-contraste .page-title,
+body.alto-contraste .card-title {
+    color: #ffff00 !important;
+}
+
+
+/* ==========================================================================
+   24. FOCO DE TECLADO
+   ========================================================================== */
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid #60a5fa;
+
+    outline-offset: 2px;
+}
+
+
+/* ==========================================================================
+   25. RESPONSIVIDADE
+   ========================================================================== */
+
+@media (min-width: 576px) {
+
+    .grid-form-row {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (min-width: 768px) {
+
+    .container {
+        padding: 20px;
+    }
+
+}
+
+
+@media (min-width: 992px) {
+
+    .grid-form-row {
+        grid-template-columns:
+            repeat(4, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 767px) {
+
+    .header-main-row {
+        align-items: flex-start;
+    }
+
+    .nav-corporate-menu {
+        width: 100%;
+
+        flex-wrap: wrap;
+
+        gap: 10px;
+    }
+
+    .dropdown-menu {
+        position: static;
+
+        width: 100%;
+
+        box-shadow: none;
+
+        margin-top: 5px;
+    }
+
+    .company-context {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .kpi-comparison-grid {
+        grid-template-columns:
+            1fr;
+    }
+
+    th,
+    td {
+        white-space: nowrap;
+    }
+
+}
+
+
+@media (max-width: 480px) {
+
+    .container {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 14px;
+    }
+
+    .page-title {
+        font-size: 16px;
+    }
+
+    .kpi-row-panel,
+    .finance-dashboard {
+        grid-template-columns:
+            1fr;
+    }
+
+}
+
+
+/* ==========================================================================
+   26. IMPRESSÃO
+   ========================================================================== */
+
+@media print {
+
+    body {
+        background: #ffffff !important;
+
+        color: #000000 !important;
+    }
+
+    .corporate-header,
+    .accessibility-bar,
+    .nav-corporate-menu,
+    button,
+    .btn {
+        display: none !important;
+    }
+
+    .container {
+        max-width: none;
+
+        padding: 0;
+    }
+
+    .card,
+    .finance-card,
+    .kpi-card-horizontal,
+    .table-container {
+        box-shadow: none !important;
+
+        break-inside: avoid;
+    }
+}
+
+
+/* ==========================================================================
+   FIM DO erppadrao_core.css
+   ========================================================================== */
