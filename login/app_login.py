@@ -1,339 +1,870 @@
 # ==========================================================================
-# TERADMAS ERP v2.6
-# MASTER.PY
-#
-# CAMADA CENTRAL DE ORQUESTRAÇÃO DO ERP PADRÃO
+# TERADMAS ERP v2.6 - AUTENTICAÇÃO E CONTROLE DE EQUIPES
+# ARQUIVO: login/app_login.py
 # ==========================================================================
 
 import os
+import hashlib
 import logging
 
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
 from flask import (
-    Flask,
-    jsonify,
+    Blueprint,
     request,
-    session
+    render_template_string,
+    session,
+    jsonify,
+    redirect
 )
 
-from GerenciadorCaixa import (
-    calcular_metricas_totais_equipe
+
+login_blueprint = Blueprint(
+    'login_blueprint',
+    __name__
 )
 
-# ==========================================================================
-# CONFIGURAÇÃO DO SISTEMA
-# ==========================================================================
-
-APP_VERSION = "2.6"
-NOME_SISTEMA = "TERADMAS ERP"
-NOME_ERP = "ERP PADRÃO"
-
-# ==========================================================================
-# SISTEMA DE LOGS
-# ==========================================================================
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s"
-)
 logger = logging.getLogger(__name__)
 
-# ==========================================================================
-# INSTÂNCIA DO FLASK
-# ==========================================================================
 
-app = Flask(__name__)
-
-app.secret_key = os.environ.get(
-    "SECRET_KEY",
-    "teradmas-chave-local"
-)
 # ==========================================================================
-# IDENTIDADE DA EQUIPE
+# CONEXÃO CENTRAL COM O SUPABASE
 # ==========================================================================
 
-def obter_id_equipe():
-    equipe_id = session.get("equipe_id")
-    if equipe_id is not None:
-        return equipe_id
+def obter_conexao_master():
+    """
+    Usa a DATABASE_URL central do ERP.
 
-    equipe_id = request.args.get("equipe_id")
-    if equipe_id:
-        return equipe_id
+    Não depende de uma segunda configuração de banco.
+    """
+    database_url = os.environ.get('DATABASE_URL')
 
-    equipe_id = request.form.get("equipe_id")
-    if equipe_id:
-        return equipe_id
+    if not database_url:
+        raise RuntimeError(
+            'DATABASE_URL não configurada no ambiente.'
+        )
 
-    return None
-
-
-def normalizar_id_equipe(valor):
-    if valor is None:
-        return None
-    try:
-        return int(valor)
-    except (TypeError, ValueError):
-        valor = str(valor).strip()
-        return valor if valor else None
+    return psycopg2.connect(database_url)
 
 
 # ==========================================================================
-# GESTÃO DE EMPRESA E DEPARTAMENTOS
+# SEGURANÇA DE SENHA
 # ==========================================================================
 
-def obter_nome_empresa():
-    nome = session.get("nome_empresa")
-    if nome:
-        return str(nome).strip()
-    return "GRUPO ACADÊMICO"
+def criptografar_senha(senha):
+    """
+    Mantém compatibilidade com as credenciais armazenadas
+    atualmente em credenciais_equipes usando SHA-256.
+    """
+    texto = str(senha or '')
 
-
-def obter_departamento():
-    departamento = request.args.get("departamento")
-    if not departamento:
-        departamento = request.form.get("departamento")
-    if not departamento:
-        return None
-    return str(departamento).strip().lower() or None
+    return hashlib.sha256(
+        texto.encode('utf-8')
+    ).hexdigest()
 
 
 # ==========================================================================
-# PADRONIZAÇÃO DE RESPOSTAS
+# RESPOSTA JSON PADRONIZADA
 # ==========================================================================
 
-def resposta_sucesso(dados=None, **extras):
-    resposta = {
-        "sucesso": True,
-        "sistema": NOME_SISTEMA,
-        "erp": NOME_ERP,
-        "versao": APP_VERSION
-    }
-    if dados:
-        resposta.update(dados)
-    if extras:
-        resposta.update(extras)
-    return jsonify(resposta)
-
-
-def resposta_erro(mensagem, status=400):
+def erro_json(message, status=400):
     return jsonify({
-        "sucesso": False,
-        "sistema": NOME_SISTEMA,
-        "erp": NOME_ERP,
-        "versao": APP_VERSION,
-        "erro": str(mensagem)
+        'status': 'erro',
+        'message': message
     }), status
 
 
 # ==========================================================================
-# CONTEXTO OPERACIONAL
+# VERIFICAÇÃO DE EMPRESA INICIALIZADA
 # ==========================================================================
 
-def obter_contexto_operacional():
-    equipe_id = normalizar_id_equipe(obter_id_equipe())
-    departamento = obter_departamento()
-    return {
-        "equipe_id": equipe_id,
-        "nome_empresa": obter_nome_empresa(),
-        "departamento": departamento
-    }
+def verificar_empresa_inicializada(id_equipe):
 
-
-def exigir_equipe():
-    equipe_id = normalizar_id_equipe(obter_id_equipe())
-    if equipe_id is None:
-        logger.warning("Operação recusada: equipe não identificada.")
-        return None, resposta_erro("Equipe não identificada.", 401)
-    return equipe_id, None
-# ==========================================================================
-# API — CONTEXTO
-# ==========================================================================
-
-@app.route("/api/contexto", methods=["GET"])
-def api_contexto():
-    contexto = obter_contexto_operacional()
-    return resposta_sucesso(contexto)
-
-
-# ==========================================================================
-# API — EMPRESA
-# ==========================================================================
-
-@app.route("/api/empresa", methods=["GET"])
-def api_empresa():
-    equipe_id, erro = exigir_equipe()
-    if erro:
-        return erro
-    return resposta_sucesso({
-        "equipe_id": equipe_id,
-        "nome_empresa": obter_nome_empresa()
-    })
-
-
-# ==========================================================================
-# API — MÉTRICAS (MOTOR FINANCEIRO EXTERNO)
-# ==========================================================================
-
-@app.route("/api/metrics", methods=["GET"])
-def api_metrics():
-    equipe_id, erro = exigir_equipe()
-    if erro:
-        return erro
-
-    departamento = obter_departamento()
-    logger.info("Métricas solicitadas | equipe=%s | departamento=%s", equipe_id, departamento)
+    conexao = None
+    cursor = None
 
     try:
-        metricas = calcular_metricas_totais_equipe(
-            id_equipe=equipe_id,
-            departamento_atual=departamento
+        conexao = obter_conexao_master()
+
+        cursor = conexao.cursor(
+            cursor_factory=RealDictCursor
         )
 
-        if not isinstance(metricas, dict):
-            logger.error("GerenciadorCaixa retornou tipo inválido.")
-            return resposta_erro("Motor financeiro retornou resposta inválida.", 500)
+        # --------------------------------------------------------------
+        # PRIMEIRA FONTE: config_simulacao
+        # --------------------------------------------------------------
 
-        return resposta_sucesso(metricas, equipe_id=equipe_id, departamento=departamento)
+        try:
 
-    except Exception as exc:
-        logger.exception("Erro no endpoint /api/metrics")
-        return resposta_erro("Erro ao carregar as métricas financeiras.", 500)
+            cursor.execute(
+                """
+                SELECT 1
+                FROM config_simulacao
+                WHERE equipe_id = %s
+                  AND capital_total IS NOT NULL
+                  AND capital_total > 0
+                LIMIT 1
+                """,
+                (str(id_equipe),)
+            )
+
+            if cursor.fetchone():
+                return True
+
+        except psycopg2.Error:
+
+            conexao.rollback()
+
+        # --------------------------------------------------------------
+        # SEGUNDA FONTE: configuracao_equipes
+        # --------------------------------------------------------------
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT 1
+                FROM configuracao_equipes
+                WHERE equipe_id = %s
+                  AND capital_inicial IS NOT NULL
+                  AND capital_inicial > 0
+                LIMIT 1
+                """,
+                (str(id_equipe),)
+            )
+
+            if cursor.fetchone():
+                return True
+
+        except psycopg2.Error:
+
+            conexao.rollback()
+
+        return False
+
+    except Exception as erro:
+
+        logger.error(
+            'Erro ao verificar inicialização da equipe %s: %s',
+            id_equipe,
+            erro
+        )
+
+        return False
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conexao:
+
+            try:
+                conexao.close()
+            except Exception:
+                pass
+
+
 # ==========================================================================
-# API — RESUMO FINANCEIRO
+# AUTORIZAÇÃO DO PROFESSOR
 # ==========================================================================
 
-@app.route("/api/resumo", methods=["GET"])
-def api_resumo():
-    equipe_id, erro = exigir_equipe()
-    if erro:
-        return erro
+def professor_autorizado():
+
+    return bool(
+        session.get('logado')
+        and session.get('professor_master')
+    )
+
+
+# ==========================================================================
+# LOGIN
+# ==========================================================================
+
+@login_blueprint.route(
+    '/login',
+    methods=['GET', 'POST']
+)
+def rota_login_autenticacao():
+
+    diretorio = os.path.dirname(
+        os.path.abspath(__file__)
+    )
+
+    # ------------------------------------------------------------------
+    # GET /login
+    # ------------------------------------------------------------------
+
+    if request.method == 'GET':
+
+        if session.get('logado'):
+
+            if session.get('professor_master'):
+
+                return redirect(
+                    '/professor_painel_secreto'
+                )
+
+            # ----------------------------------------------------------
+            # IMPORTANTE:
+            #
+            # NÃO redirecionar automaticamente para /grid.
+            #
+            # A rota /grid não existe no master atualmente e estava
+            # causando exatamente o 404 mostrado no navegador.
+            #
+            # A página operacional disponível e conhecida pelo contrato
+            # atual é a inicialização quando ainda não há capital.
+            # ----------------------------------------------------------
+
+            if session.get('empresa_inicializada'):
+
+                destino = (
+                    os.environ.get(
+                        'ERP_HOME_ROUTE',
+                        '/financeiro'
+                    ).strip()
+                )
+
+                if destino:
+                    return redirect(destino)
+
+            return redirect(
+                '/configuracao/inicializacao'
+            )
+
+        # --------------------------------------------------------------
+        # CARREGA login/login.html
+        # --------------------------------------------------------------
+
+        caminho_login = os.path.join(
+            diretorio,
+            'login.html'
+        )
+
+        try:
+
+            with open(
+                caminho_login,
+                'r',
+                encoding='utf-8'
+            ) as arquivo:
+
+                return render_template_string(
+                    arquivo.read()
+                )
+
+        except FileNotFoundError:
+
+            logger.error(
+                "Arquivo login.html não encontrado: %s",
+                caminho_login
+            )
+
+            return (
+                "Erro Crítico: arquivo "
+                "'login.html' não encontrado.",
+                404
+            )
+
+    # ------------------------------------------------------------------
+    # POST /login
+    # ------------------------------------------------------------------
+
+    dados = request.get_json(
+        silent=True
+    ) or {}
+
+    id_equipe = str(
+        dados.get(
+            'id_equipe',
+            ''
+        )
+    ).strip().lower()
+
+    senha = str(
+        dados.get(
+            'senha',
+            ''
+        )
+    ).strip()
+
+    if not id_equipe:
+
+        return erro_json(
+            'Informe o identificador da equipe.',
+            400
+        )
+
+    if not senha:
+
+        return erro_json(
+            'Informe a senha.',
+            400
+        )
+
+    # ------------------------------------------------------------------
+    # ACESSO DO PROFESSOR MASTER
+    # ------------------------------------------------------------------
+
+    master_id = os.environ.get(
+        'PROFESSOR_MASTER_ID',
+        'professor'
+    ).strip().lower()
+
+    master_senha = os.environ.get(
+        'PROFESSOR_MASTER_SENHA',
+        'admin123'
+    )
+
+    if (
+        id_equipe == master_id
+        and senha == master_senha
+    ):
+
+        session.clear()
+
+        session.permanent = True
+
+        session.update({
+            'logado': True,
+            'id_equipe': 'professor',
+            'nome_empresa': 'PAINEL DE CONTROLE DOCENTE',
+            'professor_master': True,
+            'empresa_inicializada': True
+        })
+
+        return jsonify({
+            'status': 'sucesso',
+            'redirecionar':
+                '/professor_painel_secreto'
+        }), 200
+
+    # ------------------------------------------------------------------
+    # CONSULTA DA EQUIPE
+    # ------------------------------------------------------------------
+
+    conexao = None
+    cursor = None
+    equipe = None
 
     try:
-        metricas = calcular_metricas_totais_equipe(id_equipe=equipe_id)
-        return resposta_sucesso({
-            "equipe_id": equipe_id,
-            "nome_empresa": metricas.get("nome_empresa", obter_nome_empresa()),
-            "capital_total": metricas.get("capital_total", 0.0),
-            "capital_disponivel_total": metricas.get("capital_disponivel_total", 0.0),
-            "patrimonio_ativo_total": metricas.get("patrimonio_ativo_total", 0.0),
-            "custo_fixo_total": metricas.get("custo_fixo_total", 0.0),
-            "custo_variavel_total": metricas.get("custo_variavel_total", 0.0)
-        })
-    except Exception:
-        logger.exception("Erro no endpoint /api/resumo")
-        return resposta_erro("Erro ao carregar o resumo da empresa.", 500)
 
+        conexao = obter_conexao_master()
 
-# ==========================================================================
-# API — DIAGNÓSTICO E SAÚDE DO CONTAINNER
-# ==========================================================================
+        cursor = conexao.cursor(
+            cursor_factory=RealDictCursor
+        )
 
-@app.route("/api/status", methods=["GET"])
-def api_status():
-    return resposta_sucesso({
-        "status": "online",
-        "arquitetura": "ERP PADRÃO",
-        "multiempresa": True,
-        "motor_financeiro": "GerenciadorCaixa.py",
-        "frontend_metricas": "metrics.js"
+        cursor.execute(
+            """
+            SELECT
+                equipe_id,
+                senha,
+                nome_empresa
+            FROM credenciais_equipes
+            WHERE LOWER(TRIM(equipe_id)) = %s
+            LIMIT 1
+            """,
+            (id_equipe,)
+        )
+
+        equipe = cursor.fetchone()
+
+    except psycopg2.Error as erro:
+
+        logger.error(
+            'Erro de banco no login da equipe %s: %s',
+            id_equipe,
+            erro
+        )
+
+        return erro_json(
+            'Falha de comunicação com o banco de dados.',
+            503
+        )
+
+    except Exception as erro:
+
+        logger.error(
+            'Erro inesperado no login da equipe %s: %s',
+            id_equipe,
+            erro
+        )
+
+        return erro_json(
+            'Erro interno durante a autenticação.',
+            500
+        )
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conexao:
+
+            try:
+                conexao.close()
+            except Exception:
+                pass
+
+    # ------------------------------------------------------------------
+    # VALIDAÇÃO DA CREDENCIAL
+    # ------------------------------------------------------------------
+
+    senha_banco = ''
+
+    if equipe:
+
+        senha_banco = str(
+            equipe.get('senha') or ''
+        )
+
+    senha_informada = criptografar_senha(
+        senha
+    )
+
+    if (
+        not equipe
+        or senha_banco != senha_informada
+    ):
+
+        return erro_json(
+            'Credenciais inválidas ou equipe não homologada.',
+            401
+        )
+
+    # ------------------------------------------------------------------
+    # EQUIPE AUTENTICADA
+    # ------------------------------------------------------------------
+
+    id_real = str(
+        equipe.get('equipe_id')
+        or id_equipe
+    ).strip()
+
+    nome_empresa = str(
+        equipe.get('nome_empresa')
+        or ''
+    ).strip()
+
+    inicializada = verificar_empresa_inicializada(
+        id_real
+    )
+
+    # ------------------------------------------------------------------
+    # CRIAÇÃO DA SESSÃO
+    # ------------------------------------------------------------------
+
+    session.clear()
+
+    session.permanent = True
+
+    session.update({
+        'logado': True,
+        'id_equipe': id_real,
+        'nome_empresa': nome_empresa.upper(),
+        'empresa_inicializada': inicializada,
+        'professor_master': False
     })
 
+    # ------------------------------------------------------------------
+    # DESTINO APÓS LOGIN
+    #
+    # Não existe mais /grid como destino fixo.
+    #
+    # ERP_HOME_ROUTE pode ser configurada no Render se o módulo
+    # principal tiver uma rota diferente.
+    # ------------------------------------------------------------------
 
-@app.route("/api/health", methods=["GET"])
-def api_health():
-    return resposta_sucesso({"status": "ok"})
+    if inicializada:
+
+        destino = os.environ.get(
+            'ERP_HOME_ROUTE',
+            '/financeiro'
+        ).strip()
+
+        if not destino:
+            destino = '/financeiro'
+
+    else:
+
+        destino = (
+            '/configuracao/inicializacao'
+        )
+
+    return jsonify({
+        'status': 'sucesso',
+        'redirecionar': destino
+    }), 200
+
+
 # ==========================================================================
-# COMPATIBILIDADE E LEGADO
+# PAINEL DO PROFESSOR
 # ==========================================================================
 
-@app.route("/api/metrics/<int:equipe_id>", methods=["GET"])
-def api_metrics_compatibilidade(equipe_id):
-    departamento = obter_departamento()
+@login_blueprint.route(
+    '/professor_painel_secreto',
+    methods=['GET']
+)
+def rota_painel_professor_html():
+
+    if not professor_autorizado():
+
+        return redirect('/login')
+
+    caminho = os.path.join(
+        os.path.dirname(
+            os.path.abspath(__file__)
+        ),
+        'professor_painel_secreto.html'
+    )
+
     try:
-        metricas = calcular_metricas_totais_equipe(id_equipe=equipe_id, departamento_atual=departamento)
-        if not isinstance(metricas, dict):
-            return resposta_erro("Motor financeiro retornou resposta inválida.", 500)
-        return resposta_sucesso(metricas, equipe_id=equipe_id, departamento=departamento)
-    except Exception:
-        logger.exception("Erro no endpoint compatível de métricas.")
-        return resposta_erro("Erro ao carregar as métricas financeiras.", 500)
 
+        with open(
+            caminho,
+            'r',
+            encoding='utf-8'
+        ) as arquivo:
 
-# ==========================================================================
-# 1º PASSO: INTERFACE DE INICIALIZAÇÃO (ADIÇÃO DE CAPITAL)
-# ==========================================================================
+            return render_template_string(
+                arquivo.read()
+            )
 
-@app.route("/configuracao/inicializacao", methods=["GET"])
-def rota_inicializacao_html():
-    """
-    Interface obrigatória pós-login para as equipes aportarem o capital inicial.
-    """
-    if not session.get("logado"):
-        from flask import redirect
-        return redirect("/login")
-        
-    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "inicializacao.html")
-    try:
-        from flask import render_template_string
-        with open(caminho, "r", encoding="utf-8") as arquivo:
-            return render_template_string(arquivo.read())
     except FileNotFoundError:
-        return "Erro Crítico: Arquivo 'inicializacao.html' não encontrado na raiz.", 404
+
+        return (
+            "Erro Crítico: arquivo "
+            "'professor_painel_secreto.html' "
+            "não encontrado.",
+            404
+        )
 
 
 # ==========================================================================
-# 2º PASSO: INTERFACE DO FINANCEIRO (DISTRIBUIÇÃO DE QUOTAS)
+# API - LISTAR EQUIPES
 # ==========================================================================
 
-@app.route("/financeiro", methods=["GET"])
-def rota_financeiro_html():
-    """
-    Interface do Departamento Financeiro acessada após a empresa ser inicializada.
-    """
-    if not session.get("logado"):
-        from flask import redirect
-        return redirect("/login")
+@login_blueprint.route(
+    '/api/professor/listar',
+    methods=['GET']
+)
+def api_professor_listar_equipes():
 
-    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), "financeiro.html")
+    if not professor_autorizado():
+
+        return jsonify({
+            'error': 'Acesso negado'
+        }), 401
+
+    conexao = None
+    cursor = None
+
     try:
-        from flask import render_template_string
-        with open(caminho, "r", encoding="utf-8") as arquivo:
-            return render_template_string(arquivo.read())
-    except FileNotFoundError:
-        return "Erro Crítico: Interface 'financeiro.html' não encontrada na raiz.", 404
+
+        conexao = obter_conexao_master()
+
+        cursor = conexao.cursor(
+            cursor_factory=RealDictCursor
+        )
+
+        cursor.execute(
+            """
+            SELECT
+                id,
+                equipe_id,
+                nome_empresa
+            FROM credenciais_equipes
+            ORDER BY equipe_id ASC
+            """
+        )
+
+        equipes = cursor.fetchall()
+
+        return jsonify([
+            dict(equipe)
+            for equipe in equipes
+        ]), 200
+
+    except psycopg2.Error as erro:
+
+        logger.error(
+            'Erro ao listar equipes: %s',
+            erro
+        )
+
+        return jsonify({
+            'error':
+                'Falha ao consultar equipes.'
+        }), 500
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conexao:
+
+            try:
+                conexao.close()
+            except Exception:
+                pass
 
 
 # ==========================================================================
-# REGISTRO DE ROTAS EXTERNAS (BLUEPRINT DE LOGIN)
+# API - SALVAR / ATUALIZAR EQUIPE
 # ==========================================================================
 
-from login.app_login import login_blueprint
-app.register_blueprint(login_blueprint)
+@login_blueprint.route(
+    '/api/professor/salvar',
+    methods=['POST']
+)
+def api_professor_salvar_equipe():
+
+    if not professor_autorizado():
+
+        return jsonify({
+            'error': 'Acesso negado'
+        }), 401
+
+    dados = request.get_json(
+        silent=True
+    ) or {}
+
+    equipe_id = str(
+        dados.get(
+            'equipe_id',
+            ''
+        )
+    ).strip().lower()
+
+    senha = str(
+        dados.get(
+            'senha',
+            ''
+        )
+    ).strip()
+
+    nome_empresa = str(
+        dados.get(
+            'nome_empresa',
+            ''
+        )
+    ).strip()
+
+    if not equipe_id:
+
+        return jsonify({
+            'error':
+                'O ID da equipe é obrigatório.'
+        }), 400
+
+    if not senha:
+
+        return jsonify({
+            'error':
+                'A senha é obrigatória.'
+        }), 400
+
+    if not nome_empresa:
+
+        return jsonify({
+            'error':
+                'O nome da empresa é obrigatório.'
+        }), 400
+
+    conexao = None
+    cursor = None
+
+    try:
+
+        conexao = obter_conexao_master()
+
+        cursor = conexao.cursor()
+
+        senha_segura = criptografar_senha(
+            senha
+        )
+
+        cursor.execute(
+            """
+            INSERT INTO credenciais_equipes
+                (
+                    equipe_id,
+                    senha,
+                    nome_empresa
+                )
+            VALUES
+                (
+                    %s,
+                    %s,
+                    %s
+                )
+            ON CONFLICT (equipe_id)
+            DO UPDATE SET
+                senha = EXCLUDED.senha,
+                nome_empresa = EXCLUDED.nome_empresa
+            """,
+            (
+                equipe_id,
+                senha_segura,
+                nome_empresa
+            )
+        )
+
+        conexao.commit()
+
+        return jsonify({
+            'status': 'sucesso'
+        }), 200
+
+    except psycopg2.Error as erro:
+
+        if conexao:
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
+
+        logger.error(
+            'Erro ao salvar equipe %s: %s',
+            equipe_id,
+            erro
+        )
+
+        return jsonify({
+            'error':
+                'Falha ao salvar equipe no banco de dados.'
+        }), 500
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conexao:
+
+            try:
+                conexao.close()
+            except Exception:
+                pass
 
 
 # ==========================================================================
-# TRATAMENTO DE ERROS HTTP E EXECUÇÃO DO FLASK
+# API - EXCLUIR EQUIPE
 # ==========================================================================
 
-@app.errorhandler(404)
-def erro_404(_erro):
-    return resposta_erro("Recurso não encontrado.", 404)
+@login_blueprint.route(
+    '/api/professor/deletar/<int:id_reg>',
+    methods=['DELETE']
+)
+def api_professor_deletar_equipe(id_reg):
 
-@app.errorhandler(405)
-def erro_405(_erro):
-    return resposta_erro("Método não permitido.", 405)
+    if not professor_autorizado():
 
-@app.errorhandler(500)
-def erro_500(_erro):
-    logger.exception("Erro interno do servidor.")
-    return resposta_erro("Erro interno do servidor.", 500)
+        return jsonify({
+            'error': 'Acesso negado'
+        }), 401
+
+    conexao = None
+    cursor = None
+
+    try:
+
+        conexao = obter_conexao_master()
+
+        cursor = conexao.cursor()
+
+        cursor.execute(
+            """
+            DELETE FROM credenciais_equipes
+            WHERE id = %s
+            """,
+            (id_reg,)
+        )
+
+        if cursor.rowcount == 0:
+
+            conexao.rollback()
+
+            return jsonify({
+                'error':
+                    'Equipe não encontrada.'
+            }), 404
+
+        conexao.commit()
+
+        return jsonify({
+            'status': 'sucesso'
+        }), 200
+
+    except psycopg2.Error as erro:
+
+        if conexao:
+
+            try:
+                conexao.rollback()
+            except Exception:
+                pass
+
+        logger.error(
+            'Erro ao excluir equipe ID %s: %s',
+            id_reg,
+            erro
+        )
+
+        return jsonify({
+            'error':
+                'Falha ao excluir equipe.'
+        }), 500
+
+    finally:
+
+        if cursor:
+
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+        if conexao:
+
+            try:
+                conexao.close()
+            except Exception:
+                pass
 
 
-if __name__ == "__main__":
-    porta = int(os.environ.get("PORT", 5000))
-    logger.info("==================================================")
-    logger.info("%s | %s v%s", NOME_SISTEMA, NOME_ERP, APP_VERSION)
-    logger.info("Porta Ativa: %s | Host: 0.0.0.0", porta)
-    logger.info("==================================================")
-    
-    app.run(host="0.0.0.0", port=porta, debug=False)
+# ==========================================================================
+# LOGOUT
+# ==========================================================================
+
+@login_blueprint.route(
+    '/logout',
+    methods=['GET']
+)
+def rota_logout_estudantil():
+
+    session.clear()
+
+    return redirect('/login')
