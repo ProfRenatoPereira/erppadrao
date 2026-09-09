@@ -1,3 +1,5 @@
+# Substitua o arquivo inteiro pelo bloco abaixo.
+
 import os
 from decimal import Decimal, InvalidOperation
 
@@ -8,8 +10,16 @@ from psycopg2.extras import RealDictCursor
 configuracao_blueprint = Blueprint('configuracao_blueprint', __name__)
 
 def obtener_conexao_master():
-    from app_master import URL_SUPABASE
-    return psycopg2.connect(URL_SUPABASE)
+    import GerenciadorCaixa
+    conexao = GerenciadorCaixa.obter_conexao_master()
+    if conexao is None:
+        raise RuntimeError("Não foi possível obter conexão com o banco.")
+    return conexao
+
+def liberar_conexao_master(conexao):
+    if conexao is not None:
+        import GerenciadorCaixa
+        GerenciadorCaixa.liberar_conexao_master(conexao)
 
 def tabela_existe(cursor, nome_tabela):
     cursor.execute("""
@@ -145,29 +155,6 @@ def api_inicializar_empresa():
                         VALUES (%s, %s)
                     """, (id_equipe, capital_total))
 
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS departamentos_orcamento (
-                id SERIAL PRIMARY KEY,
-                equipe_id TEXT NOT NULL,
-                departamento TEXT NOT NULL,
-                orcamento_liberado NUMERIC(18,2) NOT NULL DEFAULT 0,
-                UNIQUE(equipe_id, departamento)
-            )
-        """)
-
-        orcamentos = [
-            (id_equipe, 'maquinas', capital_total * Decimal('0.40')),
-            (id_equipe, 'rh', capital_total * Decimal('0.30')),
-            (id_equipe, 'materiais', capital_total * Decimal('0.30'))
-        ]
-
-        cursor.executemany("""
-            INSERT INTO departamentos_orcamento
-                (equipe_id, departamento, orcamento_liberado)
-            VALUES (%s, %s, %s)
-            ON CONFLICT (equipe_id, departamento)
-            DO UPDATE SET orcamento_liberado = EXCLUDED.orcamento_liberado
-        """, orcamentos)
 
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS fluxo_caixa (
@@ -213,6 +200,4 @@ def api_inicializar_empresa():
         if cursor:
             try: cursor.close()
             except Exception: pass
-        if conexao:
-            try: conexao.close()
-            except Exception: pass
+        liberar_conexao_master(conexao)
