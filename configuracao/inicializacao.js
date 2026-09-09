@@ -6,7 +6,6 @@ function mudarFonte(direcao) {
     document.documentElement.style.fontSize = tamanhoFonteAtual + 'px';
 }
 
-
 function alternarModoEscuro() {
     document.body.classList.remove('alto-contraste');
     document.body.classList.toggle('dark-mode');
