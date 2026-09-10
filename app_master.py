@@ -9,7 +9,7 @@
 # - não cria nem exige static/login.js físico: a rota faz a ponte para
 #   login/login.js;
 # - usa caminhos absolutos baseados no diretório do projeto;
-# - preserva a sessão da equipe e o fluxo login -> grid/financeiro;
+# - preserva a sessão da equipe e o fluxo login -> inicialização -> financeiro;
 # - não contém CSS de páginas do ERP.
 # ============================================================================
 
@@ -289,9 +289,8 @@ BLUEPRINTS_REGISTRADOS = registrar_blueprints()
 # /GRID - PONTO DE ENTRADA DA EMPRESA
 # ============================================================================
 #
-# O login das equipes usa /grid. Se outro módulo do ERP já possuir uma rota
-# /grid, esta rota não é instalada. Se não possuir, o master oferece um ponto
-# de entrada seguro em vez de devolver o 404 mostrado no navegador.
+# O /grid é mantido apenas como compatibilidade com módulos legados.
+# O fluxo oficial de equipe é login -> inicialização -> financeiro.
 #
 
 if "/grid" not in [regra.rule for regra in app.url_map.iter_rules()]:
