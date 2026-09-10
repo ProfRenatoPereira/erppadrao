@@ -1,7 +1,6 @@
 # ============================================================================
 # TERADMAS ERP v2.6 - MASTER / ENTRYPOINT FLASK
 # Arquivo: master.py
-#
 # Correções desta versão:
 # - registra os Blueprints do ERP de forma centralizada;
 # - mantém compatibilidade com módulos que importam "app_master";
