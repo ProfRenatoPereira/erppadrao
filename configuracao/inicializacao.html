@@ -1,86 +1,64 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ERP Acadêmico - Login</title>
-    <link rel="icon" type="image/png" href="/static/logo.png">
-    <style>
-        html, body {
-            margin: 0; padding: 0; box-sizing: border-box;
-            font-family: sans-serif; background-color: #f3f4f6; color: #1f2937;
-        }
-        .btn-top {
-            background-color: #e5e7eb; border: 1px solid #d1d5db;
-            padding: 4px 8px; border-radius: 4px; font-weight: bold;
-            cursor: pointer; font-size: 11px; margin-right: 4px;
-        }
-        .input-form {
-            width: 100%; padding: 8px; border: 1px solid #d1d5db;
-            border-radius: 6px; box-sizing: border-box; margin-top: 4px; font-size: 13px;
-        }
-        .btn-submit {
-            width: 100%; background-color: #1e3a8a; color: white; border: none;
-            padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer;
-            text-transform: uppercase; font-size: 11px; margin-top: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .btn-submit:hover { background-color: #172554; }
-        .alert-danger {
-            background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;
-            padding: 10px; border-radius: 6px; font-size: 12px; font-weight: bold;
-            text-align: center; margin-bottom: 12px; display: none;
-        }
-        body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-        body.dark-mode .container-box { background-color: #1e293b !important; border-color: #334155 !important; }
-        body.dark-mode .input-form { background-color: #0f172a !important; color: white !important; border-color: #334155 !important; }
-        body.alto-contraste { background-color: #000 !important; color: #ffff00 !important; }
-        body.alto-contraste .container-box { background-color: #000 !important; border: 2px solid #fff !important; }
-        body.alto-contraste .input-form { background-color: #000 !important; color: #ffff00 !important; border: 2px solid #ffff00 !important; }
-        body.alto-contraste .btn-submit { background-color: #fff !important; color: #000 !important; border: 2px solid #000 !important; }
-        body.alto-contraste h1, body.alto-contraste h2,
-        body.alto-contraste label, body.alto-contraste p { color: #ffff00 !important; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERADMAS - Inicialização da Empresa</title>
+<link rel="icon" type="image/png" href="/static/logo.png">
+<style>
+html,body{margin:0;padding:0;box-sizing:border-box;font-family:sans-serif;background:#f3f4f6;color:#1f2937}
+.btn-top{background:#e5e7eb;border:1px solid #d1d5db;padding:4px 8px;border-radius:4px;font-weight:bold;cursor:pointer;font-size:11px;margin-right:4px}
+.input-form{width:100%;padding:8px;border:1px solid #d1d5db;border-radius:6px;box-sizing:border-box;margin-top:4px;font-size:13px}
+.btn-submit{width:100%;background:#1e3a8a;color:#fff;border:0;padding:10px;border-radius:6px;font-weight:bold;cursor:pointer;text-transform:uppercase;font-size:11px;margin-top:10px;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+.btn-submit:hover{background:#172554}
+.alert-danger{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:10px;border-radius:6px;font-size:12px;font-weight:bold;text-align:center;margin-bottom:12px;display:none}
+body.dark-mode{background:#0f172a!important;color:#f8fafc!important}
+body.dark-mode .container-box{background:#1e293b!important;border-color:#334155!important}
+body.dark-mode .input-form{background:#0f172a!important;color:#fff!important;border-color:#334155!important}
+body.alto-contraste{background:#000!important;color:#ff0!important}
+body.alto-contraste .container-box{background:#000!important;border:2px solid #fff!important}
+body.alto-contraste .input-form{background:#000!important;color:#ff0!important;border:2px solid #ff0!important}
+body.alto-contraste .btn-submit{background:#fff!important;color:#000!important;border:2px solid #000!important}
+body.alto-contraste h1,body.alto-contraste h2,body.alto-contraste label,body.alto-contraste p{color:#ff0!important}
+</style>
 </head>
 <body style="min-height:100vh;display:flex;flex-direction:column;transition:all .2s ease;">
-    <div style="background-color:#0f172a;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155;color:white;font-size:12px;">
-        <span style="font-weight:bold;color:#38bdf8;">®ψΣ TERADMAS</span>
-        <div style="display:flex;align-items:center;">
-            <button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
-            <button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
-            <button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Contraste</button>
-            <button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Escuro</button>
-            <button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background-color:#0284c7;color:white;border:none;">🔊 Ativar Leitor</button>
-        </div>
-    </div>
+<div style="background:#0f172a;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #334155;color:#fff;font-size:12px;">
+<span style="font-weight:bold;color:#38bdf8;">®ψΣ TERADMAS</span>
+<div style="display:flex;align-items:center;">
+<button type="button" onclick="mudarFonte(1)" class="btn-top">A+</button>
+<button type="button" onclick="mudarFonte(-1)" class="btn-top">A-</button>
+<button type="button" onclick="alternarAltoContraste()" class="btn-top">⚫ Contraste</button>
+<button type="button" id="btn_tema" onclick="alternarModoEscuro()" class="btn-top">🌙 Escuro</button>
+<button type="button" id="btn-leitor-audio" onclick="alternarLeitorAudio()" class="btn-top" style="background:#0284c7;color:#fff;border:0;">🔊 Ativar Leitor</button>
+</div>
+</div>
 
-    <div style="flex-grow:1;display:flex;align-items:center;justify-content:center;padding:16px;">
-        <div class="container-box" style="background-color:white;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);width:100%;max-width:450px;padding:24px;">
-            <div style="text-align:center;margin-bottom:20px;">
-                <h1 id="txt_titulo" style="color:#1e3a8a;font-size:22px;font-weight:900;margin:0;text-transform:uppercase;letter-spacing:-.5px;">TERCEIRO ADM ASSOCIADOS</h1>
-                <h2 id="txt_sub" style="font-size:14px;font-weight:bold;color:#4b5563;margin-top:4px;margin-bottom:0;">Acesso ao ERP Acadêmico</h2>
-            </div>
+<div style="flex-grow:1;display:flex;align-items:center;justify-content:center;padding:16px;">
+<div class="container-box" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 4px 6px -1px rgba(0,0,0,.1);width:100%;max-width:450px;padding:24px;text-align:center;">
+<h1 id="txt_titulo" style="color:#1e3a8a;font-size:22px;font-weight:900;margin:0;text-transform:uppercase;letter-spacing:-.5px;">CONSTITUIÇÃO DO NEGÓCIO</h1>
+<h2 id="txt_sub" style="font-size:14px;font-weight:bold;color:#4b5563;margin-top:4px;margin-bottom:0;">Aporte de Capital Inicial</h2>
+<p style="font-size:12px;color:#6b7280;margin-top:6px;margin-bottom:2px;">Grupo Autenticado: <span style="font-weight:900;color:#1e293b;" id="txt_equipe">{{ session.id_equipe }}</span></p>
+<p style="font-size:11px;color:#6b7280;line-height:1.5;margin-bottom:16px;text-align:justify;" id="txt_desc">Defina o nome da sua organização e injete os fundos em caixa para liberar o orçamento dos departamentos.</p>
+<div id="msg_erro" class="alert-danger" role="alert" aria-live="assertive"></div>
 
-            <p id="txt_desc" style="font-size:11px;color:#6b7280;line-height:1.5;margin-bottom:16px;text-align:justify;">
-                Insira o identificador exclusivo da sua equipe para restaurar a capacidade operacional e gerencial da sua empresa simulada.
-            </p>
+<form id="formInicializacao" onsubmit="salvarInicializacao(event)" style="display:flex;flex-direction:column;gap:12px;text-align:left;">
+<div>
+<label for="nome_empresa" style="font-size:10px;font-weight:bold;color:#4b5563;text-transform:uppercase;">Nome Fantasia da Empresa:</label>
+<input type="text" id="nome_empresa" required maxlength="200" placeholder="Ex: Metalúrgica Alfa S.A." class="input-form">
+</div>
+<div>
+<label for="capital_total" style="font-size:10px;font-weight:bold;color:#4b5563;text-transform:uppercase;">Capital Social Integralizado (R$):</label>
+<input type="number" id="capital_total" step="0.01" min="10000" required placeholder="Ex: 500000.00" class="input-form">
+</div>
+<button type="submit" id="btn-inicializar" class="btn-submit">Abrir Conta e Iniciar Operações 🚀</button>
+</form>
 
-            <div id="msg_erro" class="alert-danger" role="alert" aria-live="assertive"></div>
-
-            <form id="formLogin" onsubmit="executarAutenticacaoEstudantil(event)" style="display:flex;flex-direction:column;gap:12px;">
-                <div>
-                    <label for="id_equipe" style="font-size:10px;font-weight:bold;color:#4b5563;text-transform:uppercase;">Identificador da Equipe (Usuário):</label>
-                    <input type="text" id="id_equipe" required autocomplete="username" placeholder="Ex: equipe_alfa" class="input-form">
-                </div>
-                <div>
-                    <label for="senha" style="font-size:10px;font-weight:bold;color:#4b5563;text-transform:uppercase;">Chave de Acesso (Senha):</label>
-                    <input type="password" id="senha" required autocomplete="current-password" placeholder="••••••••" class="input-form">
-                </div>
-                <button type="submit" id="btn-login" class="btn-submit">Validar Credenciais de Acesso</button>
-            </form>
-        </div>
-    </div>
-
-    <script src="/login/login.js" defer></script>
+<div style="margin-top:16px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;justify-content:center;">
+<a href="/logout" style="font-size:11px;color:#d97706;font-weight:bold;text-decoration:none;">🔒 Abandonar e Sair</a>
+</div>
+</div>
+</div>
+<script src="/configuracao/inicializacao.js" defer></script>
 </body>
 </html>
