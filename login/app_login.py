@@ -9,6 +9,21 @@ from flask import Blueprint, request, render_template_string, session, jsonify, 
 login_blueprint = Blueprint('login_blueprint', __name__)
 logger = logging.getLogger(__name__)
 
+@login_blueprint.route('/login/login.js', methods=['GET'])
+def servir_login_js():
+    """Entrega o JavaScript real do login no caminho usado pelo login.html."""
+    caminho = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'login.js')
+    try:
+        with open(caminho, 'r', encoding='utf-8') as arquivo:
+            return arquivo.read(), 200, {
+                'Content-Type': 'application/javascript; charset=utf-8',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+            }
+    except FileNotFoundError:
+        return "console.error('TERADMAS: login.js não encontrado.');", 404, {
+            'Content-Type': 'application/javascript; charset=utf-8'
+        }
+
 def obter_conexao_master():
     import GerenciadorCaixa
     conexao = GerenciadorCaixa.obter_conexao_master()
@@ -59,7 +74,6 @@ def rota_login_autenticacao():
     if request.method == 'GET':
         if session.get('logado'):
             if session.get('professor_master'): return redirect('/professor_painel_secreto')
-            if session.get('empresa_inicializada'): return redirect('/grid')
             return redirect('/configuracao/inicializacao')
         try:
             with open(os.path.join(diretorio,'login.html'),'r',encoding='utf-8') as arquivo:
