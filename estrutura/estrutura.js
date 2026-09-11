@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Listener do Botão do Leitor de Áudio
     document.getElementById('btn-leitor')?.addEventListener('click', alternarLeitorAudio);
+    document.getElementById('formDecisaoAquisicao')?.addEventListener('submit', analisarDecisaoAquisicao);
 });
 
 /* ==========================================================================
@@ -198,88 +199,145 @@ function calcularPreviaSalario() {
 async function carregarDadosIniciais() {
     "use strict";
     try {
-        const resMetricas = await fetch('/api/financeiro/metricas?dept=estrutura');
-        if (!resMetricas.ok) throw new Error("Falha na sincronização.");
+        const [resOrcamento, resMetricas] = await Promise.all([
+            fetch('/api/estrutura/orcamento'),
+            fetch('/api/financeiro/metricas?dept=estrutura')
+        ]);
+
+        if (!resOrcamento.ok) throw new Error("Falha ao carregar capital e quota de Estrutura.");
+        if (!resMetricas.ok) throw new Error("Falha na sincronização das métricas financeiras.");
+
+        const orcamento = await resOrcamento.json();
         const metricas = await resMetricas.json();
-        
-        const capitalInicial = 0;
-        const budgetMaximoSetor = capitalInicial * 0.40; // Trava regulamentar de 40%
-        const gastoSetor = metricas.custo_fixo_isolado_setor || 0;
-        const custoFixoGeralEmpresa = metricas.custo_fixo_geral_empresa || 0;
-        const patrimonioSetor = metricas.patrimonio_isolado_setor || 0;
-        
+
+        const capitalInicial = Number(orcamento.capital_inicial) || 0;
+        const porcentagemEstrutura = Number(orcamento.porcentagem_estrutura) || 0;
+        const valorAlocadoEstrutura = Number(orcamento.valor_alocado_estrutura) || 0;
+        const patrimonioSetor = Number(orcamento.patrimonio_atual_estrutura) || 0;
+        const saldoAquisicoes = Number(orcamento.saldo_disponivel_aquisicoes) || 0;
+        const gastoSetor = Number(metricas.custo_fixo_isolado_setor) || 0;
+        const custoFixoGeralEmpresa = Number(metricas.custo_fixo_geral_empresa) || 0;
+        const custoVariavelSetor = Number(metricas.custo_variavel_isolado_setor) || 0;
+        const custoVariavelTotal = Number(metricas.custo_variavel_total) || 0;
+
+        const brl = valor => Number(valor || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+        const pct = valor => `${Number(valor || 0).toFixed(2)}%`;
+
         const elementos = {
-            'top_capital_total': capitalInicial.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'top_giro_global_label': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'top_giro_global': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'top_budget_inicial': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'kpi-saldo-infra': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'kpi-orcamento-inicial': budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'kpi-patrimonio-total': patrimonioSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}),
-            'kpi-custo-fixo-setor': gastoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês',
-            'fechamento_custo_fixo_generico': custoFixoGeralEmpresa.toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês'
+            'top_capital_total': brl(capitalInicial),
+            'top_giro_global_label': brl(valorAlocadoEstrutura),
+            'top_giro_global': brl(valorAlocadoEstrutura),
+            'top_budget_inicial': brl(valorAlocadoEstrutura),
+            'kpi-saldo-infra': brl(saldoAquisicoes),
+            'kpi-orcamento-inicial': brl(valorAlocadoEstrutura),
+            'kpi-patrimonio-total': brl(patrimonioSetor),
+            'kpi-custo-fixo-setor': brl(gastoSetor) + '/mês',
+            'fechamento_custo_fixo_generico': brl(custoFixoGeralEmpresa) + '/mês',
+            'kpi-custo-variavel-setor': brl(custoVariavelSetor) + '/mês',
+            'kpi-custo-variavel-total': brl(custoVariavelTotal) + '/mês'
         };
 
         Object.keys(elementos).forEach(id => {
             const elem = document.getElementById(id);
             if (elem) elem.innerText = elementos[id];
         });
-        
-        if(document.getElementById('kpi-teto-ativos')) {
-            document.getElementById('kpi-teto-ativos').innerText = 'Global: ' + budgetMaximoSetor.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-        }
-        if(document.getElementById('kpi-custo-variavel-setor')) {
-            document.getElementById('kpi-custo-variavel-setor').innerText = (metricas.custo_variavel_isolado_setor || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês';
-        }
-        if(document.getElementById('kpi-custo-variavel-total')) {
-            document.getElementById('kpi-custo-variavel-total').innerText = (metricas.custo_variavel_total || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'}) + '/mês';
-        }
-        
+
         const inputGrupo = document.getElementById('nome_grupo_display');
-        if (inputGrupo) inputGrupo.value = metricas.nome_empresa || "EQUIPE LOGADA";
+        if (inputGrupo) inputGrupo.value = orcamento.nome_empresa || metricas.nome_empresa || "EQUIPE LOGADA";
 
-        let porcCapital = (gastoSetor / capitalInicial) * 100;
-        let porcFixo = custoFixoGeralEmpresa > 0 ? (gastoSetor / custoFixoGeralEmpresa) * 100 : 0;
-        let porcBudget = budgetMaximoSetor > 0 ? (gastoSetor / budgetMaximoSetor) * 100 : 0;
-        porcBudget = Math.min(100, Math.max(0, porcBudget));
+        const labelQuota = document.getElementById('txt_porcentagem_setor_imob');
+        if (labelQuota) labelQuota.innerText = `➔ Quota endereçada: ${pct(porcentagemEstrutura)} do capital inicial`;
 
-        if (document.getElementById('txt_porcentagem_setor_imob')) {
-            document.getElementById('txt_porcentagem_setor_imob').innerText = `➔ Alocado: ${porcBudget.toFixed(2)}% do Teto`;
+        const labelQuotaInicial = document.getElementById('txt_porcentagem_orcamento_estrutura');
+        if (labelQuotaInicial) labelQuotaInicial.innerText = `➔ ${pct(porcentagemEstrutura)} do capital inicial`;
+
+        if (document.getElementById('kpi-teto-ativos')) {
+            document.getElementById('kpi-teto-ativos').innerText = `Quota: ${brl(valorAlocadoEstrutura)}`;
         }
-        if (document.getElementById('txt_proporcao_global_empresa')) {
-            document.getElementById('txt_proporcao_global_empresa').innerText = `➔ Impacto do Setor: ${porcFixo.toFixed(2)}% do impacto fixo global`;
-        }
-        
+
+        const impactoFixo = custoFixoGeralEmpresa > 0 ? (gastoSetor / custoFixoGeralEmpresa) * 100 : 0;
+        const labelImpacto = document.getElementById('txt_proporcao_global_empresa');
+        if (labelImpacto) labelImpacto.innerText = `➔ Impacto do Setor: ${impactoFixo.toFixed(2)}% do impacto fixo global`;
+
         const txtBudget = document.getElementById('top_budget_setor');
         const barraProgresso = document.getElementById('barra-limite-setor');
         const txtPorcentagem = document.getElementById('txt_porcentagem_budget');
         const cardBudget = document.getElementById('card_budget_limite');
-        
-        if (txtBudget) txtBudget.innerText = `R$ ${gastoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${budgetMaximoSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-        if (barraProgresso) barraProgresso.style.width = `${porcBudget}%`;
-        if (txtPorcentagem) txtPorcentagem.innerText = `${porcBudget.toFixed(1)}% do teto consumido`;
-        
+        const percentualPatrimonio = valorAlocadoEstrutura > 0 ? Math.min(100, Math.max(0, (patrimonioSetor / valorAlocadoEstrutura) * 100)) : 0;
+
+        if (txtBudget) txtBudget.innerText = `${brl(patrimonioSetor)} / ${brl(valorAlocadoEstrutura)}`;
+        if (barraProgresso) barraProgresso.style.width = `${percentualPatrimonio}%`;
+        if (txtPorcentagem) txtPorcentagem.innerText = `${percentualPatrimonio.toFixed(1)}% da quota patrimonial consumida`;
+
         if (cardBudget && barraProgresso) {
-            if (gastoSetor > budgetMaximoSetor) {
-                cardBudget.style.backgroundColor = "#fef2f2";
-                cardBudget.style.borderColor = "#fca5a5";
-                barraProgresso.style.backgroundColor = "#ef4444"; 
-            } else {
-                cardBudget.style.backgroundColor = "#f8fafc";
-                cardBudget.style.borderColor = "#cbd5e1";
-                barraProgresso.style.backgroundColor = "#3b82f6"; 
-            }
+            cardBudget.style.backgroundColor = percentualPatrimonio > 100 ? "#fef2f2" : "#f8fafc";
+            cardBudget.style.borderColor = percentualPatrimonio > 100 ? "#fca5a5" : "#cbd5e1";
+            barraProgresso.style.backgroundColor = percentualPatrimonio > 100 ? "#ef4444" : "#3b82f6";
         }
 
-        // Chamada imediata encadeada das tabelas do inventário e sub-módulos
+        const decisaoCapital = document.getElementById('decisao_capital_inicial');
+        if (decisaoCapital) decisaoCapital.innerText = brl(capitalInicial);
+
+        const decisaoSaldo = document.getElementById('decisao_saldo_disponivel');
+        if (decisaoSaldo) decisaoSaldo.innerText = brl(saldoAquisicoes);
+
+        const decisaoQuota = document.getElementById('decisao_quota_percentual');
+        if (decisaoQuota) decisaoQuota.innerText = pct(porcentagemEstrutura);
+
+        const decisaoAlocado = document.getElementById('decisao_valor_alocado');
+        if (decisaoAlocado) decisaoAlocado.innerText = brl(valorAlocadoEstrutura);
+
+        const decisaoPatrimonio = document.getElementById('decisao_patrimonio_atual');
+        if (decisaoPatrimonio) decisaoPatrimonio.innerText = brl(patrimonioSetor);
+
         await carregarTabelaImoveis();
         await carregarTabelaUtensilios();
         await carregarTabelaColaboradores();
-        calcularCustoMinutoUtensilio();
-    } catch (err) { 
-        console.error('Erro ao processar painel de KPIs superiores:', err); 
+        await calcularCustoMinutoUtensilio();
+    } catch (err) {
+        console.error('Erro ao processar painel de Estrutura:', err);
     }
 }
+
+async function analisarDecisaoAquisicao(e) {
+    "use strict";
+    if (e && e.preventDefault) e.preventDefault();
+
+    const input = document.getElementById('decisao_valor_aquisicao');
+    const resultado = document.getElementById('decisao_resultado');
+    const detalhe = document.getElementById('decisao_detalhe');
+    const valor = Number(String(input?.value || '0').replace(',', '.')) || 0;
+
+    if (valor <= 0) {
+        if (resultado) resultado.innerText = 'INFORME UM VALOR';
+        if (detalhe) detalhe.innerText = 'Digite o valor estimado da aquisição para iniciar a análise.';
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/estrutura/decisao_aquisicao', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({valor_aquisicao: valor})
+        });
+        const dados = await res.json();
+        if (!res.ok) throw new Error(dados.message || 'Falha na análise.');
+
+        if (resultado) resultado.innerText = dados.decisao;
+        if (detalhe) {
+            detalhe.innerText = `${dados.motivo} Saldo atual: ${formatarBRL(dados.saldo_disponivel_aquisicoes)} | Após a aquisição: ${formatarBRL(dados.saldo_apos_aquisicao)}.`;
+        }
+    } catch (err) {
+        console.error('Erro na análise de aquisição:', err);
+        if (resultado) resultado.innerText = 'ERRO';
+        if (detalhe) detalhe.innerText = err.message;
+    }
+}
+
+function formatarBRL(valor) {
+    return Number(valor || 0).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
 // ==========================================================================
  // TERADMAS ERP v2.6 - MÓDULO 02: IMOBILIÁRIO E CUSTOS FIXOS INDUSTRIAIS
  // ARQUIVO: estrutura.js - PARTE 3A DE 3 (RENDERIZAÇÃO DE TABELAS PARTE 1)
@@ -435,12 +493,7 @@ async function calcularCustoMinutoUtensilio() {
 async function salvarImovel(e) {
     "use strict";
     if(e && e.preventDefault) e.preventDefault();
-    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
-    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-    
     const dados = {
-        equipe_id: equipeId,
-        dept: deptAtual,
         id: document.getElementById('imovel_id').value ? parseInt(document.getElementById('imovel_id').value) : null,
         tipo_imovel: document.getElementById('tipo_imovel').value,
         regiao: document.getElementById('cidade').value + " - " + document.getElementById('bairro').value,
@@ -480,12 +533,7 @@ async function salvarMaquina(e) {
         return;
     }
     
-    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
-    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-    
     const dados = {
-        equipe_id: equipeId,
-        dept: deptAtual,
         nome_equipamento: option.value,
         preco_compra: parseFloat(option.getAttribute('data-preco')) || 0,
         watts_consumo: parseFloat(option.getAttribute('data-watts')) || 0,
@@ -524,12 +572,7 @@ async function adicionarColaborador(e) {
     const select = document.getElementById('cargo_suporte');
     const option = select.options[select.selectedIndex];
     
-    const equipeId = sessionStorage.getItem('equipe_id') || "EQUIPE_PADRAO";
-    const deptAtual = window.location.pathname.replace('/', '') || 'estrutura';
-
     const dados = {
-        equipe_id: equipeId,
-        dept: deptAtual,
         nome: document.getElementById('rh_nome').value,
         cargo: select.value,
         salario_base: parseFloat(option.getAttribute('data-salario')) || 0,
