@@ -9,15 +9,12 @@ from flask import Blueprint, request, render_template_string, session, jsonify, 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from GerenciadorCaixa import obter_conexao_master, liberar_conexao_master
+
 logger = logging.getLogger(__name__)
 
 # Inicialização do Blueprint do Módulo Imobiliário e Estrutura
 estrutura_blueprint = Blueprint('estrutura_blueprint', __name__)
-
-def obter_conexao_master():
-    """Recupera a string de conexão unificada via URL_SUPABASE importada de app_master"""
-    from app_master import URL_SUPABASE
-    return psycopg2.connect(URL_SUPABASE)
 
 @estrutura_blueprint.route('/estrutura', methods=['GET'])
 def pagina_estrutura():
@@ -84,7 +81,7 @@ def api_imoveis_listar():
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: liberar_conexao_master(conexao)
 
 @estrutura_blueprint.route('/api/estrutura/maquinas', methods=['GET'])
 def api_maquinas_listar():
@@ -116,7 +113,7 @@ def api_maquinas_listar():
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: liberar_conexao_master(conexao)
 
 @estrutura_blueprint.route('/api/estrutura/rh', methods=['GET'])
 def api_rh_listar():
@@ -142,7 +139,7 @@ def api_rh_listar():
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: liberar_conexao_master(conexao)
 
 # ========== ENDPOINTS POST ==========
 
@@ -179,7 +176,7 @@ def api_imoveis_salvar():
         return jsonify({'status': 'erro', 'message': str(err)}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: liberar_conexao_master(conexao)
 
 @estrutura_blueprint.route('/api/estrutura/maquinas', methods=['POST'])
 def api_maquinas_salvar():
@@ -210,7 +207,7 @@ def api_maquinas_salvar():
         return jsonify({'status': 'erro', 'message': str(err)}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: liberar_conexao_master(conexao)
 
 @estrutura_blueprint.route('/api/estrutura/rh', methods=['POST'])
 def api_rh_salvar():
@@ -239,12 +236,167 @@ def api_rh_salvar():
         return jsonify({'status': 'erro', 'message': str(err)}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: liberar_conexao_master(conexao)
+
+
+# ========== ORÇAMENTO DE ESTRUTURA / ANÁLISE DE AQUISIÇÕES ==========
+
+def _numero(valor, padrao=0.0):
+    try:
+        return float(valor or 0)
+    except (TypeError, ValueError):
+        return padrao
+
+
+def _dados_orcamento_estrutura(cursor, id_equipe):
+    '''Retorna capital inicial e quota da ESTRUTURA sem criar rateios paralelos.'''
+    capital_inicial = 0.0
+    nome_empresa = session.get('nome_empresa', session.get('nome_grupo', 'GRUPO DIDÁTICO')).upper()
+    quota_percentual = 0.0
+
+    # Fonte oficial do capital: config_simulacao.
+    try:
+        cursor.execute('''
+            SELECT capital_total, nome_empresa
+            FROM config_simulacao
+            WHERE equipe_id = %s
+            ORDER BY id DESC
+            LIMIT 1
+        ''', (id_equipe,))
+        row = cursor.fetchone()
+        if row:
+            capital_inicial = _numero(row.get('capital_total'))
+            if row.get('nome_empresa'):
+                nome_empresa = str(row['nome_empresa']).upper()
+    except psycopg2.DatabaseError:
+        cursor.connection.rollback()
+
+    # Fallback de compatibilidade para sessões que ainda carregam o capital.
+    if capital_inicial <= 0:
+        capital_inicial = _numero(session.get('capital_inicial', session.get('capital_total', 0)))
+
+    # Fonte oficial da alocação: quotas_departamentos.
+    try:
+        cursor.execute('''
+            SELECT COALESCE(porcentagem_quota, 0) AS porcentagem_quota
+            FROM quotas_departamentos
+            WHERE equipe_id = %s AND LOWER(departamento_id) = 'estrutura'
+            LIMIT 1
+        ''', (id_equipe,))
+        row = cursor.fetchone()
+        if row:
+            quota_percentual = max(0.0, min(100.0, _numero(row.get('porcentagem_quota'))))
+    except psycopg2.DatabaseError:
+        cursor.connection.rollback()
+
+    valor_alocado = capital_inicial * quota_percentual / 100.0
+
+    # Patrimônio atual de ESTRUTURA = ativos atuais registrados em erp_maquinas.
+    patrimonio_atual = 0.0
+    try:
+        cursor.execute('''
+            SELECT COALESCE(SUM(preco_compra), 0) AS patrimonio_atual
+            FROM erp_maquinas
+            WHERE equipe_id = %s AND departamento = 'ESTRUTURA'
+        ''', (id_equipe,))
+        row = cursor.fetchone()
+        patrimonio_atual = _numero(row.get('patrimonio_atual')) if row else 0.0
+    except psycopg2.DatabaseError:
+        cursor.connection.rollback()
+
+    saldo_aquisicoes = max(0.0, valor_alocado - patrimonio_atual)
+    return {
+        'nome_empresa': nome_empresa,
+        'capital_inicial': capital_inicial,
+        'porcentagem_estrutura': quota_percentual,
+        'valor_alocado_estrutura': valor_alocado,
+        'patrimonio_atual_estrutura': patrimonio_atual,
+        'saldo_disponivel_aquisicoes': saldo_aquisicoes
+    }
+
+
+@estrutura_blueprint.route('/api/estrutura/orcamento', methods=['GET'])
+def api_orcamento_estrutura():
+    '''Entrega ao módulo estrutura o capital inicial e a quota oficial do setor.'''
+    if not session.get('logado') or not session.get('id_equipe'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+
+    id_equipe = session.get('id_equipe')
+    conexao = obter_conexao_master()
+    cursor = None
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        dados = _dados_orcamento_estrutura(cursor, id_equipe)
+        conexao.commit()
+        return jsonify({'status': 'sucesso', **dados}), 200
+    except Exception as e:
+        if conexao:
+            conexao.rollback()
+        logger.exception('Erro ao carregar orçamento de estrutura')
+        return jsonify({'status': 'erro', 'message': str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conexao:
+            liberar_conexao_master(conexao)
+
+
+@estrutura_blueprint.route('/api/estrutura/decisao_aquisicao', methods=['POST'])
+def api_decisao_aquisicao():
+    '''Analisa uma aquisição sem efetuar compra nem movimentar o caixa.'''
+    if not session.get('logado') or not session.get('id_equipe'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
+
+    dados = request.get_json(silent=True) or {}
+    valor_aquisicao = _numero(dados.get('valor_aquisicao'))
+    if valor_aquisicao <= 0:
+        return jsonify({'status': 'erro', 'message': 'Informe um valor de aquisição maior que zero.'}), 400
+
+    id_equipe = session.get('id_equipe')
+    conexao = obter_conexao_master()
+    cursor = None
+    try:
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
+        orcamento = _dados_orcamento_estrutura(cursor, id_equipe)
+        saldo = orcamento['saldo_disponivel_aquisicoes']
+        restante = saldo - valor_aquisicao
+        aprovado = restante >= 0
+        percentual_quota = orcamento['porcentagem_estrutura']
+
+        conexao.commit()
+        return jsonify({
+            'status': 'sucesso',
+            'decisao': 'APROVAR' if aprovado else 'REVISAR',
+            'motivo': (
+                'Aquisição compatível com o saldo disponível da quota de Estrutura.'
+                if aprovado else
+                'Aquisição acima do saldo disponível da quota de Estrutura.'
+            ),
+            'capital_inicial': orcamento['capital_inicial'],
+            'porcentagem_estrutura': percentual_quota,
+            'valor_alocado_estrutura': orcamento['valor_alocado_estrutura'],
+            'patrimonio_atual_estrutura': orcamento['patrimonio_atual_estrutura'],
+            'saldo_disponivel_aquisicoes': saldo,
+            'valor_aquisicao': valor_aquisicao,
+            'saldo_apos_aquisicao': max(0.0, restante) if aprovado else restante
+        }), 200
+    except Exception as e:
+        if conexao:
+            conexao.rollback()
+        logger.exception('Erro na análise de decisão de aquisição')
+        return jsonify({'status': 'erro', 'message': str(e)}), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conexao:
+            liberar_conexao_master(conexao)
 
 # ========== ENDPOINTS INDIVIDUAL CRUD ==========
 
 @estrutura_blueprint.route('/api/estrutura/imoveis/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_imovel(id_reg):
+    if not session.get('logado') or not session.get('id_equipe'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     conexao = obter_conexao_master()
     cursor = None
@@ -262,10 +414,12 @@ def api_individual_imovel(id_reg):
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: liberar_conexao_master(conexao)
 
 @estrutura_blueprint.route('/api/estrutura/rh/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_rh(id_reg):
+    if not session.get('logado') or not session.get('id_equipe'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     conexao = obter_conexao_master()
     cursor = None
@@ -283,10 +437,12 @@ def api_individual_rh(id_reg):
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: liberar_conexao_master(conexao)
 
 @estrutura_blueprint.route('/api/estrutura/maquinas/<int:id_reg>', methods=['GET', 'DELETE'])
 def api_individual_maquina(id_reg):
+    if not session.get('logado') or not session.get('id_equipe'):
+        return jsonify({'status': 'erro', 'message': 'Não autenticado'}), 401
     id_equipe = session.get('id_equipe', 'equipe_alfa')
     conexao = obter_conexao_master()
     cursor = None
@@ -311,7 +467,7 @@ def api_individual_maquina(id_reg):
         return jsonify({'status': 'erro', 'message': str(e)}), 500
     finally:
         if cursor: cursor.close()
-        if conexao: conexao.close()
+        if conexao: liberar_conexao_master(conexao)
 
 @estrutura_blueprint.route('/api/estrutura/cargos_disponiveis', methods=['GET'])
 def api_cargos_disponiveis_listar():
