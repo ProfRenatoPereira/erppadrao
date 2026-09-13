@@ -27,6 +27,10 @@ import urllib.parse
 import urllib.request
 import urllib.error
 
+
+from tavily
+import TavilyClient
+
 from flask import (
     Blueprint,
     request,
@@ -1511,3 +1515,37 @@ def api_status_maquinas():
                 configurado_google,
         }
     ), 200
+
+# ROTA DEDICADA PARA PESQUISA DE MÁQUINAS NA WEB
+@app.route('/api/maquinas/pesquisar_web', methods=['POST'])
+def api_pesquisar_maquinas_web():
+    data = request.get_json() or {}
+    termo = data.get('termo', '').strip()
+
+    if not termo:
+        return jsonify({"status": "erro", "mensagem": "Termo de busca não informado."}), 400
+
+    api_key = os.getenv("TAVILY_API_KEY", "")
+    if not api_key:
+        return jsonify({"status": "erro", "mensagem": "TAVILY_API_KEY não configurada no servidor."}), 500
+
+    try:
+        client = TavilyClient(api_key=api_key)
+        res = client.search(
+            query=f"maquina equipamento industrial {termo} especificacoes potencia preco",
+            search_depth="advanced",
+            max_results=4
+        )
+
+        resultados = []
+        for r in res.get("results", []):
+            resultados.append({
+                "titulo": r.get("title", termo),
+                "resumo_tecnico": r.get("content", "")[:180] + "...",
+                "url": r.get("url", "")
+            })
+
+        return jsonify({"status": "sucesso", "resultados": resultados}), 200
+
+    except Exception as e:
+        return jsonify({"status": "erro", "mensagem": str(e)}), 500
