@@ -1,45 +1,569 @@
 /* ==========================================================================
    TERADMAS ERP v2.6
-   MÓDULO 07 — ENGENHARIA DE ATIVOS (MÁQUINAS)
-   maquinas.js
+   MÓDULO 07 - ENGENHARIA DE ATIVOS (MÁQUINAS)
+   
+   RESPONSABILIDADES:
+   - Preservar o contrato atual do maquinas.html
+   - Ler capital inicial real
+   - Ler quota oficial de Máquinas
+   - Calcular valor da quota sobre o CAPITAL INICIAL
+   - Deduzir somente patrimônio efetivamente adquirido
+   - Manter CRUD de máquinas
+   - Manter cálculo de custo/minuto
+   - Preparar pesquisa dinâmica de equipamentos via Google
+   ========================================================================== */
 
-   REGRAS DESTE MÓDULO
-   --------------------------------------------------------------------------
-   1. O capital inicial vem do backend.
-   2. A quota de MÁQUINAS vem de public.quotas_departamentos.
-   3. Valor da quota = capital inicial × percentual da quota.
-   4. Patrimônio é somente o que foi efetivamente adquirido/cadastrado.
-   5. Saldo de aquisição = valor da quota − patrimônio atual.
-   6. Não existe mais divisão automática 40% / 30% / 30%.
-   7. Não existe capital fixo de R$ 5.000.000,00.
-   8. Não existe orçamento fixo de R$ 2.000.000,00.
-   9. O catálogo é apenas referência técnica.
-  10. O catálogo não cria patrimônio automaticamente.
-  11. A equipe/empresa é determinada pela sessão no backend.
-========================================================================== */
-
+"use strict";
 
 /* ==========================================================================
    ESTADO GLOBAL
-========================================================================== */
+   ========================================================================== */
 
-let capitalTotalEmpresa = 0;
-let percentualQuotaMaquinas = 0;
-let valorQuotaMaquinas = 0;
-let patrimonioMaquinasAtual = 0;
-let saldoAquisicaoMaquinas = 0;
+let tamanhoFonteAtual = 16;
+let leitorAtivo = false;
 
-let maquinasGlobal = [];
+let capitalInicialGlobal = 0;
+let porcentagemQuotaGlobal = 0;
+let valorQuotaGlobal = 0;
+let patrimonioMaquinasGlobal = 0;
+let saldoAquisicaoGlobal = 0;
+
+let maquinasCadastradas = [];
 let maquinaEmEdicao = null;
 
 
 /* ==========================================================================
-   CATÁLOGO TÉCNICO DE REFERÊNCIA
-   --------------------------------------------------------------------------
-   IMPORTANTE:
-   Estes registros NÃO são patrimônio da empresa.
-   Servem apenas como modelos para preenchimento técnico.
-========================================================================== */
+   UTILITÁRIOS
+   ========================================================================== */
+
+function numeroSeguro(valor, padrao = 0) {
+    if (valor === null || valor === undefined || valor === "") {
+        return padrao;
+    }
+
+    if (typeof valor === "number") {
+        return Number.isFinite(valor) ? valor : padrao;
+    }
+
+    let texto = String(valor).trim();
+
+    if (!texto) return padrao;
+
+    /*
+       Trata:
+       1000000.50
+       1.000.000,50
+       1000000,50
+    */
+    if (texto.includes(",") && texto.includes(".")) {
+        texto = texto.replace(/\./g, "").replace(",", ".");
+    } else if (texto.includes(",")) {
+        texto = texto.replace(",", ".");
+    }
+
+    const resultado = Number(texto);
+
+    return Number.isFinite(resultado) ? resultado : padrao;
+}
+
+
+function formatarBRL(valor) {
+    return numeroSeguro(valor).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL"
+    });
+}
+
+
+function formatarNumero(valor, casas = 2) {
+    return numeroSeguro(valor).toLocaleString("pt-BR", {
+        minimumFractionDigits: casas,
+        maximumFractionDigits: casas
+    });
+}
+
+
+function elemento(id) {
+    return document.getElementById(id);
+}
+
+
+function definirTexto(id, valor) {
+    const el = elemento(id);
+    if (el) {
+        el.innerText = valor;
+    }
+}
+
+
+function definirValor(id, valor) {
+    const el = elemento(id);
+    if (el) {
+        el.value = valor;
+    }
+}
+
+
+/* ==========================================================================
+   ACESSIBILIDADE
+   ========================================================================== */
+
+function mudarFonte(passo) {
+    tamanhoFonteAtual += Number(passo) || 0;
+
+    tamanhoFonteAtual = Math.max(
+        12,
+        Math.min(24, tamanhoFonteAtual)
+    );
+
+    document.documentElement.style.fontSize =
+        tamanhoFonteAtual + "px";
+
+    const elementos = document.querySelectorAll(
+        "p, label, input, select, th, td, h1, h2, h3, h4, span, button, a"
+    );
+
+    elementos.forEach(el => {
+        el.style.setProperty(
+            "font-size",
+            (tamanhoFonteAtual - 3) + "px",
+            "important"
+        );
+    });
+}
+
+
+function alternarModoEscuro() {
+    document.body.classList.remove("alto-contraste");
+    document.body.classList.toggle("dark-mode");
+
+    const btn = elemento("btn_tema");
+
+    if (btn) {
+        btn.innerText =
+            document.body.classList.contains("dark-mode")
+                ? "☀️ Modo Claro"
+                : "🌙 Modo Escuro";
+    }
+}
+
+
+function alternarAltoContraste() {
+    document.body.classList.remove("dark-mode");
+    document.body.classList.toggle("alto-contraste");
+}
+
+
+function alternarLeitorAudio() {
+    leitorAtivo = !leitorAtivo;
+
+    const btn =
+        elemento("btn-leitor-audio") ||
+        elemento("btn-leitor");
+
+    if (!btn) return;
+
+    if (!leitorAtivo) {
+        window.speechSynthesis.cancel();
+
+        btn.innerText = "🔊 Ativar Leitor";
+        btn.setAttribute("aria-pressed", "false");
+
+        return;
+    }
+
+    btn.innerText = "🔇 Desativar Leitor";
+    btn.setAttribute("aria-pressed", "true");
+
+    window.speechSynthesis.cancel();
+
+    const texto = `
+        Módulo de Engenharia de Ativos.
+        Este módulo permite cadastrar máquinas e equipamentos,
+        calcular custos por minuto,
+        controlar o patrimônio adquirido
+        e analisar a disponibilidade da quota destinada às máquinas.
+    `;
+
+    const utterance =
+        new SpeechSynthesisUtterance(texto);
+
+    utterance.lang = "pt-BR";
+
+    utterance.onend = function () {
+        leitorAtivo = false;
+
+        btn.innerText = "🔊 Ativar Leitor";
+        btn.setAttribute("aria-pressed", "false");
+    };
+
+    window.speechSynthesis.speak(utterance);
+}
+
+
+/* ==========================================================================
+   ORÇAMENTO / CAPITAL / QUOTA
+   ========================================================================== */
+
+async function carregarOrcamentoMaquinas() {
+    try {
+        const resposta =
+            await fetch("/api/maquinas/orcamento", {
+                method: "GET",
+                cache: "no-store",
+                headers: {
+                    "Accept": "application/json"
+                }
+            });
+
+        if (!resposta.ok) {
+            throw new Error(
+                "HTTP " + resposta.status
+            );
+        }
+
+        const dados = await resposta.json();
+
+        if (
+            !dados ||
+            dados.status === "erro"
+        ) {
+            throw new Error(
+                dados?.message ||
+                "A API não retornou o orçamento."
+            );
+        }
+
+        capitalInicialGlobal =
+            numeroSeguro(dados.capital_inicial);
+
+        porcentagemQuotaGlobal =
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    numeroSeguro(
+                        dados.porcentagem_quota
+                    )
+                )
+            );
+
+        valorQuotaGlobal =
+            numeroSeguro(dados.valor_quota);
+
+        patrimonioMaquinasGlobal =
+            numeroSeguro(dados.patrimonio_atual);
+
+        saldoAquisicaoGlobal =
+            Math.max(
+                0,
+                numeroSeguro(dados.saldo_aquisicao)
+            );
+
+        atualizarPainelOrcamentario();
+
+        return dados;
+
+    } catch (erro) {
+        console.error(
+            "Erro ao carregar orçamento de Máquinas:",
+            erro
+        );
+
+        /*
+           Não deixar "Carregando..." indefinidamente.
+           Se a API falhar, mostramos indisponibilidade.
+        */
+        definirTexto(
+            "top_capital_total",
+            "Indisponível"
+        );
+
+        definirTexto(
+            "top_disponivel_setor",
+            "Indisponível"
+        );
+
+        definirTexto(
+            "top_orcamento_inicial",
+            "Indisponível"
+        );
+
+        definirTexto(
+            "top_verba_reais",
+            "Indisponível"
+        );
+
+        return null;
+    }
+}
+
+
+/* ==========================================================================
+   ATUALIZAÇÃO DOS CARDS DO HTML ATUAL
+   ========================================================================== */
+
+function atualizarPainelOrcamentario() {
+
+    const capital =
+        capitalInicialGlobal;
+
+    const quota =
+        porcentagemQuotaGlobal;
+
+    const valorQuota =
+        valorQuotaGlobal;
+
+    const patrimonio =
+        patrimonioMaquinasGlobal;
+
+    const saldo =
+        saldoAquisicaoGlobal;
+
+    /*
+       CAPITAL INICIAL
+    */
+
+    definirTexto(
+        "top_capital_total",
+        formatarBRL(capital)
+    );
+
+
+    /*
+       QUOTA DE MÁQUINAS
+    */
+
+    definirTexto(
+        "top_disponivel_setor",
+        formatarBRL(valorQuota)
+    );
+
+    definirTexto(
+        "pct_disponivel_setor",
+        `➔ ${formatarNumero(quota)}% do Cap.`
+    );
+
+
+    /*
+       VALOR ENDEREÇADO
+    */
+
+    definirTexto(
+        "top_orcamento_inicial",
+        formatarBRL(valorQuota)
+    );
+
+    definirTexto(
+        "pct_orcamento_inicial",
+        `➔ ${formatarNumero(quota)}% do Cap.`
+    );
+
+
+    /*
+       SALDO PARA AQUISIÇÕES
+    */
+
+    definirTexto(
+        "top_verba_reais",
+        formatarBRL(saldo)
+    );
+
+    const percentualSaldo =
+        capital > 0
+            ? (saldo / capital) * 100
+            : 0;
+
+    definirTexto(
+        "pct_saldo_engenharia",
+        `➔ ${formatarNumero(percentualSaldo)}% do Cap.`
+    );
+
+
+    /*
+       PATRIMÔNIO
+    */
+
+    definirTexto(
+        "top_patrimonio_maquinas",
+        formatarBRL(patrimonio)
+    );
+
+    const percentualPatrimonio =
+        capital > 0
+            ? (patrimonio / capital) * 100
+            : 0;
+
+    definirTexto(
+        "pct_patrimonio_maquinas",
+        `➔ ${formatarNumero(percentualPatrimonio)}% do Cap.`
+    );
+
+
+    /*
+       CONSUMO DA QUOTA
+    */
+
+    const consumo =
+        valorQuota > 0
+            ? (patrimonio / valorQuota) * 100
+            : 0;
+
+    const consumoLimitado =
+        Math.max(
+            0,
+            Math.min(100, consumo)
+        );
+
+    definirTexto(
+        "txt_valores_limite",
+        `${formatarBRL(patrimonio)} / ${formatarBRL(valorQuota)}`
+    );
+
+    definirTexto(
+        "txt_porcentagem_budget",
+        `${formatarNumero(consumoLimitado, 1)}% da quota consumida`
+    );
+
+    const barra =
+        elemento("barra_progresso_budget");
+
+    if (barra) {
+        barra.style.width =
+            consumoLimitado + "%";
+    }
+}
+
+
+/* ==========================================================================
+   MÉTRICAS FINANCEIRAS
+   ========================================================================== */
+
+async function carregarMetricasFinanceiras() {
+
+    try {
+
+        const resposta =
+            await fetch(
+                "/api/financeiro/metricas?dept=maquinas",
+                {
+                    method: "GET",
+                    cache: "no-store",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }
+            );
+
+        if (!resposta.ok) {
+            throw new Error(
+                "HTTP " + resposta.status
+            );
+        }
+
+        const metricas =
+            await resposta.json();
+
+        const custoFixoEmpresa =
+            numeroSeguro(
+                metricas.custo_fixo_geral_empresa
+            );
+
+        const custoFixoSetor =
+            numeroSeguro(
+                metricas.custo_fixo_isolado_setor
+            );
+
+        const custoVariavelEmpresa =
+            numeroSeguro(
+                metricas.custo_variavel_total
+            );
+
+        const custoVariavelSetor =
+            numeroSeguro(
+                metricas.custo_variavel_isolado_setor
+            );
+
+
+        definirTexto(
+            "top_custo_fixo",
+            formatarBRL(custoFixoEmpresa) + "/mês"
+        );
+
+        definirTexto(
+            "top_custo_fixo_setor",
+            formatarBRL(custoFixoSetor) + "/mês"
+        );
+
+        definirTexto(
+            "top_custo_variavel",
+            formatarBRL(custoVariavelEmpresa) + "/mês"
+        );
+
+        definirTexto(
+            "top_custo_variavel_setor",
+            formatarBRL(custoVariavelSetor) + "/mês"
+        );
+
+
+        const pctFixoEmpresa =
+            capitalInicialGlobal > 0
+                ? (custoFixoEmpresa / capitalInicialGlobal) * 100
+                : 0;
+
+        const pctFixoSetor =
+            capitalInicialGlobal > 0
+                ? (custoFixoSetor / capitalInicialGlobal) * 100
+                : 0;
+
+        const pctVariavelEmpresa =
+            capitalInicialGlobal > 0
+                ? (custoVariavelEmpresa / capitalInicialGlobal) * 100
+                : 0;
+
+        const pctVariavelSetor =
+            capitalInicialGlobal > 0
+                ? (custoVariavelSetor / capitalInicialGlobal) * 100
+                : 0;
+
+
+        definirTexto(
+            "pct_custo_fixo_geral",
+            `➔ Custos Totais: ${formatarNumero(pctFixoEmpresa)}% | Custos Fixos: ${formatarNumero(pctFixoEmpresa)}%`
+        );
+
+        definirTexto(
+            "pct_custo_fixo_setor",
+            `➔ Custos Totais: ${formatarNumero(pctFixoSetor)}% | Custos Fixos: ${formatarNumero(pctFixoSetor)}%`
+        );
+
+        definirTexto(
+            "pct_custo_variavel_geral",
+            `➔ Custos Totais: ${formatarNumero(pctVariavelEmpresa)}% | Custos Variáveis: ${formatarNumero(pctVariavelEmpresa)}%`
+        );
+
+        definirTexto(
+            "pct_custo_variavel_setor",
+            `➔ Custos Totais: ${formatarNumero(pctVariavelSetor)}% | Custos Variáveis: ${formatarNumero(pctVariavelSetor)}%`
+        );
+
+        return metricas;
+
+    } catch (erro) {
+
+        console.error(
+            "Erro ao carregar métricas financeiras:",
+            erro
+        );
+
+        return null;
+    }
+}
+
+
+/* ==========================================================================
+   CATÁLOGO BASE
+   ========================================================================== */
 
 const CATALOGO_ATIVOS = {
 
@@ -49,9 +573,9 @@ const CATALOGO_ATIVOS = {
         consumo: "18.5",
         agua: "0",
         gases: "0",
-        velocidade: "4500",
-        avanco: "0.25",
-        frequencia: "720",
+        velocidade: "4500 RPM",
+        avanco: "5000 mm/min",
+        manutencao: "500",
         preco: "650000.00",
         depr: "5416.67",
         residual: "130000.00",
@@ -62,12 +586,12 @@ const CATALOGO_ATIVOS = {
     centro_usid: {
         nome: "Centro de Usinagem CNC",
         potencia: "30.0",
-        consumo: "24.0",
+        consumo: "25.0",
         agua: "0",
         gases: "0",
-        velocidade: "6000",
-        avanco: "0.30",
-        frequencia: "720",
+        velocidade: "8000 RPM",
+        avanco: "6000 mm/min",
+        manutencao: "500",
         preco: "850000.00",
         depr: "7083.33",
         residual: "170000.00",
@@ -77,45 +601,45 @@ const CATALOGO_ATIVOS = {
 
     torno_mecanico: {
         nome: "Torno Mecânico Convencional",
-        potencia: "10.0",
-        consumo: "7.5",
+        potencia: "7.5",
+        consumo: "6.0",
         agua: "0",
         gases: "0",
-        velocidade: "1800",
-        avanco: "0.40",
-        frequencia: "360",
+        velocidade: "1800 RPM",
+        avanco: "800 mm/min",
+        manutencao: "300",
         preco: "85000.00",
         depr: "708.33",
         residual: "17000.00",
         operador: "Torneiro Mecânico",
-        mod: "0.3500"
+        mod: "0.3000"
     },
 
     serra_fita: {
         nome: "Serra de Fita Industrial",
-        potencia: "7.5",
-        consumo: "5.5",
+        potencia: "5.5",
+        consumo: "4.5",
         agua: "0",
         gases: "0",
-        velocidade: "90",
-        avanco: "1.00",
-        frequencia: "360",
-        preco: "120000.00",
-        depr: "1000.00",
-        residual: "24000.00",
+        velocidade: "120 RPM",
+        avanco: "100 mm/min",
+        manutencao: "200",
+        preco: "45000.00",
+        depr: "375.00",
+        residual: "9000.00",
         operador: "Operador de Máquinas",
-        mod: "0.3000"
+        mod: "0.2500"
     },
 
     retifica: {
-        nome: "Retífica Industrial",
-        potencia: "15.0",
-        consumo: "11.0",
+        nome: "Retífica Cilíndrica",
+        potencia: "11.0",
+        consumo: "9.0",
         agua: "0",
         gases: "0",
-        velocidade: "3600",
-        avanco: "0.15",
-        frequencia: "360",
+        velocidade: "3000 RPM",
+        avanco: "500 mm/min",
+        manutencao: "300",
         preco: "180000.00",
         depr: "1500.00",
         residual: "36000.00",
@@ -125,66 +649,66 @@ const CATALOGO_ATIVOS = {
 
     furadeira_radial: {
         nome: "Furadeira Radial",
-        potencia: "8.0",
+        potencia: "7.5",
         consumo: "6.0",
         agua: "0",
         gases: "0",
-        velocidade: "1200",
-        avanco: "0.20",
-        frequencia: "360",
-        preco: "95000.00",
-        depr: "791.67",
-        residual: "19000.00",
+        velocidade: "1500 RPM",
+        avanco: "300 mm/min",
+        manutencao: "200",
+        preco: "75000.00",
+        depr: "625.00",
+        residual: "15000.00",
         operador: "Operador de Máquinas",
-        mod: "0.3000"
+        mod: "0.2500"
     },
 
     forno_atmo: {
-        nome: "Forno de Tratamento Térmico Atmosfera",
-        potencia: "80.0",
-        consumo: "65.0",
+        nome: "Forno de Atmosfera Controlada",
+        potencia: "45.0",
+        consumo: "38.0",
         agua: "0",
-        gases: "12.0",
-        velocidade: "0",
-        avanco: "0",
-        frequencia: "720",
-        preco: "420000.00",
-        depr: "3500.00",
-        residual: "84000.00",
+        gases: "5.0",
+        velocidade: "",
+        avanco: "",
+        manutencao: "500",
+        preco: "320000.00",
+        depr: "2666.67",
+        residual: "64000.00",
         operador: "Operador de Tratamento Térmico",
-        mod: "0.4000"
+        mod: "0.3500"
     },
 
     forno_reveni: {
         nome: "Forno de Revenimento",
-        potencia: "55.0",
-        consumo: "44.0",
+        potencia: "30.0",
+        consumo: "25.0",
         agua: "0",
-        gases: "8.0",
-        velocidade: "0",
-        avanco: "0",
-        frequencia: "720",
-        preco: "280000.00",
-        depr: "2333.33",
-        residual: "56000.00",
+        gases: "3.0",
+        velocidade: "",
+        avanco: "",
+        manutencao: "400",
+        preco: "220000.00",
+        depr: "1833.33",
+        residual: "44000.00",
         operador: "Operador de Tratamento Térmico",
-        mod: "0.4000"
+        mod: "0.3500"
     },
 
     compressor_ar: {
-        nome: "Compressor de Ar Industrial",
-        potencia: "30.0",
-        consumo: "22.0",
+        nome: "Compressor de Ar de Parafuso",
+        potencia: "37.0",
+        consumo: "30.0",
         agua: "0",
         gases: "0",
-        velocidade: "0",
-        avanco: "0",
-        frequencia: "720",
-        preco: "160000.00",
-        depr: "1333.33",
-        residual: "32000.00",
+        velocidade: "",
+        avanco: "",
+        manutencao: "350",
+        preco: "145000.00",
+        depr: "1208.33",
+        residual: "29000.00",
         operador: "Técnico de Utilidades",
-        mod: "0.3000"
+        mod: "0.2800"
     },
 
     empilhadeira_ele: {
@@ -193,379 +717,156 @@ const CATALOGO_ATIVOS = {
         consumo: "8.0",
         agua: "0",
         gases: "0",
-        velocidade: "20",
-        avanco: "0",
-        frequencia: "360",
-        preco: "180000.00",
-        depr: "1500.00",
-        residual: "36000.00",
+        velocidade: "15 km/h",
+        avanco: "",
+        manutencao: "250",
+        preco: "185000.00",
+        depr: "1541.67",
+        residual: "37000.00",
         operador: "Operador de Empilhadeira",
-        mod: "0.3000"
+        mod: "0.2800"
     },
 
     cestos_inox: {
-        nome: "Cestos Industriais em Inox",
+        nome: "Cestos de Aço Inox (Forno)",
         potencia: "0",
         consumo: "0",
         agua: "0",
         gases: "0",
-        velocidade: "0",
-        avanco: "0",
-        frequencia: "0",
-        preco: "18000.00",
-        depr: "150.00",
-        residual: "3600.00",
+        velocidade: "",
+        avanco: "",
+        manutencao: "50",
+        preco: "3500.00",
+        depr: "29.17",
+        residual: "700.00",
         operador: "Operador de Produção",
-        mod: "0.2500"
+        mod: "0"
     },
 
     palets_aco: {
-        nome: "Paletes Industriais de Aço",
+        nome: "Paletes de Aço Reforçados",
         potencia: "0",
         consumo: "0",
         agua: "0",
         gases: "0",
-        velocidade: "0",
-        avanco: "0",
-        frequencia: "0",
-        preco: "12000.00",
-        depr: "100.00",
-        residual: "2400.00",
+        velocidade: "",
+        avanco: "",
+        manutencao: "30",
+        preco: "1800.00",
+        depr: "15.00",
+        residual: "360.00",
         operador: "Operador de Produção",
-        mod: "0.2500"
+        mod: "0"
     },
 
     caixas_trans: {
-        nome: "Caixas de Transporte Industrial",
+        nome: "Caixas Metálicas para Transporte",
         potencia: "0",
         consumo: "0",
         agua: "0",
         gases: "0",
-        velocidade: "0",
-        avanco: "0",
-        frequencia: "0",
-        preco: "8500.00",
-        depr: "70.83",
-        residual: "1700.00",
+        velocidade: "",
+        avanco: "",
+        manutencao: "20",
+        preco: "1200.00",
+        depr: "10.00",
+        residual: "240.00",
         operador: "Operador de Produção",
-        mod: "0.2500"
+        mod: "0"
     }
 };
 
 
 /* ==========================================================================
-   UTILITÁRIOS
-========================================================================== */
+   CARREGAMENTO DE MODELO
+   ========================================================================== */
 
-function numero(valor, padrao = 0) {
+function carregarPreDefinido() {
 
-    if (
-        valor === null ||
-        valor === undefined ||
-        valor === ""
-    ) {
-        return padrao;
-    }
+    const seletor =
+        elemento("seletor_modelo");
 
-    const normalizado = String(valor)
-        .replace(/\s/g, "")
-        .replace(/\./g, "")
-        .replace(",", ".");
+    if (!seletor) return;
 
-    const n = Number(normalizado);
+    const codigo =
+        seletor.value;
 
-    return Number.isFinite(n) ? n : padrao;
-}
-
-
-function formatarBRL(valor) {
-
-    return numero(valor).toLocaleString(
-        "pt-BR",
-        {
-            style: "currency",
-            currency: "BRL"
-        }
-    );
-}
-
-
-function formatarNumero(valor, casas = 2) {
-
-    return numero(valor).toLocaleString(
-        "pt-BR",
-        {
-            minimumFractionDigits: casas,
-            maximumFractionDigits: casas
-        }
-    );
-}
-
-
-function obterElemento(id) {
-
-    return document.getElementById(id);
-}
-
-
-function definirTexto(ids, valor) {
-
-    const lista = Array.isArray(ids)
-        ? ids
-        : [ids];
-
-    lista.forEach(id => {
-
-        const elemento = obterElemento(id);
-
-        if (elemento) {
-            elemento.textContent = valor;
-        }
-
-    });
-}
-
-
-function definirValor(ids, valor) {
-
-    const lista = Array.isArray(ids)
-        ? ids
-        : [ids];
-
-    lista.forEach(id => {
-
-        const elemento = obterElemento(id);
-
-        if (elemento) {
-            elemento.value = valor;
-        }
-
-    });
-}
-
-
-function obterValorCampo(...ids) {
-
-    for (const id of ids) {
-
-        const elemento = obterElemento(id);
-
-        if (
-            elemento &&
-            elemento.value !== undefined
-        ) {
-            return elemento.value;
-        }
-
-    }
-
-    return "";
-}
-
-
-function escapeHtml(texto) {
-
-    return String(texto)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-}
-
-
-/* ==========================================================================
-   ACESSIBILIDADE
-========================================================================== */
-
-function mudarFonte(delta) {
-
-    const atual = parseInt(
-        document.documentElement.style
-            .getPropertyValue("--tamanho-fonte") || "16",
-        10
-    );
-
-    const novo = Math.max(
-        12,
-        Math.min(
-            24,
-            atual + Number(delta || 0)
-        )
-    );
-
-    document.documentElement.style
-        .setProperty(
-            "--tamanho-fonte",
-            `${novo}px`
-        );
-
-    document.body.style.fontSize =
-        `${novo}px`;
-}
-
-
-function alternarModoEscuro() {
-
-    document.body.classList.toggle(
-        "dark-mode"
-    );
-}
-
-
-function alternarAltoContraste() {
-
-    document.body.classList.toggle(
-        "alto-contraste"
-    );
-}
-
-
-function falarTexto(texto) {
-
-    if (
-        !("speechSynthesis" in window)
-    ) {
-        return;
-    }
-
-    speechSynthesis.cancel();
-
-    const utterance =
-        new SpeechSynthesisUtterance(texto);
-
-    utterance.lang = "pt-BR";
-    utterance.rate = 0.95;
-
-    speechSynthesis.speak(
-        utterance
-    );
-}
-
-
-function alternarLeitorAudio() {
-
-    const ativo =
-        document.body.classList.toggle(
-            "leitor-ativo"
-        );
-
-    if (ativo) {
-
-        falarTexto(
-            document.body.innerText
-        );
-
-    } else if (
-        "speechSynthesis" in window
-    ) {
-
-        speechSynthesis.cancel();
-
-    }
-}
-
-
-function falarMensagem(texto) {
-
-    if (
-        document.body.classList.contains(
-            "leitor-ativo"
-        )
-    ) {
-        falarTexto(texto);
-    }
-}
-
-
-/* ==========================================================================
-   CATÁLOGO
-========================================================================== */
-
-function carregarModelo(codigo) {
+    if (!codigo) return;
 
     const modelo =
         CATALOGO_ATIVOS[codigo];
 
     if (!modelo) {
+        console.warn(
+            "Modelo não encontrado no catálogo:",
+            codigo
+        );
         return;
     }
 
     definirValor(
-        ["nome_equipamento", "nome"],
+        "nome_equipamento",
         modelo.nome
     );
 
     definirValor(
-        ["potencia"],
+        "potencia",
         modelo.potencia
     );
 
     definirValor(
-        ["consumo_eletrico", "consumo"],
+        "consumo_eletrico",
         modelo.consumo
     );
 
     definirValor(
-        ["consumo_agua", "agua"],
+        "consumo_agua",
         modelo.agua
     );
 
     definirValor(
-        ["consumo_gases", "gases"],
+        "consumo_gases",
         modelo.gases
     );
 
     definirValor(
-        ["velocidade"],
+        "velocidade",
         modelo.velocidade
     );
 
     definirValor(
-        ["avanco"],
+        "avanco",
         modelo.avanco
     );
 
     definirValor(
-        [
-            "frequencia_manutencao",
-            "frequencia"
-        ],
-        modelo.frequencia
+        "frequencia_manutencao",
+        modelo.manutencao
     );
 
     definirValor(
-        ["preco_compra", "preco"],
+        "preco_compra",
         modelo.preco
     );
 
     definirValor(
-        [
-            "depreciacao_mensal",
-            "depreciacao"
-        ],
+        "depreciacao_mensal",
         modelo.depr
     );
 
     definirValor(
-        [
-            "valor_venda_final",
-            "valor_residual"
-        ],
+        "valor_venda_final",
         modelo.residual
     );
 
     definirValor(
-        [
-            "operador_nome",
-            "operador"
-        ],
+        "operador_nome",
         modelo.operador
     );
 
     definirValor(
-        ["custo_minuto_operador"],
-        ""
+        "custo_minuto_operador",
+        modelo.mod
     );
 
     calcularMinutoMaquina();
@@ -573,409 +874,149 @@ function carregarModelo(codigo) {
 
 
 /* ==========================================================================
-   CUSTO POR MINUTO DA MÁQUINA
-   --------------------------------------------------------------------------
-   Neste estágio, preservamos a composição técnica existente.
-
-   O componente estrutural não recebe mais uma taxa fixa de 5%.
-
-   A integração futura deverá receber as tarifas oficiais da Estrutura,
-   RH e Folha para formar o custo absorvido sem duplicidade.
-========================================================================== */
+   CÁLCULO DO CUSTO POR MINUTO
+   ========================================================================== */
 
 function calcularMinutoMaquina() {
 
+    const depreciacaoMensal =
+        numeroSeguro(
+            elemento("depreciacao_mensal")?.value
+        );
+
     const consumoEletrico =
-        numero(
-            obterValorCampo(
-                "consumo_eletrico",
-                "consumo"
-            )
+        numeroSeguro(
+            elemento("consumo_eletrico")?.value
         );
 
     const consumoAgua =
-        numero(
-            obterValorCampo(
-                "consumo_agua",
-                "agua"
-            )
+        numeroSeguro(
+            elemento("consumo_agua")?.value
         );
 
     const consumoGases =
-        numero(
-            obterValorCampo(
-                "consumo_gases",
-                "gases"
-            )
+        numeroSeguro(
+            elemento("consumo_gases")?.value
         );
 
-    const depreciacaoMensal =
-        numero(
-            obterValorCampo(
-                "depreciacao_mensal",
-                "depreciacao"
-            )
+    const custoOperador =
+        numeroSeguro(
+            elemento("custo_minuto_operador")?.value
         );
 
-    const jornadaSemanal =
-        Math.max(
-            1,
-            numero(
-                obterValorCampo(
-                    "jornada_semanal"
-                ),
-                44
-            )
+    const jornada =
+        numeroSeguro(
+            elemento("jornada_semanal")?.value,
+            44
         );
 
     const turnos =
-        Math.max(
-            1,
-            numero(
-                obterValorCampo(
-                    "turnos_trabalho"
-                ),
-                1
-            )
+        numeroSeguro(
+            elemento("turnos_trabalho")?.value,
+            1
         );
-
-    const horasMes =
-        jornadaSemanal *
-        4.33 *
-        turnos;
-
-    const minutosMes =
-        horasMes * 60;
-
-    const custoDepreciacaoMinuto =
-        depreciacaoMensal /
-        minutosMes;
 
 
     /*
-       Tarifas técnicas atuais preservadas
-       para compatibilidade com o cálculo existente.
+       Capacidade mensal aproximada.
 
-       NÃO representam a arquitetura final.
-
-       Futuramente:
-       Estrutura → tarifas/utilidades
-       RH/Folha → custo completo do operador
-       Máquinas → composição do custo da máquina
+       Mantemos o cálculo operacional do módulo.
+       Os custos estruturais adicionais continuarão sendo
+       tratados pela arquitetura financeira/custos do ERP.
     */
 
-    const TARIFA_ENERGIA =
-        0.78;
+    const minutosMensais =
+        jornada *
+        4.33 *
+        60 *
+        turnos;
 
-    const TARIFA_AGUA =
-        8.20;
 
-    const TARIFA_GASES =
-        5.40;
+    const custoDepreciacaoMinuto =
+        minutosMensais > 0
+            ? depreciacaoMensal / minutosMensais
+            : 0;
+
+
+    /*
+       Tarifas operacionais utilizadas pelo cálculo técnico
+       atualmente existente no módulo.
+    */
+
+    const TARIFA_KWH = 0.78;
+    const TARIFA_AGUA_M3 = 8.20;
+    const TARIFA_GAS_M3 = 5.40;
 
 
     const custoEnergiaMinuto =
-        (
-            consumoEletrico *
-            TARIFA_ENERGIA
-        ) / 60;
+        minutosMensais > 0
+            ? (
+                consumoEletrico *
+                TARIFA_KWH *
+                (jornada * 4.33 * turnos)
+              ) / minutosMensais
+            : 0;
 
 
     const custoAguaMinuto =
-        (
-            consumoAgua *
-            TARIFA_AGUA
-        ) / 60;
+        minutosMensais > 0
+            ? (
+                consumoAgua *
+                TARIFA_AGUA_M3 *
+                (jornada * 4.33 * turnos)
+              ) / minutosMensais
+            : 0;
 
 
-    const custoGasesMinuto =
-        (
-            consumoGases *
-            TARIFA_GASES
-        ) / 60;
-
-
-    const custoOperadorMinuto =
-        numero(
-            obterValorCampo(
-                "custo_minuto_operador"
-            )
-        );
+    const custoGasMinuto =
+        minutosMensais > 0
+            ? (
+                consumoGases *
+                TARIFA_GAS_M3 *
+                (jornada * 4.33 * turnos)
+              ) / minutosMensais
+            : 0;
 
 
     /*
-       NÃO existe mais:
-
-       custo estrutural = 5%
-
-       O valor é zero até a integração oficial
-       com Estrutura/RH/Folha.
+       A taxa estrutural fixa anterior foi removida.
+       O campo hidden continua existindo no HTML somente
+       por compatibilidade, mas não recebe mais 5% ou 40%.
     */
 
-    const custoEstruturalMinuto = 0;
+    const custoEstruturalOculto =
+        numeroSeguro(
+            elemento("custo_estrutural_oculto")?.value
+        );
+
+
+    const custoEstruturalMinuto =
+        custoEstruturalOculto;
 
 
     const custoTotalMinuto =
         custoDepreciacaoMinuto +
         custoEnergiaMinuto +
         custoAguaMinuto +
-        custoGasesMinuto +
-        custoOperadorMinuto +
+        custoGasMinuto +
+        custoOperador +
         custoEstruturalMinuto;
 
 
     definirValor(
-        ["custo_minuto_maquina"],
+        "custo_minuto_maquina",
         custoTotalMinuto.toFixed(4)
     );
-
-
-    definirTexto(
-        [
-            "custo_minuto_maquina_display",
-            "kpi_custo_minuto"
-        ],
-        formatarBRL(
-            custoTotalMinuto
-        )
-    );
-
 
     return custoTotalMinuto;
 }
 
 
 /* ==========================================================================
-   ORÇAMENTO DE MÁQUINAS
-   --------------------------------------------------------------------------
-   Fonte oficial:
+   LISTAGEM DAS MÁQUINAS
+   ========================================================================== */
 
-       /api/maquinas/orcamento
-
-   Backend retorna:
-
-       capital_inicial
-       porcentagem_quota
-       valor_quota
-       patrimonio_atual
-       saldo_aquisicao
-========================================================================== */
-
-async function carregarOrcamentoMaquinas() {
-
-    try {
-
-        const resposta =
-            await fetch(
-                "/api/maquinas/orcamento",
-                {
-                    method: "GET",
-                    credentials: "same-origin",
-                    cache: "no-store"
-                }
-            );
-
-
-        const dados =
-            await resposta.json();
-
-
-        if (
-            !resposta.ok ||
-            !dados.ok
-        ) {
-
-            throw new Error(
-                dados.erro ||
-                "Não foi possível carregar o orçamento de Máquinas."
-            );
-
-        }
-
-
-        capitalTotalEmpresa =
-            numero(
-                dados.capital_inicial
-            );
-
-
-        percentualQuotaMaquinas =
-            numero(
-                dados.porcentagem_quota
-            );
-
-
-        valorQuotaMaquinas =
-            numero(
-                dados.valor_quota
-            );
-
-
-        patrimonioMaquinasAtual =
-            numero(
-                dados.patrimonio_atual
-            );
-
-
-        saldoAquisicaoMaquinas =
-            numero(
-                dados.saldo_aquisicao
-            );
-
-
-        atualizarPainelOrcamento();
-
-
-        return dados;
-
-
-    } catch (erro) {
-
-        console.error(
-            "Erro ao carregar orçamento de Máquinas:",
-            erro
-        );
-
-
-        definirTexto(
-            [
-                "capital_total",
-                "capitalTotal",
-                "capital_total_empresa"
-            ],
-            "Indisponível"
-        );
-
-
-        definirTexto(
-            [
-                "quota_maquinas",
-                "percentual_quota",
-                "quota_percentual"
-            ],
-            "Indisponível"
-        );
-
-
-        definirTexto(
-            [
-                "valor_quota",
-                "orcamento_setor",
-                "orcamento_inicial"
-            ],
-            "Indisponível"
-        );
-
-
-        definirTexto(
-            [
-                "saldo_aquisicao",
-                "saldo_setor",
-                "saldo_restante"
-            ],
-            "Indisponível"
-        );
-
-
-        return null;
-    }
-}
-
-
-/* ==========================================================================
-   ATUALIZAÇÃO DO PAINEL
-========================================================================== */
-
-function atualizarPainelOrcamento() {
-
-    definirTexto(
-        [
-            "capital_total",
-            "capitalTotal",
-            "capital_total_empresa"
-        ],
-        formatarBRL(
-            capitalTotalEmpresa
-        )
-    );
-
-
-    definirTexto(
-        [
-            "quota_maquinas",
-            "percentual_quota",
-            "quota_percentual"
-        ],
-        `${formatarNumero(
-            percentualQuotaMaquinas,
-            2
-        )}%`
-    );
-
-
-    definirTexto(
-        [
-            "valor_quota",
-            "orcamento_setor",
-            "orcamento_inicial"
-        ],
-        formatarBRL(
-            valorQuotaMaquinas
-        )
-    );
-
-
-    definirTexto(
-        [
-            "patrimonio_atual",
-            "patrimonio_maquinas",
-            "patrimonio_setor"
-        ],
-        formatarBRL(
-            patrimonioMaquinasAtual
-        )
-    );
-
-
-    definirTexto(
-        [
-            "saldo_aquisicao",
-            "saldo_setor",
-            "saldo_restante"
-        ],
-        formatarBRL(
-            saldoAquisicaoMaquinas
-        )
-    );
-
-
-    const percentualConsumido =
-        valorQuotaMaquinas > 0
-            ? (
-                patrimonioMaquinasAtual /
-                valorQuotaMaquinas
-            ) * 100
-            : 0;
-
-
-    definirTexto(
-        [
-            "percentual_consumido",
-            "quota_consumida"
-        ],
-        `${Math.max(
-            0,
-            percentualConsumido
-        ).toFixed(2)}%`
-    );
-}
-
-
-/* ==========================================================================
-   LISTAGEM
-========================================================================== */
-
-async function carregarListaMaquinas() {
+async function carregarMaquinas() {
 
     try {
 
@@ -984,207 +1025,92 @@ async function carregarListaMaquinas() {
                 "/api/maquinas/listar",
                 {
                     method: "GET",
-                    credentials: "same-origin",
-                    cache: "no-store"
+                    cache: "no-store",
+                    headers: {
+                        "Accept": "application/json"
+                    }
                 }
             );
 
+        if (!resposta.ok) {
+            throw new Error(
+                "HTTP " + resposta.status
+            );
+        }
 
         const dados =
             await resposta.json();
 
-
-        if (
-            !resposta.ok ||
-            !dados.ok
-        ) {
-
-            throw new Error(
-                dados.erro ||
-                "Falha ao listar máquinas."
-            );
-
-        }
-
-
-        maquinasGlobal =
-            Array.isArray(
-                dados.maquinas
-            )
-                ? dados.maquinas
+        maquinasCadastradas =
+            Array.isArray(dados)
+                ? dados
                 : [];
 
+        renderizarTabelaMaquinas();
 
-        atualizarKPIs(
-            maquinasGlobal
-        );
+        /*
+           Depois da listagem, atualizamos orçamento.
+           Assim o patrimônio recém-cadastrado é refletido.
+        */
 
-
-        renderizarTabelaMaquinas(
-            maquinasGlobal
-        );
-
-
-        return maquinasGlobal;
-
+        await carregarOrcamentoMaquinas();
 
     } catch (erro) {
 
         console.error(
-            "Erro ao listar máquinas:",
+            "Erro ao carregar máquinas:",
             erro
         );
 
+        maquinasCadastradas = [];
 
-        renderizarTabelaMaquinas(
-            []
-        );
-
-
-        return [];
+        renderizarTabelaMaquinas();
     }
 }
 
 
 /* ==========================================================================
-   KPIs
-========================================================================== */
+   TABELA
+   ========================================================================== */
 
-function atualizarKPIs(lista) {
+function escaparHTML(valor) {
 
-    const patrimonio =
-        lista.reduce(
-            (
-                total,
-                maquina
-            ) => {
-
-                if (
-                    maquina.is_patrimonio
-                ) {
-
-                    return (
-                        total +
-                        numero(
-                            maquina.preco_compra
-                        )
-                    );
-
-                }
-
-                return total;
-
-            },
-            0
-        );
-
-
-    const custoFixo =
-        lista.reduce(
-            (
-                total,
-                maquina
-            ) => {
-
-                return (
-                    total +
-                    numero(
-                        maquina.depreciacao_mensal
-                    )
-                );
-
-            },
-            0
-        );
-
-
-    const custoVariavel =
-        lista.reduce(
-            (
-                total,
-                maquina
-            ) => {
-
-                return (
-                    total +
-                    numero(
-                        maquina.custo_mensal_variavel
-                    )
-                );
-
-            },
-            0
-        );
-
-
-    definirTexto(
-        [
-            "kpi_patrimonio",
-            "total_patrimonio",
-            "patrimonio_total"
-        ],
-        formatarBRL(
-            patrimonio
-        )
-    );
-
-
-    definirTexto(
-        [
-            "kpi_custo_fixo",
-            "custo_fixo_total"
-        ],
-        formatarBRL(
-            custoFixo
-        )
-    );
-
-
-    definirTexto(
-        [
-            "kpi_custo_variavel",
-            "custo_variavel_total"
-        ],
-        formatarBRL(
-            custoVariavel
-        )
-    );
+    return String(
+        valor ?? ""
+    )
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
 
-/* ==========================================================================
-   TABELA DE MÁQUINAS
-========================================================================== */
-
-function renderizarTabelaMaquinas(lista) {
+function renderizarTabelaMaquinas() {
 
     const tbody =
-        obterElemento(
-            "tabela_maquinas_body"
-        ) ||
-        obterElemento(
-            "lista_maquinas"
-        ) ||
-        obterElemento(
-            "corpo_tabela_maquinas"
-        );
+        elemento("tabela_maquinas");
 
+    if (!tbody) return;
 
-    if (!tbody) {
-        return;
-    }
-
-
-    if (!lista.length) {
+    if (
+        !maquinasCadastradas ||
+        maquinasCadastradas.length === 0
+    ) {
 
         tbody.innerHTML = `
             <tr>
                 <td
-                    colspan="20"
-                    style="text-align:center;"
+                    colspan="5"
+                    style="
+                        padding:16px;
+                        text-align:center;
+                        color:#94a3b8;
+                        font-style:italic;
+                        font-weight:bold;
+                    "
                 >
-                    Nenhuma máquina cadastrada
-                    para esta equipe.
+                    Nenhuma máquina cadastrada.
                 </td>
             </tr>
         `;
@@ -1194,405 +1120,299 @@ function renderizarTabelaMaquinas(lista) {
 
 
     tbody.innerHTML =
-        lista
-            .map(maquina => {
+        maquinasCadastradas.map(maquina => {
 
-                const id =
-                    maquina.id ?? "";
+            const custoMinuto =
+                numeroSeguro(
+                    maquina.custo_minuto_maquina
+                );
 
-                const nome =
-                    maquina.nome_equipamento ??
-                    "—";
-
-                const preco =
-                    formatarBRL(
-                        maquina.preco_compra
-                    );
-
-                const custoMinuto =
-                    formatarBRL(
-                        maquina.custo_minuto_maquina
-                    );
-
-                const operador =
-                    maquina.operador_nome ||
-                    "Não definido";
-
-                const patrimonio =
-                    maquina.is_patrimonio
-                        ? "Sim"
-                        : "Não";
+            const patrimonio =
+                maquina.is_patrimonio !== false;
 
 
-                return `
-                    <tr>
+            return `
+                <tr>
 
-                        <td>
-                            ${escapeHtml(
-                                String(nome)
+                    <td>
+                        <strong>
+                            ${escaparHTML(
+                                maquina.nome_equipamento
                             )}
-                        </td>
+                        </strong>
+                        ${
+                            patrimonio
+                                ? `<br>
+                                   <span
+                                     style="
+                                       font-size:10px;
+                                       color:#16a34a;
+                                       font-weight:bold;
+                                     "
+                                   >
+                                     ATIVO PATRIMONIAL
+                                   </span>`
+                                : ""
+                        }
+                    </td>
 
-                        <td>
-                            ${preco}
-                        </td>
+                    <td>
+                        ${formatarNumero(
+                            numeroSeguro(
+                                maquina.consumo_eletrico
+                            ),
+                            2
+                        )} kWh
+                    </td>
 
-                        <td>
-                            ${custoMinuto}
-                        </td>
+                    <td>
+                        ${escaparHTML(
+                            maquina.operador_nome || "-"
+                        )}
+                    </td>
 
-                        <td>
-                            ${escapeHtml(
-                                String(operador)
+                    <td>
+                        <strong>
+                            ${formatarBRL(
+                                custoMinuto
                             )}
-                        </td>
+                        </strong>
+                        /min
+                    </td>
 
-                        <td>
-                            ${patrimonio}
-                        </td>
+                    <td
+                        style="
+                            text-align:center;
+                            white-space:nowrap;
+                        "
+                    >
 
-                        <td>
+                        <button
+                            type="button"
+                            class="btn-top"
+                            onclick="window.editarMaquina(${Number(maquina.id)})"
+                        >
+                            Editar
+                        </button>
 
-                            <button
-                                type="button"
-                                onclick="editarMaquina(${Number(id)})"
-                            >
-                                Editar
-                            </button>
+                        <button
+                            type="button"
+                            class="btn-top"
+                            onclick="window.deletarMaquina(${Number(maquina.id)})"
+                            style="
+                                background-color:#fef2f2;
+                                color:#dc2626;
+                                border-color:#fee2e2;
+                            "
+                        >
+                            Excluir
+                        </button>
 
-                            <button
-                                type="button"
-                                onclick="deletarMaquina(${Number(id)})"
-                            >
-                                Excluir
-                            </button>
+                    </td>
 
-                        </td>
+                </tr>
+            `;
 
-                    </tr>
-                `;
-
-            })
-            .join("");
-}
-
-
-/* ==========================================================================
-   DADOS INICIAIS
-========================================================================== */
-
-async function carregarDadosIniciais() {
-
-    await carregarOrcamentoMaquinas();
-
-    await carregarListaMaquinas();
-
-
-    /*
-       Consulta também o Financeiro para manter
-       a página sincronizada com o motor central.
-    */
-
-    try {
-
-        const resposta =
-            await fetch(
-                "/api/financeiro/metricas?dept=maquinas",
-                {
-                    method: "GET",
-                    credentials: "same-origin",
-                    cache: "no-store"
-                }
-            );
-
-
-        if (!resposta.ok) {
-            return;
-        }
-
-
-        const dados =
-            await resposta.json();
-
-
-        if (
-            dados.ok !== false &&
-            dados.metricas
-        ) {
-
-            atualizarMetricasFinanceiras(
-                dados.metricas
-            );
-
-        }
-
-
-    } catch (erro) {
-
-        console.warn(
-            "Métricas do Financeiro indisponíveis:",
-            erro
-        );
-
-    }
-}
-
-
-/* ==========================================================================
-   MÉTRICAS DO FINANCEIRO
-========================================================================== */
-
-function atualizarMetricasFinanceiras(metricas) {
-
-    if (!metricas) {
-        return;
-    }
-
-
-    if (
-        metricas.capital_total !==
-        undefined
-    ) {
-
-        capitalTotalEmpresa =
-            numero(
-                metricas.capital_total
-            );
-
-    }
-
-
-    /*
-       Não substituímos o patrimônio de Máquinas
-       pelo patrimônio total da empresa.
-
-       O orçamento específico de Máquinas
-       continua sendo responsabilidade de:
-
-           /api/maquinas/orcamento
-    */
-
-
-    atualizarPainelOrcamento();
+        }).join("");
 }
 
 
 /* ==========================================================================
    SALVAR MÁQUINA
-========================================================================== */
+   ========================================================================== */
 
 async function salvarMaquina(event) {
 
-    if (event) {
+    if (
+        event &&
+        typeof event.preventDefault === "function"
+    ) {
         event.preventDefault();
     }
 
 
-    const precoCompra =
-        numero(
-            obterValorCampo(
-                "preco_compra",
-                "preco"
-            )
-        );
+    const nome =
+        elemento("nome_equipamento")?.value
+            ?.trim();
 
 
-    const custoMinuto =
-        calcularMinutoMaquina();
-
-
-    /*
-       Quando estamos editando uma máquina que já era patrimônio,
-       seu próprio valor é temporariamente devolvido ao saldo
-       para permitir a edição sem penalizar duas vezes.
-    */
-
-    const patrimonioEmEdicao =
-        maquinaEmEdicao &&
-        maquinaEmEdicao.is_patrimonio
-            ? numero(
-                maquinaEmEdicao.preco_compra
-            )
-            : 0;
-
-
-    const saldoParaEdicao =
-        saldoAquisicaoMaquinas +
-        patrimonioEmEdicao;
-
-
-    if (precoCompra < 0) {
-
+    if (!nome) {
         alert(
-            "❌ O preço de compra não pode ser negativo."
+            "❌ Informe o nome do equipamento."
+        );
+        return;
+    }
+
+
+    const preco =
+        numeroSeguro(
+            elemento("preco_compra")?.value
         );
 
+
+    if (preco <= 0) {
+        alert(
+            "❌ Informe um preço de aquisição válido."
+        );
         return;
     }
 
 
     /*
-       Somente patrimônio efetivo consome a quota de aquisição.
+       REGRA FINANCEIRA:
+
+       A máquina somente pode ser registrada como patrimônio
+       se estiver dentro do saldo da quota de Máquinas.
+
+       Na edição, o valor do próprio patrimônio existente
+       não deve ser contado novamente.
     */
 
-    const elementoPatrimonio =
-        obterElemento(
-            "is_patrimonio"
-        ) ||
-        obterElemento(
-            "ativo_patrimonio"
-        );
+    const idAtual =
+        elemento("registro_id")?.value;
+
+
+    let patrimonioAtualDoRegistro = 0;
+
+    if (idAtual) {
+
+        const registro =
+            maquinasCadastradas.find(
+                m =>
+                    Number(m.id) ===
+                    Number(idAtual)
+            );
+
+        if (registro) {
+            patrimonioAtualDoRegistro =
+                numeroSeguro(
+                    registro.preco_compra
+                );
+        }
+    }
+
+
+    const saldoConsiderandoEdicao =
+        saldoAquisicaoGlobal +
+        patrimonioAtualDoRegistro;
 
 
     const isPatrimonio =
-        elementoPatrimonio
-            ? (
-                "checked" in elementoPatrimonio
-                    ? Boolean(
-                        elementoPatrimonio.checked
-                    )
-                    : elementoPatrimonio.value ===
-                      "true"
-              )
-            : true;
+        elemento("is_patrimonio")?.checked !== false;
 
-
-    /*
-       Se o cadastro não for patrimônio,
-       não devemos bloquear pela quota de aquisição.
-    */
 
     if (
         isPatrimonio &&
-        precoCompra > saldoParaEdicao &&
-        saldoParaEdicao >= 0
+        preco > saldoConsiderandoEdicao
     ) {
 
         alert(
-            "❌ Saldo de aquisição de Máquinas insuficiente.\n\n" +
-
-            `Capital inicial: ${formatarBRL(
-                capitalTotalEmpresa
-            )}\n` +
-
-            `Quota de Máquinas: ${formatarBRL(
-                valorQuotaMaquinas
-            )}\n` +
-
-            `Patrimônio atual: ${formatarBRL(
-                patrimonioMaquinasAtual
-            )}\n` +
-
-            `Saldo disponível: ${formatarBRL(
-                saldoParaEdicao
-            )}`
+            "❌ Aquisição não autorizada.\n\n" +
+            "Valor da máquina: " +
+            formatarBRL(preco) +
+            "\n" +
+            "Saldo disponível da quota: " +
+            formatarBRL(
+                saldoConsiderandoEdicao
+            ) +
+            "\n\n" +
+            "Revise a aquisição."
         );
 
         return;
     }
 
 
-    const payload = {
+    const dados = {
 
         id:
-            maquinaEmEdicao?.id ||
-            null,
+            idAtual
+                ? Number(idAtual)
+                : null,
 
         nome_equipamento:
-            obterValorCampo(
-                "nome_equipamento",
-                "nome"
-            ),
+            nome,
 
         potencia:
-            obterValorCampo(
-                "potencia"
+            numeroSeguro(
+                elemento("potencia")?.value
             ),
 
         consumo_eletrico:
-            obterValorCampo(
-                "consumo_eletrico",
-                "consumo"
+            numeroSeguro(
+                elemento("consumo_eletrico")?.value
             ),
 
         consumo_agua:
-            obterValorCampo(
-                "consumo_agua",
-                "agua"
+            numeroSeguro(
+                elemento("consumo_agua")?.value
             ),
 
         consumo_gases:
-            obterValorCampo(
-                "consumo_gases",
-                "gases"
+            numeroSeguro(
+                elemento("consumo_gases")?.value
             ),
 
         velocidade:
-            obterValorCampo(
-                "velocidade"
-            ),
+            elemento("velocidade")?.value || "",
 
         avanco:
-            obterValorCampo(
-                "avanco"
-            ),
+            elemento("avanco")?.value || "",
 
         frequencia_manutencao:
-            obterValorCampo(
-                "frequencia_manutencao",
-                "frequencia"
+            Math.max(
+                0,
+                Math.trunc(
+                    numeroSeguro(
+                        elemento(
+                            "frequencia_manutencao"
+                        )?.value
+                    )
+                )
             ),
 
         preco_compra:
-            precoCompra,
+            preco,
 
         depreciacao_mensal:
-            numero(
-                obterValorCampo(
-                    "depreciacao_mensal",
-                    "depreciacao"
-                )
+            numeroSeguro(
+                elemento(
+                    "depreciacao_mensal"
+                )?.value
             ),
 
         valor_venda_final:
-            numero(
-                obterValorCampo(
-                    "valor_venda_final",
-                    "valor_residual"
-                )
+            numeroSeguro(
+                elemento(
+                    "valor_venda_final"
+                )?.value
             ),
 
         operador_nome:
-            obterValorCampo(
-                "operador_nome",
-                "operador"
-            ),
+            elemento("operador_nome")?.value
+                ?.trim() || "",
 
         custo_minuto_operador:
-            numero(
-                obterValorCampo(
+            numeroSeguro(
+                elemento(
                     "custo_minuto_operador"
-                )
+                )?.value
             ),
 
         custo_minuto_maquina:
-            custoMinuto,
+            numeroSeguro(
+                elemento(
+                    "custo_minuto_maquina"
+                )?.value
+            ),
 
         jornada_semanal:
-            numero(
-                obterValorCampo(
-                    "jornada_semanal"
-                ),
-                44
-            ),
+            elemento("jornada_semanal")?.value ||
+            "44",
 
         turnos_trabalho:
-            numero(
-                obterValorCampo(
-                    "turnos_trabalho"
-                ),
-                1
-            ),
+            elemento("turnos_trabalho")?.value ||
+            "1",
 
         is_patrimonio:
             isPatrimonio
@@ -1606,60 +1426,45 @@ async function salvarMaquina(event) {
                 "/api/maquinas/salvar",
                 {
                     method: "POST",
-                    credentials: "same-origin",
+
                     headers: {
                         "Content-Type":
+                            "application/json",
+                        "Accept":
                             "application/json"
                     },
+
                     body:
-                        JSON.stringify(
-                            payload
-                        )
+                        JSON.stringify(dados)
                 }
             );
 
 
-        const dados =
-            await resposta.json();
+        const retorno =
+            await resposta.json()
+                .catch(() => ({}));
 
 
-        if (
-            !resposta.ok ||
-            !dados.ok
-        ) {
+        if (!resposta.ok) {
 
             throw new Error(
-                dados.erro ||
-                dados.mensagem ||
-                "Não foi possível salvar a máquina."
+                retorno.message ||
+                retorno.erro ||
+                "Falha ao salvar máquina."
             );
-
         }
 
 
         alert(
-            "✅ Máquina salva com sucesso."
+            "✅ Máquina registrada com sucesso."
         );
-
-
-        falarMensagem(
-            "Máquina salva com sucesso."
-        );
-
-
-        maquinaEmEdicao =
-            null;
 
 
         limparFormularioMaquina();
 
+        await carregarMaquinas();
 
-        /*
-           Recarrega orçamento e patrimônio
-           para refletir imediatamente a aquisição.
-        */
-
-        await carregarDadosIniciais();
+        await carregarMetricasFinanceiras();
 
 
     } catch (erro) {
@@ -1669,18 +1474,17 @@ async function salvarMaquina(event) {
             erro
         );
 
-
         alert(
-            `❌ Erro ao salvar máquina: ${erro.message}`
+            "❌ Não foi possível registrar a máquina.\n\n" +
+            erro.message
         );
-
     }
 }
 
 
 /* ==========================================================================
    EDITAR
-========================================================================== */
+   ========================================================================== */
 
 async function editarMaquina(id) {
 
@@ -1688,239 +1492,183 @@ async function editarMaquina(id) {
 
         const resposta =
             await fetch(
-                `/api/maquinas/buscar/${encodeURIComponent(id)}`,
+                `/api/maquinas/buscar/${id}`,
                 {
                     method: "GET",
-                    credentials: "same-origin",
                     cache: "no-store"
                 }
             );
 
 
-        const dados =
-            await resposta.json();
+        if (!resposta.ok) {
 
-
-        if (
-            !resposta.ok ||
-            !dados.ok
-        ) {
+            const erro =
+                await resposta.json()
+                    .catch(() => ({}));
 
             throw new Error(
-                dados.erro ||
+                erro.message ||
                 "Máquina não encontrada."
             );
-
         }
 
 
+        const maquina =
+            await resposta.json();
+
+
         maquinaEmEdicao =
-            dados.maquina;
+            maquina;
 
 
-        preencherFormularioMaquina(
-            dados.maquina
+        definirValor(
+            "registro_id",
+            maquina.id
+        );
+
+        definirValor(
+            "nome_equipamento",
+            maquina.nome_equipamento
+        );
+
+        definirValor(
+            "potencia",
+            maquina.potencia
+        );
+
+        definirValor(
+            "consumo_eletrico",
+            maquina.consumo_eletrico
+        );
+
+        definirValor(
+            "consumo_agua",
+            maquina.consumo_agua
+        );
+
+        definirValor(
+            "consumo_gases",
+            maquina.consumo_gases
+        );
+
+        definirValor(
+            "velocidade",
+            maquina.velocidade
+        );
+
+        definirValor(
+            "avanco",
+            maquina.avanco
+        );
+
+        definirValor(
+            "frequencia_manutencao",
+            maquina.frequencia_manutencao
+        );
+
+        definirValor(
+            "preco_compra",
+            maquina.preco_compra
+        );
+
+        definirValor(
+            "depreciacao_mensal",
+            maquina.depreciacao_mensal
+        );
+
+        definirValor(
+            "valor_venda_final",
+            maquina.valor_venda_final
+        );
+
+        definirValor(
+            "operador_nome",
+            maquina.operador_nome
+        );
+
+        definirValor(
+            "custo_minuto_operador",
+            maquina.custo_minuto_operador
+        );
+
+        definirValor(
+            "jornada_semanal",
+            maquina.jornada_semanal || "44"
+        );
+
+        definirValor(
+            "turnos_trabalho",
+            maquina.turnos_trabalho || "1"
         );
 
 
-        window.scrollTo(
-            {
-                top: 0,
-                behavior: "smooth"
-            }
-        );
+        const patrimonio =
+            elemento("is_patrimonio");
+
+        if (patrimonio) {
+            patrimonio.checked =
+                maquina.is_patrimonio !== false;
+        }
+
+
+        const seletor =
+            elemento("seletor_modelo");
+
+        if (seletor) {
+            seletor.value = "";
+        }
+
+
+        calcularMinutoMaquina();
+
+
+        const cancelar =
+            elemento("btn_cancelar");
+
+        if (cancelar) {
+            cancelar.style.display =
+                "inline-block";
+        }
+
+
+        const salvar =
+            elemento("btn_salvar");
+
+        if (salvar) {
+            salvar.innerText =
+                "🔄 Atualizar Ativo";
+        }
+
+
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
+        });
 
 
     } catch (erro) {
 
         console.error(
-            "Erro ao buscar máquina:",
+            "Erro ao editar máquina:",
             erro
         );
 
-
         alert(
-            `❌ ${erro.message}`
+            "❌ " + erro.message
         );
-
     }
-}
-
-
-/* ==========================================================================
-   PREENCHER FORMULÁRIO
-========================================================================== */
-
-function preencherFormularioMaquina(
-    maquina
-) {
-
-    definirValor(
-        [
-            "nome_equipamento",
-            "nome"
-        ],
-        maquina.nome_equipamento ?? ""
-    );
-
-
-    definirValor(
-        ["potencia"],
-        maquina.potencia ?? ""
-    );
-
-
-    definirValor(
-        [
-            "consumo_eletrico",
-            "consumo"
-        ],
-        maquina.consumo_eletrico ?? ""
-    );
-
-
-    definirValor(
-        [
-            "consumo_agua",
-            "agua"
-        ],
-        maquina.consumo_agua ?? ""
-    );
-
-
-    definirValor(
-        [
-            "consumo_gases",
-            "gases"
-        ],
-        maquina.consumo_gases ?? ""
-    );
-
-
-    definirValor(
-        ["velocidade"],
-        maquina.velocidade ?? ""
-    );
-
-
-    definirValor(
-        ["avanco"],
-        maquina.avanco ?? ""
-    );
-
-
-    definirValor(
-        [
-            "frequencia_manutencao",
-            "frequencia"
-        ],
-        maquina.frequencia_manutencao ?? ""
-    );
-
-
-    definirValor(
-        [
-            "preco_compra",
-            "preco"
-        ],
-        maquina.preco_compra ?? ""
-    );
-
-
-    definirValor(
-        [
-            "depreciacao_mensal",
-            "depreciacao"
-        ],
-        maquina.depreciacao_mensal ?? ""
-    );
-
-
-    definirValor(
-        [
-            "valor_venda_final",
-            "valor_residual"
-        ],
-        maquina.valor_venda_final ?? ""
-    );
-
-
-    definirValor(
-        [
-            "operador_nome",
-            "operador"
-        ],
-        maquina.operador_nome ?? ""
-    );
-
-
-    definirValor(
-        [
-            "custo_minuto_operador"
-        ],
-        maquina.custo_minuto_operador ?? ""
-    );
-
-
-    definirValor(
-        [
-            "custo_minuto_maquina"
-        ],
-        maquina.custo_minuto_maquina ?? ""
-    );
-
-
-    definirValor(
-        [
-            "jornada_semanal"
-        ],
-        maquina.jornada_semanal ?? 44
-    );
-
-
-    definirValor(
-        [
-            "turnos_trabalho"
-        ],
-        maquina.turnos_trabalho ?? 1
-    );
-
-
-    const elementoPatrimonio =
-        obterElemento(
-            "is_patrimonio"
-        ) ||
-        obterElemento(
-            "ativo_patrimonio"
-        );
-
-
-    if (
-        elementoPatrimonio &&
-        "checked" in elementoPatrimonio
-    ) {
-
-        elementoPatrimonio.checked =
-            Boolean(
-                maquina.is_patrimonio
-            );
-
-    }
-
-
-    calcularMinutoMaquina();
 }
 
 
 /* ==========================================================================
    EXCLUIR
-========================================================================== */
+   ========================================================================== */
 
 async function deletarMaquina(id) {
 
     if (
         !confirm(
-            "Deseja realmente excluir esta máquina?"
+            "Confirmar exclusão desta máquina?"
         )
     ) {
         return;
@@ -1931,62 +1679,39 @@ async function deletarMaquina(id) {
 
         const resposta =
             await fetch(
-                `/api/maquinas/deletar/${encodeURIComponent(id)}`,
+                `/api/maquinas/deletar/${id}`,
                 {
                     method: "DELETE",
-                    credentials: "same-origin"
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    }
                 }
             );
 
 
-        const dados =
-            await resposta.json();
+        const retorno =
+            await resposta.json()
+                .catch(() => ({}));
 
 
-        if (
-            !resposta.ok ||
-            !dados.ok
-        ) {
+        if (!resposta.ok) {
 
             throw new Error(
-                dados.erro ||
-                "Não foi possível excluir a máquina."
+                retorno.message ||
+                "Não foi possível excluir."
             );
-
         }
 
 
         alert(
-            "✅ Máquina excluída."
+            "✅ Máquina removida."
         );
 
 
-        falarMensagem(
-            "Máquina excluída."
-        );
+        await carregarMaquinas();
 
-
-        if (
-            maquinaEmEdicao &&
-            Number(maquinaEmEdicao.id) ===
-            Number(id)
-        ) {
-
-            maquinaEmEdicao =
-                null;
-
-            limparFormularioMaquina();
-        }
-
-
-        /*
-           Importante:
-           a exclusão remove o patrimônio atual
-           retornado pelo backend e, portanto,
-           recompõe o saldo da quota de Máquinas.
-        */
-
-        await carregarDadosIniciais();
+        await carregarMetricasFinanceiras();
 
 
     } catch (erro) {
@@ -1996,216 +1721,392 @@ async function deletarMaquina(id) {
             erro
         );
 
-
         alert(
-            `❌ Erro ao excluir máquina: ${erro.message}`
+            "❌ " + erro.message
         );
-
     }
 }
 
 
 /* ==========================================================================
    LIMPAR FORMULÁRIO
-========================================================================== */
+   ========================================================================== */
 
 function limparFormularioMaquina() {
 
-    maquinaEmEdicao =
-        null;
-
-
     const formulario =
-        obterElemento(
-            "formMaquina"
-        ) ||
-        obterElemento(
-            "form_maquina"
-        ) ||
-        document.querySelector(
-            "form"
-        );
+        elemento("formMaquina");
 
-
-    if (
-        formulario &&
-        typeof formulario.reset ===
-        "function"
-    ) {
-
+    if (formulario) {
         formulario.reset();
-
     }
 
 
     definirValor(
-        [
-            "custo_minuto_maquina"
-        ],
+        "registro_id",
+        ""
+    );
+
+
+    const agua =
+        elemento("consumo_agua");
+
+    if (agua) {
+        agua.value = "0.000";
+    }
+
+
+    const gases =
+        elemento("consumo_gases");
+
+    if (gases) {
+        gases.value = "0.000";
+    }
+
+
+    const jornada =
+        elemento("jornada_semanal");
+
+    if (jornada) {
+        jornada.value = "44";
+    }
+
+
+    const turnos =
+        elemento("turnos_trabalho");
+
+    if (turnos) {
+        turnos.value = "1";
+    }
+
+
+    const patrimonio =
+        elemento("is_patrimonio");
+
+    if (patrimonio) {
+        patrimonio.checked = true;
+    }
+
+
+    definirValor(
+        "custo_minuto_maquina",
         "0.0000"
+    );
+
+
+    const cancelar =
+        elemento("btn_cancelar");
+
+    if (cancelar) {
+        cancelar.style.display =
+            "none";
+    }
+
+
+    const salvar =
+        elemento("btn_salvar");
+
+    if (salvar) {
+        salvar.innerText =
+            "💾 Registrar Ativo no Parque Fabril";
+    }
+
+
+    maquinaEmEdicao = null;
+}
+
+
+/* ==========================================================================
+   PESQUISA DINÂMICA — GOOGLE
+   ========================================================================== */
+
+/*
+   Esta função é o ponto de entrada da pesquisa externa.
+
+   O navegador NÃO recebe chave do Google.
+
+   O backend deverá executar a consulta Google e retornar JSON.
+
+   Endpoint esperado:
+
+       GET /api/maquinas/pesquisar_google?q=torno%20CNC
+
+   Formato esperado:
+
+   {
+       "status": "sucesso",
+       "consulta": "torno CNC",
+       "resultados": [
+           {
+               "titulo": "...",
+               "descricao": "...",
+               "url": "...",
+               "marca": "...",
+               "modelo": "...",
+               "fabricante": "...",
+               "caracteristicas": {}
+           }
+       ]
+   }
+*/
+
+async function pesquisarEquipamentoGoogle(termo) {
+
+    const consulta =
+        String(termo || "").trim();
+
+
+    if (consulta.length < 2) {
+
+        alert(
+            "Digite pelo menos dois caracteres para pesquisar."
+        );
+
+        return [];
+    }
+
+
+    try {
+
+        const resposta =
+            await fetch(
+                "/api/maquinas/pesquisar_google?q=" +
+                encodeURIComponent(consulta),
+                {
+                    method: "GET",
+                    headers: {
+                        "Accept":
+                            "application/json"
+                    },
+                    cache: "no-store"
+                }
+            );
+
+
+        const dados =
+            await resposta.json()
+                .catch(() => ({}));
+
+
+        if (!resposta.ok) {
+
+            throw new Error(
+                dados.message ||
+                "Falha na pesquisa Google."
+            );
+        }
+
+
+        if (
+            dados.status &&
+            dados.status !== "sucesso"
+        ) {
+
+            throw new Error(
+                dados.message ||
+                "Pesquisa não disponível."
+            );
+        }
+
+
+        return Array.isArray(
+            dados.resultados
+        )
+            ? dados.resultados
+            : [];
+
+
+    } catch (erro) {
+
+        console.error(
+            "Erro na pesquisa Google:",
+            erro
+        );
+
+        alert(
+            "❌ A pesquisa externa não pôde ser realizada.\n\n" +
+            erro.message
+        );
+
+        return [];
+    }
+}
+
+
+/* ==========================================================================
+   ABERTURA DOS RESULTADOS GOOGLE
+   ========================================================================== */
+
+function abrirResultadoGoogle(url) {
+
+    if (!url) return;
+
+    /*
+       O endereço retornado pela API deve ser aberto em nova aba.
+    */
+
+    window.open(
+        url,
+        "_blank",
+        "noopener,noreferrer"
     );
 }
 
 
 /* ==========================================================================
-   INICIALIZAÇÃO DA PÁGINA
-========================================================================== */
+   INICIALIZAÇÃO
+   ========================================================================== */
+
+async function carregarDadosIniciais() {
+
+    console.log(
+        "TERADMAS Máquinas: iniciando sincronização..."
+    );
+
+
+    /*
+       Primeiro orçamento.
+       Isso resolve os quatro cards "Carregando...".
+    */
+
+    await carregarOrcamentoMaquinas();
+
+
+    /*
+       Depois métricas financeiras.
+    */
+
+    await carregarMetricasFinanceiras();
+
+
+    /*
+       Depois patrimônio/listagem.
+    */
+
+    await carregarMaquinas();
+
+
+    console.log(
+        "TERADMAS Máquinas: sincronização concluída."
+    );
+}
+
+
+/* ==========================================================================
+   ATUALIZAÇÃO MANUAL
+   ========================================================================== */
+
+async function atualizarDadosMaquinas() {
+
+    await carregarOrcamentoMaquinas();
+
+    await carregarMetricasFinanceiras();
+
+    await carregarMaquinas();
+}
+
+
+/* ==========================================================================
+   EVENTOS
+   ========================================================================== */
 
 document.addEventListener(
     "DOMContentLoaded",
-    () => {
+    function () {
 
-        const formulario =
-            obterElemento(
-                "formMaquina"
-            ) ||
-            obterElemento(
-                "form_maquina"
-            );
-
-
-        if (formulario) {
-
-            formulario.addEventListener(
-                "submit",
-                salvarMaquina
-            );
-
-        }
-
-
-        const seletorModelo =
-            obterElemento(
-                "catalogo_ativo"
-            ) ||
-            obterElemento(
-                "modelo_ativo"
-            ) ||
-            obterElemento(
-                "modelo"
-            );
-
-
-        if (seletorModelo) {
-
-            seletorModelo.addEventListener(
-                "change",
-                event => {
-
-                    carregarModelo(
-                        event.target.value
-                    );
-
-                }
-            );
-
-        }
-
-
-        const botaoSalvar =
-            obterElemento(
-                "btnSalvarMaquina"
-            ) ||
-            obterElemento(
-                "btn_salvar_maquina"
-            );
-
-
-        if (
-            botaoSalvar &&
-            !formulario
-        ) {
-
-            botaoSalvar.addEventListener(
-                "click",
-                salvarMaquina
-            );
-
-        }
-
-
-        const botaoLimpar =
-            obterElemento(
-                "btnLimparMaquina"
-            ) ||
-            obterElemento(
-                "btn_limpar_maquina"
-            );
-
-
-        if (botaoLimpar) {
-
-            botaoLimpar.addEventListener(
-                "click",
-                limparFormularioMaquina
-            );
-
-        }
+        console.log(
+            "TERADMAS Máquinas JS carregado."
+        );
 
 
         /*
-           Primeira carga.
+           Expor funções usadas pelo HTML.
+        */
+
+        window.mudarFonte =
+            mudarFonte;
+
+        window.alternarModoEscuro =
+            alternarModoEscuro;
+
+        window.alternarAltoContraste =
+            alternarAltoContraste;
+
+        window.alternarLeitorAudio =
+            alternarLeitorAudio;
+
+        window.carregarPreDefinido =
+            carregarPreDefinido;
+
+        window.calcularMinutoMaquina =
+            calcularMinutoMaquina;
+
+        window.salvarMaquina =
+            salvarMaquina;
+
+        window.editarMaquina =
+            editarMaquina;
+
+        window.deletarMaquina =
+            deletarMaquina;
+
+        window.limparFormularioMaquina =
+            limparFormularioMaquina;
+
+        window.carregarDadosIniciais =
+            carregarDadosIniciais;
+
+        window.atualizarDadosMaquinas =
+            atualizarDadosMaquinas;
+
+        window.pesquisarEquipamentoGoogle =
+            pesquisarEquipamentoGoogle;
+
+        window.abrirResultadoGoogle =
+            abrirResultadoGoogle;
+
+
+        /*
+           Inicialização.
         */
 
         carregarDadosIniciais();
 
 
         /*
-           Mantém o módulo sincronizado
-           com Financeiro e patrimônio.
+           Recalcula custo/minuto sempre que
+           os campos técnicos forem alterados.
         */
 
-        setInterval(
-            () => {
+        const camposCalculo = [
+            "potencia",
+            "consumo_eletrico",
+            "consumo_agua",
+            "consumo_gases",
+            "depreciacao_mensal",
+            "custo_minuto_operador",
+            "jornada_semanal",
+            "turnos_trabalho"
+        ];
 
-                carregarOrcamentoMaquinas();
 
-                carregarListaMaquinas();
+        camposCalculo.forEach(id => {
 
-            },
-            5000
-        );
+            const campo =
+                elemento(id);
+
+            if (!campo) return;
+
+            campo.addEventListener(
+                "input",
+                calcularMinutoMaquina
+            );
+
+            campo.addEventListener(
+                "change",
+                calcularMinutoMaquina
+            );
+        });
 
     }
 );
-
-
-/* ==========================================================================
-   COMPATIBILIDADE COM O HTML
-========================================================================== */
-
-window.carregarModelo =
-    carregarModelo;
-
-window.calcularMinutoMaquina =
-    calcularMinutoMaquina;
-
-window.carregarDadosIniciais =
-    carregarDadosIniciais;
-
-window.carregarOrcamentoMaquinas =
-    carregarOrcamentoMaquinas;
-
-window.salvarMaquina =
-    salvarMaquina;
-
-window.editarMaquina =
-    editarMaquina;
-
-window.deletarMaquina =
-    deletarMaquina;
-
-window.limparFormularioMaquina =
-    limparFormularioMaquina;
-
-window.mudarFonte =
-    mudarFonte;
-
-window.alternarModoEscuro =
-    alternarModoEscuro;
-
-window.alternarAltoContraste =
-    alternarAltoContraste;
-
-window.alternarLeitorAudio =
-    alternarLeitorAudio;
