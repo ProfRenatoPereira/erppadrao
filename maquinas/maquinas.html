@@ -250,6 +250,44 @@
                     <input type="hidden" id="custo_estrutural_oculto" value="0">
 
                     <div class="flex-form-row">
+
+                        <!-- NOVO CAMPO DE PESQUISA WEB NA PRIMEIRA LINHA DA TELA -->
+<div class="row mb-3">
+    <div class="col-12">
+        <label for="inputBuscaWeb" class="form-label font-weight-bold" style="color: #0d6efd; font-size: 0.9rem;">
+            🔍 PESQUISAR EQUIPAMENTO / MÁQUINA REAL NA INTERNET:
+        </label>
+        <div class="input-group">
+            <input 
+                type="text" 
+                id="inputBuscaWeb" 
+                class="form-control" 
+                placeholder="Ex: Torno CNC Mazak Quick Turn, Injetora Romi..."
+            >
+            <button 
+                class="btn btn-primary" 
+                type="button" 
+                id="btnPesquisarWeb" 
+                onclick="executarPesquisaWebNaTela()"
+            >
+                Buscar Especificações
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CONTAINER RETRÁTIL PARA EXIBIR OS RESULTADOS DA BUSCA -->
+<div id="painelResultadosWeb" class="card mb-3 d-none border-primary">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+        <span class="font-weight-bold" style="font-size: 0.85rem;">Resultados Encontrados na Web</span>
+        <button type="button" class="btn btn-sm btn-light py-0" onclick="document.getElementById('painelResultadosWeb').classList.add('d-none')">Fechar ✖</button>
+    </div>
+    <div class="card-body py-2" id="containerResultadosWeb">
+        <!-- Itens inseridos via JavaScript -->
+    </div>
+</div>
+
+                        
                         <div class="flex-col-gap" style="flex: 1; min-width: 280px; margin-bottom: 0;">
                             <label class="label-form" style="color: #1e3a8a;">Modelo Base Industrial Coringa:</label>
                             <select id="seletor_modelo" onchange="window.carregarPreDefinido()" class="select-form" style="height: 38px; border: 2px solid #cbd5e1; font-weight: bold;">
