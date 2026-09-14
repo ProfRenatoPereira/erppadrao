@@ -99,6 +99,24 @@ def numero(dados, campo, padrao=0.0):
 # ===========================================================================
 # PESQUISA EXTERNA DE EQUIPAMENTOS
 # ===========================================================================
+# IMPORTANTE:
+# A pesquisa não pode bloquear um worker Flask/Gunicorn. A versão anterior
+# fazia várias chamadas sequenciais ao DuckDuckGo, cada uma com timeout alto.
+# Em um ambiente com rede externa lenta isso acumulava o tempo das chamadas
+# e provocava WORKER TIMEOUT.
+#
+# Agora:
+# - no máximo 3 consultas externas em paralelo;
+# - timeout curto por consulta;
+# - a primeira fonte disponível já pode produzir resultados;
+# - chave de API, se configurada, é usada no servidor (nunca no navegador);
+# - se nenhuma fonte responder, a API retorna rapidamente sem derrubar worker.
+# ===========================================================================
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import quote_plus, unquote
+from urllib.request import Request, urlopen
+
 
 class _DDGParser(HTMLParser):
     def __init__(self):
@@ -109,14 +127,14 @@ class _DDGParser(HTMLParser):
         self.buf = []
 
     def handle_starttag(self, tag, attrs):
-        a = dict(attrs)
-        c = a.get("class", "")
-        if tag == "a" and "result__a" in c:
+        attrs = dict(attrs)
+        classes = attrs.get("class", "")
+        if tag == "a" and "result__a" in classes:
             self.cur = {"titulo": "", "url": "", "descricao": ""}
-            self.cur["url"] = html_lib.unescape(a.get("href", ""))
+            self.cur["url"] = html_lib.unescape(attrs.get("href", ""))
             self.mode = "titulo"
             self.buf = []
-        elif self.cur and "result__snippet" in c:
+        elif self.cur and "result__snippet" in classes:
             self.mode = "descricao"
             self.buf = []
 
@@ -138,10 +156,57 @@ class _DDGParser(HTMLParser):
                 self.cur = None
 
 
-def _web_get(url, timeout=8):
-    req = Request(url, headers={"User-Agent": "Mozilla/5.0 TERADMAS-ERP/2.6"})
+class _BingParser(HTMLParser):
+    """Parser mínimo para resultados HTML do Bing."""
+    def __init__(self):
+        super().__init__()
+        self.items = []
+        self.cur = None
+        self.mode = None
+        self.buf = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        classes = attrs.get("class", "")
+        if tag == "li" and "b_algo" in classes:
+            self.cur = {"titulo": "", "url": "", "descricao": ""}
+        elif self.cur and tag == "a" and not self.cur["titulo"]:
+            href = attrs.get("href", "")
+            if href:
+                self.cur["url"] = href
+                self.mode = "titulo"
+                self.buf = []
+        elif self.cur and tag == "p":
+            self.mode = "descricao"
+            self.buf = []
+
+    def handle_data(self, data):
+        if self.cur and self.mode:
+            self.buf.append(data)
+
+    def handle_endtag(self, tag):
+        if not self.cur:
+            return
+        if tag == "a" and self.mode == "titulo":
+            self.cur["titulo"] = _text(" ".join(self.buf))
+            self.mode = None
+        elif tag == "p" and self.mode == "descricao":
+            self.cur["descricao"] = _text(" ".join(self.buf))
+            self.mode = None
+        elif tag == "li" and self.cur.get("titulo") and self.cur.get("url"):
+            self.items.append(self.cur)
+            self.cur = None
+
+
+def _web_get(url, timeout=2.5):
+    req = Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (compatible; TERADMAS-ERP/2.6; +https://github.com/)"
+        },
+    )
     with urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8", "ignore")
+        return resp.read(500_000).decode("utf-8", "ignore")
 
 
 def _text(value):
@@ -152,7 +217,6 @@ def _url(value):
     value = value or ""
     m = re.search(r"uddg=([^&]+)", value)
     if m:
-        from urllib.parse import unquote
         return unquote(m.group(1))
     return value
 
@@ -166,16 +230,31 @@ def _match(patterns, text):
 
 
 def _price(text):
-    return _match([
-        r"R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*(?:,[0-9]{2})?)",
-        r"R\$\s*([0-9]+(?:,[0-9]{2})?)",
-    ], text)
+    return _match(
+        [
+            r"R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*(?:,[0-9]{2})?)",
+            r"R\$\s*([0-9]+(?:,[0-9]{2})?)",
+        ],
+        text,
+    )
 
 
 def _technical(text):
-    power = _match([r"(?:pot[eê]ncia|power)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*kW", r"([0-9]+(?:[.,][0-9]+)?)\s*kW"], text)
+    power = _match(
+        [
+            r"(?:pot[eê]ncia|power)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*kW",
+            r"([0-9]+(?:[.,][0-9]+)?)\s*kW",
+        ],
+        text,
+    )
     if power is None:
-        cv = _match([r"(?:pot[eê]ncia|motor)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*(?:CV|HP)", r"([0-9]+(?:[.,][0-9]+)?)\s*(?:CV|HP)"], text)
+        cv = _match(
+            [
+                r"(?:pot[eê]ncia|motor)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*(?:CV|HP)",
+                r"([0-9]+(?:[.,][0-9]+)?)\s*(?:CV|HP)",
+            ],
+            text,
+        )
         if cv:
             try:
                 power = str(round(float(cv.replace(",", ".")) * 0.7355, 3))
@@ -183,11 +262,35 @@ def _technical(text):
                 pass
     return {
         "potencia": power,
-        "consumo_eletrico": _match([r"(?:consumo|consumption)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*kWh", r"([0-9]+(?:[.,][0-9]+)?)\s*kWh"], text),
-        "consumo_agua": _match([r"(?:consumo|vaz[aã]o)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*m[³3]\s*/?\s*h"], text),
-        "consumo_gases": _match([r"(?:consumo|vaz[aã]o)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*m[³3]\s*/?\s*h"], text),
-        "velocidade": _match([r"(?:velocidade|rota[cç][aã]o)[^0-9]{0,25}([0-9]+(?:[.,][0-9]+)?\s*(?:RPM|Hz))", r"([0-9]+(?:[.,][0-9]+)?)\s*RPM"], text),
-        "avanco": _match([r"(?:avan[cç]o|feed)[^0-9]{0,25}([0-9]+(?:[.,][0-9]+)?\s*mm\s*/?\s*min)", r"([0-9]+(?:[.,][0-9]+)?)\s*mm\s*/?\s*min"], text),
+        "consumo_eletrico": _match(
+            [
+                r"(?:consumo|consumption)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*kWh",
+                r"([0-9]+(?:[.,][0-9]+)?)\s*kWh",
+            ],
+            text,
+        ),
+        "consumo_agua": _match(
+            [r"(?:consumo|vaz[aã]o)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*m[³3]\s*/?\s*h"],
+            text,
+        ),
+        "consumo_gases": _match(
+            [r"(?:g[aá]s|consumo|vaz[aã]o)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*m[³3]\s*/?\s*h"],
+            text,
+        ),
+        "velocidade": _match(
+            [
+                r"(?:velocidade|rota[cç][aã]o)[^0-9]{0,25}([0-9]+(?:[.,][0-9]+)?\s*(?:RPM|Hz))",
+                r"([0-9]+(?:[.,][0-9]+)?)\s*RPM",
+            ],
+            text,
+        ),
+        "avanco": _match(
+            [
+                r"(?:avan[cç]o|feed)[^0-9]{0,25}([0-9]+(?:[.,][0-9]+)?\s*mm\s*/?\s*min)",
+                r"([0-9]+(?:[.,][0-9]+)?)\s*mm\s*/?\s*min",
+            ],
+            text,
+        ),
     }
 
 
@@ -196,8 +299,17 @@ def _normalize_result(item):
     desc = _text(item.get("descricao"))
     url = _url(item.get("url"))
     text = f"{title}. {desc}"
-    brands = ["WEG", "ABB", "Mazak", "Hyundai", "JCB", "Caterpillar", "Komatsu", "New Holland", "Bralyx", "Zayer", "Arotec", "Dynapac", "Romea", "Ergomat", "Bosch", "Siemens", "Schneider", "Atlas Copco", "Kaeser", "Trumpf", "Mitsubishi", "Toyota", "Still", "Hyster", "Yale"]
-    manufacturer = next((b for b in brands if re.search(r"\b" + re.escape(b) + r"\b", title, re.I)), None)
+    brands = [
+        "WEG", "ABB", "Mazak", "Hyundai", "JCB", "Caterpillar", "Komatsu",
+        "New Holland", "Bralyx", "Zayer", "Arotec", "Dynapac", "Romea",
+        "Ergomat", "Bosch", "Siemens", "Schneider", "Atlas Copco", "Kaeser",
+        "Trumpf", "Mitsubishi", "Toyota", "Still", "Hyster", "Yale",
+    ]
+    manufacturer = next(
+        (b for b in brands if re.search(r"\b" + re.escape(b) + r"\b", title, re.I)),
+        None,
+    )
+    preco = _price(text)
     return {
         "titulo": title,
         "nome": title,
@@ -205,8 +317,8 @@ def _normalize_result(item):
         "modelo": None,
         "categoria": None,
         "descricao": desc,
-        "preco": _price(text),
-        "moeda": "R$" if _price(text) else None,
+        "preco": preco,
+        "moeda": "R$" if preco else None,
         "condicao": _match([r"\b(nova|novo|usada|usado|recondicionada|recondicionado)\b"], text),
         "url": url,
         "fonte": urlparse(url).netloc.lower().replace("www.", "") or "Internet",
@@ -214,34 +326,78 @@ def _normalize_result(item):
     }
 
 
-def pesquisar_equipamentos_web(consulta):
-    consultas = [
-        consulta,
-        f"{consulta} site:maqx.com.br",
-        f"{consulta} site:localizamaquinas.com.br",
-        f"{consulta} site:mercadomaquinas.com.br",
-        f"{consulta} site:portaldasmaquinas.com",
-        f"{consulta} site:goodmachine.com.br",
+def _buscar_ddg(consulta):
+    url = "https://html.duckduckgo.com/html/?q=" + quote_plus(consulta)
+    parser = _DDGParser()
+    parser.feed(_web_get(url))
+    return parser.items
+
+
+def _buscar_bing(consulta):
+    url = "https://www.bing.com/search?q=" + quote_plus(consulta) + "&count=8&setlang=pt-BR"
+    parser = _BingParser()
+    parser.feed(_web_get(url))
+    return parser.items
+
+
+def _buscar_brave(consulta):
+    """Usa Brave Search API somente quando BRAVE_SEARCH_API_KEY existir."""
+    chave = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
+    if not chave:
+        return []
+    import json
+    url = "https://api.search.brave.com/res/v1/web/search?q=" + quote_plus(consulta) + "&count=8"
+    req = Request(url, headers={"Accept": "application/json", "X-Subscription-Token": chave})
+    with urlopen(req, timeout=2.5) as resp:
+        dados = json.loads(resp.read(500_000).decode("utf-8", "ignore"))
+    return [
+        {
+            "titulo": x.get("title", ""),
+            "url": x.get("url", ""),
+            "descricao": x.get("description", ""),
+        }
+        for x in (dados.get("web", {}) or {}).get("results", [])
     ]
-    vistos = set()
+
+
+def pesquisar_equipamentos_web(consulta):
+    # Uma única consulta ampla. Os filtros por domínio são usados apenas
+    # como termos, não como 6 requisições sequenciais.
+    consulta_ampla = (
+        f"{consulta} máquina equipamento industrial preço características "
+        "site:maqx.com.br OR site:mercadomaquinas.com.br OR "
+        "site:portaldasmaquinas.com OR site:localizamaquinas.com.br"
+    )
+
+    tarefas = {
+        "brave": _buscar_brave,
+        "bing": _buscar_bing,
+        "duckduckgo": _buscar_ddg,
+    }
     resultados = []
-    for query in consultas:
-        try:
-            html = _web_get("https://html.duckduckgo.com/html/?q=" + quote_plus(query))
-            parser = _DDGParser()
-            parser.feed(html)
-        except Exception as erro:
-            logger.warning("Pesquisa externa indisponível para '%s': %s", query, erro)
-            continue
-        for item in parser.items:
-            normalized = _normalize_result(item)
-            key = normalized["url"] or normalized["titulo"]
-            if not key or key in vistos:
+    vistos = set()
+
+    # Todos os provedores rodam simultaneamente. Assim, um provedor lento
+    # não soma seu timeout ao dos demais.
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futuros = {executor.submit(fn, consulta_ampla): nome for nome, fn in tarefas.items()}
+        for futuro in as_completed(futuros, timeout=4.0):
+            provedor = futuros[futuro]
+            try:
+                itens = futuro.result()
+            except Exception as erro:
+                logger.warning("Fonte de pesquisa %s indisponível: %s", provedor, erro)
                 continue
-            vistos.add(key)
-            resultados.append(normalized)
-            if len(resultados) >= 12:
-                return resultados
+            for item in itens:
+                normalizado = _normalize_result(item)
+                chave = normalizado["url"] or normalizado["titulo"]
+                if not chave or chave in vistos:
+                    continue
+                vistos.add(chave)
+                resultados.append(normalizado)
+                if len(resultados) >= 12:
+                    return resultados
+
     return resultados
 
 
@@ -249,17 +405,30 @@ def pesquisar_equipamentos_web(consulta):
 def api_pesquisar_maquinas_web():
     if not autenticado():
         return jsonify({"status": "erro", "message": "Não autenticado."}), 401
+
     consulta = _text(request.args.get("q", ""))
     if len(consulta) < 3:
         return jsonify({"status": "erro", "message": "Informe pelo menos 3 caracteres para a pesquisa."}), 400
     if len(consulta) > 180:
         return jsonify({"status": "erro", "message": "A pesquisa é muito longa."}), 400
+
     try:
-        return jsonify({"status": "sucesso", "consulta": consulta, "resultados": pesquisar_equipamentos_web(consulta)}), 200
+        resultados = pesquisar_equipamentos_web(consulta)
+        return jsonify({
+            "status": "sucesso",
+            "consulta": consulta,
+            "resultados": resultados,
+        }), 200
     except Exception as erro:
         logger.exception("Erro na pesquisa externa de equipamentos")
-        return jsonify({"status": "erro", "message": "Não foi possível pesquisar equipamentos na internet.", "erro": str(erro)}), 502
-
+        # Falha externa não pode derrubar o worker nem transformar o módulo
+        # inteiro em erro 500. A interface recebe uma lista vazia e continua.
+        return jsonify({
+            "status": "sucesso",
+            "consulta": consulta,
+            "resultados": [],
+            "aviso": "As fontes externas de pesquisa estão temporariamente indisponíveis.",
+        }), 200
 
 
 # ==========================================================================
