@@ -28,7 +28,16 @@
         try {
             const resposta = await fetch("/api/maquinas/orcamento", { cache: "no-store" });
             const dados = await resposta.json();
-            if (!resposta.ok || dados.status !== "sucesso") throw new Error(dados.message || "Falha no orçamento.");
+            
+            if (!resposta.ok) {
+                console.error("Erro ao carregar orçamento:", dados);
+                throw new Error(dados.message || "Falha no orçamento.");
+            }
+
+            if (dados.status !== "sucesso") {
+                console.error("Status não sucesso:", dados);
+                throw new Error(dados.message || "Falha no orçamento.");
+            }
 
             const capital = Number(dados.capital_inicial || 0);
             const quota = Number(dados.valor_quota || 0);
@@ -66,8 +75,12 @@
 
         try {
             const resposta = await fetch("/api/maquinas/listar", { cache: "no-store" });
+            
+            if (!resposta.ok) {
+                throw new Error("Falha ao listar máquinas.");
+            }
+
             const maquinas = await resposta.json();
-            if (!resposta.ok) throw new Error("Falha ao listar máquinas.");
 
             if (!Array.isArray(maquinas) || maquinas.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5">Nenhum equipamento cadastrado para esta equipe.</td></tr>`;
@@ -166,8 +179,9 @@
             const m = await resposta.json();
             if (!resposta.ok || m.status === "erro") throw new Error(m.message || "Equipamento não encontrado.");
 
+            setVal("registro_id", m.id || "");
             const campos = [
-                "registro_id", "nome_equipamento", "potencia", "consumo_eletrico", "consumo_agua", "consumo_gases",
+                "nome_equipamento", "potencia", "consumo_eletrico", "consumo_agua", "consumo_gases",
                 "velocidade", "avanco", "frequencia_manutencao", "preco_compra", "depreciacao_mensal",
                 "valor_venda_final", "operador_nome", "custo_minuto_operador", "custo_minuto_maquina",
                 "jornada_semanal", "turnos_trabalho", "fabricante", "modelo", "fonte_url"
@@ -257,16 +271,20 @@
         try {
             const resposta = await fetch(`/api/maquinas/pesquisar?q=${encodeURIComponent(termo)}`, { cache: "no-store" });
             const dados = await resposta.json();
-            if (!resposta.ok) throw new Error(dados.message || "Falha na pesquisa.");
+            
+            if (!resposta.ok) {
+                throw new Error(dados.message || "Falha na pesquisa.");
+            }
 
-            if (!dados.resultados?.length) {
-                painel.innerHTML = `<div style="font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;padding:8px;border-radius:6px;">⚠️ ${escapeHtml(dados.message || "Nenhum resultado encontrado.")}</div>`;
+            if (!dados.resultados || dados.resultados.length === 0) {
+                const msg = dados.message || "Nenhum resultado encontrado. Tente outro termo.";
+                painel.innerHTML = `<div style="font-size:11px;color:#92400e;background:#fffbec;border:1px solid #fde68a;padding:8px;border-radius:6px;">⚠️ ${escapeHtml(msg)}</div>`;
                 return;
             }
 
             painel.innerHTML = dados.resultados.map((r, indice) => {
                 const preco = r.preco_compra != null ? fmtBRL(r.preco_compra) : "Preço não informado";
-                const potencia = r.potencia != null ? `${r.potencia} kW${r.potencia_unidade ? ` (a partir de ${r.potencia_unidade})` : ""}` : "Potência não identificada";
+                const potencia = r.potencia != null ? `${r.potencia} kW${r.potencia_unidade ? ` (${r.potencia_unidade})` : ""}` : "Potência não identificada";
                 return `
                     <div style="background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;">
                         <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
@@ -279,8 +297,8 @@
                         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                             <span style="font-size:10px;color:#334155;">⚙️ ${escapeHtml(potencia)}</span>
                             <div style="display:flex;gap:6px;align-items:center;">
-                                <a href="${escapeAttr(r.url)}" target="_blank" rel="noopener" style="font-size:10px;color:#1d4ed8;font-weight:bold;">Fonte</a>
-                                <button type="button" class="btn-top" style="background:#1e3a8a;color:#fff;border-color:#1e3a8a;margin:0;" onclick="window.usarResultadoPesquisa(${indice})">Usar este equipamento</button>
+                                <a href="${escapeAttr(r.url)}" target="_blank" rel="noopener" style="font-size:10px;color:#1d4ed8;font-weight:bold;">Abrir Fonte</a>
+                                <button type="button" class="btn-top" style="background:#1e3a8a;color:#fff;border-color:#1e3a8a;margin:0;" onclick="window.usarResultadoPesquisa(${indice})">Usar este</button>
                             </div>
                         </div>
                     </div>`;
