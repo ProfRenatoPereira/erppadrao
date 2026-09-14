@@ -1,8 +1,6 @@
 # ==========================================================================
 # TERADMAS ERP v2.6 - MÓDULO 07: ENGENHARIA DE ATIVOS (MÁQUINAS)
-# app_maquinas.py
-#
-# VERSÃO INTEGRADA AO MOTOR FINANCEIRO CENTRAL
+# APP PYTHON - VERSÃO INTEGRADA AO MOTOR FINANCEIRO CENTRAL
 #
 # REGRAS:
 # - Conexão exclusivamente por GerenciadorCaixa.
@@ -12,30 +10,20 @@
 # - O orçamento do módulo vem da quota oficial "maquinas" em
 #   quotas_departamentos.
 # - A quota é calculada sobre o CAPITAL INICIAL.
-# - O saldo de aquisição é:
-#       valor_da_quota - patrimonio_atual_do_setor
+# - O saldo de aquisição é: valor_da_quota - patrimônio_atual_do_setor.
 # - Não existe regra fixa de 40%, R$ 5 milhões ou R$ 2 milhões.
 # - Não cria lançamentos financeiros automaticamente ao cadastrar uma máquina.
-# - Pesquisa técnica de equipamentos pode utilizar Google Custom Search API.
-# - A chave da API Google permanece exclusivamente no servidor.
 # ==========================================================================
 
 import os
-import json
 import logging
-import urllib.parse
-import urllib.request
-import urllib.error
+import re
+import html as html_lib
+from html.parser import HTMLParser
+from urllib.parse import quote_plus, urlparse
+from urllib.request import Request, urlopen
 
-from flask import (
-    Blueprint,
-    request,
-    render_template_string,
-    session,
-    jsonify,
-    redirect,
-)
-
+from flask import Blueprint, request, render_template_string, session, jsonify, redirect
 from psycopg2.extras import RealDictCursor
 
 from GerenciadorCaixa import (
@@ -43,55 +31,27 @@ from GerenciadorCaixa import (
     liberar_conexao_master,
 )
 
-
 logger = logging.getLogger(__name__)
 
 maquinas_blueprint = Blueprint("maquinas_blueprint", __name__)
 
 
-# ==========================================================================
-# CONTEXTO / SEGURANÇA
-# ==========================================================================
-
 def equipe_atual():
-    """
-    Retorna exclusivamente o tenant definido pela sessão.
-
-    Nenhum ID de equipe recebido pelo navegador é utilizado para
-    selecionar dados de outro tenant.
-    """
+    """Retorna exclusivamente o tenant da sessão."""
     return str(session.get("id_equipe", "equipe_alfa"))
 
 
 def autenticado():
-    """Verifica se o usuário está autenticado."""
     return bool(session.get("logado"))
 
-
-def empresa_inicializada():
-    """Verifica se a equipe já realizou a constituição do negócio."""
-    return bool(session.get("empresa_inicializada"))
-
-
-# ==========================================================================
-# BANCO - ESTRUTURA DA TABELA
-# ==========================================================================
 
 def garantir_tabela_maquinas(cursor):
     """
     Garante somente a estrutura técnica necessária para o CRUD de máquinas.
 
-    A tabela pode ser compartilhada com outros módulos. Por isso,
-    esta rotina adiciona apenas as colunas necessárias ao cadastro.
-
-    Não cria:
-      - quotas;
-      - lançamentos financeiros;
-      - orçamento automático;
-      - distribuição percentual;
-      - patrimônio fictício.
+    A tabela é compartilhada com outros módulos; portanto, esta rotina
+    adiciona apenas colunas compatíveis com o cadastro deste módulo.
     """
-
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS erp_maquinas (
@@ -124,210 +84,257 @@ def garantir_tabela_maquinas(cursor):
 
     for nome, tipo in colunas.items():
         cursor.execute(
-            f"""
-            ALTER TABLE erp_maquinas
-            ADD COLUMN IF NOT EXISTS {nome} {tipo}
-            """
+            f"ALTER TABLE erp_maquinas ADD COLUMN IF NOT EXISTS {nome} {tipo}"
         )
 
 
-# ==========================================================================
-# CONVERSÃO NUMÉRICA
-# ==========================================================================
-
 def numero(dados, campo, padrao=0.0):
-    """
-    Converte números recebidos do JavaScript.
-
-    Aceita:
-      100
-      100.50
-      "100"
-      "100.50"
-      ""
-
-    Não deixa erro de conversão derrubar silenciosamente o servidor.
-    """
-
+    """Converte números recebidos do JavaScript sem quebrar o endpoint."""
     valor = dados.get(campo, padrao)
-
     if valor in (None, ""):
         return float(padrao)
+    return float(valor)
 
-    if isinstance(valor, str):
-        valor = valor.strip()
 
-        # Compatibilidade com valores brasileiros:
-        # 1.234,56 -> 1234.56
-        if "," in valor and "." in valor:
-            valor = valor.replace(".", "").replace(",", ".")
-        elif "," in valor:
-            valor = valor.replace(",", ".")
+# ===========================================================================
+# PESQUISA EXTERNA DE EQUIPAMENTOS
+# ===========================================================================
 
+class _DDGParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.items = []
+        self.cur = None
+        self.mode = None
+        self.buf = []
+
+    def handle_starttag(self, tag, attrs):
+        a = dict(attrs)
+        c = a.get("class", "")
+        if tag == "a" and "result__a" in c:
+            self.cur = {"titulo": "", "url": "", "descricao": ""}
+            self.cur["url"] = html_lib.unescape(a.get("href", ""))
+            self.mode = "titulo"
+            self.buf = []
+        elif self.cur and "result__snippet" in c:
+            self.mode = "descricao"
+            self.buf = []
+
+    def handle_data(self, data):
+        if self.cur and self.mode:
+            self.buf.append(data)
+
+    def handle_endtag(self, tag):
+        if not self.cur:
+            return
+        if tag == "a" and self.mode == "titulo":
+            self.cur["titulo"] = " ".join("".join(self.buf).split())
+            self.mode = None
+        elif tag == "div" and self.mode == "descricao":
+            self.cur["descricao"] = " ".join("".join(self.buf).split())
+            self.mode = None
+            if self.cur["titulo"] and self.cur["url"]:
+                self.items.append(self.cur)
+                self.cur = None
+
+
+def _web_get(url, timeout=8):
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0 TERADMAS-ERP/2.6"})
+    with urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", "ignore")
+
+
+def _text(value):
+    return re.sub(r"\s+", " ", html_lib.unescape(value or "")).strip()
+
+
+def _url(value):
+    value = value or ""
+    m = re.search(r"uddg=([^&]+)", value)
+    if m:
+        from urllib.parse import unquote
+        return unquote(m.group(1))
+    return value
+
+
+def _match(patterns, text):
+    for pattern in patterns:
+        m = re.search(pattern, text or "", re.I)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
+def _price(text):
+    return _match([
+        r"R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*(?:,[0-9]{2})?)",
+        r"R\$\s*([0-9]+(?:,[0-9]{2})?)",
+    ], text)
+
+
+def _technical(text):
+    power = _match([r"(?:pot[eê]ncia|power)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*kW", r"([0-9]+(?:[.,][0-9]+)?)\s*kW"], text)
+    if power is None:
+        cv = _match([r"(?:pot[eê]ncia|motor)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*(?:CV|HP)", r"([0-9]+(?:[.,][0-9]+)?)\s*(?:CV|HP)"], text)
+        if cv:
+            try:
+                power = str(round(float(cv.replace(",", ".")) * 0.7355, 3))
+            except ValueError:
+                pass
+    return {
+        "potencia": power,
+        "consumo_eletrico": _match([r"(?:consumo|consumption)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*kWh", r"([0-9]+(?:[.,][0-9]+)?)\s*kWh"], text),
+        "consumo_agua": _match([r"(?:consumo|vaz[aã]o)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*m[³3]\s*/?\s*h"], text),
+        "consumo_gases": _match([r"(?:consumo|vaz[aã]o)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*m[³3]\s*/?\s*h"], text),
+        "velocidade": _match([r"(?:velocidade|rota[cç][aã]o)[^0-9]{0,25}([0-9]+(?:[.,][0-9]+)?\s*(?:RPM|Hz))", r"([0-9]+(?:[.,][0-9]+)?)\s*RPM"], text),
+        "avanco": _match([r"(?:avan[cç]o|feed)[^0-9]{0,25}([0-9]+(?:[.,][0-9]+)?\s*mm\s*/?\s*min)", r"([0-9]+(?:[.,][0-9]+)?)\s*mm\s*/?\s*min"], text),
+    }
+
+
+def _normalize_result(item):
+    title = _text(item.get("titulo"))
+    desc = _text(item.get("descricao"))
+    url = _url(item.get("url"))
+    text = f"{title}. {desc}"
+    brands = ["WEG", "ABB", "Mazak", "Hyundai", "JCB", "Caterpillar", "Komatsu", "New Holland", "Bralyx", "Zayer", "Arotec", "Dynapac", "Romea", "Ergomat", "Bosch", "Siemens", "Schneider", "Atlas Copco", "Kaeser", "Trumpf", "Mitsubishi", "Toyota", "Still", "Hyster", "Yale"]
+    manufacturer = next((b for b in brands if re.search(r"\b" + re.escape(b) + r"\b", title, re.I)), None)
+    return {
+        "titulo": title,
+        "nome": title,
+        "fabricante": manufacturer,
+        "modelo": None,
+        "categoria": None,
+        "descricao": desc,
+        "preco": _price(text),
+        "moeda": "R$" if _price(text) else None,
+        "condicao": _match([r"\b(nova|novo|usada|usado|recondicionada|recondicionado)\b"], text),
+        "url": url,
+        "fonte": urlparse(url).netloc.lower().replace("www.", "") or "Internet",
+        **_technical(text),
+    }
+
+
+def pesquisar_equipamentos_web(consulta):
+    consultas = [
+        consulta,
+        f"{consulta} site:maqx.com.br",
+        f"{consulta} site:localizamaquinas.com.br",
+        f"{consulta} site:mercadomaquinas.com.br",
+        f"{consulta} site:portaldasmaquinas.com",
+        f"{consulta} site:goodmachine.com.br",
+    ]
+    vistos = set()
+    resultados = []
+    for query in consultas:
+        try:
+            html = _web_get("https://html.duckduckgo.com/html/?q=" + quote_plus(query))
+            parser = _DDGParser()
+            parser.feed(html)
+        except Exception as erro:
+            logger.warning("Pesquisa externa indisponível para '%s': %s", query, erro)
+            continue
+        for item in parser.items:
+            normalized = _normalize_result(item)
+            key = normalized["url"] or normalized["titulo"]
+            if not key or key in vistos:
+                continue
+            vistos.add(key)
+            resultados.append(normalized)
+            if len(resultados) >= 12:
+                return resultados
+    return resultados
+
+
+@maquinas_blueprint.route("/api/maquinas/pesquisar", methods=["GET"])
+def api_pesquisar_maquinas_web():
+    if not autenticado():
+        return jsonify({"status": "erro", "message": "Não autenticado."}), 401
+    consulta = _text(request.args.get("q", ""))
+    if len(consulta) < 3:
+        return jsonify({"status": "erro", "message": "Informe pelo menos 3 caracteres para a pesquisa."}), 400
+    if len(consulta) > 180:
+        return jsonify({"status": "erro", "message": "A pesquisa é muito longa."}), 400
     try:
-        return float(valor)
-    except (TypeError, ValueError):
-        return float(padrao)
+        return jsonify({"status": "sucesso", "consulta": consulta, "resultados": pesquisar_equipamentos_web(consulta)}), 200
+    except Exception as erro:
+        logger.exception("Erro na pesquisa externa de equipamentos")
+        return jsonify({"status": "erro", "message": "Não foi possível pesquisar equipamentos na internet.", "erro": str(erro)}), 502
+
 
 
 # ==========================================================================
-# PÁGINA PRINCIPAL
+# PÁGINA
 # ==========================================================================
 
 @maquinas_blueprint.route("/maquinas", methods=["GET"])
 def pagina_maquinas():
-
     if not autenticado():
         return redirect("/login")
 
-    if not empresa_inicializada():
+    if not session.get("empresa_inicializada"):
         return redirect("/configuracao/inicializacao")
 
     diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-    caminho_html = os.path.join(
-        diretorio_atual,
-        "maquinas.html",
-    )
+    caminho_html = os.path.join(diretorio_atual, "maquinas.html")
 
     try:
-        with open(
-            caminho_html,
-            "r",
-            encoding="utf-8",
-        ) as arquivo:
+        with open(caminho_html, "r", encoding="utf-8") as arquivo:
             html = arquivo.read()
-
         return render_template_string(html)
-
     except FileNotFoundError:
-        return (
-            "Erro Crítico: Arquivo 'maquinas.html' não encontrado.",
-            404,
-        )
-
+        return "Erro Crítico: Arquivo 'maquinas.html' não encontrado.", 404
     except Exception as erro:
-        logger.exception(
-            "Erro ao renderizar máquinas: %s",
-            erro,
-        )
-
-        return (
-            "Erro ao carregar o módulo de máquinas.",
-            500,
-        )
+        logger.exception("Erro ao renderizar máquinas: %s", erro)
+        return "Erro ao carregar o módulo de máquinas.", 500
 
 
-# ==========================================================================
-# JAVASCRIPT
-# ==========================================================================
-
-@maquinas_blueprint.route(
-    "/maquinas/maquinas.js",
-    methods=["GET"],
-)
+@maquinas_blueprint.route("/maquinas/maquinas.js", methods=["GET"])
 def rota_maquinas_js():
-
-    diretorio_atual = os.path.dirname(
-        os.path.abspath(__file__)
-    )
-
-    caminho_js = os.path.join(
-        diretorio_atual,
-        "maquinas.js",
-    )
+    diretorio_atual = os.path.dirname(os.path.abspath(__file__))
+    caminho_js = os.path.join(diretorio_atual, "maquinas.js")
 
     try:
-        with open(
-            caminho_js,
-            "r",
-            encoding="utf-8",
-        ) as arquivo:
+        with open(caminho_js, "r", encoding="utf-8") as arquivo:
             js_conteudo = arquivo.read()
 
-        return (
-            js_conteudo,
-            200,
-            {
-                "Content-Type":
-                    "application/javascript; charset=utf-8"
-            },
-        )
-
+        return js_conteudo, 200, {"Content-Type": "application/javascript; charset=utf-8"}
     except FileNotFoundError:
-        return (
-            "console.error('Script de máquinas não encontrado.');",
-            404,
-            {
-                "Content-Type":
-                    "application/javascript; charset=utf-8"
-            },
-        )
+        return "console.error('Script offline.');", 404
 
 
 # ==========================================================================
 # ORÇAMENTO DO MÓDULO
 # ==========================================================================
 
-@maquinas_blueprint.route(
-    "/api/maquinas/orcamento",
-    methods=["GET"],
-)
+@maquinas_blueprint.route("/api/maquinas/orcamento", methods=["GET"])
 def api_orcamento_maquinas():
     """
     Ponte Financeiro -> Máquinas.
 
     Fonte:
+      capital inicial  = config_simulacao.capital_total
+      quota máquinas   = quotas_departamentos.departamento_id='maquinas'
+      patrimônio atual = erp_maquinas PRODUCAO + is_patrimonio=true
 
-      capital inicial
-        config_simulacao.capital_total
-
-      quota de máquinas
-        quotas_departamentos.departamento_id = 'maquinas'
-
-      patrimônio atual
-        erp_maquinas
-        departamento = 'PRODUCAO'
-        is_patrimonio = TRUE
-
-    Regra:
-
-      valor_quota =
-          capital_inicial * porcentagem_quota / 100
-
-      saldo_aquisicao =
-          valor_quota - patrimonio_atual
+    A quota monetária NUNCA é calculada sobre o giro restante.
     """
-
     if not autenticado():
-        return jsonify(
-            {
-                "status": "erro",
-                "message": "Não autenticado.",
-            }
-        ), 401
+        return jsonify({"status": "erro", "message": "Não autenticado."}), 401
 
-    conexao = None
-    cursor = None
+    conexao = cursor = None
 
     try:
-
         id_equipe = equipe_atual()
-
         conexao = obter_conexao_master()
 
         if conexao is None:
-            raise RuntimeError(
-                "Não foi possível obter conexão com o banco."
-            )
+            raise RuntimeError("Não foi possível obter conexão com o banco.")
 
-        cursor = conexao.cursor(
-            cursor_factory=RealDictCursor
-        )
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
 
         # ------------------------------------------------------------------
-        # 1. CAPITAL INICIAL
+        # 1. Capital inicial real da equipe
         # ------------------------------------------------------------------
-
         cursor.execute(
             """
             SELECT capital_total
@@ -338,113 +345,62 @@ def api_orcamento_maquinas():
             """,
             (id_equipe,),
         )
-
         config = cursor.fetchone()
 
-        capital_inicial = float(
-            (config or {}).get("capital_total") or 0
-        )
+        capital_inicial = float((config or {}).get("capital_total") or 0)
 
         # ------------------------------------------------------------------
-        # 2. QUOTA OFICIAL DE MÁQUINAS
+        # 2. Quota oficial do Financeiro para o módulo Máquinas
         # ------------------------------------------------------------------
-
         cursor.execute(
             """
-            SELECT
-                COALESCE(
-                    porcentagem_quota,
-                    0
-                ) AS porcentagem_quota
+            SELECT COALESCE(porcentagem_quota, 0) AS porcentagem_quota
             FROM quotas_departamentos
             WHERE equipe_id = %s
-              AND LOWER(
-                    TRIM(departamento_id)
-                  ) = 'maquinas'
+              AND LOWER(TRIM(departamento_id)) = 'maquinas'
             LIMIT 1
             """,
             (id_equipe,),
         )
-
         quota = cursor.fetchone()
 
         porcentagem_quota = float(
-            (quota or {}).get(
-                "porcentagem_quota"
-            ) or 0
+            (quota or {}).get("porcentagem_quota") or 0
         )
 
-        porcentagem_quota = max(
-            0.0,
-            min(
-                100.0,
-                porcentagem_quota,
-            ),
-        )
+        # Proteção contra dados inválidos.
+        porcentagem_quota = max(0.0, min(100.0, porcentagem_quota))
 
         # ------------------------------------------------------------------
-        # 3. VALOR DA QUOTA
-        #
-        # SEMPRE sobre o capital inicial.
-        #
-        # Não usar capital disponível/giro como base.
+        # 3. Valor financeiro da quota: sempre sobre o capital inicial
         # ------------------------------------------------------------------
-
-        valor_quota = (
-            capital_inicial
-            * porcentagem_quota
-            / 100.0
-        )
+        valor_quota = capital_inicial * porcentagem_quota / 100.0
 
         # ------------------------------------------------------------------
-        # 4. GARANTE ESTRUTURA
+        # 4. Patrimônio atual efetivamente adquirido pelo setor
         # ------------------------------------------------------------------
-
         garantir_tabela_maquinas(cursor)
-
-        # ------------------------------------------------------------------
-        # 5. PATRIMÔNIO ATUAL
-        # ------------------------------------------------------------------
 
         cursor.execute(
             """
-            SELECT
-                COALESCE(
-                    SUM(
-                        COALESCE(
-                            preco_compra,
-                            0
-                        )
-                    ),
-                    0
-                ) AS patrimonio_atual
+            SELECT COALESCE(SUM(COALESCE(preco_compra, 0)), 0) AS patrimonio_atual
             FROM erp_maquinas
             WHERE equipe_id = %s
               AND departamento = 'PRODUCAO'
-              AND COALESCE(
-                    is_patrimonio,
-                    TRUE
-                  ) = TRUE
+              AND COALESCE(is_patrimonio, TRUE) = TRUE
             """,
             (id_equipe,),
         )
-
         patrimonio = cursor.fetchone()
 
         patrimonio_atual = float(
-            (patrimonio or {}).get(
-                "patrimonio_atual"
-            ) or 0
+            (patrimonio or {}).get("patrimonio_atual") or 0
         )
 
         # ------------------------------------------------------------------
-        # 6. SALDO DA QUOTA
+        # 5. Saldo disponível dentro da quota do módulo
         # ------------------------------------------------------------------
-
-        saldo_aquisicao = max(
-            0.0,
-            valor_quota - patrimonio_atual,
-        )
+        saldo_aquisicao = max(0.0, valor_quota - patrimonio_atual)
 
         conexao.commit()
 
@@ -452,59 +408,31 @@ def api_orcamento_maquinas():
             {
                 "status": "sucesso",
                 "equipe_id": id_equipe,
-
-                "capital_inicial": round(
-                    capital_inicial,
-                    2,
-                ),
-
-                "porcentagem_quota": round(
-                    porcentagem_quota,
-                    2,
-                ),
-
-                "valor_quota": round(
-                    valor_quota,
-                    2,
-                ),
-
-                "patrimonio_atual": round(
-                    patrimonio_atual,
-                    2,
-                ),
-
-                "saldo_aquisicao": round(
-                    saldo_aquisicao,
-                    2,
-                ),
+                "capital_inicial": round(capital_inicial, 2),
+                "porcentagem_quota": round(porcentagem_quota, 2),
+                "valor_quota": round(valor_quota, 2),
+                "patrimonio_atual": round(patrimonio_atual, 2),
+                "saldo_aquisicao": round(saldo_aquisicao, 2),
             }
         ), 200
 
     except Exception as erro:
-
         if conexao:
             conexao.rollback()
 
-        logger.exception(
-            "Erro ao carregar orçamento de máquinas: %s",
-            erro,
-        )
+        logger.exception("Erro ao carregar orçamento de máquinas: %s", erro)
 
         return jsonify(
             {
                 "status": "erro",
-                "message":
-                    "Não foi possível carregar "
-                    "o orçamento de Máquinas.",
+                "message": "Não foi possível carregar o orçamento de Máquinas.",
                 "erro": str(erro),
             }
         ), 500
 
     finally:
-
         if cursor:
             cursor.close()
-
         if conexao:
             liberar_conexao_master(conexao)
 
@@ -513,86 +441,50 @@ def api_orcamento_maquinas():
 # LISTAGEM
 # ==========================================================================
 
-@maquinas_blueprint.route(
-    "/api/maquinas/listar",
-    methods=["GET"],
-)
+@maquinas_blueprint.route("/api/maquinas/listar", methods=["GET"])
 def api_listar_maquinas():
-
     if not autenticado():
-        return jsonify(
-            {
-                "status": "erro",
-                "message": "Não autenticado.",
-            }
-        ), 401
+        return jsonify([]), 401
 
-    conexao = None
-    cursor = None
+    conexao = cursor = None
 
     try:
-
         id_equipe = equipe_atual()
-
         conexao = obter_conexao_master()
 
         if conexao is None:
-            raise RuntimeError(
-                "Não foi possível obter conexão com o banco."
-            )
+            raise RuntimeError("Não foi possível obter conexão com o banco.")
 
-        cursor = conexao.cursor(
-            cursor_factory=RealDictCursor
-        )
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
 
         garantir_tabela_maquinas(cursor)
-
         conexao.commit()
 
+        # As máquinas de produção continuam identificadas por PRODUCAO.
+        # A quota do módulo é identificada separadamente por "maquinas".
         cursor.execute(
             """
             SELECT *
             FROM erp_maquinas
             WHERE equipe_id = %s
-              AND (
-                    departamento = 'PRODUCAO'
-                    OR departamento IS NULL
-                  )
+              AND (departamento = 'PRODUCAO' OR departamento IS NULL)
             ORDER BY id DESC
             """,
             (id_equipe,),
         )
 
-        registros = cursor.fetchall()
-
-        return jsonify(
-            [dict(registro) for registro in registros]
-        ), 200
+        return jsonify(cursor.fetchall()), 200
 
     except Exception as erro:
-
         if conexao:
             conexao.rollback()
 
-        logger.exception(
-            "Erro ao listar máquinas: %s",
-            erro,
-        )
-
-        return jsonify(
-            {
-                "status": "erro",
-                "message":
-                    "Não foi possível listar as máquinas.",
-                "dados": [],
-            }
-        ), 500
+        logger.exception("Erro ao listar máquinas: %s", erro)
+        return jsonify([]), 200
 
     finally:
-
         if cursor:
             cursor.close()
-
         if conexao:
             liberar_conexao_master(conexao)
 
@@ -601,221 +493,92 @@ def api_listar_maquinas():
 # SALVAR
 # ==========================================================================
 
-@maquinas_blueprint.route(
-    "/api/maquinas/salvar",
-    methods=["POST"],
-)
+@maquinas_blueprint.route("/api/maquinas/salvar", methods=["POST"])
 def api_salvar_maquina():
-
     if not autenticado():
-        return jsonify(
-            {
-                "status": "erro",
-                "message": "Não autenticado.",
-            }
-        ), 401
+        return jsonify({"status": "erro", "message": "Não autenticado."}), 401
 
-    if not empresa_inicializada():
+    if not session.get("empresa_inicializada"):
         return jsonify(
             {
                 "status": "erro",
-                "message":
-                    "A empresa ainda não foi inicializada.",
+                "message": "A empresa ainda não foi inicializada.",
             }
         ), 403
 
-    dados = request.get_json(
-        silent=True
-    ) or {}
-
+    dados = request.get_json(silent=True) or {}
     id_reg = dados.get("id")
-
     id_equipe = equipe_atual()
 
-    nome_eq = str(
-        dados.get(
-            "nome_equipamento",
-            "",
-        ) or ""
-    ).strip()
+    nome_eq = str(dados.get("nome_equipamento", "") or "").strip()
 
     if not nome_eq:
         return jsonify(
             {
                 "status": "erro",
-                "message":
-                    "Nome do equipamento é obrigatório.",
+                "message": "Nome do equipamento é obrigatório.",
             }
         ), 400
 
-    conexao = None
-    cursor = None
+    conexao = cursor = None
 
     try:
-
         conexao = obter_conexao_master()
 
         if conexao is None:
-            raise RuntimeError(
-                "Não foi possível obter conexão com o banco."
-            )
+            raise RuntimeError("Não foi possível obter conexão com o banco.")
 
         cursor = conexao.cursor()
 
         garantir_tabela_maquinas(cursor)
 
-        # ------------------------------------------------------------------
-        # DADOS TÉCNICOS
-        # ------------------------------------------------------------------
+        pot = numero(dados, "potencia")
+        c_ele = numero(dados, "consumo_eletrico")
+        c_agu = numero(dados, "consumo_agua")
+        c_gas = numero(dados, "consumo_gases")
 
-        pot = numero(
-            dados,
-            "potencia",
-        )
-
-        c_ele = numero(
-            dados,
-            "consumo_eletrico",
-        )
-
-        c_agu = numero(
-            dados,
-            "consumo_agua",
-        )
-
-        c_gas = numero(
-            dados,
-            "consumo_gases",
-        )
-
-        vel = str(
-            dados.get(
-                "velocidade",
-                "",
-            ) or ""
-        ).strip()
-
-        avc = str(
-            dados.get(
-                "avanco",
-                "",
-            ) or ""
-        ).strip()
+        vel = str(dados.get("velocidade", "") or "").strip()
+        avc = str(dados.get("avanco", "") or "").strip()
 
         try:
-            frq = int(
-                dados.get(
-                    "frequencia_manutencao",
-                    0,
-                ) or 0
-            )
-        except (
-            TypeError,
-            ValueError,
-        ):
+            frq = int(dados.get("frequencia_manutencao", 0) or 0)
+        except (TypeError, ValueError):
             frq = 0
 
-        prc = numero(
-            dados,
-            "preco_compra",
-        )
+        prc = numero(dados, "preco_compra")
+        dep = numero(dados, "depreciacao_mensal")
+        rsd = numero(dados, "valor_venda_final")
 
-        dep = numero(
-            dados,
-            "depreciacao_mensal",
-        )
+        op_n = str(dados.get("operador_nome", "") or "").strip()
+        c_op = numero(dados, "custo_minuto_operador")
+        c_mq = numero(dados, "custo_minuto_maquina")
 
-        rsd = numero(
-            dados,
-            "valor_venda_final",
-        )
+        jor = str(dados.get("jornada_semanal", "44") or "44").strip()
+        tur = str(dados.get("turnos_trabalho", "1") or "1").strip()
 
-        # ------------------------------------------------------------------
-        # OPERADOR / CUSTO
-        # ------------------------------------------------------------------
-
-        op_n = str(
-            dados.get(
-                "operador_nome",
-                "",
-            ) or ""
-        ).strip()
-
-        c_op = numero(
-            dados,
-            "custo_minuto_operador",
-        )
-
-        c_mq = numero(
-            dados,
-            "custo_minuto_maquina",
-        )
-
-        jor = str(
-            dados.get(
-                "jornada_semanal",
-                "44",
-            ) or "44"
-        ).strip()
-
-        tur = str(
-            dados.get(
-                "turnos_trabalho",
-                "1",
-            ) or "1"
-        ).strip()
-
-        # ------------------------------------------------------------------
-        # PATRIMÔNIO
-        # ------------------------------------------------------------------
-
-        isp = dados.get(
-            "is_patrimonio",
-            True,
-        )
-
+        # Não confiar em valor textual vindo do navegador.
+        isp = dados.get("is_patrimonio", True)
         if isinstance(isp, str):
-
-            isp = isp.lower() in (
-                "true",
-                "1",
-                "sim",
-                "yes",
-            )
-
+            isp = isp.lower() in ("true", "1", "sim", "yes")
         else:
             isp = bool(isp)
 
-        # ------------------------------------------------------------------
-        # CLASSIFICAÇÃO FÍSICA
+        # --------------------------------------------------------------
+        # Classificação física do ativo.
         #
-        # A página é Máquinas.
-        #
-        # A quota é "maquinas".
-        #
-        # O ativo físico produtivo continua sendo PRODUCAO.
-        # ------------------------------------------------------------------
-
+        # A página é "Máquinas", a quota é "maquinas", mas os ativos
+        # produtivos permanecem classificados como PRODUCAO.
+        # --------------------------------------------------------------
         departamento = "PRODUCAO"
 
-        # ==================================================================
-        # ATUALIZAÇÃO
-        # ==================================================================
-
         if id_reg:
-
             try:
                 id_reg_int = int(id_reg)
-            except (
-                TypeError,
-                ValueError,
-            ):
-
+            except (TypeError, ValueError):
                 return jsonify(
                     {
                         "status": "erro",
-                        "message":
-                            "Identificador da máquina inválido.",
+                        "message": "Identificador da máquina inválido.",
                     }
                 ), 400
 
@@ -843,10 +606,7 @@ def api_salvar_maquina():
                     departamento = %s
                 WHERE id = %s
                   AND equipe_id = %s
-                  AND (
-                        departamento = 'PRODUCAO'
-                        OR departamento IS NULL
-                      )
+                  AND (departamento = 'PRODUCAO' OR departamento IS NULL)
                 """,
                 (
                     nome_eq,
@@ -873,24 +633,15 @@ def api_salvar_maquina():
             )
 
             if cursor.rowcount == 0:
-
                 conexao.rollback()
-
                 return jsonify(
                     {
                         "status": "erro",
-                        "message":
-                            "Máquina não encontrada "
-                            "para esta equipe.",
+                        "message": "Máquina não encontrada para esta equipe.",
                     }
                 ), 404
 
-        # ==================================================================
-        # NOVO CADASTRO
-        # ==================================================================
-
         else:
-
             cursor.execute(
                 """
                 INSERT INTO erp_maquinas (
@@ -915,25 +666,8 @@ def api_salvar_maquina():
                     departamento
                 )
                 VALUES (
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s,
-                    %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 """,
                 (
@@ -959,49 +693,32 @@ def api_salvar_maquina():
                 ),
             )
 
-        # ------------------------------------------------------------------
-        # IMPORTANTE:
-        #
-        # Não gerar fluxo financeiro aqui.
-        #
-        # O cadastro do ativo não é automaticamente uma liquidação
-        # financeira.
-        # ------------------------------------------------------------------
-
         conexao.commit()
 
         return jsonify(
             {
                 "status": "sucesso",
-                "message":
-                    "Máquina salva com sucesso.",
+                "message": "Máquina salva com sucesso.",
             }
         ), 200
 
     except Exception as erro:
-
         if conexao:
             conexao.rollback()
 
-        logger.exception(
-            "Erro ao salvar máquina: %s",
-            erro,
-        )
+        logger.exception("Erro ao salvar máquina: %s", erro)
 
         return jsonify(
             {
                 "status": "erro",
-                "message":
-                    "Não foi possível salvar a máquina.",
+                "message": "Não foi possível salvar a máquina.",
                 "erro": str(erro),
             }
         ), 500
 
     finally:
-
         if cursor:
             cursor.close()
-
         if conexao:
             liberar_conexao_master(conexao)
 
@@ -1010,35 +727,22 @@ def api_salvar_maquina():
 # BUSCAR POR ID
 # ==========================================================================
 
-@maquinas_blueprint.route(
-    "/api/maquinas/buscar/<int:id_reg>",
-    methods=["GET"],
-)
+@maquinas_blueprint.route("/api/maquinas/buscar/<int:id_reg>", methods=["GET"])
 def api_buscar_maquina_id(id_reg):
-
     if not autenticado():
         return jsonify(
-            {
-                "status": "erro",
-                "message": "Não autenticado.",
-            }
+            {"status": "erro", "message": "Não autenticado."}
         ), 401
 
-    conexao = None
-    cursor = None
+    conexao = cursor = None
 
     try:
-
         conexao = obter_conexao_master()
 
         if conexao is None:
-            raise RuntimeError(
-                "Não foi possível obter conexão com o banco."
-            )
+            raise RuntimeError("Não foi possível obter conexão com o banco.")
 
-        cursor = conexao.cursor(
-            cursor_factory=RealDictCursor
-        )
+        cursor = conexao.cursor(cursor_factory=RealDictCursor)
 
         cursor.execute(
             """
@@ -1046,59 +750,41 @@ def api_buscar_maquina_id(id_reg):
             FROM erp_maquinas
             WHERE id = %s
               AND equipe_id = %s
-              AND (
-                    departamento = 'PRODUCAO'
-                    OR departamento IS NULL
-                  )
+              AND (departamento = 'PRODUCAO' OR departamento IS NULL)
             LIMIT 1
             """,
-            (
-                id_reg,
-                equipe_atual(),
-            ),
+            (id_reg, equipe_atual()),
         )
 
         maquina = cursor.fetchone()
 
         if not maquina:
-
             return jsonify(
                 {
                     "status": "erro",
-                    "message":
-                        "Máquina não encontrada.",
+                    "message": "Máquina não encontrada.",
                 }
             ), 404
 
-        return jsonify(
-            dict(maquina)
-        ), 200
+        return jsonify(dict(maquina)), 200
 
     except Exception as erro:
-
         if conexao:
             conexao.rollback()
 
-        logger.exception(
-            "Erro ao buscar máquina %s: %s",
-            id_reg,
-            erro,
-        )
+        logger.exception("Erro ao buscar máquina %s: %s", id_reg, erro)
 
         return jsonify(
             {
                 "status": "erro",
-                "message":
-                    "Não foi possível buscar a máquina.",
+                "message": "Não foi possível buscar a máquina.",
                 "erro": str(erro),
             }
         ), 500
 
     finally:
-
         if cursor:
             cursor.close()
-
         if conexao:
             liberar_conexao_master(conexao)
 
@@ -1107,31 +793,20 @@ def api_buscar_maquina_id(id_reg):
 # DELETAR
 # ==========================================================================
 
-@maquinas_blueprint.route(
-    "/api/maquinas/deletar/<int:id_reg>",
-    methods=["DELETE"],
-)
+@maquinas_blueprint.route("/api/maquinas/deletar/<int:id_reg>", methods=["DELETE"])
 def api_deletar_maquina(id_reg):
-
     if not autenticado():
         return jsonify(
-            {
-                "status": "erro",
-                "message": "Não autenticado.",
-            }
+            {"status": "erro", "message": "Não autenticado."}
         ), 401
 
-    conexao = None
-    cursor = None
+    conexao = cursor = None
 
     try:
-
         conexao = obter_conexao_master()
 
         if conexao is None:
-            raise RuntimeError(
-                "Não foi possível obter conexão com o banco."
-            )
+            raise RuntimeError("Não foi possível obter conexão com o banco.")
 
         cursor = conexao.cursor()
 
@@ -1140,26 +815,17 @@ def api_deletar_maquina(id_reg):
             DELETE FROM erp_maquinas
             WHERE id = %s
               AND equipe_id = %s
-              AND (
-                    departamento = 'PRODUCAO'
-                    OR departamento IS NULL
-                  )
+              AND (departamento = 'PRODUCAO' OR departamento IS NULL)
             """,
-            (
-                id_reg,
-                equipe_atual(),
-            ),
+            (id_reg, equipe_atual()),
         )
 
         if cursor.rowcount == 0:
-
             conexao.rollback()
-
             return jsonify(
                 {
                     "status": "erro",
-                    "message":
-                        "Máquina não encontrada.",
+                    "message": "Máquina não encontrada.",
                 }
             ), 404
 
@@ -1168,346 +834,25 @@ def api_deletar_maquina(id_reg):
         return jsonify(
             {
                 "status": "removido",
-                "message":
-                    "Máquina removida com sucesso.",
+                "message": "Máquina removida com sucesso.",
             }
         ), 200
 
     except Exception as erro:
-
         if conexao:
             conexao.rollback()
 
-        logger.exception(
-            "Erro ao deletar máquina %s: %s",
-            id_reg,
-            erro,
-        )
+        logger.exception("Erro ao deletar máquina %s: %s", id_reg, erro)
 
         return jsonify(
             {
                 "status": "erro",
-                "message":
-                    "Não foi possível remover a máquina.",
-                "erro": str(erro),
+                "message": "Não foi possível remover a máquina.",
             }
         ), 500
 
     finally:
-
         if cursor:
             cursor.close()
-
         if conexao:
             liberar_conexao_master(conexao)
-
-
-# ==========================================================================
-# PESQUISA GOOGLE
-# ==========================================================================
-#
-# O navegador chama:
-#
-#   GET /api/maquinas/pesquisar_google?q=nome do equipamento
-#
-# A chave NÃO vai para o navegador.
-#
-# O servidor utiliza:
-#
-#   GOOGLE_API_KEY
-#   GOOGLE_CSE_ID
-#
-# configurados no ambiente do Render.
-#
-# API utilizada:
-#
-#   Google Programmable Search / Custom Search JSON API
-#
-# Não cadastramos automaticamente nenhum resultado como patrimônio.
-# A pesquisa apenas fornece informação técnica para auxiliar o aluno.
-# ==========================================================================
-
-def pesquisar_google_servidor(consulta):
-    """
-    Executa pesquisa no Google Custom Search API.
-
-    Retorna somente informações públicas retornadas pelo Google.
-
-    Não inventa marca, modelo ou característica técnica.
-    """
-
-    api_key = os.getenv(
-        "GOOGLE_API_KEY",
-        "",
-    ).strip()
-
-    cse_id = os.getenv(
-        "GOOGLE_CSE_ID",
-        "",
-    ).strip()
-
-    if not api_key or not cse_id:
-        raise RuntimeError(
-            "Pesquisa Google não configurada no servidor. "
-            "Defina GOOGLE_API_KEY e GOOGLE_CSE_ID."
-        )
-
-    consulta = str(
-        consulta or ""
-    ).strip()
-
-    if not consulta:
-        return []
-
-    # Limite para impedir consultas exageradamente grandes.
-    consulta = consulta[:300]
-
-    parametros = {
-        "key": api_key,
-        "cx": cse_id,
-        "q": consulta,
-        "num": 10,
-        "hl": "pt-BR",
-        "gl": "br",
-        "safe": "active",
-    }
-
-    url = (
-        "https://www.googleapis.com/customsearch/v1?"
-        + urllib.parse.urlencode(parametros)
-    )
-
-    requisicao = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent":
-                "TERADMAS-ERP/2.6",
-            "Accept":
-                "application/json",
-        },
-        method="GET",
-    )
-
-    try:
-
-        with urllib.request.urlopen(
-            requisicao,
-            timeout=12,
-        ) as resposta:
-
-            conteudo = resposta.read().decode(
-                "utf-8"
-            )
-
-            dados = json.loads(
-                conteudo
-            )
-
-    except urllib.error.HTTPError as erro:
-
-        corpo = ""
-
-        try:
-            corpo = erro.read().decode(
-                "utf-8",
-                errors="ignore",
-            )
-        except Exception:
-            pass
-
-        logger.error(
-            "Google Custom Search HTTP %s: %s",
-            erro.code,
-            corpo,
-        )
-
-        if erro.code == 403:
-            raise RuntimeError(
-                "Google recusou a pesquisa. "
-                "Verifique GOOGLE_API_KEY, "
-                "GOOGLE_CSE_ID e as permissões da API."
-            )
-
-        raise RuntimeError(
-            "Google retornou erro HTTP "
-            f"{erro.code}."
-        )
-
-    except urllib.error.URLError as erro:
-
-        logger.exception(
-            "Erro de comunicação com Google: %s",
-            erro,
-        )
-
-        raise RuntimeError(
-            "Não foi possível consultar o Google."
-        )
-
-    except json.JSONDecodeError:
-
-        raise RuntimeError(
-            "A resposta do Google não pôde ser interpretada."
-        )
-
-    itens = dados.get(
-        "items",
-        [],
-    )
-
-    resultados = []
-
-    for item in itens:
-
-        titulo = str(
-            item.get(
-                "title",
-                "",
-            ) or ""
-        ).strip()
-
-        descricao = str(
-            item.get(
-                "snippet",
-                "",
-            ) or ""
-        ).strip()
-
-        link = str(
-            item.get(
-                "link",
-                "",
-            ) or ""
-        ).strip()
-
-        display_link = str(
-            item.get(
-                "displayLink",
-                "",
-            ) or ""
-        ).strip()
-
-        if not titulo and not descricao:
-            continue
-
-        resultados.append(
-            {
-                "titulo": titulo,
-                "descricao": descricao,
-                "link": link,
-                "fonte": display_link,
-            }
-        )
-
-    return resultados
-
-
-@maquinas_blueprint.route(
-    "/api/maquinas/pesquisar_google",
-    methods=["GET"],
-)
-def api_pesquisar_google():
-
-    if not autenticado():
-        return jsonify(
-            {
-                "status": "erro",
-                "message": "Não autenticado.",
-                "resultados": [],
-            }
-        ), 401
-
-    if not empresa_inicializada():
-        return jsonify(
-            {
-                "status": "erro",
-                "message":
-                    "A empresa ainda não foi inicializada.",
-                "resultados": [],
-            }
-        ), 403
-
-    consulta = str(
-        request.args.get(
-            "q",
-            "",
-        ) or ""
-    ).strip()
-
-    if len(consulta) < 2:
-        return jsonify(
-            {
-                "status": "erro",
-                "message":
-                    "Informe o nome do equipamento.",
-                "resultados": [],
-            }
-        ), 400
-
-    try:
-
-        resultados = pesquisar_google_servidor(
-            consulta
-        )
-
-        return jsonify(
-            {
-                "status": "sucesso",
-                "consulta": consulta,
-                "resultados": resultados,
-                "total": len(resultados),
-            }
-        ), 200
-
-    except Exception as erro:
-
-        logger.exception(
-            "Erro na pesquisa Google de máquinas: %s",
-            erro,
-        )
-
-        return jsonify(
-            {
-                "status": "erro",
-                "message":
-                    "Não foi possível realizar "
-                    "a pesquisa no Google.",
-                "erro": str(erro),
-                "resultados": [],
-            }
-        ), 503
-
-
-# ==========================================================================
-# HEALTH CHECK DO MÓDULO
-# ==========================================================================
-
-@maquinas_blueprint.route(
-    "/api/maquinas/status",
-    methods=["GET"],
-)
-def api_status_maquinas():
-
-    configurado_google = bool(
-        os.getenv(
-            "GOOGLE_API_KEY",
-            "",
-        ).strip()
-        and
-        os.getenv(
-            "GOOGLE_CSE_ID",
-            "",
-        ).strip()
-    )
-
-    return jsonify(
-        {
-            "status": "sucesso",
-            "modulo": "maquinas",
-            "autenticado": autenticado(),
-            "empresa_inicializada":
-                empresa_inicializada(),
-            "pesquisa_google_configurada":
-                configurado_google,
-        }
-    ), 200
