@@ -79,9 +79,6 @@ def garantir_tabela_maquinas(cursor):
         "jornada_semanal": "TEXT",
         "turnos_trabalho": "TEXT",
         "is_patrimonio": "BOOLEAN",
-        "fabricante": "TEXT",
-        "modelo": "TEXT",
-        "fonte_url": "TEXT",
     }
 
     for nome, tipo in colunas.items():
@@ -138,7 +135,188 @@ def rota_maquinas_js():
         return "console.error('Script offline.');", 404
 
 
-# ==========================================================================\n# PESQUISA EXTERNA DE EQUIPAMENTOS\n# ==========================================================================\n\n@maquinas_blueprint.route("/api/maquinas/pesquisar", methods=["GET"])\ndef api_pesquisar_equipamento():\n    """\n    Pesquisa equipamentos reais na Internet para apoiar o cadastro do ativo.\n\n    IMPORTANTE: esta rota faz UMA única chamada externa com timeout curto.\n    A versão anterior fazia várias consultas sequenciais e podia manter um\n    worker do Gunicorn ocupado até ocorrer WORKER TIMEOUT.\n    """\n    if not autenticado():\n        return jsonify({"status": "erro", "message": "Não autenticado."}), 401\n\n    consulta = str(request.args.get("q", "") or "").strip()\n    if len(consulta) < 2:\n        return jsonify({"status": "erro", "message": "Informe o equipamento que deseja pesquisar."}), 400\n\n    # Limita a consulta para evitar URLs enormes e pesquisas acidentais.\n    consulta = consulta[:180]\n    url = "https://www.bing.com/search?q=" + quote_plus(consulta)\n\n    try:\n        requisicao = Request(\n            url,\n            headers={\n                "User-Agent": (\n                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "\n                    "AppleWebKit/537.36 Chrome/152 Safari/537.36"\n                ),\n                "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",\n            },\n        )\n\n        # Timeout único e curto: nunca repetir consultas dentro desta requisição.\n        with urlopen(requisicao, timeout=4.5) as resposta:  # nosec B310 - URL fixa do Bing\n            html = resposta.read(900_000).decode("utf-8", errors="ignore")\n\n        resultados = []\n\n        # Estrutura clássica do Bing: cada resultado orgânico fica em li.b_algo.\n        blocos = re.findall(\n            r'<li[^>]+class=["\\\']b_algo["\\\'][^>]*>(.*?)</li>',\n            html,\n            flags=re.IGNORECASE | re.DOTALL,\n        )\n\n        if not blocos:\n            # Fallback para alterações pequenas no HTML do mecanismo de busca.\n            blocos = re.findall(\n                r'<h2[^>]*>.*?</h2>.*?(?:<p[^>]*>.*?</p>)?',\n                html,\n                flags=re.IGNORECASE | re.DOTALL,\n            )\n\n        for bloco in blocos[:8]:\n            match_link = re.search(\n                r'<a[^>]+href=["\\\']([^"\\\']+)["\\\'][^>]*>(.*?)</a>',\n                bloco,\n                flags=re.IGNORECASE | re.DOTALL,\n            )\n            if not match_link:\n                continue\n\n            link = unescape(match_link.group(1)).strip()\n            titulo = re.sub(r"<[^>]+>", " ", match_link.group(2))\n            titulo = re.sub(r"\\s+", " ", unescape(titulo)).strip()\n\n            if not link.startswith(("http://", "https://")):\n                continue\n\n            # Remove links internos de navegação do próprio Bing.\n            host = (urlparse(link).hostname or "").lower()\n            if "bing.com" in host:\n                continue\n\n            match_snippet = re.search(\n                r'<p[^>]*>(.*?)</p>',\n                bloco,\n                flags=re.IGNORECASE | re.DOTALL,\n            )\n            snippet = ""\n            if match_snippet:\n                snippet = re.sub(r"<[^>]+>", " ", match_snippet.group(1))\n                snippet = re.sub(r"\\s+", " ", unescape(snippet)).strip()\n\n            texto = f"{titulo} {snippet}"\n            preco = None\n            match_preco = re.search(\n                r"R\\$\\s*([0-9]{1,3}(?:[.][0-9]{3})*(?:,[0-9]{1,2})?)",\n                texto,\n                flags=re.IGNORECASE,\n            )\n            if match_preco:\n                try:\n                    preco = float(\n                        match_preco.group(1).replace(".", "").replace(",", ".")\n                    )\n                except ValueError:\n                    preco = None\n\n            potencia = None\n            potencia_unidade = None\n            match_pot = re.search(\n                r"([0-9]+(?:[.,][0-9]+)?)\\s*(kW|HP|CV)\\b",\n                texto,\n                flags=re.IGNORECASE,\n            )\n            if match_pot:\n                try:\n                    valor_pot = float(match_pot.group(1).replace(",", "."))\n                    unidade = match_pot.group(2).upper()\n                    if unidade == "HP":\n                        valor_pot *= 0.7457\n                    elif unidade == "CV":\n                        valor_pot *= 0.7355\n                    potencia = round(valor_pot, 3)\n                    potencia_unidade = unidade\n                except ValueError:\n                    pass\n\n            resultados.append(\n                {\n                    "titulo": titulo or consulta,\n                    "url": link,\n                    "snippet": snippet[:500],\n                    "preco_compra": preco,\n                    "potencia": potencia,\n                    "potencia_unidade": potencia_unidade,\n                }\n            )\n\n        return jsonify(\n            {\n                "status": "sucesso",\n                "consulta": consulta,\n                "resultados": resultados,\n                "fonte": "Bing",\n            }\n        ), 200\n\n    except Exception as erro:\n        # Falha externa não pode derrubar nem atrasar o módulo.\n        logger.warning("Pesquisa externa indisponível para '%s': %s", consulta, erro)\n        return jsonify(\n            {\n                "status": "indisponivel",\n                "consulta": consulta,\n                "resultados": [],\n                "message": "A pesquisa externa não respondeu dentro do tempo limite.",\n            }\n        ), 200\n\n\n# ==========================================================================
+# ============================================================================
+# PESQUISA EXTERNA DE EQUIPAMENTOS
+# ============================================================================
+@maquinas_blueprint.route("/api/maquinas/pesquisar", methods=["GET"])
+def api_pesquisar_maquinas_internet():
+    """
+    Pesquisa equipamentos industriais na Internet.
+
+    IMPORTANTE:
+    - Esta rota NÃO pesquisa a tabela erp_maquinas.
+    - Faz somente UMA chamada externa por pesquisa.
+    - Timeout curto para não bloquear o worker do Gunicorn.
+    - Retorna 200 mesmo quando o provedor externo estiver indisponível,
+      permitindo que o JavaScript trate a ausência de resultados sem gerar
+      uma cascata de erros.
+    """
+    if not autenticado():
+        return jsonify({"status": "erro", "message": "Não autenticado."}), 401
+
+    termo = str(request.args.get("q", "") or "").strip()
+    if not termo:
+        return jsonify({"status": "erro", "message": "Informe o equipamento para pesquisar."}), 400
+
+    termo = termo[:180]
+
+    # Contexto industrial para evitar resultados de uso doméstico/consumidor.
+    consulta = (
+        f'"{termo}" (industrial OR "máquina industrial" OR equipamento '
+        'OR fabricante OR datasheet OR manual) '
+        '-doméstico -domestico -kitchen -residencial -appliance'
+    )
+
+    url = "https://www.bing.com/search?q=" + quote_plus(consulta) + "&count=8"
+    req = Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                          "AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/131.0 Safari/537.36",
+            "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+    )
+
+    try:
+        with urlopen(req, timeout=4.5) as resposta:
+            html = resposta.read(900_000).decode("utf-8", errors="ignore")
+    except Exception as erro:
+        logger.warning("Pesquisa externa indisponível para '%s': %s", termo, erro)
+        return jsonify({
+            "status": "indisponivel",
+            "message": "A pesquisa na Internet está temporariamente indisponível.",
+            "resultados": [],
+        }), 200
+
+    def limpar_html(texto):
+        texto = re.sub(r"<[^>]+>", " ", texto or "")
+        texto = unescape(texto)
+        texto = re.sub(r"\s+", " ", texto).strip()
+        return texto
+
+    resultados = []
+    vistos = set()
+
+    # Bing costuma entregar resultados orgânicos em li.b_algo.
+    blocos = re.findall(
+        r'<li[^>]+class=["\'][^"\']*b_algo[^"\']*["\'][^>]*>(.*?)</li>',
+        html,
+        flags=re.I | re.S,
+    )
+
+    # Fallback simples caso a estrutura do Bing mude.
+    if not blocos:
+        blocos = re.findall(
+            r'<h2[^>]*>(.*?)</h2>', html, flags=re.I | re.S
+        )
+
+    palavras_industriais = (
+        "industrial", "cnc", "torno", "fresa", "usinagem", "prensa",
+        "injetora", "compressor", "caldeira", "forno industrial", "laser",
+        "solda", "cortadora", "dobradeira", "centro de usinagem",
+        "fabricante", "datasheet", "manual técnico", "equipamento"
+    )
+    palavras_consumidor = (
+        "receita", "culinária", "cozinha", "doméstico", "domestico",
+        "residencial", "eletrodoméstico", "eletrodomestico", "air fryer",
+        "shopping", "magazine", "mercado livre"
+    )
+
+    for bloco in blocos:
+        # Extrai primeiro link do bloco.
+        match_link = re.search(
+            r'<a[^>]+href=["\']([^"\']+)["\'][^>]*>(.*?)</a>',
+            bloco,
+            flags=re.I | re.S,
+        )
+        if not match_link:
+            continue
+
+        link = unescape(match_link.group(1)).strip()
+        titulo = limpar_html(match_link.group(2))
+        if not titulo or not link.startswith(("http://", "https://")):
+            continue
+
+        parsed = urlparse(link)
+        dominio = parsed.netloc.lower().split(":")[0]
+        if not dominio or "bing.com" in dominio:
+            continue
+
+        # Remove URLs duplicadas.
+        chave = link.split("#", 1)[0].rstrip("/").lower()
+        if chave in vistos:
+            continue
+        vistos.add(chave)
+
+        texto = limpar_html(bloco)
+        if len(texto) < 30:
+            continue
+
+        score = sum(2 for p in palavras_industriais if p in texto.lower())
+        score -= sum(3 for p in palavras_consumidor if p in texto.lower())
+        if score < 1:
+            continue
+
+        # Snippet sem o título para manter a resposta compacta.
+        snippet = texto
+        if titulo and snippet.lower().startswith(titulo.lower()):
+            snippet = snippet[len(titulo):].strip(" -–—")
+        snippet = snippet[:500]
+
+        # Preço brasileiro, quando o resultado traz preço explicitamente.
+        preco = None
+        m_preco = re.search(
+            r'R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*(?:,[0-9]{2})?|[0-9]+(?:,[0-9]{2})?)',
+            texto,
+            flags=re.I,
+        )
+        if m_preco:
+            bruto = m_preco.group(1).replace(".", "").replace(",", ".")
+            try:
+                preco = float(bruto)
+            except ValueError:
+                preco = None
+
+        # Potência: kW, kVA, HP ou CV. HP/CV são convertidos aproximadamente para kW.
+        potencia = None
+        potencia_unidade = None
+        m_pot = re.search(
+            r'\b([0-9]+(?:[.,][0-9]+)?)\s*(kW|kVA|HP|CV)\b',
+            texto,
+            flags=re.I,
+        )
+        if m_pot:
+            valor = float(m_pot.group(1).replace(",", "."))
+            unidade = m_pot.group(2).upper()
+            if unidade in ("HP", "CV"):
+                valor *= 0.7355
+                unidade = "kW"
+            potencia = round(valor, 3)
+            potencia_unidade = unidade
+
+        resultados.append({
+            "titulo": titulo[:220],
+            "url": link,
+            "dominio": dominio,
+            "snippet": snippet,
+            "preco_compra": preco,
+            "potencia": potencia,
+            "potencia_unidade": potencia_unidade,
+        })
+
+        if len(resultados) >= 8:
+            break
+
+    return jsonify({
+        "status": "sucesso",
+        "termo": termo,
+        "resultados": resultados,
+    }), 200
+
+
+# ==========================================================================
 # ORÇAMENTO DO MÓDULO
 # ==========================================================================
 
@@ -439,9 +617,6 @@ def api_salvar_maquina():
                     jornada_semanal = %s,
                     turnos_trabalho = %s,
                     is_patrimonio = %s,
-                    fabricante = %s,
-                    modelo = %s,
-                    fonte_url = %s,
                     departamento = %s
                 WHERE id = %s
                   AND equipe_id = %s
@@ -465,9 +640,6 @@ def api_salvar_maquina():
                     jor,
                     tur,
                     isp,
-                    str(dados.get("fabricante", "") or "").strip(),
-                    str(dados.get("modelo", "") or "").strip(),
-                    str(dados.get("fonte_url", "") or "").strip(),
                     departamento,
                     id_reg_int,
                     id_equipe,
@@ -505,14 +677,11 @@ def api_salvar_maquina():
                     jornada_semanal,
                     turnos_trabalho,
                     is_patrimonio,
-                    fabricante,
-                    modelo,
-                    fonte_url,
                     departamento
                 )
                 VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 """,
                 (
@@ -534,9 +703,6 @@ def api_salvar_maquina():
                     jor,
                     tur,
                     isp,
-                    str(dados.get("fabricante", "") or "").strip(),
-                    str(dados.get("modelo", "") or "").strip(),
-                    str(dados.get("fonte_url", "") or "").strip(),
                     departamento,
                 ),
             )
