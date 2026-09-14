@@ -18,9 +18,9 @@
 import os
 import logging
 import re
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from html import unescape
-from urllib.parse import quote_plus, urlparse, parse_qs
+import html as html_lib
+from html.parser import HTMLParser
+from urllib.parse import quote_plus, urlparse
 from urllib.request import Request, urlopen
 
 from flask import Blueprint, request, render_template_string, session, jsonify, redirect
@@ -80,9 +80,6 @@ def garantir_tabela_maquinas(cursor):
         "jornada_semanal": "TEXT",
         "turnos_trabalho": "TEXT",
         "is_patrimonio": "BOOLEAN",
-        "fabricante": "TEXT",
-        "modelo": "TEXT",
-        "fonte_url": "TEXT",
     }
 
     for nome, tipo in colunas.items():
@@ -97,6 +94,341 @@ def numero(dados, campo, padrao=0.0):
     if valor in (None, ""):
         return float(padrao)
     return float(valor)
+
+
+# ===========================================================================
+# PESQUISA EXTERNA DE EQUIPAMENTOS
+# ===========================================================================
+# IMPORTANTE:
+# A pesquisa não pode bloquear um worker Flask/Gunicorn. A versão anterior
+# fazia várias chamadas sequenciais ao DuckDuckGo, cada uma com timeout alto.
+# Em um ambiente com rede externa lenta isso acumulava o tempo das chamadas
+# e provocava WORKER TIMEOUT.
+#
+# Agora:
+# - no máximo 3 consultas externas em paralelo;
+# - timeout curto por consulta;
+# - a primeira fonte disponível já pode produzir resultados;
+# - chave de API, se configurada, é usada no servidor (nunca no navegador);
+# - se nenhuma fonte responder, a API retorna rapidamente sem derrubar worker.
+# ===========================================================================
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import quote_plus, unquote
+from urllib.request import Request, urlopen
+
+
+class _DDGParser(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.items = []
+        self.cur = None
+        self.mode = None
+        self.buf = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        classes = attrs.get("class", "")
+        if tag == "a" and "result__a" in classes:
+            self.cur = {"titulo": "", "url": "", "descricao": ""}
+            self.cur["url"] = html_lib.unescape(attrs.get("href", ""))
+            self.mode = "titulo"
+            self.buf = []
+        elif self.cur and "result__snippet" in classes:
+            self.mode = "descricao"
+            self.buf = []
+
+    def handle_data(self, data):
+        if self.cur and self.mode:
+            self.buf.append(data)
+
+    def handle_endtag(self, tag):
+        if not self.cur:
+            return
+        if tag == "a" and self.mode == "titulo":
+            self.cur["titulo"] = " ".join("".join(self.buf).split())
+            self.mode = None
+        elif tag == "div" and self.mode == "descricao":
+            self.cur["descricao"] = " ".join("".join(self.buf).split())
+            self.mode = None
+            if self.cur["titulo"] and self.cur["url"]:
+                self.items.append(self.cur)
+                self.cur = None
+
+
+class _BingParser(HTMLParser):
+    """Parser mínimo para resultados HTML do Bing."""
+    def __init__(self):
+        super().__init__()
+        self.items = []
+        self.cur = None
+        self.mode = None
+        self.buf = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        classes = attrs.get("class", "")
+        if tag == "li" and "b_algo" in classes:
+            self.cur = {"titulo": "", "url": "", "descricao": ""}
+        elif self.cur and tag == "a" and not self.cur["titulo"]:
+            href = attrs.get("href", "")
+            if href:
+                self.cur["url"] = href
+                self.mode = "titulo"
+                self.buf = []
+        elif self.cur and tag == "p":
+            self.mode = "descricao"
+            self.buf = []
+
+    def handle_data(self, data):
+        if self.cur and self.mode:
+            self.buf.append(data)
+
+    def handle_endtag(self, tag):
+        if not self.cur:
+            return
+        if tag == "a" and self.mode == "titulo":
+            self.cur["titulo"] = _text(" ".join(self.buf))
+            self.mode = None
+        elif tag == "p" and self.mode == "descricao":
+            self.cur["descricao"] = _text(" ".join(self.buf))
+            self.mode = None
+        elif tag == "li" and self.cur.get("titulo") and self.cur.get("url"):
+            self.items.append(self.cur)
+            self.cur = None
+
+
+def _web_get(url, timeout=2.5):
+    req = Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (compatible; TERADMAS-ERP/2.6; +https://github.com/)"
+        },
+    )
+    with urlopen(req, timeout=timeout) as resp:
+        return resp.read(500_000).decode("utf-8", "ignore")
+
+
+def _text(value):
+    return re.sub(r"\s+", " ", html_lib.unescape(value or "")).strip()
+
+
+def _url(value):
+    value = value or ""
+    m = re.search(r"uddg=([^&]+)", value)
+    if m:
+        return unquote(m.group(1))
+    return value
+
+
+def _match(patterns, text):
+    for pattern in patterns:
+        m = re.search(pattern, text or "", re.I)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
+def _price(text):
+    return _match(
+        [
+            r"R\$\s*([0-9]{1,3}(?:\.[0-9]{3})*(?:,[0-9]{2})?)",
+            r"R\$\s*([0-9]+(?:,[0-9]{2})?)",
+        ],
+        text,
+    )
+
+
+def _technical(text):
+    power = _match(
+        [
+            r"(?:pot[eê]ncia|power)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*kW",
+            r"([0-9]+(?:[.,][0-9]+)?)\s*kW",
+        ],
+        text,
+    )
+    if power is None:
+        cv = _match(
+            [
+                r"(?:pot[eê]ncia|motor)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*(?:CV|HP)",
+                r"([0-9]+(?:[.,][0-9]+)?)\s*(?:CV|HP)",
+            ],
+            text,
+        )
+        if cv:
+            try:
+                power = str(round(float(cv.replace(",", ".")) * 0.7355, 3))
+            except ValueError:
+                pass
+    return {
+        "potencia": power,
+        "consumo_eletrico": _match(
+            [
+                r"(?:consumo|consumption)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*kWh",
+                r"([0-9]+(?:[.,][0-9]+)?)\s*kWh",
+            ],
+            text,
+        ),
+        "consumo_agua": _match(
+            [r"(?:consumo|vaz[aã]o)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*m[³3]\s*/?\s*h"],
+            text,
+        ),
+        "consumo_gases": _match(
+            [r"(?:g[aá]s|consumo|vaz[aã]o)[^0-9]{0,30}([0-9]+(?:[.,][0-9]+)?)\s*m[³3]\s*/?\s*h"],
+            text,
+        ),
+        "velocidade": _match(
+            [
+                r"(?:velocidade|rota[cç][aã]o)[^0-9]{0,25}([0-9]+(?:[.,][0-9]+)?\s*(?:RPM|Hz))",
+                r"([0-9]+(?:[.,][0-9]+)?)\s*RPM",
+            ],
+            text,
+        ),
+        "avanco": _match(
+            [
+                r"(?:avan[cç]o|feed)[^0-9]{0,25}([0-9]+(?:[.,][0-9]+)?\s*mm\s*/?\s*min)",
+                r"([0-9]+(?:[.,][0-9]+)?)\s*mm\s*/?\s*min",
+            ],
+            text,
+        ),
+    }
+
+
+def _normalize_result(item):
+    title = _text(item.get("titulo"))
+    desc = _text(item.get("descricao"))
+    url = _url(item.get("url"))
+    text = f"{title}. {desc}"
+    brands = [
+        "WEG", "ABB", "Mazak", "Hyundai", "JCB", "Caterpillar", "Komatsu",
+        "New Holland", "Bralyx", "Zayer", "Arotec", "Dynapac", "Romea",
+        "Ergomat", "Bosch", "Siemens", "Schneider", "Atlas Copco", "Kaeser",
+        "Trumpf", "Mitsubishi", "Toyota", "Still", "Hyster", "Yale",
+    ]
+    manufacturer = next(
+        (b for b in brands if re.search(r"\b" + re.escape(b) + r"\b", title, re.I)),
+        None,
+    )
+    preco = _price(text)
+    return {
+        "titulo": title,
+        "nome": title,
+        "fabricante": manufacturer,
+        "modelo": None,
+        "categoria": None,
+        "descricao": desc,
+        "preco": preco,
+        "moeda": "R$" if preco else None,
+        "condicao": _match([r"\b(nova|novo|usada|usado|recondicionada|recondicionado)\b"], text),
+        "url": url,
+        "fonte": urlparse(url).netloc.lower().replace("www.", "") or "Internet",
+        **_technical(text),
+    }
+
+
+def _buscar_ddg(consulta):
+    url = "https://html.duckduckgo.com/html/?q=" + quote_plus(consulta)
+    parser = _DDGParser()
+    parser.feed(_web_get(url))
+    return parser.items
+
+
+def _buscar_bing(consulta):
+    url = "https://www.bing.com/search?q=" + quote_plus(consulta) + "&count=8&setlang=pt-BR"
+    parser = _BingParser()
+    parser.feed(_web_get(url))
+    return parser.items
+
+
+def _buscar_brave(consulta):
+    """Usa Brave Search API somente quando BRAVE_SEARCH_API_KEY existir."""
+    chave = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
+    if not chave:
+        return []
+    import json
+    url = "https://api.search.brave.com/res/v1/web/search?q=" + quote_plus(consulta) + "&count=8"
+    req = Request(url, headers={"Accept": "application/json", "X-Subscription-Token": chave})
+    with urlopen(req, timeout=2.5) as resp:
+        dados = json.loads(resp.read(500_000).decode("utf-8", "ignore"))
+    return [
+        {
+            "titulo": x.get("title", ""),
+            "url": x.get("url", ""),
+            "descricao": x.get("description", ""),
+        }
+        for x in (dados.get("web", {}) or {}).get("results", [])
+    ]
+
+
+def pesquisar_equipamentos_web(consulta):
+    # Uma única consulta ampla. Os filtros por domínio são usados apenas
+    # como termos, não como 6 requisições sequenciais.
+    consulta_ampla = (
+        f"{consulta} máquina equipamento industrial preço características "
+        "site:maqx.com.br OR site:mercadomaquinas.com.br OR "
+        "site:portaldasmaquinas.com OR site:localizamaquinas.com.br"
+    )
+
+    tarefas = {
+        "brave": _buscar_brave,
+        "bing": _buscar_bing,
+        "duckduckgo": _buscar_ddg,
+    }
+    resultados = []
+    vistos = set()
+
+    # Todos os provedores rodam simultaneamente. Assim, um provedor lento
+    # não soma seu timeout ao dos demais.
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        futuros = {executor.submit(fn, consulta_ampla): nome for nome, fn in tarefas.items()}
+        for futuro in as_completed(futuros, timeout=4.0):
+            provedor = futuros[futuro]
+            try:
+                itens = futuro.result()
+            except Exception as erro:
+                logger.warning("Fonte de pesquisa %s indisponível: %s", provedor, erro)
+                continue
+            for item in itens:
+                normalizado = _normalize_result(item)
+                chave = normalizado["url"] or normalizado["titulo"]
+                if not chave or chave in vistos:
+                    continue
+                vistos.add(chave)
+                resultados.append(normalizado)
+                if len(resultados) >= 12:
+                    return resultados
+
+    return resultados
+
+
+@maquinas_blueprint.route("/api/maquinas/pesquisar", methods=["GET"])
+def api_pesquisar_maquinas_web():
+    if not autenticado():
+        return jsonify({"status": "erro", "message": "Não autenticado."}), 401
+
+    consulta = _text(request.args.get("q", ""))
+    if len(consulta) < 3:
+        return jsonify({"status": "erro", "message": "Informe pelo menos 3 caracteres para a pesquisa."}), 400
+    if len(consulta) > 180:
+        return jsonify({"status": "erro", "message": "A pesquisa é muito longa."}), 400
+
+    try:
+        resultados = pesquisar_equipamentos_web(consulta)
+        return jsonify({
+            "status": "sucesso",
+            "consulta": consulta,
+            "resultados": resultados,
+        }), 200
+    except Exception as erro:
+        logger.exception("Erro na pesquisa externa de equipamentos")
+        # Falha externa não pode derrubar o worker nem transformar o módulo
+        # inteiro em erro 500. A interface recebe uma lista vazia e continua.
+        return jsonify({
+            "status": "sucesso",
+            "consulta": consulta,
+            "resultados": [],
+            "aviso": "As fontes externas de pesquisa estão temporariamente indisponíveis.",
+        }), 200
 
 
 # ==========================================================================
@@ -139,7 +471,7 @@ def rota_maquinas_js():
         return "console.error('Script offline.');", 404
 
 
-# ==========================================================================\n# PESQUISA EXTERNA DE EQUIPAMENTOS\n# ==========================================================================\n\n\ndef _extrair_dados_resultado(titulo, url, snippet, fonte):\n    """Extrai apenas características objetivas encontradas no resultado."""\n    texto = f"{titulo} {snippet}"\n\n    preco = None\n    match_preco = re.search(\n        r"R\\$\\s*([0-9]{1,3}(?:[.][0-9]{3})*(?:,[0-9]{1,2})?)",\n        texto,\n        flags=re.IGNORECASE,\n    )\n    if match_preco:\n        try:\n            preco = float(match_preco.group(1).replace(".", "").replace(",", "."))\n        except ValueError:\n            preco = None\n\n    potencia = None\n    potencia_unidade = None\n    match_pot = re.search(\n        r"([0-9]+(?:[.,][0-9]+)?)\\s*(kW|HP|CV)\\b",\n        texto,\n        flags=re.IGNORECASE,\n    )\n    if match_pot:\n        try:\n            valor = float(match_pot.group(1).replace(",", "."))\n            unidade = match_pot.group(2).upper()\n            if unidade == "HP":\n                valor *= 0.7457\n            elif unidade == "CV":\n                valor *= 0.7355\n            potencia = round(valor, 3)\n            potencia_unidade = unidade\n        except ValueError:\n            pass\n\n    host = (urlparse(url).hostname or "").lower()\n    fabricante = host.replace("www.", "").split(".")[0] if host else ""\n\n    return {\n        "titulo": titulo or "Equipamento pesquisado",\n        "url": url,\n        "snippet": snippet[:500],\n        "preco_compra": preco,\n        "potencia": potencia,\n        "potencia_unidade": potencia_unidade,\n        "fabricante": fabricante,\n        "fonte": fonte,\n    }\n\n\ndef _buscar_google(consulta):\n    url = "https://www.google.com/search?hl=pt-BR&num=8&q=" + quote_plus(consulta)\n    requisicao = Request(\n        url,\n        headers={\n            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/152 Safari/537.36",\n            "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",\n        },\n    )\n    with urlopen(requisicao, timeout=2.8) as resposta:\n        html = resposta.read(900_000).decode("utf-8", errors="ignore")\n\n    resultados = []\n    padrao = re.compile(\n        r'<a[^>]+href=["\\\']([^"\\\']+)["\\\'][^>]*>\\s*<h3[^>]*>(.*?)</h3>',\n        flags=re.IGNORECASE | re.DOTALL,\n    )\n    for match in padrao.finditer(html):\n        link = unescape(match.group(1)).strip()\n        titulo = re.sub(r"<[^>]+>", " ", match.group(2))\n        titulo = re.sub(r"\\s+", " ", unescape(titulo)).strip()\n\n        if link.startswith("/url?"):\n            link = parse_qs(urlparse(link).query).get("q", [""])[0]\n        if not link.startswith(("http://", "https://")):\n            continue\n        host = (urlparse(link).hostname or "").lower()\n        if "google.com" in host:\n            continue\n\n        # Procura um trecho textual próximo ao título.\n        trecho = html[match.end():match.end() + 1800]\n        trecho = re.sub(r"<[^>]+>", " ", trecho)\n        trecho = re.sub(r"\\s+", " ", unescape(trecho)).strip()\n        resultados.append(_extrair_dados_resultado(titulo, link, trecho[:500], "Google"))\n        if len(resultados) >= 8:\n            break\n    return resultados\n\n\ndef _buscar_bing_html(consulta):\n    url = "https://www.bing.com/search?q=" + quote_plus(consulta)\n    requisicao = Request(\n        url,\n        headers={\n            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/152 Safari/537.36",\n            "Accept-Language": "pt-BR,pt;q=0.9,en;q=0.8",\n        },\n    )\n    with urlopen(requisicao, timeout=2.8) as resposta:\n        html = resposta.read(900_000).decode("utf-8", errors="ignore")\n\n    resultados = []\n    blocos = re.findall(r'<li[^>]+class=["\\\']b_algo["\\\'][^>]*>(.*?)</li>', html, flags=re.IGNORECASE | re.DOTALL)\n    for bloco in blocos[:8]:\n        match_link = re.search(r'<a[^>]+href=["\\\']([^"\\\']+)["\\\'][^>]*>(.*?)</a>', bloco, flags=re.IGNORECASE | re.DOTALL)\n        if not match_link:\n            continue\n        link = unescape(match_link.group(1)).strip()\n        titulo = re.sub(r"<[^>]+>", " ", match_link.group(2))\n        titulo = re.sub(r"\\s+", " ", unescape(titulo)).strip()\n        if not link.startswith(("http://", "https://")):\n            continue\n        host = (urlparse(link).hostname or "").lower()\n        if "bing.com" in host:\n            continue\n        match_snippet = re.search(r'<p[^>]*>(.*?)</p>', bloco, flags=re.IGNORECASE | re.DOTALL)\n        snippet = re.sub(r"<[^>]+>", " ", match_snippet.group(1)) if match_snippet else ""\n        snippet = re.sub(r"\\s+", " ", unescape(snippet)).strip()\n        resultados.append(_extrair_dados_resultado(titulo, link, snippet, "Bing"))\n    return resultados\n\n\n@maquinas_blueprint.route("/api/maquinas/pesquisar", methods=["GET"])\ndef api_pesquisar_equipamento():\n    """Pesquisa um equipamento na Internet sem bloquear o worker do Flask/Gunicorn."""\n    if not autenticado():\n        return jsonify({"status": "erro", "message": "Não autenticado."}), 401\n\n    consulta = str(request.args.get("q", "") or "").strip()[:180]\n    if len(consulta) < 2:\n        return jsonify({"status": "erro", "message": "Informe o equipamento que deseja pesquisar."}), 400\n\n    resultados = []\n    erros = []\n    # As fontes são consultadas em paralelo. Assim, uma fonte lenta não gera\n    # a sequência de 3 timeouts que provocou WORKER TIMEOUT no Render.\n    with ThreadPoolExecutor(max_workers=2) as executor:\n        tarefas = {\n            executor.submit(_buscar_google, consulta): "Google",\n            executor.submit(_buscar_bing_html, consulta): "Bing",\n        }\n        for tarefa in as_completed(tarefas):\n            fonte = tarefas[tarefa]\n            try:\n                resultados.extend(tarefa.result())\n            except Exception as erro:\n                erros.append(f"{fonte}: {erro}")\n\n    # Remove duplicatas por URL e limita o painel.\n    unicos = []\n    vistos = set()\n    for item in resultados:\n        chave = item["url"].rstrip("/").lower()\n        if chave in vistos:\n            continue\n        vistos.add(chave)\n        unicos.append(item)\n        if len(unicos) >= 8:\n            break\n\n    if not unicos:\n        logger.warning("Pesquisa externa sem resultados para '%s': %s", consulta, " | ".join(erros))\n        return jsonify({\n            "status": "indisponivel",\n            "consulta": consulta,\n            "resultados": [],\n            "message": "Nenhum resultado externo foi obtido. Tente um termo mais específico, por exemplo: fabricante + modelo + equipamento.",\n        }), 200\n\n    return jsonify({\n        "status": "sucesso",\n        "consulta": consulta,\n        "resultados": unicos,\n        "fonte": "Pesquisa na Internet",\n    }), 200\n\n\n# ==========================================================================
+# ==========================================================================
 # ORÇAMENTO DO MÓDULO
 # ==========================================================================
 
@@ -440,9 +772,6 @@ def api_salvar_maquina():
                     jornada_semanal = %s,
                     turnos_trabalho = %s,
                     is_patrimonio = %s,
-                    fabricante = %s,
-                    modelo = %s,
-                    fonte_url = %s,
                     departamento = %s
                 WHERE id = %s
                   AND equipe_id = %s
@@ -466,9 +795,6 @@ def api_salvar_maquina():
                     jor,
                     tur,
                     isp,
-                    str(dados.get("fabricante", "") or "").strip(),
-                    str(dados.get("modelo", "") or "").strip(),
-                    str(dados.get("fonte_url", "") or "").strip(),
                     departamento,
                     id_reg_int,
                     id_equipe,
@@ -506,14 +832,11 @@ def api_salvar_maquina():
                     jornada_semanal,
                     turnos_trabalho,
                     is_patrimonio,
-                    fabricante,
-                    modelo,
-                    fonte_url,
                     departamento
                 )
                 VALUES (
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 """,
                 (
@@ -535,9 +858,6 @@ def api_salvar_maquina():
                     jor,
                     tur,
                     isp,
-                    str(dados.get("fabricante", "") or "").strip(),
-                    str(dados.get("modelo", "") or "").strip(),
-                    str(dados.get("fonte_url", "") or "").strip(),
                     departamento,
                 ),
             )
