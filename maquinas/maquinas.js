@@ -1,4 +1,3 @@
-/* ==========================================================================\n   TERADMAS ERP v2.6 - MÓDULO 07\n   Máquinas: pesquisa externa + cadastro Supabase + orçamento\n   ========================================================================== */
 (function () {
     "use strict";
 
