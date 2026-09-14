@@ -79,6 +79,9 @@ def garantir_tabela_maquinas(cursor):
         "jornada_semanal": "TEXT",
         "turnos_trabalho": "TEXT",
         "is_patrimonio": "BOOLEAN",
+        "fabricante": "TEXT",
+        "modelo": "TEXT",
+        "fonte_url": "TEXT",
     }
 
     for nome, tipo in colunas.items():
@@ -311,6 +314,7 @@ def api_pesquisar_maquinas_internet():
 
     return jsonify({
         "status": "sucesso",
+        "message": "Pesquisa concluída com sucesso." if resultados else "Nenhum resultado encontrado para este termo.",
         "termo": termo,
         "resultados": resultados,
     }), 200
@@ -421,6 +425,7 @@ def api_orcamento_maquinas():
         return jsonify(
             {
                 "status": "sucesso",
+                "message": "Orçamento carregado com sucesso.",
                 "equipe_id": id_equipe,
                 "capital_inicial": round(capital_inicial, 2),
                 "porcentagem_quota": round(porcentagem_quota, 2),
@@ -570,6 +575,10 @@ def api_salvar_maquina():
         jor = str(dados.get("jornada_semanal", "44") or "44").strip()
         tur = str(dados.get("turnos_trabalho", "1") or "1").strip()
 
+        fab = str(dados.get("fabricante", "") or "").strip()
+        mod = str(dados.get("modelo", "") or "").strip()
+        url = str(dados.get("fonte_url", "") or "").strip()
+
         # Não confiar em valor textual vindo do navegador.
         isp = dados.get("is_patrimonio", True)
         if isinstance(isp, str):
@@ -617,6 +626,9 @@ def api_salvar_maquina():
                     jornada_semanal = %s,
                     turnos_trabalho = %s,
                     is_patrimonio = %s,
+                    fabricante = %s,
+                    modelo = %s,
+                    fonte_url = %s,
                     departamento = %s
                 WHERE id = %s
                   AND equipe_id = %s
@@ -640,6 +652,9 @@ def api_salvar_maquina():
                     jor,
                     tur,
                     isp,
+                    fab,
+                    mod,
+                    url,
                     departamento,
                     id_reg_int,
                     id_equipe,
@@ -677,11 +692,14 @@ def api_salvar_maquina():
                     jornada_semanal,
                     turnos_trabalho,
                     is_patrimonio,
+                    fabricante,
+                    modelo,
+                    fonte_url,
                     departamento
                 )
                 VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 """,
                 (
@@ -703,6 +721,9 @@ def api_salvar_maquina():
                     jor,
                     tur,
                     isp,
+                    fab,
+                    mod,
+                    url,
                     departamento,
                 ),
             )
@@ -862,6 +883,7 @@ def api_deletar_maquina(id_reg):
             {
                 "status": "erro",
                 "message": "Não foi possível remover a máquina.",
+                "erro": str(erro),
             }
         ), 500
 
