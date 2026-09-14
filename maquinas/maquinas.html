@@ -244,20 +244,24 @@
             <div class="card col-form" style="width: 100%; margin-bottom: 8px;">
                 <h3 class="card-title" id="txt_sub" style="border-bottom: 2px solid #1e3a8a; padding-bottom: 6px;">⚙️ Painel de Parametrização e Inserção de Ativos Industriais</h3>
 
-                <!-- Pesquisa externa: não é filtro da tabela do Supabase. -->
-                <section id="painel_pesquisa_equipamento_web" aria-label="Pesquisa de equipamentos na internet" style="margin-bottom: 14px; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px;">
-                    <div style="font-size: 12px; font-weight: 900; color: #1e3a8a; text-transform: uppercase; margin-bottom: 4px;">🔎 Pesquisar equipamento na Internet</div>
-                    <div style="font-size: 11px; color: #475569; margin-bottom: 8px; line-height: 1.45;">Pesquise máquinas reais adequadas ao negócio escolhido. O resultado serve de referência: confira os dados técnicos antes de registrar o ativo.</div>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch;">
-                        <input type="search" id="pesquisa_equipamento_web" class="input-form" style="flex: 1; min-width: 260px; height: 38px; border: 2px solid #cbd5e1;" placeholder="Ex.: torno CNC, forno industrial 500 L, compressor 10 HP, empilhadeira elétrica" autocomplete="off">
-                        <button type="button" id="btn_pesquisar_web" class="btn-top" style="height: 38px; padding: 8px 14px; background: #1e3a8a; color: #fff; border-color: #1e3a8a; margin: 0;" onclick="window.pesquisarEquipamentosWeb()">🔎 Pesquisar na Internet</button>
+                <!-- PESQUISA EXTERNA: serve para encontrar equipamentos reais e trazer suas características para o cadastro. -->
+                <div id="painel_pesquisa_internet" style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 14px;">
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px;">
+                        <span style="font-size:12px; font-weight:900; color:#1e3a8a; text-transform:uppercase;">🔎 Pesquisar equipamento na Internet</span>
+                        <span style="font-size:10px; color:#64748b;">Pesquise equipamentos reais adequados ao negócio escolhido. O resultado é referência; confira os dados técnicos antes de registrar.</span>
                     </div>
-                    <div id="resultados_pesquisa_web" style="display: grid; gap: 8px; margin-top: 10px;"></div>
-                    <div id="aviso_origem_pesquisa" style="display:none; margin-top: 8px; padding: 8px 10px; background:#eff6ff; border:1px dashed #93c5fd; border-radius:7px; color:#1e3a8a; font-size:10px; font-weight:700;"></div>
-                </section>
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                        <input type="search" id="pesquisa_equipamento" class="input-form" placeholder="Ex.: forno industrial 500 L, torno CNC 3 eixos, compressor 20 HP..." style="flex:1; min-width:280px; height:38px; border:2px solid #cbd5e1;">
+                        <button type="button" id="btn_pesquisar_internet" class="btn-top" onclick="window.pesquisarEquipamentoInternet()" style="background-color:#1e3a8a; color:#fff; border-color:#1e3a8a; padding:10px 16px;">🔎 Pesquisar na Internet</button>
+                    </div>
+                    <div id="resultado_pesquisa_internet" style="margin-top:10px; display:flex; flex-direction:column; gap:8px;"></div>
+                </div>
 
                 <form id="formMaquina" onsubmit="window.salvarMaquina(event)" style="display: flex; flex-direction: column; gap: 14px;">
                     <input type="hidden" id="registro_id" name="id">
+                    <input type="hidden" id="fabricante" name="fabricante">
+                    <input type="hidden" id="modelo" name="modelo">
+                    <input type="hidden" id="fonte_url" name="fonte_url">
                     <!-- Mantido para compatibilidade com o JS. A taxa real deverá vir da Estrutura/Custos, não de um percentual fixo. -->
                     <input type="hidden" id="custo_estrutural_oculto" value="0">
 
