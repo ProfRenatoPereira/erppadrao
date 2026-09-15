@@ -87,6 +87,60 @@ def garantir_tabela_materiais(cursor):
         )
 
 
+def garantir_tabelas_operacionais(cursor):
+    """Garante os quadros operacionais próprios de Materiais."""
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS materiais_colaboradores (
+            id SERIAL PRIMARY KEY,
+            equipe_id TEXT NOT NULL,
+            nome TEXT,
+            cargo TEXT,
+            salario_base REAL DEFAULT 0,
+            quantidade INTEGER DEFAULT 1,
+            subtotal REAL DEFAULT 0
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS materiais_instrumentos (
+            id SERIAL PRIMARY KEY,
+            equipe_id TEXT NOT NULL,
+            nome_instrumento TEXT,
+            categoria TEXT,
+            quantidade INTEGER DEFAULT 1,
+            preco_compra REAL DEFAULT 0,
+            potencia_watts REAL DEFAULT 0,
+            consumo_gas_m3 REAL DEFAULT 0,
+            consumo_agua_m3 REAL DEFAULT 0,
+            depreciacao_anos INTEGER DEFAULT 10,
+            custo_minuto REAL DEFAULT 0,
+            is_patrimonio BOOLEAN DEFAULT FALSE
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS materiais_energia (
+            id SERIAL PRIMARY KEY,
+            equipe_id TEXT NOT NULL,
+            descricao TEXT,
+            tipo_energia TEXT,
+            consumo_mensal REAL DEFAULT 0,
+            unidade TEXT,
+            tarifa_unitaria REAL DEFAULT 0,
+            custo_fixo_mensal REAL DEFAULT 0,
+            custo_variavel_mensal REAL DEFAULT 0,
+            custo_total_mensal REAL DEFAULT 0
+        )
+    """)
+
+
+def _valor_linha(row, chave):
+    return numero((row or {}).get(chave), 0.0)
+
+
+def _soma(cursor, sql, params):
+    cursor.execute(sql, params)
+    return _valor_linha(cursor.fetchone(), "total")
+
+
 @materiais_blueprint.route("/materiais", methods=["GET"])
 def pagina_materiais():
     if not autenticado():
@@ -117,16 +171,7 @@ def rota_materiais_js():
 
 @materiais_blueprint.route("/api/materiais/orcamento", methods=["GET"])
 def api_orcamento_materiais():
-    """
-    Ponte Financeiro -> Materiais.
-
-    Fonte do orçamento:
-      capital inicial = config_simulacao.capital_total
-      quota           = quotas_departamentos.departamento_id='materiais'
-      patrimônio      = estoque de segurança já registrado em erp_materiais
-
-    O endpoint não usa valores fixos como R$ 5 milhões/R$ 2 milhões.
-    """
+    """Painel financeiro e operacional de Materiais, sem valores fixos."""
     if not autenticado():
         return jsonify({"status": "erro", "message": "Não autenticado."}), 401
 
@@ -136,28 +181,17 @@ def api_orcamento_materiais():
         conexao = obter_conexao_master()
         if conexao is None:
             raise RuntimeError("Não foi possível obter conexão com o banco.")
-
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
 
-        # Capital inicial real da equipe.
         capital_inicial = 0.0
-        try:
-            cursor.execute(
-                """
-                SELECT capital_total
-                FROM config_simulacao
-                WHERE equipe_id = %s
-                ORDER BY id DESC
-                LIMIT 1
-                """,
-                (id_equipe,),
-            )
-            config = cursor.fetchone()
-            capital_inicial = numero((config or {}).get("capital_total"))
-        except Exception:
-            # Compatibilidade com versões que ainda armazenam o capital em
-            # tabelas legadas da inicialização.
-            conexao.rollback()
+        cursor.execute("""
+            SELECT capital_total FROM config_simulacao
+            WHERE equipe_id=%s ORDER BY id DESC LIMIT 1
+        """, (id_equipe,))
+        config = cursor.fetchone()
+        capital_inicial = numero((config or {}).get("capital_total"))
+
+        if capital_inicial == 0:
             for tabela, coluna in (
                 ("configuracao_equipes", "capital_inicial"),
                 ("configuracao_equipes", "capital_social"),
@@ -165,96 +199,97 @@ def api_orcamento_materiais():
                 ("inicializacao_negocio", "capital_social"),
             ):
                 try:
-                    cursor.execute(
-                        f"SELECT {coluna} FROM {tabela} WHERE equipe_id = %s ORDER BY id DESC LIMIT 1",
-                        (id_equipe,),
-                    )
-                    registro = cursor.fetchone()
-                    if registro:
-                        capital_inicial = numero(registro.get(coluna))
-                        if capital_inicial:
-                            break
+                    cursor.execute(f"SELECT {coluna} FROM {tabela} WHERE equipe_id=%s ORDER BY id DESC LIMIT 1", (id_equipe,))
+                    row = cursor.fetchone()
+                    valor = numero((row or {}).get(coluna))
+                    if valor:
+                        capital_inicial = valor
+                        break
                 except Exception:
                     conexao.rollback()
 
-        # Quota oficial registrada pelo Financeiro.
         porcentagem_quota = 0.0
         try:
-            cursor.execute(
-                """
-                SELECT COALESCE(porcentagem_quota, 0) AS porcentagem_quota
+            cursor.execute("""
+                SELECT COALESCE(porcentagem_quota,0) AS porcentagem_quota
                 FROM quotas_departamentos
-                WHERE equipe_id = %s
-                  AND LOWER(TRIM(departamento_id)) = 'materiais'
+                WHERE equipe_id=%s AND LOWER(TRIM(departamento_id))='materiais'
                 LIMIT 1
-                """,
-                (id_equipe,),
-            )
-            quota = cursor.fetchone()
-            porcentagem_quota = max(0.0, min(100.0, numero((quota or {}).get("porcentagem_quota"))))
+            """, (id_equipe,))
+            porcentagem_quota = max(0.0, min(100.0, numero((cursor.fetchone() or {}).get("porcentagem_quota"))))
         except Exception:
             conexao.rollback()
-            porcentagem_quota = 0.0
 
         valor_quota = capital_inicial * porcentagem_quota / 100.0
-
         garantir_tabela_materiais(cursor)
+        garantir_tabelas_operacionais(cursor)
 
-        # Valor efetivamente comprometido pelo estoque de segurança cadastrado.
-        cursor.execute(
-            """
-            SELECT COALESCE(
-                SUM(
-                    COALESCE(preco_unitario, 0)
-                    * COALESCE(estoque_seguranca, 0)
-                    * (1 + COALESCE(coeficiente_refugo, 0) / 100.0)
-                ), 0
-            ) AS patrimonio_atual
-            FROM erp_materiais
-            WHERE equipe_id = %s
-            """,
-            (id_equipe,),
-        )
-        patrimonio_atual = numero((cursor.fetchone() or {}).get("patrimonio_atual"))
-        saldo_aquisicao = max(0.0, valor_quota - patrimonio_atual)
+        patrimonio_materiais = _soma(cursor, """
+            SELECT COALESCE(SUM(COALESCE(preco_unitario,0)*COALESCE(estoque_seguranca,0)*(1+COALESCE(coeficiente_refugo,0)/100.0)),0) AS total
+            FROM erp_materiais WHERE equipe_id=%s
+        """, (id_equipe,))
+        patrimonio_instrumentos = _soma(cursor, """
+            SELECT COALESCE(SUM(CASE WHEN COALESCE(is_patrimonio,FALSE) THEN COALESCE(preco_compra,0)*COALESCE(quantidade,1) ELSE 0 END),0) AS total
+            FROM materiais_instrumentos WHERE equipe_id=%s
+        """, (id_equipe,))
+        patrimonio_atual = patrimonio_materiais + patrimonio_instrumentos
 
-        # Não inventa custos fixos/variáveis que o módulo não possui dados
-        # suficientes para classificar. Esses indicadores ficam zerados até
-        # existir uma fonte contábil específica para essa classificação.
+        colaboradores = _soma(cursor, "SELECT COALESCE(SUM(subtotal),0) AS total FROM materiais_colaboradores WHERE equipe_id=%s", (id_equipe,))
+        depreciacao = _soma(cursor, """
+            SELECT COALESCE(SUM((COALESCE(preco_compra,0)*COALESCE(quantidade,1))/NULLIF(GREATEST(COALESCE(depreciacao_anos,10),1)*12,0)),0) AS total
+            FROM materiais_instrumentos WHERE equipe_id=%s AND COALESCE(is_patrimonio,FALSE)=TRUE
+        """, (id_equipe,))
+        energia_fixa = _soma(cursor, "SELECT COALESCE(SUM(custo_fixo_mensal),0) AS total FROM materiais_energia WHERE equipe_id=%s", (id_equipe,))
+        energia_variavel = _soma(cursor, """
+            SELECT COALESCE(SUM(CASE WHEN COALESCE(custo_variavel_mensal,0)>0 THEN custo_variavel_mensal ELSE consumo_mensal*tarifa_unitaria END),0) AS total
+            FROM materiais_energia WHERE equipe_id=%s
+        """, (id_equipe,))
+        materiais_variavel = patrimonio_materiais
+
+        # Referência contábil global já existente no ERP, somada aos novos quadros de Materiais.
+        global_fixo = _soma(cursor, """
+            SELECT COALESCE(SUM(valor_aluguel+valor_condominio),0) AS total
+            FROM imoveis_simulacao WHERE equipe_id=%s
+        """, (id_equipe,))
+        global_fixo += _soma(cursor, "SELECT COALESCE(SUM(salario_base),0) AS total FROM folha_funcionarios WHERE equipe_id=%s", (id_equipe,))
+        global_fixo += _soma(cursor, "SELECT COALESCE(SUM(subtotal),0) AS total FROM estrutura_rh WHERE equipe_id=%s", (id_equipe,))
+        global_fixo += colaboradores + depreciacao + energia_fixa
+
+        global_variavel = _soma(cursor, """
+            SELECT COALESCE(SUM(COALESCE(encargos_patronais,0)+COALESCE(valor_horas_extras,0)),0) AS total
+            FROM livro_razonete_folha WHERE equipe_id=%s
+        """, (id_equipe,))
+        global_variavel += energia_variavel + materiais_variavel
+
+        custo_fixo_setor = colaboradores + depreciacao + energia_fixa
+        custo_variavel_setor = energia_variavel + materiais_variavel
+        custo_minuto_total = _soma(cursor, "SELECT COALESCE(SUM(custo_minuto*GREATEST(quantidade,1)),0) AS total FROM materiais_instrumentos WHERE equipe_id=%s", (id_equipe,))
+        watts_total = _soma(cursor, "SELECT COALESCE(SUM(potencia_watts*GREATEST(quantidade,1)),0) AS total FROM materiais_instrumentos WHERE equipe_id=%s", (id_equipe,))
+
         conexao.commit()
-
-        return jsonify(
-            {
-                "status": "sucesso",
-                "equipe_id": id_equipe,
-                "capital_inicial": round(capital_inicial, 2),
-                "porcentagem_quota": round(porcentagem_quota, 2),
-                "valor_quota": round(valor_quota, 2),
-                "patrimonio_atual": round(patrimonio_atual, 2),
-                "saldo_aquisicao": round(saldo_aquisicao, 2),
-                "custos_fixos_geral": 0.0,
-                "custos_fixos_setor": 0.0,
-                "custos_variaveis_geral": 0.0,
-                "custos_variaveis_setor": 0.0,
-            }
-        ), 200
-
+        return jsonify({
+            "status":"sucesso", "equipe_id":id_equipe,
+            "capital_inicial":round(capital_inicial,2),
+            "porcentagem_quota":round(porcentagem_quota,2),
+            "valor_quota":round(valor_quota,2),
+            "patrimonio_atual":round(patrimonio_atual,2),
+            "saldo_aquisicao":round(max(0, valor_quota-patrimonio_atual),2),
+            "custos_fixos_geral":round(global_fixo,2),
+            "custos_fixos_setor":round(custo_fixo_setor,2),
+            "custos_variaveis_geral":round(global_variavel,2),
+            "custos_variaveis_setor":round(custo_variavel_setor,2),
+            "custo_minuto_total":round(custo_minuto_total,2),
+            "potencia_total_watts":round(watts_total,2),
+            "patrimonio_materiais":round(patrimonio_materiais,2),
+            "patrimonio_instrumentos":round(patrimonio_instrumentos,2),
+        }), 200
     except Exception as erro:
-        if conexao:
-            conexao.rollback()
+        if conexao: conexao.rollback()
         logger.exception("Erro ao carregar orçamento de Materiais: %s", erro)
-        return jsonify(
-            {
-                "status": "erro",
-                "message": "Não foi possível carregar o orçamento de Materiais.",
-                "erro": str(erro),
-            }
-        ), 500
+        return jsonify({"status":"erro", "message":"Não foi possível carregar o painel de Materiais.", "erro":str(erro)}), 500
     finally:
-        if cursor:
-            cursor.close()
-        if conexao:
-            liberar_conexao_master(conexao)
+        if cursor: cursor.close()
+        if conexao: liberar_conexao_master(conexao)
 
 
 @materiais_blueprint.route("/api/materiais/listar", methods=["GET"])
@@ -386,6 +421,131 @@ def api_salvar_material():
             cursor.close()
         if conexao:
             liberar_conexao_master(conexao)
+
+
+
+# ============================================================================
+# QUADROS OPERACIONAIS: COLABORADORES, INSTRUMENTOS E ENERGIA
+# ============================================================================
+
+@materiais_blueprint.route("/api/materiais/operacional", methods=["GET"])
+def api_operacional_listar():
+    if not autenticado(): return jsonify({"status":"erro","message":"Não autenticado."}), 401
+    con=cur=None
+    try:
+        con=obter_conexao_master(); cur=con.cursor(cursor_factory=RealDictCursor)
+        garantir_tabelas_operacionais(cur); con.commit(); equipe=equipe_atual()
+        cur.execute("SELECT * FROM materiais_colaboradores WHERE equipe_id=%s ORDER BY id DESC",(equipe,)); colaboradores=cur.fetchall()
+        cur.execute("SELECT * FROM materiais_instrumentos WHERE equipe_id=%s ORDER BY id DESC",(equipe,)); instrumentos=cur.fetchall()
+        cur.execute("SELECT * FROM materiais_energia WHERE equipe_id=%s ORDER BY id DESC",(equipe,)); energia=cur.fetchall()
+        return jsonify({"colaboradores":[dict(x) for x in colaboradores],"instrumentos":[dict(x) for x in instrumentos],"energia":[dict(x) for x in energia]}),200
+    except Exception as erro:
+        if con: con.rollback()
+        logger.exception("Erro ao listar quadros operacionais de Materiais: %s",erro)
+        return jsonify({"status":"erro","message":"Não foi possível carregar os quadros operacionais."}),500
+    finally:
+        if cur: cur.close()
+        if con: liberar_conexao_master(con)
+
+
+@materiais_blueprint.route("/api/materiais/colaboradores", methods=["POST"])
+def api_materiais_colaborador_salvar():
+    if not autenticado(): return jsonify({"status":"erro","message":"Não autenticado."}),401
+    dados=request.get_json(silent=True) or {}; con=cur=None
+    try:
+        nome=str(dados.get("nome","") or "").strip(); cargo=str(dados.get("cargo","") or "").strip()
+        salario=numero(dados.get("salario_base")); qtd=max(1,inteiro(dados.get("quantidade"),1)); id_reg=dados.get("id")
+        if not cargo: return jsonify({"status":"erro","message":"Cargo é obrigatório."}),400
+        subtotal=salario*qtd; con=obter_conexao_master(); cur=con.cursor(); garantir_tabelas_operacionais(cur)
+        if id_reg:
+            cur.execute("UPDATE materiais_colaboradores SET nome=%s,cargo=%s,salario_base=%s,quantidade=%s,subtotal=%s WHERE id=%s AND equipe_id=%s",(nome,cargo,salario,qtd,subtotal,int(id_reg),equipe_atual()))
+        else:
+            cur.execute("INSERT INTO materiais_colaboradores(equipe_id,nome,cargo,salario_base,quantidade,subtotal) VALUES(%s,%s,%s,%s,%s,%s)",(equipe_atual(),nome,cargo,salario,qtd,subtotal))
+        con.commit(); return jsonify({"status":"sucesso"}),200
+    except Exception as erro:
+        if con: con.rollback()
+        return jsonify({"status":"erro","message":str(erro)}),500
+    finally:
+        if cur: cur.close()
+        if con: liberar_conexao_master(con)
+
+
+@materiais_blueprint.route("/api/materiais/colaboradores/<int:id_reg>", methods=["DELETE"])
+def api_materiais_colaborador_deletar(id_reg):
+    return _deletar_operacional("materiais_colaboradores", id_reg)
+
+
+@materiais_blueprint.route("/api/materiais/instrumentos", methods=["POST"])
+def api_materiais_instrumento_salvar():
+    if not autenticado(): return jsonify({"status":"erro","message":"Não autenticado."}),401
+    dados=request.get_json(silent=True) or {}; con=cur=None
+    try:
+        nome=str(dados.get("nome_instrumento","") or "").strip(); categoria=str(dados.get("categoria","") or "").strip()
+        if not nome: return jsonify({"status":"erro","message":"Instrumento/material é obrigatório."}),400
+        qtd=max(1,inteiro(dados.get("quantidade"),1)); preco=numero(dados.get("preco_compra")); watts=numero(dados.get("potencia_watts")); gas=numero(dados.get("consumo_gas_m3")); agua=numero(dados.get("consumo_agua_m3")); dep=max(1,inteiro(dados.get("depreciacao_anos"),10)); minuto=numero(dados.get("custo_minuto")); patrimonio=bool(dados.get("is_patrimonio",False)); id_reg=dados.get("id")
+        con=obter_conexao_master(); cur=con.cursor(); garantir_tabelas_operacionais(cur)
+        valores=(nome,categoria,qtd,preco,watts,gas,agua,dep,minuto,patrimonio)
+        if id_reg:
+            cur.execute("""UPDATE materiais_instrumentos SET nome_instrumento=%s,categoria=%s,quantidade=%s,preco_compra=%s,potencia_watts=%s,consumo_gas_m3=%s,consumo_agua_m3=%s,depreciacao_anos=%s,custo_minuto=%s,is_patrimonio=%s WHERE id=%s AND equipe_id=%s""",valores+(int(id_reg),equipe_atual()))
+        else:
+            cur.execute("""INSERT INTO materiais_instrumentos(equipe_id,nome_instrumento,categoria,quantidade,preco_compra,potencia_watts,consumo_gas_m3,consumo_agua_m3,depreciacao_anos,custo_minuto,is_patrimonio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",(equipe_atual(),)+valores)
+        con.commit(); return jsonify({"status":"sucesso"}),200
+    except Exception as erro:
+        if con: con.rollback()
+        return jsonify({"status":"erro","message":str(erro)}),500
+    finally:
+        if cur: cur.close()
+        if con: liberar_conexao_master(con)
+
+
+@materiais_blueprint.route("/api/materiais/instrumentos/<int:id_reg>", methods=["DELETE"])
+def api_materiais_instrumento_deletar(id_reg):
+    return _deletar_operacional("materiais_instrumentos", id_reg)
+
+
+@materiais_blueprint.route("/api/materiais/energia", methods=["POST"])
+def api_materiais_energia_salvar():
+    if not autenticado(): return jsonify({"status":"erro","message":"Não autenticado."}),401
+    dados=request.get_json(silent=True) or {}; con=cur=None
+    try:
+        descricao=str(dados.get("descricao","") or "").strip(); tipo=str(dados.get("tipo_energia","Elétrica") or "Elétrica").strip(); consumo=numero(dados.get("consumo_mensal")); unidade=str(dados.get("unidade","kWh") or "kWh").strip(); tarifa=numero(dados.get("tarifa_unitaria")); fixo=numero(dados.get("custo_fixo_mensal")); id_reg=dados.get("id")
+        if not descricao: return jsonify({"status":"erro","message":"Descrição da energia é obrigatória."}),400
+        variavel=consumo*tarifa; total=fixo+variavel
+        con=obter_conexao_master(); cur=con.cursor(); garantir_tabelas_operacionais(cur)
+        valores=(descricao,tipo,consumo,unidade,tarifa,fixo,variavel,total)
+        if id_reg:
+            cur.execute("""UPDATE materiais_energia SET descricao=%s,tipo_energia=%s,consumo_mensal=%s,unidade=%s,tarifa_unitaria=%s,custo_fixo_mensal=%s,custo_variavel_mensal=%s,custo_total_mensal=%s WHERE id=%s AND equipe_id=%s""",valores+(int(id_reg),equipe_atual()))
+        else:
+            cur.execute("""INSERT INTO materiais_energia(equipe_id,descricao,tipo_energia,consumo_mensal,unidade,tarifa_unitaria,custo_fixo_mensal,custo_variavel_mensal,custo_total_mensal) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s)""",(equipe_atual(),)+valores)
+        con.commit(); return jsonify({"status":"sucesso"}),200
+    except Exception as erro:
+        if con: con.rollback()
+        return jsonify({"status":"erro","message":str(erro)}),500
+    finally:
+        if cur: cur.close()
+        if con: liberar_conexao_master(con)
+
+
+@materiais_blueprint.route("/api/materiais/energia/<int:id_reg>", methods=["DELETE"])
+def api_materiais_energia_deletar(id_reg):
+    return _deletar_operacional("materiais_energia", id_reg)
+
+
+def _deletar_operacional(tabela, id_reg):
+    if not autenticado(): return jsonify({"status":"erro","message":"Não autenticado."}),401
+    con=cur=None
+    try:
+        if tabela not in {"materiais_colaboradores","materiais_instrumentos","materiais_energia"}: raise ValueError("Tabela operacional inválida.")
+        con=obter_conexao_master(); cur=con.cursor(); garantir_tabelas_operacionais(cur)
+        cur.execute(f"DELETE FROM {tabela} WHERE id=%s AND equipe_id=%s",(id_reg,equipe_atual()))
+        if cur.rowcount==0: con.rollback(); return jsonify({"status":"erro","message":"Registro não encontrado."}),404
+        con.commit(); return jsonify({"status":"removido"}),200
+    except Exception as erro:
+        if con: con.rollback()
+        return jsonify({"status":"erro","message":str(erro)}),500
+    finally:
+        if cur: cur.close()
+        if con: liberar_conexao_master(con)
 
 
 @materiais_blueprint.route("/api/materiais/buscar/<int:id_reg>", methods=["GET"])
