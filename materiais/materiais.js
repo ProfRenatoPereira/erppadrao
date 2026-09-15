@@ -137,9 +137,9 @@ window.calcularCustoOperacionalMaterial = function() {
     const material = CATALOGO_METALURGICO[chave];
     if (!material) return;
 
-    const pUn = parseFloat(document.getElementById('preco_unitario')?.value) || 0;
-    const ref = parseFloat(document.getElementById('coeficiente_refugo')?.value) || 0;
-    const compInput = parseFloat(document.getElementById('dim_comprimento')?.value) || 0;
+    const pUn = numeroSeguro(document.getElementById('preco_unitario')?.value);
+    const ref = numeroSeguro(document.getElementById('coeficiente_refugo')?.value);
+    const compInput = numeroSeguro(document.getElementById('dim_comprimento')?.value) || 0;
     const qtdPecas = parseInt(document.getElementById('quantidade_pecas_lote')?.value) || 1;
 
     let volumeUnitarioM3 = 0, volumeTotalM3 = 0, massaUnitariaKg = 0, massaTotalKg = 0;
@@ -155,12 +155,12 @@ window.calcularCustoOperacionalMaterial = function() {
         volumeTotalM3 = volumeUnitarioM3 * qtdPecas;
         massaTotalKg = massaUnitariaKg * qtdPecas;
     } else {
-        const diametro = parseFloat(document.getElementById('dim_diametro')?.value) || 0;
+        const diametro = numeroSeguro(document.getElementById('dim_diametro')?.value);
         const raioExt = diametro / 2;
         if (material.tipo === "barra") { 
             volumeUnitarioM3 = Math.PI * Math.pow(raioExt, 2) * compInput; 
         } else {
-            const espessura = parseFloat(document.getElementById('dim_espessura')?.value) || 0;
+            const espessura = numeroSeguro(document.getElementById('dim_espessura')?.value);
             const raioInt = raioExt - espessura;
             if (raioInt > 0) volumeUnitarioM3 = Math.PI * (Math.pow(raioExt, 2) - Math.pow(raioInt, 2)) * compInput;
         }
@@ -186,42 +186,78 @@ window.calcularCustoOperacionalMaterial = function() {
    PARTE 5 DE 6 - INTEGRAÇÃO DA TRAVA CONTÁBIL E RENDERIZAÇÃO DA TABELA
    ========================================================================== */
 
-window.carregarDadosIniciais = function() {
-    fetch('/api/materiais/listar')
-        .then(res => res.json())
-        .then(materiais => {
-            const capitalTotalEmpresa = 5000000.00;
-            const disponivelParaSetor = 2000000.00;
-            const patrimonioMaquinasFixo = 0; 
-            let valorTotalEstoqueMateriais = 0;
-            if (materiais && materiais.length > 0) {
-                materiais.forEach(mat => {
-                    valorTotalEstoqueMateriais += (float(mat.preco_unitario || 0) * float(mat.estoque_seguranca || 0));
-                });
+window.carregarDadosIniciais = async function() {
+    try {
+        const [resMateriais, resOrcamento] = await Promise.all([
+            fetch('/api/materiais/listar'),
+            fetch('/api/materiais/orcamento')
+        ]);
+
+        if (!resMateriais.ok) throw new Error(`Falha ao listar materiais (${resMateriais.status})`);
+        const materiais = await resMateriais.json();
+        let orcamento = {
+            capital_inicial: 0,
+            porcentagem_quota: 0,
+            valor_quota: 0,
+            patrimonio_atual: 0,
+            saldo_aquisicao: 0,
+            custos_fixos_geral: 0,
+            custos_fixos_setor: 0,
+            custos_variaveis_geral: 0,
+            custos_variaveis_setor: 0
+        };
+
+        if (resOrcamento.ok) {
+            const dadosOrcamento = await resOrcamento.json();
+            if (dadosOrcamento && dadosOrcamento.status !== 'erro') {
+                orcamento = { ...orcamento, ...dadosOrcamento };
             }
-            const valorTotalInventarioGeral = patrimonioMaquinasFixo + valorTotalEstoqueMateriais;
-            const saldoVerbaSustentada = disponivelParaSetor - valorTotalEstoqueMateriais;
-            let pctTetoConsumido = (valorTotalInventarioGeral / disponivelParaSetor) * 100;
-            const totalCustosFixosPlanta = 21350.00 + 34432.51 + 12450.00;
-            const definirTexto = (id, texto) => { const el = document.getElementById(id); if (el) el.innerText = texto; };
-            
-            definirTexto('top_capital_total_val', `R$ ${capitalTotalEmpresa.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-            definirTexto('top_disponivel_setor_val', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-            definirTexto('top_orcamento_inicial_val', `R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-            const vReais = document.getElementById('top_verba_reais_val');
-            if (vReais) vReais.innerText = `R$ ${saldoVerbaSustentada.toLocaleString('pt-BR', {minimumFractionDigits:2})}`;
-            definirTexto('top_patrimonio_maquinas_val', `R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})}`);
-            definirTexto('top_custo_fixo_val', `R$ ${totalCustosFixosPlanta.toLocaleString('pt-BR', {minimumFractionDigits:2})}/mês`);
-            definirTexto('top_custo_fixo_setor_val', `R$ 12.450,00/mês`);
-            definirTexto('top_custo_variavel_val', "R$ 10.593,38/mês");
-            definirTexto('top_custo_variavel_setor_val', "R$ 4.210,12/mês");
-            const vLimite = document.getElementById('txt_valores_limite');
-            if (vLimite) vLimite.innerHTML = `TRAVA DE ABASTECIMENTO (MAX 40%): <strong>R$ ${valorTotalInventarioGeral.toLocaleString('pt-BR', {minimumFractionDigits:2})} / R$ ${disponivelParaSetor.toLocaleString('pt-BR', {minimumFractionDigits:2})}</strong>`;
-            definirTexto('txt_porcentagem_budget', `${pctTetoConsumido.toFixed(1)}% do teto consumido`);
-            const bar = document.getElementById('barra_progresso_budget');
-            if (bar) bar.style.width = `${Math.min(pctTetoConsumido, 100)}%`;
-            window.renderizarTabelaMateriais(materiais);
-        }).catch(e => console.error(e));
+        }
+
+        const capitalTotalEmpresa = numeroSeguro(orcamento.capital_inicial);
+        const disponivelParaSetor = numeroSeguro(orcamento.valor_quota);
+        const patrimonioAtual = numeroSeguro(orcamento.patrimonio_atual);
+        const saldoVerbaSustentada = numeroSeguro(orcamento.saldo_aquisicao);
+        const pctTetoConsumido = disponivelParaSetor > 0
+            ? Math.min((patrimonioAtual / disponivelParaSetor) * 100, 100)
+            : 0;
+
+        const moeda = valor => `R$ ${numeroSeguro(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const definirTexto = (id, texto) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = texto;
+        };
+
+        definirTexto('top_capital_total_val', moeda(capitalTotalEmpresa));
+        definirTexto('top_disponivel_setor_val', moeda(disponivelParaSetor));
+        definirTexto('top_orcamento_inicial_val', moeda(disponivelParaSetor));
+        definirTexto('top_verba_reais_val', moeda(saldoVerbaSustentada));
+        definirTexto('top_patrimonio_maquinas_val', moeda(patrimonioAtual));
+        definirTexto('top_custo_fixo_val', `${moeda(orcamento.custos_fixos_geral)}/mês`);
+        definirTexto('top_custo_fixo_setor_val', `${moeda(orcamento.custos_fixos_setor)}/mês`);
+        definirTexto('top_custo_variavel_val', `${moeda(orcamento.custos_variaveis_geral)}/mês`);
+        definirTexto('top_custo_variavel_setor_val', `${moeda(orcamento.custos_variaveis_setor)}/mês`);
+
+        const pctQuota = numeroSeguro(orcamento.porcentagem_quota);
+        definirTexto('pct_custo_fixo_geral', capitalTotalEmpresa > 0 ? `${((numeroSeguro(orcamento.custos_fixos_geral) / capitalTotalEmpresa) * 100).toFixed(2)}% do capital inicial` : '');
+        definirTexto('pct_custo_fixo_setor', pctQuota > 0 ? `Quota oficial do setor: ${pctQuota.toFixed(2)}%` : 'Quota do setor ainda não definida no Financeiro');
+        definirTexto('pct_custo_variavel_geral', '');
+        definirTexto('pct_custo_variavel_setor', '');
+
+        const vLimite = document.getElementById('txt_valores_limite');
+        if (vLimite) {
+            vLimite.innerHTML = `TRAVA DE ABASTECIMENTO: <strong>${moeda(patrimonioAtual)} / ${moeda(disponivelParaSetor)}</strong>`;
+        }
+
+        definirTexto('txt_porcentagem_budget', `${pctTetoConsumido.toFixed(1)}% da quota consumida`);
+        const bar = document.getElementById('barra_progresso_budget');
+        if (bar) bar.style.width = `${pctTetoConsumido}%`;
+
+        window.renderizarTabelaMateriais(materiais);
+    } catch (e) {
+        console.error('Erro ao carregar painel de Materiais:', e);
+        window.renderizarTabelaMateriais([]);
+    }
 };
 
 window.renderizarTabelaMateriais = function(materiais) {
@@ -232,8 +268,8 @@ window.renderizarTabelaMateriais = function(materiais) {
         return;
     }
     tbody.innerHTML = materiais.map(x => {
-        const pUn = float(x.preco_unitario || 0); const qEst = float(x.estoque_seguranca || 0);
-        const cTotal = pUn * qEst * (1 + (float(x.coeficiente_refugo || 0) / 100));
+        const pUn = numeroSeguro(x.preco_unitario || 0); const qEst = numeroSeguro(x.estoque_seguranca || 0);
+        const cTotal = pUn * qEst * (1 + (numeroSeguro(x.coeficiente_refugo || 0) / 100));
         return `<tr>
             <td><strong>${x.nome_material}</strong><br><small style="color:#64748b;">SKU: ${x.codigo_sku || 'N/A'}</small></td>
             <td>Controle: <strong>${x.unidade_medida || 'kg'}</strong> | Refugo: ${x.coeficiente_refugo || 0}%<br><small style="color:#2563eb;">Dimensões: Ø ${x.dim_diametro || '0'} | Esp: ${x.dim_espessura || '0'} | Comp: ${x.dim_comprimento || 0}m</small></td>
@@ -266,13 +302,13 @@ window.editarMaterial = async function(id) {
         if (document.getElementById('nome_material')) document.getElementById('nome_material').value = mat.nome_material || '';
         if (document.getElementById('codigo_sku')) document.getElementById('codigo_sku').value = mat.codigo_sku || '';
         if (document.getElementById('unidade_medida')) document.getElementById('unidade_medida').value = mat.unidade_medida || 'kg';
-        if (document.getElementById('preco_unitario')) document.getElementById('preco_unitario').value = float(mat.preco_unitario).toFixed(2);
-        if (document.getElementById('coeficiente_refugo')) document.getElementById('coeficiente_refugo').value = float(mat.coeficiente_refugo).toFixed(1);
-        if (document.getElementById('lead_time_entrega')) document.getElementById('lead_time_entrega').value = parseInt(mat.lead_time_entrega) || 0;
-        if (document.getElementById('estoque_seguranca')) document.getElementById('estoque_seguranca').value = float(mat.estoque_seguranca).toFixed(1);
+        if (document.getElementById('preco_unitario')) document.getElementById('preco_unitario').value = numeroSeguro(mat.preco_unitario).toFixed(2);
+        if (document.getElementById('coeficiente_refugo')) document.getElementById('coeficiente_refugo').value = numeroSeguro(mat.coeficiente_refugo).toFixed(1);
+        if (document.getElementById('lead_time_entrega')) document.getElementById('lead_time_entrega').value = Number.parseInt(mat.lead_time_entrega, 10) || 0;
+        if (document.getElementById('estoque_seguranca')) document.getElementById('estoque_seguranca').value = numeroSeguro(mat.estoque_seguranca).toFixed(1);
         if (document.getElementById('fornecedor_padrao')) document.getElementById('fornecedor_padrao').value = mat.fornecedor_padrao || '';
         if (document.getElementById('especificacao_tecnica')) document.getElementById('especificacao_tecnica').value = mat.especificacao_tecnica || '';
-        if (document.getElementById('dim_comprimento')) document.getElementById('dim_comprimento').value = float(mat.dim_comprimento).toFixed(2);
+        if (document.getElementById('dim_comprimento')) document.getElementById('dim_comprimento').value = numeroSeguro(mat.dim_comprimento).toFixed(2);
         const seletorModelo = document.getElementById('seletor_modelo');
         if (seletorModelo) {
             const ch = Object.keys(CATALOGO_METALURGICO).find(k => CATALOGO_METALURGICO[k].sku === mat.codigo_sku);
@@ -296,16 +332,16 @@ window.editarMaterial = async function(id) {
 window.salvarMaterial = async function(e) {
     if(e && e.preventDefault) e.preventDefault();
     const dados = {
-        id: document.getElementById('registro_id').value ? parseInt(document.getElementById('registro_id').value) : null,
+        id: document.getElementById('registro_id').value ? Number.parseInt(document.getElementById('registro_id').value, 10) : null,
         nome_material: document.getElementById('nome_material').value, codigo_sku: document.getElementById('codigo_sku').value,
         categoria: "Insumo Industrial", unidade_medida: document.getElementById('unidade_medida').value,
-        preco_unitario: parseFloat(document.getElementById('preco_unitario').value) || 0,
-        coeficiente_refugo: parseFloat(document.getElementById('coeficiente_refugo').value) || 0,
-        lead_time_entrega: parseInt(document.getElementById('lead_time_entrega').value) || 0,
-        estoque_seguranca: parseFloat(document.getElementById('estoque_seguranca').value) || 0,
+        preco_unitario: numeroSeguro(document.getElementById('preco_unitario').value) || 0,
+        coeficiente_refugo: numeroSeguro(document.getElementById('coeficiente_refugo').value) || 0,
+        lead_time_entrega: Number.parseInt(document.getElementById('lead_time_entrega').value, 10) || 0,
+        estoque_seguranca: numeroSeguro(document.getElementById('estoque_seguranca').value) || 0,
         fornecedor_padrao: document.getElementById('fornecedor_padrao').value, especificacao_tecnica: document.getElementById('especificacao_tecnica').value,
         dim_diametro: document.getElementById('dim_diametro')?.value || '0', dim_espessura: document.getElementById('dim_espessura')?.value || '0',
-        dim_comprimento: parseFloat(document.getElementById('dim_comprimento')?.value) || 0, custo_total_integrado: parseFloat(document.getElementById('custo_total_integrado')?.value) || 0
+        dim_comprimento: numeroSeguro(document.getElementById('dim_comprimento')?.value) || 0, custo_total_integrado: numeroSeguro(document.getElementById('custo_total_integrado')?.value) || 0
     };
     const res = await fetch('/api/materiais/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados) });
     if (res.ok) { window.limparFormularioMaterial(); window.carregarDadosIniciais(); alert("🎯 Material homologado e gravado!"); }
@@ -328,5 +364,5 @@ window.vincularEventosInputs = function() {
     });
 };
 
-function float(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function numeroSeguro(v) { const n = Number.parseFloat(v); return Number.isFinite(n) ? n : 0; }
 window.carregarDadosIniciais();
