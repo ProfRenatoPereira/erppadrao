@@ -317,7 +317,9 @@
                             <div class="flex-col-gap" style="flex:1;"><label class="label-form">GÁS (m³)</label><input id="mat_inst_gas" type="number" step="0.01" min="0" class="input-form" value="0"></div>
                             <div class="flex-col-gap" style="flex:1;"><label class="label-form">ÁGUA (m³)</label><input id="mat_inst_agua" type="number" step="0.01" min="0" class="input-form" value="0"></div>
                             <div class="flex-col-gap" style="flex:1;"><label class="label-form">DEPRECIAÇÃO (ANOS)</label><input id="mat_inst_dep" type="number" min="1" value="10" class="input-form"></div>
-                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">CUSTO MINUTO / MÁQUINA (R$)</label><input id="mat_inst_minuto" type="number" step="0.0001" min="0" value="0" class="input-form"></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">MINUTOS OPERACIONAIS / MÊS</label><input id="mat_inst_minutos" type="number" step="1" min="1" value="13200" class="input-form"></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">INSUMO / CONSUMÍVEL (R$/MIN)</label><input id="mat_inst_insumo" type="number" step="0.0001" min="0" value="0" class="input-form"></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">AJUSTE MANUAL (R$/MIN)</label><input id="mat_inst_minuto" type="number" step="0.0001" min="0" value="0" class="input-form"></div>
                             <div class="flex-col-gap" style="flex:.8; justify-content:center;"><label class="label-form">PATRIMÔNIO</label><label style="font-size:12px;font-weight:bold;"><input id="mat_inst_patrimonio" type="checkbox"> Sim</label></div>
                             <div class="flex-col-gap" style="flex:0 0 auto; justify-content:flex-end;"><button class="btn-submit" style="width:auto; padding:10px 18px;" type="submit">⚙️ Registrar</button></div>
                         </div>
@@ -346,8 +348,10 @@
 
             <div class="table-container" style="width: 100%; margin-top: 18px;">
                 <div class="table-header-dark">⏱️ QUADRO DE MINUTO / MÁQUINA — EQUIPAMENTOS DE APOIO DE MATERIAIS</div>
-                <div class="table-responsive"><table><thead><tr><th>Equipamento</th><th>Categoria</th><th>Qtd.</th><th>Potência</th><th>Custo por Minuto</th><th>Custo Total / Minuto</th></tr></thead><tbody id="tabela_minuto_maquina_materiais"></tbody></table></div>
+                <div style="padding:10px 16px; background:#f8fafc; border-bottom:1px solid #e2e8f0; font-size:12px; color:#475569;">O custo por minuto é composto por <strong>mão de obra + energia/utilidades + insumo/consumível + depreciação</strong>. O ajuste manual é opcional.</div>
+                <div class="table-responsive"><table><thead><tr><th>Equipamento</th><th>Categoria</th><th>Qtd.</th><th>Potência</th><th>Depreciação/min</th><th>Mão de obra/min</th><th>Energia/min</th><th>Insumo/min</th><th>Ajuste/min</th><th>TOTAL/min</th></tr></thead><tbody id="tabela_minuto_maquina_materiais"></tbody></table></div>
                 <div style="padding:12px 16px; background:#eff6ff; border-top:1px solid #bfdbfe; font-weight:900; color:#1e3a8a; text-align:right;">TOTAL MINUTO/MÁQUINA: <span id="kpi_custo_minuto_materiais">R$ 0,00/min</span></div>
+                <div id="kpi_custo_minuto_composicao" style="padding:8px 16px; background:#f8fafc; border-top:1px solid #e2e8f0; font-size:12px; text-align:right; color:#475569;">Mão de obra: R$ 0,00 | Energia: R$ 0,00 | Insumo: R$ 0,00 | Depreciação: R$ 0,00</div>
             </div>
 
         </div>
