@@ -174,19 +174,19 @@
         <div class="painel-orcamentario-horizontal" style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 24px; margin-top: 16px;">
             <!-- LINHA 1 (Azul) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px; color:#1e3a8a;"><span>💰 CAPITAL TOTAL:</span> <strong id="top_capital_total_val">R$ 5.000.000,00</strong></div>
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; color:#1e3a8a;"><span>💰 DISPONÍVEL PARA O SETOR:</span> <strong id="top_disponivel_setor_val">R$ 2.000.000,00</strong></div>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 320px; color:#1e3a8a;"><span>💰 CAPITAL TOTAL:</span> <strong id="top_capital_total_val">R$ 0,00</strong></div>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; color:#1e3a8a;"><span>💰 DISPONÍVEL PARA O SETOR:</span> <strong id="top_disponivel_setor_val">R$ 0,00</strong></div>
             </div>
             <!-- LINHA 2 (Cinza) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; color:#334155;"><span>🏢 ORÇAMENTO INICIAL MATERIAIS:</span> <strong id="top_orcamento_inicial_val">R$ 2.000.000,00</strong></div>
+                <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; color:#334155;"><span>🏢 ORÇAMENTO INICIAL MATERIAIS:</span> <strong id="top_orcamento_inicial_val">R$ 0,00</strong></div>
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 360px; background-color: #f0fdf4; padding: 4px 8px; border-radius: 6px; border: 1px dashed #bbf7d0; color:#166534;"><span>🏢 SALDO DE VERBA DE SUPRIMENTOS:</span> <strong id="top_verba_reais_val">R$ 0,00</strong></div>
             </div>
             <!-- LINHA 3 (Amarela) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fffdec; border: 1px solid #fde68a; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; align-items: center; gap: 6px; min-width: 320px; color:#9a3412;"><span>🏛️ CUSTO TOTAL DO INVENTÁRIO:</span> <strong id="top_patrimonio_maquinas_val">R$ 0,00</strong></div>
                 <div id="card_budget_limite" style="display: flex; flex-direction: column; gap: 4px; min-width: 420px; flex-grow: 1; padding: 6px 12px; background-color: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; color:#1e3a8a;"><span class="label-form">TRAVA DE ABASTECIMENTO (MAX 40%):</span> <span id="txt_valores_limite">R$ 0,00 / R$ 0,00</span></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; color:#1e3a8a;"><span class="label-form">TRAVA DE ABASTECIMENTO (QUOTA DO SETOR):</span> <span id="txt_valores_limite">R$ 0,00 / R$ 0,00</span></div>
                     <div style="width: 100%; background-color: #e2e8f0; height: 6px; border-radius: 3px; overflow: hidden;"><div id="barra_progresso_budget" style="width: 0%; background-color: #3b82f6; height: 100%;"></div></div>
                     <span id="txt_porcentagem_budget" style="font-size: 10px; font-weight: bold; text-align: right; display: block; color:#2563eb;">0.0% consumido</span>
                 </div>
@@ -194,7 +194,7 @@
             <!-- LINHA 4 (Roxa) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #faf5ff; border: 1px solid #e9d5ff; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
                 <div style="display: flex; flex-direction: column; gap: 2px; min-width: 340px; color:#6b21a8;"><div><span>🔒 CUSTO FIXO TOTAL (GERAL):</span> <strong id="top_custo_fixo_val">R$ 0,00/mês</strong></div><span id="pct_custo_fixo_geral" style="font-size: 10px; color: #8b5cf6;"></span></div>
-                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff; flex-grow: 1; color:#7c3aed;"><div><span>🔒 CUSTO FIXO DO SETOR (ALMOXARIFADO):</span> <strong id="top_custo_fixo_setor_val">R$ 0,00/mês</strong></div><span id="pct_custo_fixo_setor" style="font-size: 10px; color: #6d28d9;"></span></div>
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 440px; background-color: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #e9d5ff; flex-grow: 1; color:#7c3aed;"><div><span>🔒 CUSTO FIXO DO SETOR (MATERIAIS):</span> <strong id="top_custo_fixo_setor_val">R$ 0,00/mês</strong></div><span id="pct_custo_fixo_setor" style="font-size: 10px; color: #6d28d9;"></span></div>
             </div>
             <!-- LINHA 5 (Laranja) -->
             <div style="display: flex; flex-wrap: wrap; gap: 12px; background-color: #fff7ed; border: 1px solid #ffedd5; padding: 12px; border-radius: 12px; align-items: center; justify-content: space-between;">
@@ -282,7 +282,74 @@
             <div class="table-container" style="width: 100%; margin-top: 12px;">
                 <div class="table-header-dark">Insumos Industriais, Cubagens e Massas Homologadas no Supabase</div>
                 <div class="table-responsive"><table><thead><tr><th>Insumo / SKU</th><th>Configuração Dimensional / Unidade</th><th>Logística / Cadeia</th><th>Custo Total</th><th style="text-align: center;">Ações</th></tr></thead><tbody id="tabela_materiais"></tbody></table></div>
+            </div>            <div class="table-container" style="width: 100%; margin-top: 18px;">
+                <div class="table-header-dark">👥 QUADRO DE CONTRATAÇÃO — COLABORADORES DE MATERIAIS E LOGÍSTICA</div>
+                <div style="padding: 16px; background:#f8fafc;">
+                    <form id="formColaboradorMateriais" onsubmit="window.salvarColaboradorMateriais(event)">
+                        <div class="flex-form-row">
+                            <div class="flex-col-gap" style="flex:1.4;"><label class="label-form">NOME / IDENTIFICAÇÃO</label><input id="mat_rh_nome" class="input-form" placeholder="Ex.: João / Equipe de estoque"></div>
+                            <div class="flex-col-gap" style="flex:1.4;"><label class="label-form">CARGO</label><select id="mat_rh_cargo" class="select-form" required>
+                                <option value="">-- Selecione --</option><option>Estoquista</option><option>Auxiliar de Almoxarifado</option><option>Auxiliar de Materiais</option><option>Motorista</option><option>Conferente</option><option>Separador de Pedidos</option><option>Empacotador</option><option>Encarregado de Suprimentos</option>
+                            </select></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">SALÁRIO BASE (R$)</label><input id="mat_rh_salario" type="number" step="0.01" min="0" class="input-form" required></div>
+                            <div class="flex-col-gap" style="flex:.7;"><label class="label-form">QTD.</label><input id="mat_rh_qtd" type="number" min="1" value="1" class="input-form" required></div>
+                            <div class="flex-col-gap" style="flex:0 0 auto; justify-content:flex-end;"><button class="btn-submit" style="width:auto; padding:10px 18px;" type="submit">👥 Contratar</button></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-responsive"><table><thead><tr><th>Nome</th><th>Cargo</th><th>Salário Base</th><th>Qtd.</th><th>Subtotal Mensal</th><th>Ações</th></tr></thead><tbody id="tabela_colaboradores_materiais"></tbody></table></div>
             </div>
+
+            <div class="table-container" style="width: 100%; margin-top: 18px;">
+                <div class="table-header-dark">⚙️ QUADRO DE INSTRUMENTOS, EQUIPAMENTOS E MATERIAIS DE APOIO</div>
+                <div style="padding: 16px; background:#f8fafc;">
+                    <form id="formInstrumentoMateriais" onsubmit="window.salvarInstrumentoMateriais(event)">
+                        <div class="flex-form-row">
+                            <div class="flex-col-gap" style="flex:1.5;"><label class="label-form">ITEM</label><select id="mat_inst_nome" class="select-form" required>
+                                <option value="">-- Selecione --</option><option>Balança industrial</option><option>Empacotador</option><option>Seladora</option><option>Paleteira</option><option>Leitor de código de barras</option><option>Caixa plástica</option><option>Caixa de papelão</option><option>Embalagem plástica</option><option>Palete</option><option>Outro instrumento/material</option>
+                            </select></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">CATEGORIA</label><select id="mat_inst_categoria" class="select-form"><option>Equipamento</option><option>Instrumento</option><option>Embalagem</option><option>Material de apoio</option></select></div>
+                            <div class="flex-col-gap" style="flex:.6;"><label class="label-form">QTD.</label><input id="mat_inst_qtd" type="number" min="1" value="1" class="input-form" required></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">PREÇO AQUISIÇÃO (R$)</label><input id="mat_inst_preco" type="number" step="0.01" min="0" class="input-form" required></div>
+                        </div>
+                        <div class="flex-form-row">
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">POTÊNCIA (W)</label><input id="mat_inst_watts" type="number" step="0.01" min="0" class="input-form" value="0"></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">GÁS (m³)</label><input id="mat_inst_gas" type="number" step="0.01" min="0" class="input-form" value="0"></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">ÁGUA (m³)</label><input id="mat_inst_agua" type="number" step="0.01" min="0" class="input-form" value="0"></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">DEPRECIAÇÃO (ANOS)</label><input id="mat_inst_dep" type="number" min="1" value="10" class="input-form"></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">CUSTO MINUTO / MÁQUINA (R$)</label><input id="mat_inst_minuto" type="number" step="0.0001" min="0" value="0" class="input-form"></div>
+                            <div class="flex-col-gap" style="flex:.8; justify-content:center;"><label class="label-form">PATRIMÔNIO</label><label style="font-size:12px;font-weight:bold;"><input id="mat_inst_patrimonio" type="checkbox"> Sim</label></div>
+                            <div class="flex-col-gap" style="flex:0 0 auto; justify-content:flex-end;"><button class="btn-submit" style="width:auto; padding:10px 18px;" type="submit">⚙️ Registrar</button></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-responsive"><table><thead><tr><th>Item</th><th>Categoria</th><th>Qtd.</th><th>Aquisição</th><th>Energia/Recursos</th><th>Custo/Minuto</th><th>Patrimônio</th><th>Ações</th></tr></thead><tbody id="tabela_instrumentos_materiais"></tbody></table></div>
+            </div>
+
+            <div class="table-container" style="width: 100%; margin-top: 18px;">
+                <div class="table-header-dark">⚡ QUADRO DE ENERGIA E UTILIDADES OPERACIONAIS</div>
+                <div style="padding: 16px; background:#f8fafc;">
+                    <form id="formEnergiaMateriais" onsubmit="window.salvarEnergiaMateriais(event)">
+                        <div class="flex-form-row">
+                            <div class="flex-col-gap" style="flex:1.5;"><label class="label-form">DESCRIÇÃO</label><input id="mat_en_descricao" class="input-form" placeholder="Ex.: Energia elétrica do almoxarifado" required></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">TIPO</label><select id="mat_en_tipo" class="select-form"><option>Elétrica</option><option>Gás</option><option>Água</option><option>Outra utilidade</option></select></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">CONSUMO MENSAL</label><input id="mat_en_consumo" type="number" step="0.01" min="0" class="input-form" required></div>
+                            <div class="flex-col-gap" style="flex:.7;"><label class="label-form">UNIDADE</label><input id="mat_en_unidade" class="input-form" value="kWh" required></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">TARIFA / UNIDADE (R$)</label><input id="mat_en_tarifa" type="number" step="0.0001" min="0" class="input-form" required></div>
+                            <div class="flex-col-gap" style="flex:1;"><label class="label-form">CUSTO FIXO MENSAL (R$)</label><input id="mat_en_fixo" type="number" step="0.01" min="0" value="0" class="input-form"></div>
+                            <div class="flex-col-gap" style="flex:0 0 auto; justify-content:flex-end;"><button class="btn-submit" style="width:auto; padding:10px 18px;" type="submit">⚡ Registrar Energia</button></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="table-responsive"><table><thead><tr><th>Descrição</th><th>Tipo</th><th>Consumo</th><th>Tarifa</th><th>Fixo</th><th>Variável</th><th>Total/Mês</th><th>Ações</th></tr></thead><tbody id="tabela_energia_materiais"></tbody></table></div>
+            </div>
+
+            <div class="table-container" style="width: 100%; margin-top: 18px;">
+                <div class="table-header-dark">⏱️ QUADRO DE MINUTO / MÁQUINA — EQUIPAMENTOS DE APOIO DE MATERIAIS</div>
+                <div class="table-responsive"><table><thead><tr><th>Equipamento</th><th>Categoria</th><th>Qtd.</th><th>Potência</th><th>Custo por Minuto</th><th>Custo Total / Minuto</th></tr></thead><tbody id="tabela_minuto_maquina_materiais"></tbody></table></div>
+                <div style="padding:12px 16px; background:#eff6ff; border-top:1px solid #bfdbfe; font-weight:900; color:#1e3a8a; text-align:right;">TOTAL MINUTO/MÁQUINA: <span id="kpi_custo_minuto_materiais">R$ 0,00/min</span></div>
+            </div>
+
         </div>
          <!-- RODAPÉ INSTITUCIONAL WCAG COMPLETO -->
         <footer style="margin-top: 48px; padding-top: 24px; border-top: 2px solid #1e3a8a; font-size: 11px; color: #6b7280; text-align: justify; line-height: 1.6;">
