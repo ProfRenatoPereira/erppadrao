@@ -75,6 +75,9 @@ def garantir_tabela_maquinas(cursor):
         "jornada_semanal": "TEXT",
         "turnos_trabalho": "TEXT",
         "is_patrimonio": "BOOLEAN",
+        "fabricante": "TEXT",
+        "modelo": "TEXT",
+        "fonte_url": "TEXT",
     }
 
     for nome, tipo in colunas.items():
@@ -503,6 +506,9 @@ def api_salvar_maquina():
 
         jor = str(dados.get("jornada_semanal", "44") or "44").strip()
         tur = str(dados.get("turnos_trabalho", "1") or "1").strip()
+        fabricante = str(dados.get("fabricante", "") or "").strip()
+        modelo = str(dados.get("modelo", "") or "").strip()
+        fonte_url = str(dados.get("fonte_url", "") or "").strip()
 
         # Não confiar em valor textual vindo do navegador.
         isp = dados.get("is_patrimonio", True)
@@ -551,6 +557,9 @@ def api_salvar_maquina():
                     jornada_semanal = %s,
                     turnos_trabalho = %s,
                     is_patrimonio = %s,
+                    fabricante = %s,
+                    modelo = %s,
+                    fonte_url = %s,
                     departamento = %s
                 WHERE id = %s
                   AND equipe_id = %s
@@ -574,6 +583,9 @@ def api_salvar_maquina():
                     jor,
                     tur,
                     isp,
+                    fabricante,
+                    modelo,
+                    fonte_url,
                     departamento,
                     id_reg_int,
                     id_equipe,
@@ -611,11 +623,14 @@ def api_salvar_maquina():
                     jornada_semanal,
                     turnos_trabalho,
                     is_patrimonio,
+                    fabricante,
+                    modelo,
+                    fonte_url,
                     departamento
                 )
                 VALUES (
                     %s, %s, %s, %s, %s, %s, %s, %s, %s,
-                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+                    %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
                 )
                 """,
                 (
@@ -637,6 +652,9 @@ def api_salvar_maquina():
                     jor,
                     tur,
                     isp,
+                    fabricante,
+                    modelo,
+                    fonte_url,
                     departamento,
                 ),
             )
