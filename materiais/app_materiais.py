@@ -112,6 +112,8 @@ def garantir_tabelas_operacionais(cursor):
             consumo_gas_m3 REAL DEFAULT 0,
             consumo_agua_m3 REAL DEFAULT 0,
             depreciacao_anos INTEGER DEFAULT 10,
+            minutos_operacionais_mes REAL DEFAULT 13200,
+            insumo_minuto REAL DEFAULT 0,
             custo_minuto REAL DEFAULT 0,
             is_patrimonio BOOLEAN DEFAULT FALSE
         )
@@ -131,14 +133,25 @@ def garantir_tabelas_operacionais(cursor):
         )
     """)
 
+    # Compatibilidade com instalações que já possuem a tabela operacional.
+    cursor.execute("ALTER TABLE materiais_instrumentos ADD COLUMN IF NOT EXISTS minutos_operacionais_mes REAL DEFAULT 13200")
+    cursor.execute("ALTER TABLE materiais_instrumentos ADD COLUMN IF NOT EXISTS insumo_minuto REAL DEFAULT 0")
+
 
 def _valor_linha(row, chave):
     return numero((row or {}).get(chave), 0.0)
 
 
-def _soma(cursor, sql, params):
-    cursor.execute(sql, params)
-    return _valor_linha(cursor.fetchone(), "total")
+def _soma(cursor, sql, params, padrao=0.0):
+    try:
+        cursor.execute(sql, params)
+        return _valor_linha(cursor.fetchone(), "total")
+    except Exception:
+        try:
+            cursor.connection.rollback()
+        except Exception:
+            pass
+        return float(padrao)
 
 
 @materiais_blueprint.route("/materiais", methods=["GET"])
@@ -184,12 +197,16 @@ def api_orcamento_materiais():
         cursor = conexao.cursor(cursor_factory=RealDictCursor)
 
         capital_inicial = 0.0
-        cursor.execute("""
-            SELECT capital_total FROM config_simulacao
-            WHERE equipe_id=%s ORDER BY id DESC LIMIT 1
-        """, (id_equipe,))
-        config = cursor.fetchone()
-        capital_inicial = numero((config or {}).get("capital_total"))
+        try:
+            cursor.execute("""
+                SELECT capital_total FROM config_simulacao
+                WHERE equipe_id=%s ORDER BY id DESC LIMIT 1
+            """, (id_equipe,))
+            config = cursor.fetchone()
+            capital_inicial = numero((config or {}).get("capital_total"))
+        except Exception:
+            conexao.rollback()
+            capital_inicial = 0.0
 
         if capital_inicial == 0:
             for tabela, coluna in (
@@ -263,7 +280,29 @@ def api_orcamento_materiais():
 
         custo_fixo_setor = colaboradores + depreciacao + energia_fixa
         custo_variavel_setor = energia_variavel + materiais_variavel
-        custo_minuto_total = _soma(cursor, "SELECT COALESCE(SUM(custo_minuto*GREATEST(quantidade,1)),0) AS total FROM materiais_instrumentos WHERE equipe_id=%s", (id_equipe,))
+
+        # Custo real por minuto do setor: mão de obra + energia/utilidades + insumos
+        # + depreciação dos equipamentos. Não depende de um valor manual isolado.
+        minutos_disponiveis = _soma(cursor, """
+            SELECT COALESCE(SUM(GREATEST(COALESCE(quantidade,1),1) *
+                               GREATEST(COALESCE(minutos_operacionais_mes,13200),1)),0) AS total
+            FROM materiais_instrumentos WHERE equipe_id=%s
+        """, (id_equipe,))
+        if minutos_disponiveis <= 0:
+            minutos_disponiveis = 13200.0
+
+        mao_obra_minuto = colaboradores / minutos_disponiveis
+        energia_minuto = energia_variavel / minutos_disponiveis
+        insumo_minuto = _soma(cursor, """
+            SELECT COALESCE(SUM(COALESCE(insumo_minuto,0)*GREATEST(COALESCE(quantidade,1),1)),0) AS total
+            FROM materiais_instrumentos WHERE equipe_id=%s
+        """, (id_equipe,))
+        ajuste_minuto = _soma(cursor, """
+            SELECT COALESCE(SUM(COALESCE(custo_minuto,0)*GREATEST(COALESCE(quantidade,1),1)),0) AS total
+            FROM materiais_instrumentos WHERE equipe_id=%s
+        """, (id_equipe,))
+        depreciacao_minuto = depreciacao / minutos_disponiveis
+        custo_minuto_total = mao_obra_minuto + energia_minuto + insumo_minuto + depreciacao_minuto + ajuste_minuto
         watts_total = _soma(cursor, "SELECT COALESCE(SUM(potencia_watts*GREATEST(quantidade,1)),0) AS total FROM materiais_instrumentos WHERE equipe_id=%s", (id_equipe,))
 
         conexao.commit()
@@ -278,7 +317,13 @@ def api_orcamento_materiais():
             "custos_fixos_setor":round(custo_fixo_setor,2),
             "custos_variaveis_geral":round(global_variavel,2),
             "custos_variaveis_setor":round(custo_variavel_setor,2),
-            "custo_minuto_total":round(custo_minuto_total,2),
+            "custo_minuto_total":round(custo_minuto_total,4),
+            "custo_minuto_mao_obra":round(mao_obra_minuto,4),
+            "custo_minuto_energia":round(energia_minuto,4),
+            "custo_minuto_insumo":round(insumo_minuto,4),
+            "custo_minuto_depreciacao":round(depreciacao_minuto,4),
+            "custo_minuto_ajuste":round(ajuste_minuto,4),
+            "minutos_disponiveis_mes":round(minutos_disponiveis,2),
             "potencia_total_watts":round(watts_total,2),
             "patrimonio_materiais":round(patrimonio_materiais,2),
             "patrimonio_instrumentos":round(patrimonio_instrumentos,2),
@@ -438,7 +483,31 @@ def api_operacional_listar():
         cur.execute("SELECT * FROM materiais_colaboradores WHERE equipe_id=%s ORDER BY id DESC",(equipe,)); colaboradores=cur.fetchall()
         cur.execute("SELECT * FROM materiais_instrumentos WHERE equipe_id=%s ORDER BY id DESC",(equipe,)); instrumentos=cur.fetchall()
         cur.execute("SELECT * FROM materiais_energia WHERE equipe_id=%s ORDER BY id DESC",(equipe,)); energia=cur.fetchall()
-        return jsonify({"colaboradores":[dict(x) for x in colaboradores],"instrumentos":[dict(x) for x in instrumentos],"energia":[dict(x) for x in energia]}),200
+
+        # Composição oficial do minuto/máquina: mão de obra + energia + insumo + depreciação.
+        total_colab = sum(numero(x.get("subtotal")) for x in colaboradores)
+        total_energia = sum(numero(x.get("custo_variavel_mensal")) for x in energia)
+        total_minutos = sum(max(1.0, numero(x.get("quantidade"),1)) * max(1.0, numero(x.get("minutos_operacionais_mes"),13200)) for x in instrumentos) or 13200.0
+        total_depreciacao = sum(
+            (numero(x.get("preco_compra")) * max(1.0, numero(x.get("quantidade"),1))) / (max(1, inteiro(x.get("depreciacao_anos"),10)) * 12)
+            for x in instrumentos if bool(x.get("is_patrimonio"))
+        )
+        total_insumo = sum(numero(x.get("insumo_minuto")) * max(1.0, numero(x.get("quantidade"),1)) for x in instrumentos)
+        total_ajuste = sum(numero(x.get("custo_minuto")) * max(1.0, numero(x.get("quantidade"),1)) for x in instrumentos)
+        mao_obra_minuto = total_colab / total_minutos
+        energia_minuto = total_energia / total_minutos
+        depreciacao_minuto = total_depreciacao / total_minutos
+        custo_minuto_total = mao_obra_minuto + energia_minuto + depreciacao_minuto + total_insumo + total_ajuste
+        resumo = {
+            "custo_minuto_total": round(custo_minuto_total,4),
+            "custo_minuto_mao_obra": round(mao_obra_minuto,4),
+            "custo_minuto_energia": round(energia_minuto,4),
+            "custo_minuto_insumo": round(total_insumo,4),
+            "custo_minuto_depreciacao": round(depreciacao_minuto,4),
+            "custo_minuto_ajuste": round(total_ajuste,4),
+            "minutos_disponiveis_mes": round(total_minutos,2)
+        }
+        return jsonify({"status":"sucesso","colaboradores":[dict(x) for x in colaboradores],"instrumentos":[dict(x) for x in instrumentos],"energia":[dict(x) for x in energia],"resumo":resumo}),200
     except Exception as erro:
         if con: con.rollback()
         logger.exception("Erro ao listar quadros operacionais de Materiais: %s",erro)
@@ -482,13 +551,13 @@ def api_materiais_instrumento_salvar():
     try:
         nome=str(dados.get("nome_instrumento","") or "").strip(); categoria=str(dados.get("categoria","") or "").strip()
         if not nome: return jsonify({"status":"erro","message":"Instrumento/material é obrigatório."}),400
-        qtd=max(1,inteiro(dados.get("quantidade"),1)); preco=numero(dados.get("preco_compra")); watts=numero(dados.get("potencia_watts")); gas=numero(dados.get("consumo_gas_m3")); agua=numero(dados.get("consumo_agua_m3")); dep=max(1,inteiro(dados.get("depreciacao_anos"),10)); minuto=numero(dados.get("custo_minuto")); patrimonio=bool(dados.get("is_patrimonio",False)); id_reg=dados.get("id")
+        qtd=max(1,inteiro(dados.get("quantidade"),1)); preco=numero(dados.get("preco_compra")); watts=numero(dados.get("potencia_watts")); gas=numero(dados.get("consumo_gas_m3")); agua=numero(dados.get("consumo_agua_m3")); dep=max(1,inteiro(dados.get("depreciacao_anos"),10)); minutos_mes=max(1.0,numero(dados.get("minutos_operacionais_mes"),13200)); insumo_minuto=numero(dados.get("insumo_minuto")); minuto=numero(dados.get("custo_minuto")); patrimonio=bool(dados.get("is_patrimonio",False)); id_reg=dados.get("id")
         con=obter_conexao_master(); cur=con.cursor(); garantir_tabelas_operacionais(cur)
-        valores=(nome,categoria,qtd,preco,watts,gas,agua,dep,minuto,patrimonio)
+        valores=(nome,categoria,qtd,preco,watts,gas,agua,dep,minutos_mes,insumo_minuto,minuto,patrimonio)
         if id_reg:
-            cur.execute("""UPDATE materiais_instrumentos SET nome_instrumento=%s,categoria=%s,quantidade=%s,preco_compra=%s,potencia_watts=%s,consumo_gas_m3=%s,consumo_agua_m3=%s,depreciacao_anos=%s,custo_minuto=%s,is_patrimonio=%s WHERE id=%s AND equipe_id=%s""",valores+(int(id_reg),equipe_atual()))
+            cur.execute("""UPDATE materiais_instrumentos SET nome_instrumento=%s,categoria=%s,quantidade=%s,preco_compra=%s,potencia_watts=%s,consumo_gas_m3=%s,consumo_agua_m3=%s,depreciacao_anos=%s,minutos_operacionais_mes=%s,insumo_minuto=%s,custo_minuto=%s,is_patrimonio=%s WHERE id=%s AND equipe_id=%s""",valores+(int(id_reg),equipe_atual()))
         else:
-            cur.execute("""INSERT INTO materiais_instrumentos(equipe_id,nome_instrumento,categoria,quantidade,preco_compra,potencia_watts,consumo_gas_m3,consumo_agua_m3,depreciacao_anos,custo_minuto,is_patrimonio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",(equipe_atual(),)+valores)
+            cur.execute("""INSERT INTO materiais_instrumentos(equipe_id,nome_instrumento,categoria,quantidade,preco_compra,potencia_watts,consumo_gas_m3,consumo_agua_m3,depreciacao_anos,minutos_operacionais_mes,insumo_minuto,custo_minuto,is_patrimonio) VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",(equipe_atual(),)+valores)
         con.commit(); return jsonify({"status":"sucesso"}),200
     except Exception as erro:
         if con: con.rollback()
