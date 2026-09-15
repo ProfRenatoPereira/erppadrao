@@ -233,12 +233,135 @@
     /* ----------------------------------------------------------------------
        MODELOS BASE: auxilia o preenchimento automático; o cadastro também pode ser manual.
        ---------------------------------------------------------------------- */
+    /*
+       MODELOS BASE INDUSTRIAIS
+       Os valores abaixo são parâmetros didáticos de referência.
+       Eles NÃO bloqueiam a edição manual: ao selecionar um modelo, o formulário
+       é preenchido e o estudante pode ajustar qualquer característica conforme
+       a máquina efetivamente escolhida para o negócio.
+    */
+    const MODELOS_BASE = {
+        cnc_mazak: {
+            nome: "Torno CNC Mazak Quick Turn", fabricante: "Mazak", modelo: "Quick Turn",
+            potencia: 15, consumo_eletrico: 15, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "4.000 RPM", avanco: "1–500 mm/min", frequencia_manutencao: 500,
+            preco_compra: 450000, depreciacao_mensal: 3750, valor_venda_final: 90000,
+            custo_minuto_operador: 0.35, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        centro_usid: {
+            nome: "Centro de Usinagem CNC", fabricante: "Genérico", modelo: "Centro CNC",
+            potencia: 22, consumo_eletrico: 22, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "6.000 RPM", avanco: "1–3.000 mm/min", frequencia_manutencao: 500,
+            preco_compra: 650000, depreciacao_mensal: 5416.67, valor_venda_final: 130000,
+            custo_minuto_operador: 0.40, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        torno_mecanico: {
+            nome: "Torno Mecânico Convencional", fabricante: "Genérico", modelo: "Torno 600 x 2.000 mm",
+            potencia: 7.5, consumo_eletrico: 7.5, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "2.000 RPM", avanco: "0,05–500 mm/min", frequencia_manutencao: 300,
+            preco_compra: 80000, depreciacao_mensal: 666.67, valor_venda_final: 16000,
+            custo_minuto_operador: 0.30, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        serra_fita: {
+            nome: "Serra de Fita Industrial", fabricante: "Genérico", modelo: "Serra de Fita",
+            potencia: 5.5, consumo_eletrico: 5.5, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "3.500 RPM", avanco: "20–120 mm/min", frequencia_manutencao: 400,
+            preco_compra: 45000, depreciacao_mensal: 375, valor_venda_final: 9000,
+            custo_minuto_operador: 0.25, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        retifica: {
+            nome: "Retífica Cilíndrica", fabricante: "Genérico", modelo: "Retífica CNC/Convencional",
+            potencia: 11, consumo_eletrico: 11, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "3.000 RPM", avanco: "0,01–100 mm/min", frequencia_manutencao: 500,
+            preco_compra: 220000, depreciacao_mensal: 1833.33, valor_venda_final: 44000,
+            custo_minuto_operador: 0.35, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        furadeira_radial: {
+            nome: "Furadeira Radial", fabricante: "Genérico", modelo: "Furadeira Radial",
+            potencia: 4, consumo_eletrico: 4, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "2.000 RPM", avanco: "0,05–300 mm/min", frequencia_manutencao: 300,
+            preco_compra: 60000, depreciacao_mensal: 500, valor_venda_final: 12000,
+            custo_minuto_operador: 0.25, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        forno_atmo: {
+            nome: "Forno de Atmosfera Controlada", fabricante: "Genérico", modelo: "Forno Atmosfera",
+            potencia: 60, consumo_eletrico: 60, consumo_agua: 0, consumo_gases: 5,
+            velocidade: "—", avanco: "—", frequencia_manutencao: 1000,
+            preco_compra: 380000, depreciacao_mensal: 3166.67, valor_venda_final: 76000,
+            custo_minuto_operador: 0.30, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        forno_reveni: {
+            nome: "Forno de Revenimento", fabricante: "Genérico", modelo: "Forno de Revenimento",
+            potencia: 45, consumo_eletrico: 45, consumo_agua: 0, consumo_gases: 3,
+            velocidade: "—", avanco: "—", frequencia_manutencao: 1000,
+            preco_compra: 260000, depreciacao_mensal: 2166.67, valor_venda_final: 52000,
+            custo_minuto_operador: 0.30, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        compressor_ar: {
+            nome: "Compressor de Ar de Parafuso", fabricante: "Genérico", modelo: "Compressor de Parafuso",
+            potencia: 37, consumo_eletrico: 37, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "3.000 RPM", avanco: "—", frequencia_manutencao: 1000,
+            preco_compra: 120000, depreciacao_mensal: 1000, valor_venda_final: 24000,
+            custo_minuto_operador: 0.15, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        empilhadeira_ele: {
+            nome: "Empilhadeira Elétrica", fabricante: "Genérico", modelo: "Empilhadeira Elétrica",
+            potencia: 10, consumo_eletrico: 10, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "1.800 RPM", avanco: "—", frequencia_manutencao: 500,
+            preco_compra: 180000, depreciacao_mensal: 1500, valor_venda_final: 36000,
+            custo_minuto_operador: 0.25, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        cestos_inox: {
+            nome: "Cestos de Aço Inox (Forno)", fabricante: "Genérico", modelo: "Cesto Inox",
+            potencia: 0, consumo_eletrico: 0, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "—", avanco: "—", frequencia_manutencao: 1000,
+            preco_compra: 3500, depreciacao_mensal: 29.17, valor_venda_final: 700,
+            custo_minuto_operador: 0, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        palets_aco: {
+            nome: "Paletes de Aço Reforçados", fabricante: "Genérico", modelo: "Palete de Aço",
+            potencia: 0, consumo_eletrico: 0, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "—", avanco: "—", frequencia_manutencao: 1000,
+            preco_compra: 1800, depreciacao_mensal: 15, valor_venda_final: 360,
+            custo_minuto_operador: 0, jornada_semanal: "44", turnos_trabalho: "1"
+        },
+        caixas_trans: {
+            nome: "Caixas Metálicas para Transporte", fabricante: "Genérico", modelo: "Caixa Metálica",
+            potencia: 0, consumo_eletrico: 0, consumo_agua: 0, consumo_gases: 0,
+            velocidade: "—", avanco: "—", frequencia_manutencao: 1000,
+            preco_compra: 1200, depreciacao_mensal: 10, valor_venda_final: 240,
+            custo_minuto_operador: 0, jornada_semanal: "44", turnos_trabalho: "1"
+        }
+    };
+
     function carregarPreDefinido() {
         const select = document.getElementById("seletor_modelo");
         if (!select?.value) return;
+
+        const modelo = MODELOS_BASE[select.value];
         const texto = select.options[select.selectedIndex]?.textContent?.trim() || "";
-        if (!document.getElementById("nome_equipamento")?.value.trim()) setVal("nome_equipamento", texto);
-        setVal("modelo", texto);
+        if (!modelo) {
+            if (!document.getElementById("nome_equipamento")?.value.trim()) setVal("nome_equipamento", texto);
+            setVal("modelo", texto);
+            return;
+        }
+
+        // Preenche TODOS os campos técnicos do modelo base.
+        // O estudante continua podendo alterar qualquer valor antes de salvar.
+        const campos = [
+            "nome", "potencia", "consumo_eletrico", "consumo_agua", "consumo_gases",
+            "velocidade", "avanco", "frequencia_manutencao", "preco_compra",
+            "depreciacao_mensal", "valor_venda_final", "custo_minuto_operador",
+            "jornada_semanal", "turnos_trabalho", "fabricante", "modelo"
+        ];
+
+        campos.forEach((campo) => {
+            const id = campo === "nome" ? "nome_equipamento" : campo;
+            if (modelo[campo] !== undefined) setVal(id, modelo[campo]);
+        });
+
+        // O custo/minuto é derivado de depreciação + MOD e deve ser recalculado.
+        calcularMinutoMaquina();
     }
 
     /* ----------------------------------------------------------------------
