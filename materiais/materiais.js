@@ -188,9 +188,10 @@ window.calcularCustoOperacionalMaterial = function() {
 
 window.carregarDadosIniciais = async function() {
     try {
-        const [resMateriais, resOrcamento] = await Promise.all([
+        const [resMateriais, resOrcamento, resOperacional] = await Promise.all([
             fetch('/api/materiais/listar'),
-            fetch('/api/materiais/orcamento')
+            fetch('/api/materiais/orcamento'),
+            fetch('/api/materiais/operacional')
         ]);
 
         if (!resMateriais.ok) throw new Error(`Falha ao listar materiais (${resMateriais.status})`);
@@ -254,6 +255,13 @@ window.carregarDadosIniciais = async function() {
         if (bar) bar.style.width = `${pctTetoConsumido}%`;
 
         window.renderizarTabelaMateriais(materiais);
+
+        if (resOperacional.ok) {
+            const operacional = await resOperacional.json();
+            window.renderizarQuadrosOperacionais(operacional);
+        } else {
+            window.renderizarQuadrosOperacionais({colaboradores: [], instrumentos: [], energia: []});
+        }
     } catch (e) {
         console.error('Erro ao carregar painel de Materiais:', e);
         window.renderizarTabelaMateriais([]);
@@ -286,6 +294,34 @@ window.renderizarTabelaMateriais = function(materiais) {
    TERADMAS ERP v2.6 - MÓDULO 08: ENGENHARIA DE MATERIAIS
    PARTE 6 DE 6 - SISTEMA CRUD REATIVO (EDITAR, SALVAR E DELETAR)
    ========================================================================== */
+
+
+/* ==========================================================================
+   QUADROS OPERACIONAIS DE MATERIAIS
+   ========================================================================== */
+function moedaMateriais(v) { return numeroSeguro(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function escapeMateriais(v) { const d=document.createElement('div'); d.textContent=v ?? ''; return d.innerHTML; }
+
+window.renderizarQuadrosOperacionais = function(data) {
+    const colaboradores=data?.colaboradores||[], instrumentos=data?.instrumentos||[], energia=data?.energia||[];
+    const rh=document.getElementById('tabela_colaboradores_materiais');
+    const ti=document.getElementById('tabela_instrumentos_materiais');
+    const te=document.getElementById('tabela_energia_materiais');
+    const tm=document.getElementById('tabela_minuto_maquina_materiais');
+    if(rh) rh.innerHTML=colaboradores.length?colaboradores.map(c=>`<tr><td><strong>${escapeMateriais(c.nome||'Equipe')}</strong></td><td>${escapeMateriais(c.cargo||'')}</td><td>${moedaMateriais(c.salario_base)}</td><td>${c.quantidade||1}</td><td><strong>${moedaMateriais(c.subtotal)}</strong></td><td><button class="btn-top" type="button" onclick="window.deletarColaboradorMateriais(${c.id})">Remover</button></td></tr>`).join(''):`<tr><td colspan="6" style="padding:16px;text-align:center;font-style:italic;">Nenhum colaborador contratado.</td></tr>`;
+    if(ti) ti.innerHTML=instrumentos.length?instrumentos.map(i=>`<tr><td><strong>${escapeMateriais(i.nome_instrumento)}</strong></td><td>${escapeMateriais(i.categoria||'')}</td><td>${i.quantidade||1}</td><td>${moedaMateriais(numeroSeguro(i.preco_compra)*numeroSeguro(i.quantidade||1))}</td><td>${numeroSeguro(i.potencia_watts)*numeroSeguro(i.quantidade||1)} W<br>${numeroSeguro(i.consumo_gas_m3)*numeroSeguro(i.quantidade||1)} m³ gás</td><td><strong>${moedaMateriais(i.custo_minuto)}</strong>/min</td><td>${i.is_patrimonio?'Sim':'Não'}</td><td><button class="btn-top" type="button" onclick="window.deletarInstrumentoMateriais(${i.id})">Remover</button></td></tr>`).join(''):`<tr><td colspan="8" style="padding:16px;text-align:center;font-style:italic;">Nenhum instrumento/material de apoio registrado.</td></tr>`;
+    if(te) te.innerHTML=energia.length?energia.map(e=>`<tr><td><strong>${escapeMateriais(e.descricao)}</strong></td><td>${escapeMateriais(e.tipo_energia||'')}</td><td>${numeroSeguro(e.consumo_mensal).toLocaleString('pt-BR',{minimumFractionDigits:2})} ${escapeMateriais(e.unidade||'')}</td><td>${moedaMateriais(e.tarifa_unitaria)}</td><td>${moedaMateriais(e.custo_fixo_mensal)}</td><td>${moedaMateriais(e.custo_variavel_mensal)}</td><td><strong>${moedaMateriais(e.custo_total_mensal)}</strong></td><td><button class="btn-top" type="button" onclick="window.deletarEnergiaMateriais(${e.id})">Remover</button></td></tr>`).join(''):`<tr><td colspan="8" style="padding:16px;text-align:center;font-style:italic;">Nenhum consumo de energia/utilidade registrado.</td></tr>`;
+    if(tm) tm.innerHTML=instrumentos.length?instrumentos.map(i=>{const total=numeroSeguro(i.custo_minuto)*Math.max(1,numeroSeguro(i.quantidade));return `<tr><td><strong>${escapeMateriais(i.nome_instrumento)}</strong></td><td>${escapeMateriais(i.categoria||'')}</td><td>${i.quantidade||1}</td><td>${(numeroSeguro(i.potencia_watts)*Math.max(1,numeroSeguro(i.quantidade))).toLocaleString('pt-BR')} W</td><td>${moedaMateriais(i.custo_minuto)}/min</td><td><strong>${moedaMateriais(total)}/min</strong></td></tr>`;}).join(''):`<tr><td colspan="6" style="padding:16px;text-align:center;font-style:italic;">Nenhum equipamento com custo por minuto registrado.</td></tr>`;
+    const totalMin=instrumentos.reduce((a,i)=>a+numeroSeguro(i.custo_minuto)*Math.max(1,numeroSeguro(i.quantidade)),0);
+    const k=document.getElementById('kpi_custo_minuto_materiais'); if(k) k.textContent=moedaMateriais(totalMin)+'/min';
+};
+
+window.salvarColaboradorMateriais=async function(e){e.preventDefault();const cargo=document.getElementById('mat_rh_cargo').value;const dados={nome:document.getElementById('mat_rh_nome').value,cargo,salario_base:numeroSeguro(document.getElementById('mat_rh_salario').value),quantidade:parseInt(document.getElementById('mat_rh_qtd').value,10)||1};const r=await fetch('/api/materiais/colaboradores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)});if(!r.ok){alert('Erro ao contratar colaborador.');return;}document.getElementById('formColaboradorMateriais').reset();document.getElementById('mat_rh_qtd').value=1;window.carregarDadosIniciais();};
+window.deletarColaboradorMateriais=async function(id){if(!confirm('Remover colaborador do quadro de Materiais?'))return;const r=await fetch(`/api/materiais/colaboradores/${id}`,{method:'DELETE'});if(r.ok)window.carregarDadosIniciais();};
+window.salvarInstrumentoMateriais=async function(e){e.preventDefault();const dados={nome_instrumento:document.getElementById('mat_inst_nome').value,categoria:document.getElementById('mat_inst_categoria').value,quantidade:parseInt(document.getElementById('mat_inst_qtd').value,10)||1,preco_compra:numeroSeguro(document.getElementById('mat_inst_preco').value),potencia_watts:numeroSeguro(document.getElementById('mat_inst_watts').value),consumo_gas_m3:numeroSeguro(document.getElementById('mat_inst_gas').value),consumo_agua_m3:numeroSeguro(document.getElementById('mat_inst_agua').value),depreciacao_anos:parseInt(document.getElementById('mat_inst_dep').value,10)||10,custo_minuto:numeroSeguro(document.getElementById('mat_inst_minuto').value),is_patrimonio:document.getElementById('mat_inst_patrimonio').checked};const r=await fetch('/api/materiais/instrumentos',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)});if(!r.ok){alert('Erro ao registrar instrumento/material.');return;}document.getElementById('formInstrumentoMateriais').reset();document.getElementById('mat_inst_qtd').value=1;document.getElementById('mat_inst_dep').value=10;window.carregarDadosIniciais();};
+window.deletarInstrumentoMateriais=async function(id){if(!confirm('Remover este item do quadro operacional?'))return;const r=await fetch(`/api/materiais/instrumentos/${id}`,{method:'DELETE'});if(r.ok)window.carregarDadosIniciais();};
+window.salvarEnergiaMateriais=async function(e){e.preventDefault();const dados={descricao:document.getElementById('mat_en_descricao').value,tipo_energia:document.getElementById('mat_en_tipo').value,consumo_mensal:numeroSeguro(document.getElementById('mat_en_consumo').value),unidade:document.getElementById('mat_en_unidade').value,tarifa_unitaria:numeroSeguro(document.getElementById('mat_en_tarifa').value),custo_fixo_mensal:numeroSeguro(document.getElementById('mat_en_fixo').value)};const r=await fetch('/api/materiais/energia',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)});if(!r.ok){alert('Erro ao registrar energia.');return;}document.getElementById('formEnergiaMateriais').reset();document.getElementById('mat_en_unidade').value='kWh';window.carregarDadosIniciais();};
+window.deletarEnergiaMateriais=async function(id){if(!confirm('Remover este registro de energia?'))return;const r=await fetch(`/api/materiais/energia/${id}`,{method:'DELETE'});if(r.ok)window.carregarDadosIniciais();};
 
 window.editarMaterial = async function(id) {
     if (!id) return;
